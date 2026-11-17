@@ -17,7 +17,7 @@ values ('5c6f2a8e-3d41-4b7a-9e0c-1f2d3a4b5c6d',
         '{
           "paymentTransactionUrl": {
             "type": "Literal",
-            "value": "https://epayment-stage.dataport.de/konnektor/epayment/"
+            "value": "https://epaybl-stage.dataport.de/epaybl-konnektor"
           }
         }'::jsonb,
         true,

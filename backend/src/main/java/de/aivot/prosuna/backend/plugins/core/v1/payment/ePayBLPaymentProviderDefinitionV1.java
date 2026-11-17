@@ -212,7 +212,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         paymentTransactionUrlInput.setId(PAYMENT_TRANSACTION_URL_FIELD);
         paymentTransactionUrlInput.setRequired(true);
         paymentTransactionUrlInput.setLabel("Basis-URL");
-        paymentTransactionUrlInput.setPlaceholder("https://epayment-stage.dataport.de/konnektor/epayment/");
+        paymentTransactionUrlInput.setPlaceholder("https://epaybl-stage.dataport.de/epaybl-konnektor");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
         paymentTransactionUrlInput.setValidation(urlValidation(PAYMENT_TRANSACTION_URL_FIELD));
         list.add(paymentTransactionUrlInput);
