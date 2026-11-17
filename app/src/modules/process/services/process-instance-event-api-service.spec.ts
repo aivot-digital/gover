@@ -40,6 +40,18 @@ describe('ProcessInstanceEventApiService', () => {
         expect(url.searchParams.get('concernedIdentityTitle')).toBe('Betroffene Person');
     });
 
+    it('loads enriched timeline events with a stable timestamp/id order', async () => {
+        const service = new ProcessInstanceEventApiService();
+        const get = vi.spyOn(service, 'get').mockResolvedValue({content: [{id: 7, technical: true, audit: false,
+            triggeringUserName: 'Ada Beispiel', details: {manualIntervention: true}}], page: {number: 0}} as never);
+        const result = await service.listHistory(12);
+        expect(get).toHaveBeenCalledWith('/api/process-instance-events/history/', {query: {
+            processInstanceId: 12, page: 0, size: 999, sort: ['timestamp,ASC', 'id,ASC'],
+        }});
+        expect(result.content[0]).toEqual(expect.objectContaining({isTechnical: true, isAudit: false,
+            triggeringUserName: 'Ada Beispiel', details: {manualIntervention: true}}));
+    });
+
     it('initializes history relevance to false', () => {
         expect(new ProcessInstanceEventApiService().initialize().historyRelevant).toBe(false);
     });

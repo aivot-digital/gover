@@ -1,7 +1,9 @@
+import {type Page} from '../../../models/dtos/page';
 import {BaseReadApiService} from '../../../services/base-read-api-service';
-import {type ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
+import {type ProcessInstanceEventEntity, type ProcessInstanceHistoryEvent, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
 import {
     type ProcessInstanceEventLog,
+    type ProcessInstanceEventLogEntry,
     type ProcessInstanceEventLogFilter,
     type ProcessInstanceEventLogSortOrder,
 } from '../models/process-instance-event-log';
@@ -30,6 +32,16 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
 > {
     constructor() {
         super('/api/process-instance-events/');
+    }
+
+    async listHistory(processInstanceId: number): Promise<Page<ProcessInstanceHistoryEvent>> {
+        const page = await this.get<Page<ProcessInstanceEventLogEntry>>(`${this.path}history/`, {
+            query: {processInstanceId, page: 0, size: 999, sort: ['timestamp,ASC', 'id,ASC']},
+        });
+        return {
+            ...page,
+            content: page.content.map(event => ({...event, isTechnical: event.technical, isAudit: event.audit})),
+        };
     }
 
     getEventLog(options: {

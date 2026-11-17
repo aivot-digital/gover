@@ -24,3 +24,8 @@ export interface ProcessInstanceEventEntity {
     concernedIdentityId?: string | null;
     concernedIdentityTitle?: string | null;
 }
+
+export interface ProcessInstanceHistoryEvent extends ProcessInstanceEventEntity {
+    triggeringUserName?: string | null;
+    processNodeName?: string | null;
+}
