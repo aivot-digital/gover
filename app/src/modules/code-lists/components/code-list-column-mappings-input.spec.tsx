@@ -35,6 +35,78 @@ function Editor({initial, onPatch = vi.fn()}: {initial: CodeList; onPatch?: (pat
 }
 
 describe('CodeListColumnMappingsInput', () => {
+    it.each([
+        {
+            change: 'renamed',
+            columnMappings: [{...codeList.columnMappings[0], key: 'identifier'}, ...codeList.columnMappings.slice(1)],
+            keyColumnKey: 'identifier',
+        },
+        {
+            change: 'removed',
+            columnMappings: codeList.columnMappings.slice(1),
+            keyColumnKey: 'label_2',
+        },
+    ])('warns when a saved key is $change and hides the warning when restored', ({columnMappings, keyColumnKey}) => {
+        const props = {savedColumnMappings: codeList.columnMappings, onChange: vi.fn()};
+        const {rerender} = render(<CodeListColumnMappingsInput {...props} codeList={codeList}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={{...codeList, columnMappings, keyColumnKey}}/>);
+        expect(screen.getByRole('alert')).toHaveTextContent('Verweise auf „id“ werden nicht angepasst.');
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={codeList}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('does not warn about changed or removed keys without saved mappings', () => {
+        const props = {savedColumnMappings: [], onChange: vi.fn()};
+        const {rerender} = render(<CodeListColumnMappingsInput {...props} codeList={codeList}/>);
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={{
+            ...codeList,
+            columnMappings: [{...codeList.columnMappings[0], key: 'draft'}],
+            keyColumnKey: 'draft',
+        }}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={{...codeList, columnMappings: [], keyColumnKey: null}}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('does not warn when labels, order or source assignments change while saved keys remain', () => {
+        const props = {savedColumnMappings: codeList.columnMappings, onChange: vi.fn()};
+        const {rerender} = render(<CodeListColumnMappingsInput {...props} codeList={codeList}/>);
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={{
+            ...codeList,
+            columnMappings: [
+                {...codeList.columnMappings[2], index: 1},
+                codeList.columnMappings[1],
+                {...codeList.columnMappings[0], name: 'Neue Kennung', index: 2},
+            ],
+        }}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('does not warn when an unsaved column is added, renamed or removed from an existing list', () => {
+        const props = {savedColumnMappings: codeList.columnMappings, onChange: vi.fn()};
+        const {rerender} = render(<CodeListColumnMappingsInput {...props} codeList={codeList}/>);
+        const draftColumn = {key: 'extra', name: 'Zusatz', index: 3};
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={{
+            ...codeList, columnMappings: [...codeList.columnMappings, draftColumn],
+        }}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={{
+            ...codeList, columnMappings: [...codeList.columnMappings, {...draftColumn, key: 'renamed'}],
+        }}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+        rerender(<CodeListColumnMappingsInput {...props} codeList={codeList}/>);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     it('offers unused source columns again and preserves existing missing assignments', () => {
         const onPatch = vi.fn();
         render(<Editor initial={codeList} onPatch={onPatch}/>);

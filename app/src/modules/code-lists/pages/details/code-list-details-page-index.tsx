@@ -542,7 +542,7 @@ export function CodeListDetailsPageIndex() {
                 <Grid size={{xs: 12}}>
                     <CodeListColumnMappingsInput
                         codeList={codeList}
-                        savedColumnMappings={item?.columnMappings ?? []}
+                        savedColumnMappings={isExistingItem === true ? item?.columnMappings ?? [] : []}
                         onChange={handleInputPatch}
                         disabled={isBusy || !isEditable}
                         error={errors.columnMappings}
