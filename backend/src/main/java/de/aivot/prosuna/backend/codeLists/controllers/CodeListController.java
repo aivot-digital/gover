@@ -148,12 +148,14 @@ public class CodeListController {
     @PutMapping("{codeListKey}/")
     @Operation(
             summary = "Update Code List",
-            description = "Update an existing code list."
+            description = "Update an existing code list. With refreshSource=true, interpret column positions against the " +
+                    "previewed columns in the request and atomically apply the current source after validating that preview."
     )
     public CodeListEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String codeListKey,
-            @Nonnull @Valid @RequestBody CodeListEntity update
+            @Nonnull @Valid @RequestBody CodeListEntity update,
+            @RequestParam(defaultValue = "false") boolean refreshSource
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
@@ -162,8 +164,9 @@ public class CodeListController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var updated = service
-                .update(codeListKey, update);
+        var updated = refreshSource
+                ? service.updateFromSource(codeListKey, update)
+                : service.update(codeListKey, update);
 
         auditService.create()
                 .withUser(execUser)
@@ -180,8 +183,9 @@ public class CodeListController {
                 )
                 .log(); // TODO: Add Diff
 
-        codeListWorker
-                .triggerCodeListUpdate(updated.getKey(), true);
+        if (!refreshSource) {
+            codeListWorker.triggerCodeListUpdate(updated.getKey(), true);
+        }
 
         return updated;
     }

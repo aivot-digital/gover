@@ -54,6 +54,7 @@ export function CodeListDetailsPage(): ReactNode {
                         ? (
                             <CodeListStatusChip
                                 status={item.status}
+                                columnMappings={item.columnMappings}
                                 sourceType={item.sourceType}
                                 statusMessage={item.statusMessage}
                                 lastSync={item.lastSync}
@@ -93,7 +94,7 @@ export function CodeListDetailsPage(): ReactNode {
                                     Codelisten bündeln wiederverwendbare Auswahlwerte für Formulare, Prozesse und Schnittstellen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Jede Codeliste legt fest, welche Beschriftung ausfüllenden Personen angezeigt wird und welcher technische Wert gespeichert oder weitergegeben wird.
+                                    Im Auswahlfeld legen Sie fest, welche Spalte die sichtbare Beschriftung liefert und aus welcher Spalte der gespeicherte Wert stammt.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Einträge können manuell gepflegt oder aus XRepository bzw. einer CSV-Datei synchronisiert werden.

@@ -1,13 +1,12 @@
 import {CodeListSourceType} from '../enums/code-list-source-type';
 import {CodeListStatus} from '../enums/code-list-status';
 
-// Maps a stable column key to a display name and the 1-based position of the column in the item cells. Everything
-// that references a column uses the key; a missing index means the column no longer exists in the source.
+// The index addresses a stored cell. An unassigned column has no index; when a source column disappears,
+// formerSourceColumn also records its identifier for a later synchronization.
 export interface CodeListColumnMapping {
     key: string;
     name: string;
     index: number | null;
-    // Set by the synchronization for a missing column, so the mapping returns with that column even after a key rename.
     formerSourceColumn?: string | null;
 }
 
@@ -27,6 +26,7 @@ export interface CodeList {
     lastSync?: string | null;
     created: string;
     updated: string;
+    lockVersion?: number;
 }
 
 export interface CodeListSourceColumns {
@@ -35,9 +35,22 @@ export interface CodeListSourceColumns {
     keyColumnKey: string | null;
 }
 
-/** Returns the mappings that point to a stored column, ordered by their position. */
+/** Lists the usable columns in the order configured in the column table. */
 export function getAvailableColumnMappings(codeList: Pick<CodeList, 'columnMappings'>): CodeListColumnMapping[] {
-    return codeList.columnMappings
-        .filter((mapping) => mapping.index != null)
-        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+    return codeList.columnMappings.filter((mapping) => mapping.index != null);
+}
+
+export function getDuplicateCodeListColumnError(
+    mappings: ReadonlyArray<Pick<CodeListColumnMapping, 'index'>>,
+    columns: readonly string[],
+): string | undefined {
+    const used = new Set<number>();
+    for (const {index} of mappings) {
+        if (index == null) continue;
+        if (used.has(index)) {
+            const column = columns[index - 1] ? `${index} – ${columns[index - 1]}` : String(index);
+            return `Die Spalte „${column}“ ist mehrfach zugeordnet. Wählen Sie für jede Zuordnung eine eigene Spalte.`;
+        }
+        used.add(index);
+    }
 }

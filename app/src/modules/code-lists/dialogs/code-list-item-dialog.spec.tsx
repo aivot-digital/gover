@@ -1,5 +1,6 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
+import {CodeListsApiService} from '../code-lists-api-service';
 import {CodeListSourceType} from '../enums/code-list-source-type';
 import {CodeListStatus} from '../enums/code-list-status';
 import {CodeList} from '../models/code-list';
@@ -40,6 +41,24 @@ function renderDialog(overrides: {codeList?: CodeList; item?: CodeListItem; isBu
 }
 
 describe('CodeListItemDialog', () => {
+    it('creates a new manual entry with the required value first and its optional label second', () => {
+        const manualList = new CodeListsApiService().initialize();
+        const {props} = renderDialog({codeList: manualList});
+
+        const [value, label] = screen.getAllByRole('textbox');
+        expect(value).toHaveAccessibleName('Wert');
+        expect(value).toBeRequired();
+        expect(label).toHaveAccessibleName('Beschriftung – optional');
+        expect(label).not.toBeRequired();
+        fireEvent.change(value, {target: {value: 'DE'}});
+        fireEvent.change(label, {target: {value: 'Deutschland'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        expect(manualList.columns).toEqual(['Wert', 'Beschriftung']);
+        expect(manualList.keyColumnKey).toBe('Wert');
+        expect(props.onSave).toHaveBeenCalledExactlyOnceWith(['DE', 'Deutschland']);
+    });
+
     it('shows the mapped columns by name and requires only the key column', () => {
         renderDialog();
 

@@ -6,8 +6,8 @@ with updated_code_list as (
             source_ref = '',
             name = 'Kita-Betreuungsumfang',
             description = 'Beispielhafte manuelle Codeliste für Betreuungsmodelle in Kindertagesstätten.',
-            columns = array ['Beschriftung', 'Wert']::text[],
-            column_mappings = '[{"key": "Beschriftung", "name": "Beschriftung", "index": 1}, {"key": "Wert", "name": "Wert", "index": 2}]'::jsonb,
+            columns = array ['Wert', 'Beschriftung']::text[],
+            column_mappings = '[{"key": "Wert", "name": "Wert", "index": 1}, {"key": "Beschriftung", "name": "Beschriftung", "index": 2}]'::jsonb,
             key_column_key = 'Wert',
             status = 2,
             status_message = null,
@@ -35,8 +35,8 @@ inserted_code_list as (
            '',
            'Kita-Betreuungsumfang',
            'Beispielhafte manuelle Codeliste für Betreuungsmodelle in Kindertagesstätten.',
-           array ['Beschriftung', 'Wert']::text[],
-           '[{"key": "Beschriftung", "name": "Beschriftung", "index": 1}, {"key": "Wert", "name": "Wert", "index": 2}]'::jsonb,
+           array ['Wert', 'Beschriftung']::text[],
+           '[{"key": "Wert", "name": "Wert", "index": 1}, {"key": "Beschriftung", "name": "Beschriftung", "index": 2}]'::jsonb,
            'Wert',
            2,
            null,
@@ -58,10 +58,10 @@ select example_code_list.id,
        item.columns
 from example_code_list
          cross join (values
-                         (array ['Ganztagsbetreuung', 'ganztags']::text[]),
-                         (array ['Halbtagsbetreuung', 'halbtags']::text[]),
-                         (array ['Vormittagsbetreuung', 'vormittags']::text[]),
-                         (array ['Nachmittagsbetreuung', 'nachmittags']::text[])
+                         (array ['ganztags', 'Ganztagsbetreuung']::text[]),
+                         (array ['halbtags', 'Halbtagsbetreuung']::text[]),
+                         (array ['vormittags', 'Vormittagsbetreuung']::text[]),
+                         (array ['nachmittags', 'Nachmittagsbetreuung']::text[])
                     ) as item(columns);
 
 with updated_code_list as (

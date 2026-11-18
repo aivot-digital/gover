@@ -7,9 +7,8 @@ import jakarta.annotation.Nullable;
  * Maps a stable column key to a display name and to the 1-based position of the column in the stored item cells.
  * <p>
  * Everything that references a code list column uses the key, so a source that reorders its columns does not change
- * the meaning of a reference. A missing index means that the column no longer exists in the source. Since the key is
- * editable, such a mapping remembers its former source column in {@code formerSourceColumn}, so it can be bound to
- * that column again when the column returns.
+ * the meaning of a reference. A missing index is an explicit lack of assignment unless {@code formerSourceColumn}
+ * remembers a disappeared source column. Only the latter may be restored when that column returns.
  */
 public record CodeListColumnMapping(
         @Nonnull String key,

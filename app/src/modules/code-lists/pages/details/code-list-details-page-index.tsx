@@ -1,5 +1,5 @@
-import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {Alert, Box, Button, CircularProgress, Grid, Stack, Typography} from '@mui/material';
+import React, {useContext, useEffect, useEffectEvent, useMemo, useRef, useState} from 'react';
+import {Box, Button, CircularProgress, Grid, Typography} from '@mui/material';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {useNavigate} from 'react-router-dom';
@@ -19,15 +19,16 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {CodeListsApiService} from '../../code-lists-api-service';
-import {CodeList, CodeListSourceColumns} from '../../models/code-list';
+import {type CodeList, type CodeListSourceColumns, getDuplicateCodeListColumnError} from '../../models/code-list';
 import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '../../enums/code-list-source-type';
 import {CodeListStatus} from '../../enums/code-list-status';
 import {AssetSelector} from '../../../assets/components/asset-selector';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
+import {deepEquals} from '../../../../utils/equality-utils';
 import {CodeListColumnMappingsInput} from '../../components/code-list-column-mappings-input';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
-import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
+import {previewSourceColumns} from '../../models/preview-source-columns';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
@@ -42,15 +43,6 @@ const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
 
 const XRepositoryMetadataHint = 'Geben Sie die versionsspezifische URN ein und rufen Sie die Metadaten ab, um die Spaltenstruktur der Codeliste zu laden.';
 const CsvMetadataHint = 'Wählen Sie eine CSV-Datei aus. Die Metadaten werden automatisch abgerufen, um die Spaltenstruktur der Codeliste zu laden.';
-const MetadataFetchMinRuntime = 600;
-
-type MetadataFetchResult = {
-    success: true;
-    columns: CodeListSourceColumns;
-} | {
-    success: false;
-    error: unknown;
-};
 
 const CodeListSchema = yup.object({
     key: yup.string()
@@ -84,6 +76,10 @@ const CodeListSchema = yup.object({
             const keys = (mappings ?? []).map((mapping) => mapping.key?.trim());
             return new Set(keys).size === keys.length;
         })
+        .test('unique-assignments', function (mappings) {
+            const error = getDuplicateCodeListColumnError(mappings ?? [], this.parent.columns);
+            return error == null || this.createError({message: error});
+        })
         .when('sourceType', {
             is: CodeListSourceType.Manual,
             then: (schema) => schema.min(1, 'Manuelle Codelisten benötigen mindestens eine Spalte.'),
@@ -91,10 +87,10 @@ const CodeListSchema = yup.object({
         }),
     keyColumnKey: yup.string()
         .nullable()
-        .when('sourceType', {
-            is: CodeListSourceType.Manual,
-            then: (schema) => schema.required('Bitte wählen Sie eine Schlüsselspalte aus.'),
-            otherwise: (schema) => schema,
+        .test('bound-key', 'Bitte wählen Sie eine zugeordnete Spalte als Schlüsselspalte aus.', function (value) {
+            const list = this.parent as CodeList;
+            if (list.sourceType === CodeListSourceType.Plugin) return true;
+            return value != null && list.columnMappings.some(mapping => mapping.key === value && mapping.index != null);
         }),
 });
 
@@ -102,7 +98,7 @@ function sanitizeCodeList(codeList: CodeList): CodeList {
     return {
         ...codeList,
         key: codeList.key.trim(),
-        sourceRef: codeList.sourceType === CodeListSourceType.Manual ? '' : (codeList.sourceRef ?? ''),
+        sourceRef: codeList.sourceType === CodeListSourceType.Manual ? '' : (codeList.sourceRef ?? '').trim(),
         description: codeList.description ?? '',
         columnMappings: codeList.columnMappings.map((mapping) => ({
             ...mapping,
@@ -135,28 +131,6 @@ function isValidMetadataSourceRef(sourceType: CodeListSourceType, sourceRef: str
 
 function getMetadataRequestKey(sourceType: CodeListSourceType, sourceRef: string): string {
     return `${sourceType}:${sourceRef}`;
-}
-
-async function fetchMetadataColumns(
-    apiService: CodeListsApiService,
-    sourceType: CodeListSourceType,
-    sourceRef: string,
-): Promise<MetadataFetchResult> {
-    try {
-        const columns = sourceType === CodeListSourceType.Asset
-            ? await apiService.getAssetColumns(sourceRef)
-            : await apiService.getXRepositoryColumns(sourceRef);
-
-        return {
-            success: true,
-            columns,
-        };
-    } catch (error) {
-        return {
-            success: false,
-            error,
-        };
-    }
 }
 
 function formatSyncTimestamp(value: string | null | undefined): string {
@@ -195,124 +169,62 @@ export function CodeListDetailsPageIndex() {
     const apiService = useMemo(() => new CodeListsApiService(), []);
     const changeBlocker = useChangeBlocker(item, codeList);
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-    const [metadataFetchTrigger, setMetadataFetchTrigger] = useState(0);
     const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
-    const metadataFetchIdRef = useRef(0);
-    const lastMetadataRequestKeyRef = useRef<string | null>(null);
+    const [metadataResult, setMetadataResult] = useState<{
+        request: number;
+        sourceKey: string;
+        metadata: CodeListSourceColumns;
+    } | null>(null);
+    const requestId = useRef(0);
+    const requireFreshMetadata = useRef(false);
+    const previewSource = useRef<string | null>(null);
     const canDeleteCodeList = useHasSystemPermission(Permission.CODE_LIST_DELETE);
 
-    const runMetadataFetch = (
-        sourceType: CodeListSourceType,
-        sourceRef: string,
-        options: {
-            onError?: () => void;
-            successMessage?: string;
-        } = {},
-    ): boolean => {
-        if (codeList == null) {
-            return false;
+    useEffect(() => () => { requestId.current++; }, []);
+
+    // Read the latest draft when a fetch completes so edits made in the meantime survive.
+    const applyMetadata = useEffectEvent((result: NonNullable<typeof metadataResult>) => {
+        if (result.request !== requestId.current || !codeList ||
+            result.sourceKey !== getMetadataRequestKey(codeList.sourceType, codeList.sourceRef.trim())) return;
+        const firstProposal = isNewItem && previewSource.current !== result.sourceKey && codeList.columnMappings.length === 0;
+        const patch = firstProposal ? result.metadata : previewSourceColumns(codeList, result.metadata);
+        if (!deepEquals(codeList.columns, patch.columns) || !deepEquals(codeList.columnMappings, patch.columnMappings)
+            || codeList.keyColumnKey !== patch.keyColumnKey) {
+            handleInputPatch(patch);
         }
+        requireFreshMetadata.current = false;
+        previewSource.current = result.sourceKey;
+        setIsFetchingMetadata(false);
+    });
+    useEffect(() => {
+        if (metadataResult) applyMetadata(metadataResult);
+    }, [metadataResult]);
 
-        const fetchId = metadataFetchIdRef.current + 1;
-        metadataFetchIdRef.current = fetchId;
+    const loadMetadata = async (type: CodeListSourceType, ref: string) => {
+        const sourceRef = ref.trim();
+        if (!isValidMetadataSourceRef(type, sourceRef)) return;
+        const request = ++requestId.current;
         setIsFetchingMetadata(true);
-
-        withAsyncWrapper<void, MetadataFetchResult>({
-            desiredMinRuntime: MetadataFetchMinRuntime,
-            // Keep the loading indicator visible long enough to avoid flicker on fast metadata responses.
-            main: async () => fetchMetadataColumns(apiService, sourceType, sourceRef),
-        })
-            .then((result) => {
-                if (metadataFetchIdRef.current !== fetchId) {
-                    // Ignore stale responses after the user selected another source.
-                    return;
-                }
-
-                if (!result.success) {
-                    options.onError?.();
-                    dispatch(showApiErrorSnackbar(result.error, 'Beim Abrufen der Metadaten ist ein Fehler aufgetreten.'));
-                    return;
-                }
-
-                // A saved list keeps its mappings; its next synchronization matches them with the new source.
-                if (isNewItem === true) {
-                    handleInputPatch({
-                        columns: result.columns.columns,
-                        columnMappings: result.columns.columnMappings,
-                        keyColumnKey: result.columns.keyColumnKey,
-                    });
-                }
-
-                if (options.successMessage != null) {
-                    dispatch(showSuccessSnackbar(options.successMessage));
-                }
-            })
-            .catch((err) => {
-                if (metadataFetchIdRef.current !== fetchId) {
-                    return;
-                }
-
-                options.onError?.();
-                dispatch(showApiErrorSnackbar(err, 'Beim Abrufen der Metadaten ist ein Fehler aufgetreten.'));
-            })
-            .finally(() => {
-                if (metadataFetchIdRef.current === fetchId) {
-                    setIsFetchingMetadata(false);
-                }
-            });
-
-        return true;
+        try {
+            const metadata = type === CodeListSourceType.Asset
+                ? await apiService.getAssetColumns(sourceRef)
+                : await apiService.getXRepositoryColumns(sourceRef);
+            if (request === requestId.current) {
+                setMetadataResult({request, sourceKey: getMetadataRequestKey(type, sourceRef), metadata});
+            }
+        } catch (error) {
+            if (request === requestId.current) {
+                setIsFetchingMetadata(false);
+                dispatch(showApiErrorSnackbar(error, 'Die Quellspalten konnten nicht geladen werden.'));
+            }
+        }
     };
 
-    useEffect(() => {
-        if (
-            codeList == null ||
-            metadataFetchTrigger === 0 ||
-            !isEditable ||
-            isBusy
-        ) {
-            return;
-        }
-
-        const sourceRef = (codeList.sourceRef ?? '').trim();
-        const sourceType = codeList.sourceType;
-        const requestKey = getMetadataRequestKey(sourceType, sourceRef);
-
-        if (sourceType !== CodeListSourceType.Asset) {
-            setIsFetchingMetadata(false);
-            return;
-        }
-
-        if (
-            sourceRef.length === 0 ||
-            !isValidMetadataSourceRef(sourceType, sourceRef)
-        ) {
-            setIsFetchingMetadata(false);
-            return;
-        }
-
-        if (lastMetadataRequestKeyRef.current === requestKey) {
-            return;
-        }
-
-        lastMetadataRequestKeyRef.current = requestKey;
-        runMetadataFetch(sourceType, sourceRef, {
-            onError: () => {
-                lastMetadataRequestKeyRef.current = null;
-            },
-        });
-
-        return () => {
-            metadataFetchIdRef.current += 1;
-        };
-    }, [
-        apiService,
-        codeList?.sourceRef,
-        codeList?.sourceType,
-        metadataFetchTrigger,
-        isEditable,
-        isBusy,
-    ]);
+    const invalidatePreview = () => {
+        requestId.current++;
+        previewSource.current = null;
+        setIsFetchingMetadata(false);
+    };
 
     if (codeList == null) {
         return <GenericDetailsSkeleton/>;
@@ -332,12 +244,14 @@ export function CodeListDetailsPageIndex() {
         {
             label: 'Letzte Synchronisierung',
             icon: <Sync/>,
-            children: formatSyncTimestamp(codeList.lastSync),
+            children: formatSyncTimestamp(item?.lastSync),
         },
     ];
 
     const handleSourceTypeChange = (value: string | null) => {
         const sourceType = (value ?? CodeListSourceType.Manual) as CodeListSourceType;
+        invalidatePreview();
+        requireFreshMetadata.current = isCodeListSyncable(sourceType);
         const defaultCodeList = apiService.initialize();
         // A new list takes the columns of its source when its metadata is fetched; manual lists start with defaults.
         const columnsPatch = isNewItem === true || codeList.columnMappings.length === 0
@@ -348,7 +262,9 @@ export function CodeListDetailsPageIndex() {
                     keyColumnKey: defaultCodeList.keyColumnKey,
                 }
                 : {columns: [], columnMappings: [], keyColumnKey: null})
-            : {};
+            : sourceType === CodeListSourceType.Manual && item != null
+                ? previewSourceColumns(codeList, item)
+                : {};
 
         handleInputPatch({
             sourceType,
@@ -358,31 +274,32 @@ export function CodeListDetailsPageIndex() {
         });
     };
 
-    const handleAssetSourceRefChange = (value: string | null) => {
-        lastMetadataRequestKeyRef.current = null;
+    const handleSourceRefChange = (value: string | null) => {
+        invalidatePreview();
+        requireFreshMetadata.current = true;
         handleInputChange('sourceRef')(value ?? '');
-        setMetadataFetchTrigger((current) => current + 1);
+        if (codeList.sourceType === CodeListSourceType.Asset && value) {
+            void loadMetadata(codeList.sourceType, value);
+        }
     };
+    const metadataAction = (
+        <Button
+            variant="outlined"
+            onClick={() => void loadMetadata(codeList.sourceType, codeList.sourceRef)}
+            disabled={isBusy || !isEditable || isFetchingMetadata || !isValidMetadataSourceRef(codeList.sourceType, codeList.sourceRef.trim())}
+            startIcon={isFetchingMetadata ? <CircularProgress size={18} color="inherit"/> : <Download/>}
+        >
+            Metadaten abrufen
+        </Button>
+    );
 
-    const handleFetchXRepositoryMetadata = () => {
-        const sourceRef = (codeList.sourceRef ?? '').trim();
-
-        if (
-            !isValidMetadataSourceRef(CodeListSourceType.XRepository, sourceRef) ||
-            isFetchingMetadata ||
-            isBusy ||
-            !isEditable
-        ) {
+    const handleSave = () => {
+        if (!isEditable || isFetchingMetadata) {
             return;
         }
 
-        runMetadataFetch(CodeListSourceType.XRepository, sourceRef, {
-            successMessage: 'XRepository-Metadaten wurden erfolgreich abgerufen.',
-        });
-    };
-
-    const handleSave = () => {
-        if (!isEditable) {
+        if (requireFreshMetadata.current && isCodeListSyncable(codeList.sourceType)) {
+            dispatch(showErrorSnackbar('Rufen Sie die Metadaten der gewählten Quelle ab, bevor Sie die Codeliste speichern.'));
             return;
         }
 
@@ -413,8 +330,12 @@ export function CodeListDetailsPageIndex() {
                 });
         } else {
             apiService
-                .update(payload.key, payload)
+                .update(payload.key, payload, {
+                    query: {refreshSource: previewSource.current === getMetadataRequestKey(payload.sourceType, payload.sourceRef) || undefined},
+                })
                 .then((updated) => {
+                    invalidatePreview();
+                    requireFreshMetadata.current = false;
                     setItem(updated);
                     reset();
                     dispatch(showSuccessSnackbar('Änderungen an der Codeliste erfolgreich gespeichert.'));
@@ -455,8 +376,8 @@ export function CodeListDetailsPageIndex() {
         <Box>
             {
                 isCodeListSyncable(codeList.sourceType) &&
-                codeList.status == CodeListStatus.SyncFailed &&
-                codeList.statusMessage != null &&
+                item?.status === CodeListStatus.SyncFailed &&
+                item.statusMessage != null &&
                 <AlertComponent
                     color="error"
                     title="Fehler bei der Synchronisierung der Codeliste"
@@ -469,7 +390,7 @@ export function CodeListDetailsPageIndex() {
                     Die folgende Fehlermeldung wurde protokolliert:
 
                     <ExpandableCodeBlock
-                        value={codeList.statusMessage}
+                        value={item.statusMessage}
                         sx={{
                             my: 2,
                         }}
@@ -590,7 +511,8 @@ export function CodeListDetailsPageIndex() {
                                 label="CSV-Datei"
                                 selectLabel="CSV-Datei"
                                 value={isStringNotNullOrEmpty(codeList.sourceRef) ? codeList.sourceRef : null}
-                                onChange={handleAssetSourceRefChange}
+                                onChange={handleSourceRefChange}
+                                externalAction={metadataAction}
                                 required={true}
                                 error={errors.sourceRef}
                                 hint={isFetchingMetadata ? 'Metadaten werden abgerufen...' : CsvMetadataHint}
@@ -605,36 +527,13 @@ export function CodeListDetailsPageIndex() {
                             <TextFieldComponent
                                 label="XRepository-URN"
                                 value={codeList.sourceRef}
-                                onChange={handleInputChange('sourceRef')}
+                                onChange={handleSourceRefChange}
                                 onBlur={handleInputBlur('sourceRef')}
                                 required={true}
                                 error={errors.sourceRef}
                                 disabled={isBusy || !isEditable}
                                 hint={isFetchingMetadata ? 'Metadaten werden abgerufen...' : XRepositoryMetadataHint}
-                                externalAction={
-                                    <DisabledTooltip
-                                        disabled={saveDisabledByPermission}
-                                        title={saveDisabledTooltip}
-                                    >
-                                        <Button
-                                            variant="outlined"
-                                            onClick={handleFetchXRepositoryMetadata}
-                                            disabled={
-                                                isBusy ||
-                                                !isEditable ||
-                                                isFetchingMetadata ||
-                                                !isValidMetadataSourceRef(CodeListSourceType.XRepository, codeList.sourceRef ?? '')
-                                            }
-                                            startIcon={
-                                                isFetchingMetadata
-                                                    ? <CircularProgress size={18} color="inherit"/>
-                                                    : <Download/>
-                                            }
-                                        >
-                                            Metadaten abrufen
-                                        </Button>
-                                    </DisabledTooltip>
-                                }
+                                externalAction={metadataAction}
                             />
                         }
                     </Grid>
@@ -665,7 +564,7 @@ export function CodeListDetailsPageIndex() {
                 >
                     <Button
                         onClick={handleSave}
-                        disabled={isBusy || hasNotChanged || !isEditable}
+                        disabled={isBusy || isFetchingMetadata || hasNotChanged || !isEditable}
                         variant="contained"
                         color="primary"
                         startIcon={<Save/>}
@@ -678,8 +577,12 @@ export function CodeListDetailsPageIndex() {
                     title={saveDisabledTooltip}
                 >
                     <Button
-                        onClick={reset}
-                        disabled={isBusy || hasNotChanged || !isEditable}
+                        onClick={() => {
+                            invalidatePreview();
+                            requireFreshMetadata.current = false;
+                            reset();
+                        }}
+                        disabled={isBusy || isFetchingMetadata || hasNotChanged || !isEditable}
                         color="error"
                     >
                         Zurücksetzen

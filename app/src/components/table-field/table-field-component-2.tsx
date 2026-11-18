@@ -1,6 +1,6 @@
 import {Box, type SxProps, type Theme} from '@mui/material';
 import {DataGrid, GridColDef, GridPaginationModel, GridRowId, GridRowSelectionModel, GridValidRowModel} from '@mui/x-data-grid';
-import React, {ReactNode, useMemo, useState} from 'react';
+import React, {type ReactNode, useMemo, useState} from 'react';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import AddIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
@@ -22,7 +22,7 @@ interface TableField<T extends GridValidRowModel, K extends keyof T & string> {
     type?: GridColDef['type'];
     // Restricts the cell to the given values and edits it with a dropdown.
     valueOptions?: Array<{value: string; label: string}>;
-    renderCell?: (value: T[K]) => ReactNode;
+    renderCell?: GridColDef<T>['renderCell'];
 }
 
 interface TableFieldComponentProps<T extends GridValidRowModel> extends FormFieldGroupLayoutProps {
@@ -46,6 +46,8 @@ interface TableFieldComponentProps<T extends GridValidRowModel> extends FormFiel
     };
     addTooltip?: string;
     addLabel?: string;
+    addDisabledReason?: string;
+    disableColumnSorting?: boolean;
     deleteTooltip?: string;
     actions?: Action[];
     controlSx?: SxProps<Theme>;
@@ -128,7 +130,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
         setConfirmDelete(undefined);
     };
 
-    const handleRowUpdate = (newRow: GridValidRowModel, oldRow: GridValidRowModel) => {
+    const handleRowUpdate = (newRow: T, oldRow: T) => {
         const rowIndex = rows.findIndex((row) => row.id === newRow.id);
         if (rowIndex < 0) {
             return oldRow;
@@ -150,8 +152,8 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
     };
 
     // Determine the columns for the data grid based on the fields of the element
-    const columns: GridColDef[] = useMemo(() => {
-        return fields.map((field): GridColDef => ({
+    const columns = useMemo(() => {
+        return fields.map((field): GridColDef<T> => ({
             field: field.key,
             headerName: field.label,
             renderHeader: () => (
@@ -165,18 +167,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             ...(field.valueOptions != null
                 ? {type: 'singleSelect' as const, valueOptions: field.valueOptions}
                 : {type: field.type}),
-            /*renderCell: (params: GridRenderCellParams<any>) => {
-                if (field.renderCell != null) {
-                    return field.renderCell(params.value);
-                }
-
-                if (field.type === 'number') {
-                    return formatNumStringToGermanNum(params.value);
-                }
-
-                return params.value;
-            },
-             */
+            ...(field.renderCell && {renderCell: field.renderCell}),
         }));
     }, [fields, isInteractionDisabled]);
 
@@ -200,9 +191,10 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
             iconPosition: 'start',
             label: addLabel ?? 'Hinzufügen',
             tooltip: addTooltip ?? addLabel ?? 'Eintrag hinzufügen',
+            disabledTooltip: props.addDisabledReason,
             ariaLabel: addTooltip ?? addLabel ?? 'Eintrag hinzufügen',
             onClick: handleAddRow,
-            disabled: isInteractionDisabled || (maximumRows != null && maximumRows > 0 && rows.length >= maximumRows),
+            disabled: isInteractionDisabled || props.addDisabledReason != null || (maximumRows != null && maximumRows > 0 && rows.length >= maximumRows),
         },
         {
             icon: <Delete/>,
@@ -247,7 +239,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                 actions={tableActions}
             >
                 {(fieldContext) => (
-                    <DataGrid
+                    <DataGrid<T>
                         sx={[
                             {
                                 backgroundColor: busy ? getDisabledFieldBackground : undefined,
@@ -277,6 +269,7 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
 
                         disableColumnSelector
                         disableColumnFilter
+                        disableColumnSorting={props.disableColumnSorting}
 
                         aria-labelledby={fieldContext.labelId}
                         aria-describedby={fieldContext.describedBy}
