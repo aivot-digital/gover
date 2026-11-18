@@ -149,6 +149,7 @@
     "TTWL",
     "TU-Berlin-1.0",
     "TU-Berlin-2.0",
+    "Unicode-3.0",
     "Unicode-DFS-2015",
     "Unicode-DFS-2016",
     "Unicode-TOU",
@@ -457,19 +458,19 @@
       "_comment": "Prosuna internal package under Sustainable Use License."
     },
     "sdk-client": {
-      "versions": ["4.0.0-rc.2"],
+      "versions": ["4.0.0"],
       "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
     },
     "core": {
-      "versions": ["4.0.0-rc.2"],
+      "versions": ["4.0.0"],
       "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
     },
     "rest-clients": {
-      "versions": ["4.0.0-rc.2"],
+      "versions": ["4.0.0"],
       "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
     },
     "virus-scanner": {
-      "versions": ["4.0.0-rc.2"],
+      "versions": ["4.0.0"],
       "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
     },
     "jwkvalidator": {
@@ -477,7 +478,7 @@
       "_comment": "Reviewed under EUPL-1.2; transitive FIT-Connect SDK dependency, used but not modified."
     },
     "zbp-client": {
-      "versions": ["4.0.0-rc.2"],
+      "versions": ["4.0.0"],
       "_comment": "Reviewed under EUPL-1.2; the upstream legal notice permits unmodified SDK integration without licensing the application under EUPL."
     },
     "h2": {
@@ -560,7 +561,7 @@
     "jai-imageio-core@1.4.0": {
       "license": "LicenseRef-scancode-bsd-3-clause-no-nuclear-warranty"
     },
-    "bcprov-jdk18on@1.84": {
+    "bcprov-jdk18on@1.86": {
       "license": "MIT",
       "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
     },

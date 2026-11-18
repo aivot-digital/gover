@@ -1,3 +1,4 @@
+import {RadioFieldComponent} from '../components/radio-field/radio-field-component';
 import React, {useEffect, useMemo} from 'react';
 import {type BaseViewProps} from './base-view';
 import {type SelectFieldElement, type SelectFieldElementOption} from '../models/elements/form/input/select-field-element';
@@ -135,6 +136,24 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
         return 'Für die aktuelle Auswahl sind keine Optionen verfügbar';
     }, [dependencyElement, dependencyValue, dependsOnSelectFieldId, options.length]);
     const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
+
+    if (element.presentation === SelectFieldPresentation.Radio) {
+        return <RadioFieldComponent
+            {...inputModeFieldProps}
+            label={inputModeFieldProps?.label ?? element.label ?? ''}
+            value={value}
+            onChange={setValue}
+            options={options}
+            required={inputModeFieldProps?.required ?? element.required}
+            disabled={inputModeFieldProps?.disabled ?? isDisabled}
+            busy={inputModeFieldProps?.busy ?? isBusy}
+            readOnly={inputModeFieldProps?.readOnly}
+            error={inputModeFieldProps?.error ?? (errors != null ? errors.join(' ') : undefined)}
+            hint={inputModeFieldProps?.hint ?? element.hint ?? emptyStatePlaceholder}
+            displayInline={element.displayInline}
+            toggleButtons={element.toggleButtons}
+        />;
+    }
 
     return (
         <SelectFieldComponent

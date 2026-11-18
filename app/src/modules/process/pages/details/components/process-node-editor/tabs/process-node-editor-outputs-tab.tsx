@@ -62,8 +62,8 @@ export function ProcessNodeEditorOutputsTab() {
             <ElementEditorSectionHeader title="Ausgangsdaten" sx={{mt: 2}}>
                 {hasOutputs && <span id={outputHintId}>
                     Die Ausgangsdaten stehen Ihnen in weiteren Prozessschritten über die Elementdaten zur Verfügung.
-                    Wenn Sie einzelne Werte zusätzlich in den Vorgangsdaten bereitstellen möchten, tragen Sie einen
-                    Zielpfad ein.
+                    Über die Datenzuordnung stellen Sie einzelne Werte zusätzlich in den Vorgangsdaten bereit.
+                    Tragen Sie dazu den jeweiligen Zielpfad ein.
                 </span>}
             </ElementEditorSectionHeader>
 

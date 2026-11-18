@@ -86,12 +86,13 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
 
     @Override
     public void performValidation(List<ReplicatingContainerLayoutElementValue> value) throws ValidationException {
-        if (value == null) {
+        if (value == null || value.isEmpty()) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
             }
         } else {
-            var minSets = Boolean.TRUE.equals(getRequired()) ? (minimumRequiredSets != null ? minimumRequiredSets : 1) : 0;
+            // Once rows exist, the configured minimum applies to both optional and required collections.
+            var minSets = Math.max(minimumRequiredSets != null ? minimumRequiredSets : 0, Boolean.TRUE.equals(getRequired()) ? 1 : 0);
             if (value.size() < minSets) {
                 throw new ValidationException(this, "Es " + pluralize(minSets, "muss", "müssen") + " mindestens " + minSets + " " + pluralize(minSets, "Datensatz", "Datensätze") + " hinzugefügt werden.");
             }

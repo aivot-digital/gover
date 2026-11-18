@@ -2,12 +2,14 @@ package de.aivot.prosuna.backend.javascript.services;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.javascript.exceptions.JavascriptException;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.models.JavascriptResult;
 import de.aivot.prosuna.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
+import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.SandboxPolicy;
@@ -37,6 +39,10 @@ public class JavascriptEngine implements AutoCloseable {
     private final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     private final ByteArrayOutputStream errStream = new ByteArrayOutputStream();
     private final static String JS_ENGINE_NAME = "js";
+    private final static String MAX_CPU_TIME = "10s";
+    // Below the depth at which a default 1 MB thread stack throws a RangeError (about 740 frames in interpreter mode).
+    // A higher limit is never reached, and guest code can catch the RangeError and recurse again.
+    private final static String ASSET_TEMPLATE_MAX_STACK_FRAMES = "256";
 
     /**
      * Creates a new javascript executioner with the given function providers.
@@ -53,7 +59,17 @@ public class JavascriptEngine implements AutoCloseable {
      * @param functionProviders the function providers to add to the javascript context.
      */
     public JavascriptEngine(List<JavascriptFunctionProvider> functionProviders) {
-        graalContext = Context
+        this(functionProviders, JavascriptExecutionContext.Default);
+    }
+
+    /**
+     * Creates a new javascript executioner that only provides the function providers available in the given context.
+     *
+     * @param functionProviders the function providers to add to the javascript context if they are available in the given context.
+     * @param context           the context in which the code is executed.
+     */
+    public JavascriptEngine(@Nonnull List<JavascriptFunctionProvider> functionProviders, @Nonnull JavascriptExecutionContext context) {
+        var builder = Context
                 // Create a new context builder for the javascript engine.
                 .newBuilder(JS_ENGINE_NAME)
 
@@ -82,18 +98,55 @@ public class JavascriptEngine implements AutoCloseable {
                 // TODO: Resolve this problem and remove this option.
                 .option("engine.WarnInterpreterOnly", "false")
 
+                // Cancel the code once all evaluations of this engine used this much CPU time, so an endless loop cannot block the thread forever.
+                // Code that catches the stack overflow of a recursion and recurses again, e.g. (function f() { try { f() } catch (e) { f() } })(), is not stopped.
+                .option("sandbox.MaxCPUTime", MAX_CPU_TIME)
+
                 // Redirect the standard output and error streams to the given output streams.
                 .out(outStream)
-                .err(errStream)
+                .err(errStream);
 
-                // Build the context.
-                .build();
+        if (context == JavascriptExecutionContext.AssetTemplate) {
+            // Unlike the stack overflow of the recursion above, exceeding the frame limit cancels the code and cannot be caught.
+            // Asset templates can be changed with the asset permissions alone, so they must not be able to block a worker.
+            builder.option("sandbox.MaxStackFrames", ASSET_TEMPLATE_MAX_STACK_FRAMES);
+        }
+
+        graalContext = builder.build();
 
         // Add the function providers to the javascript context.
+        var bindings = graalContext.getBindings(JS_ENGINE_NAME);
         for (var fp : functionProviders) {
-            graalContext
-                    .getBindings(JS_ENGINE_NAME)
-                    .putMember(fp.getObjectName(), fp);
+            if (fp.isAvailableIn(context)) {
+                bindings.putMember(fp.getObjectName(), fp);
+            }
+        }
+
+        // Define the placeholders after all bindings, so an object name shared with an allowed provider is blocked. The other way round,
+        // putMember would fail on the placeholder, which has no setter.
+        Value defineUnavailableProvider = null;
+        for (var fp : functionProviders) {
+            if (fp.isAvailableIn(context)) {
+                continue;
+            }
+
+            // The provider itself is never bound. The placeholder only names it in the error instead of an unspecific reference error.
+            // It stays configurable, because providers may share an object name and a non-configurable property cannot be redefined.
+            if (defineUnavailableProvider == null) {
+                defineUnavailableProvider = graalContext.eval(
+                        JS_ENGINE_NAME,
+                        "(name, message) => Object.defineProperty(globalThis, name, { configurable: true, get() { throw new Error(message); } })"
+                );
+            }
+            defineUnavailableProvider.execute(
+                    fp.getObjectName(),
+                    String.format(
+                            "Die Funktionen „%s“ (%s) sind %s nicht verfügbar.",
+                            fp.getName(),
+                            fp.getObjectName(),
+                            context.getDescription()
+                    )
+            );
         }
     }
 
@@ -252,6 +305,7 @@ public class JavascriptEngine implements AutoCloseable {
     public void close() throws Exception {
         outStream.close();
         errStream.close();
-        graalContext.close();
+        // A context cancelled by the CPU time limit throws the limit error again on close(), but not when closed with cancelIfExecuting.
+        graalContext.close(true);
     }
 }

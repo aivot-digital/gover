@@ -7,8 +7,8 @@ import jakarta.annotation.Nonnull;
 
 public record TestMailRequestDTO(
         @Nonnull
-        @NotNull(message = "targetMail must not be null")
-        @Email(message = "targetMail must be a valid email address")
+        @NotNull(message = "Geben Sie eine E-Mail-Adresse ein.")
+        @Email(message = "Geben Sie eine gültige E-Mail-Adresse ein.")
         String targetMail
 ) {
 }

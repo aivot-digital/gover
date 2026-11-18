@@ -102,7 +102,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     onChange={(_, newValue) => dispatch(setDevToolsTab(newValue))}
                 >
                     <Tab
-                        label="Element-Daten"
+                        label="Formulareingaben"
                         value={0}
                     />
                     <Tab
@@ -110,7 +110,7 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                         value={1}
                     />
                     <Tab
-                        label="Ausführungs-Log"
+                        label="Berechnungsprotokoll"
                         value={2}
                     />
                 </Tabs>

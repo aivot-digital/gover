@@ -73,7 +73,7 @@ describe('ProcessExecutionSummary', () => {
         fireEvent.click(screen.getByRole('link', {name: 'Bescheid.pdf'}));
         await waitFor(() => expect(close).toHaveBeenCalled());
         expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
-            payload: expect.objectContaining({message: 'Der Anhang konnte nicht angezeigt werden.'}),
+            payload: expect.objectContaining({message: 'Die Anlage konnte nicht angezeigt werden.'}),
         }));
     });
 

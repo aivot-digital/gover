@@ -10,10 +10,11 @@ import org.hibernate.validator.constraints.Length;
 
 import java.time.Instant;
 import java.util.UUID;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "processes")
-public class ProcessEntity {
+public class ProcessEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "processes_id_seq";
     @Id
     @Nonnull
@@ -22,9 +23,9 @@ public class ProcessEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der interne Titel der Prozessdefinition darf nicht null sein.")
-    @NotBlank(message = "Der interne Titel der Prozessdefinition darf nicht leer sein.")
-    @Length(min=3, max = 96, message = "Der interne Titel der Prozessdefinition muss zwischen 3 und 96 Zeichen lang sein.")
+    @NotNull(message = "Der interne Titel des Prozesses darf nicht null sein.")
+    @NotBlank(message = "Der interne Titel des Prozesses darf nicht leer sein.")
+    @Length(min=3, max = 96, message = "Der interne Titel des Prozesses muss zwischen 3 und 96 Zeichen lang sein.")
     private String internalTitle;
 
     @Nonnull
@@ -59,6 +60,11 @@ public class ProcessEntity {
     @Nonnull
     @NotNull(message = "Das Aktualisierungsdatum darf nicht null sein.")
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -229,6 +235,17 @@ public class ProcessEntity {
 
     public ProcessEntity setSlug(@Nonnull String slug) {
         this.slug = slug;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public ProcessEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

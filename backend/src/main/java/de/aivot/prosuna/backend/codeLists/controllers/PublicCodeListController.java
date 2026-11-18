@@ -1,7 +1,6 @@
 package de.aivot.prosuna.backend.codeLists.controllers;
 
 import de.aivot.prosuna.backend.elements.models.elements.form.input.MultiCheckboxInputElementOption;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -38,10 +37,10 @@ public class PublicCodeListController {
     }
 
     @GetMapping("radio/")
-    public List<RadioInputElementOption> listAsRadio(
+    public List<SelectInputElementOption> listAsRadio(
             @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
-        return codeListElementOptionsService.listAsRadio(codeListKey);
+        return codeListElementOptionsService.listAsSelect(codeListKey);
     }
 
     @GetMapping("multi-checkbox/")

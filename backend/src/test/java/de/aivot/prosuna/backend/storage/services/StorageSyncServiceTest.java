@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.storage.models.StorageItemMetadata;
 import de.aivot.prosuna.backend.storage.models.StorageProviderDefinition;
 import de.aivot.prosuna.backend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class StorageSyncServiceTest {
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private static final Instant STALE_BEFORE = Instant.parse("2030-05-01T11:00:00Z");
 
     @Mock
@@ -85,7 +87,8 @@ class StorageSyncServiceTest {
                 storageProviderConfigurationService,
                 storageIndexItemRepository,
                 assetRepository,
-                transactionManager
+                transactionManager,
+                meterRegistry
         );
     }
 
@@ -123,6 +126,9 @@ class StorageSyncServiceTest {
         assertNull(current.getSyncRunId());
         verify(storageProviderRepository).save(current);
         assertFalse(transactions.getFirst().isRollbackOnly());
+
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "failed").count());
+        assertEquals(0, meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "success").count());
     }
 
     @Test

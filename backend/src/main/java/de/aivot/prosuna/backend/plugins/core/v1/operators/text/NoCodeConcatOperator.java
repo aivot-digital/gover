@@ -44,7 +44,7 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                 "Max Mustermann"
                                 
                 # Wann verwenden Sie den Operator „Text verketten“?
-                Verwenden Sie **„Text verketten“**, wenn Sie mehrere Werte zu einer lesbaren Zeichenkette kombinieren möchten, z. B. für Ausgaben, Labels oder Meldungen.
+                Verwenden Sie **„Text verketten“**, wenn Sie mehrere Werte zu einer lesbaren Zeichenkette kombinieren möchten, z. B. für Ausgaben, Beschriftungen oder Meldungen.
                 """;
     }
 

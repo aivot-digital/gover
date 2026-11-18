@@ -46,8 +46,8 @@ public class NoCodeLessThanOperator extends NoCodeOperator {
                 # Wahrheitswerte für den „Weniger als“-Operator
                 - **5 WENIGER ALS 10** → **wahr** \s
                 - **10 WENIGER ALS 5** → **falsch** \s
-                - **"abc" WENIGER ALS "abcd"** → **wahr** (länge des Textes) \s
-                - **"abcd" WENIGER ALS "abc"** → **falsch** (länge des Textes)
+                - **"abc" WENIGER ALS "abcd"** → **wahr** (Länge des Textes) \s
+                - **"abcd" WENIGER ALS "abc"** → **falsch** (Länge des Textes)
                 
                 # Wann verwenden Sie den Operator „Weniger als“?
                 Verwenden Sie **„Weniger als“**, wenn Sie prüfen möchten, ob ein Wert kleiner ist als ein anderer Wert. \s

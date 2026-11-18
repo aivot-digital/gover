@@ -76,7 +76,7 @@ export function UserRolesDetailsPageTeamMemberships() {
                     maxWidth: 900,
                 }}>
                     Eine Übersicht der Mitarbeiter:innen, denen diese Domänenrolle in verschiedenen
-                    Teams zugewiesen sind.
+                    Teams zugewiesen ist.
                 </Typography>
 
                 <GenericList<VTeamMembershipWithDetailsEntity>

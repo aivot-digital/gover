@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 
 public record AssetMoveRequestDTO(
         @Nonnull
-        @NotBlank(message = "Das Feld sourcePath ist ein Pflichtfeld.")
+        @NotBlank(message = "Geben Sie den Quellpfad an.")
         String sourcePath,
         @Nonnull
-        @NotBlank(message = "Das Feld targetPath ist ein Pflichtfeld.")
+        @NotBlank(message = "Geben Sie den Zielpfad an.")
         String targetPath
 ) {
 }

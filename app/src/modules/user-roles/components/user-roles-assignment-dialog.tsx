@@ -323,7 +323,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 <Stack spacing={2}>
                     <Box>
                         <Typography variant="subtitle1">
-                            {renderUserLabel ?? 'Benutzer:in'}
+                            {renderUserLabel ?? 'Mitarbeiter:in'}
                         </Typography>
                         <Typography
                             variant="body2"

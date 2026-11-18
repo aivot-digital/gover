@@ -148,10 +148,10 @@ function formatPermissionTooltip(permission: PermissionEntry): string {
     const description = permission.description?.trim();
 
     if (description != null && description.length > 0) {
-        return `${permission.label}\n${description}\nPermission Key: ${permission.permission}`;
+        return `${permission.label}\n${description}\nBerechtigungsschlüssel: ${permission.permission}`;
     }
 
-    return `${permission.label}\nPermission Key: ${permission.permission}`;
+    return `${permission.label}\nBerechtigungsschlüssel: ${permission.permission}`;
 }
 
 export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends ProcessSettingsAccessControlDraftBase>(

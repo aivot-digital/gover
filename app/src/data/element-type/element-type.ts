@@ -10,7 +10,7 @@ export enum ElementType {
     Number = 8,
     ReplicatingContainer = 9,
     RichText = 10,
-    Radio = 11,
+    // 11 is reserved for legacy radio definitions; normalize them on input.
     Select = 12,
     Spacer = 13,
     Table = 14,
@@ -54,4 +54,7 @@ export enum ElementType {
     SecretSelectInput = 52,
     AssetSelectInput = 53,
     DepartmentSelectInput = 54,
+    Duration = 55,
+    PhoneNumber = 56,
+    Email = 57,
 }

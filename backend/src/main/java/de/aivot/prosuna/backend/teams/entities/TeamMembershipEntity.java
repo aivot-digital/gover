@@ -28,8 +28,8 @@ public class TeamMembershipEntity {
 
     @Nonnull
     @Column(name = "user_id", length = 36, nullable = false)
-    @NotNull(message = "Die ID des Benutzers darf nicht null sein.")
-    @NotBlank(message = "Die ID des Benutzers darf nicht leer sein.")
+    @NotNull(message = "Die Konto-ID darf nicht null sein.")
+    @NotBlank(message = "Die Konto-ID darf nicht leer sein.")
     private String userId;
 
     @Nonnull

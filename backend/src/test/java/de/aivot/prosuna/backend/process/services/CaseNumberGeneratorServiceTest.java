@@ -108,7 +108,7 @@ class CaseNumberGeneratorServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Die Formatvorlage für die Vorgangskennung muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten.",
+                "Die Formatvorlage für die Vorgangskennung muss genau einen Zählerplatzhalter im Format %I(n) enthalten.",
                 exception.getTitle()
         );
     }
@@ -124,7 +124,7 @@ class CaseNumberGeneratorServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Die Inkrement-Breite in der Formatvorlage für die Vorgangskennung muss zwischen 4 und 12 Stellen liegen.",
+                "Die Zählerbreite in der Formatvorlage für die Vorgangskennung muss zwischen 4 und 12 Stellen liegen.",
                 exception.getTitle()
         );
     }

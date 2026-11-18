@@ -223,6 +223,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
         }
 
         const confirmed = await confirm({
+            isDestructive: true,
             title: 'Berechtigung entfernen',
             confirmButtonText: 'Entfernen',
             children: (
@@ -335,7 +336,8 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
                 maxWidth={700}
             >
                 Legen Sie fest, welche Organisationseinheiten und Teams diesen Prozess in der Verwaltung sehen, bearbeiten, prüfen oder veröffentlichen dürfen.
-                Die verwaltende Organisationseinheit ist immer berechtigt und kann nicht entfernt werden.
+                Die verwaltende Organisationseinheit ist dem Prozess dauerhaft zugeordnet und kann hier nicht entfernt werden.
+                Welche Aktionen ihre Mitglieder ausführen dürfen, ergibt sich aus deren Berechtigungen.
             </ElementEditorSectionHeader>
 
             <ProcessSettingsDialogAccessControlMatrix

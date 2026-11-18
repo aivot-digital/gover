@@ -33,9 +33,13 @@ export function ChipInputFieldView(props: BaseViewProps<ChipInputFieldElement, s
             required={element.required ?? undefined}
             disabled={isDisabled}
             readOnly={isBusy}
+            busy={isBusy}
             suggestions={element.suggestions ?? undefined}
             allowDuplicates={element.allowDuplicates ?? undefined}
             maxItems={element.maxItems ?? undefined}
+            minItems={element.minItems ?? undefined}
+            maxItemLength={element.maxItemLength ?? undefined}
+            pasteSeparators={element.pasteSeparators}
         />
     );
 }

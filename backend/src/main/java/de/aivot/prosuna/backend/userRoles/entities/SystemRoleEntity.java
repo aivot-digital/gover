@@ -9,10 +9,11 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.util.List;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "system_roles")
-public class SystemRoleEntity {
+public class SystemRoleEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "system_roles_id_seq";
 
     @Id
@@ -45,6 +46,11 @@ public class SystemRoleEntity {
     @Nonnull
     @Column(nullable = false)
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signales
 
@@ -120,6 +126,17 @@ public class SystemRoleEntity {
 
     public SystemRoleEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public SystemRoleEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

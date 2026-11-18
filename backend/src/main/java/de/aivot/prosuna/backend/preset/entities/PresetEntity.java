@@ -7,10 +7,11 @@ import org.hibernate.validator.constraints.Length;
 
 import java.time.Instant;
 import java.util.UUID;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "presets")
-public class PresetEntity {
+public class PresetEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(columnDefinition = "uuid")
@@ -37,6 +38,11 @@ public class PresetEntity {
 
     @Nullable
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Constructors
 
@@ -147,6 +153,17 @@ public class PresetEntity {
 
     public PresetEntity setVersionCount(@Nonnull Integer versionCount) {
         this.versionCount = versionCount;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public PresetEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

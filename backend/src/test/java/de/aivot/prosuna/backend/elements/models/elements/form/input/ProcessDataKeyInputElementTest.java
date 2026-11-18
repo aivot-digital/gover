@@ -25,7 +25,7 @@ class ProcessDataKeyInputElementTest {
 
         var exception = assertThrows(ValidationException.class, () -> element.validate("applicant-name"));
 
-        assertEquals("Verwenden Sie einen Vorgangsdatenpfad wie person.name, items[0].name oder items[*].name.", exception.getMessage());
+        assertEquals("Verwenden Sie einen Datenpfad wie person.name, items[0].name oder items[*].name.", exception.getMessage());
     }
 
     @Test

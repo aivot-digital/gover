@@ -49,7 +49,7 @@ public record PaymentConfigElementValueRequestorMapping(
         validateDestinationKeys(errors);
 
         if (requestorSourceType == null) {
-            errors.put("requestorSourceType", "Es muss eine Quelle für die Antragsteller-Zuweisung ausgewählt werden.");
+            errors.put("requestorSourceType", "Es muss eine Quelle für die Zuordnung der zahlenden Person oder Organisation ausgewählt werden.");
             return errors;
         }
 
@@ -80,7 +80,7 @@ public record PaymentConfigElementValueRequestorMapping(
         }
 
         if (!ProcessDataValueUtils.isValidDestinationKey(destinationKey, false, false)) {
-            errors.put(fieldKey, label + " muss ein gültiger Prozessdaten-Schlüssel sein.");
+            errors.put(fieldKey, label + " muss ein gültiger Datenschlüssel sein.");
         }
     }
 

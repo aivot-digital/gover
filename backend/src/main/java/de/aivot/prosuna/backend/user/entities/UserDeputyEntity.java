@@ -7,10 +7,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "user_deputies")
-public class UserDeputyEntity {
+public class UserDeputyEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "user_deputies_id_seq";
 
     @Id
@@ -35,6 +36,11 @@ public class UserDeputyEntity {
 
     @Nullable
     private LocalDate untilDate;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @Nonnull
     public Integer getId() {
@@ -83,6 +89,17 @@ public class UserDeputyEntity {
 
     public UserDeputyEntity setUntilDate(@Nullable LocalDate untilDate) {
         this.untilDate = untilDate;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public UserDeputyEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

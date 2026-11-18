@@ -15,6 +15,8 @@ public class LinkButtonContentElement extends BaseFormElement {
     @Nullable
     private String label;
     @Nullable
+    private String icon;
+    @Nullable
     private String href;
     @Nullable
     private Boolean openInNewTab;
@@ -38,6 +40,7 @@ public class LinkButtonContentElement extends BaseFormElement {
 
         LinkButtonContentElement that = (LinkButtonContentElement) o;
         return Objects.equals(label, that.label) &&
+                Objects.equals(icon, that.icon) &&
                 Objects.equals(href, that.href) &&
                 Objects.equals(openInNewTab, that.openInNewTab) &&
                 Objects.equals(staffTaskEvent, that.staffTaskEvent) &&
@@ -48,7 +51,7 @@ public class LinkButtonContentElement extends BaseFormElement {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), label, href, openInNewTab, staffTaskEvent, customerTaskEvent, variant, color);
+        return Objects.hash(super.hashCode(), label, icon, href, openInNewTab, staffTaskEvent, customerTaskEvent, variant, color);
     }
 
     @Nullable
@@ -66,6 +69,16 @@ public class LinkButtonContentElement extends BaseFormElement {
 
     public LinkButtonContentElement setLabel(@Nullable String label) {
         this.label = label;
+        return this;
+    }
+
+    @Nullable
+    public String getIcon() {
+        return icon;
+    }
+
+    public LinkButtonContentElement setIcon(@Nullable String icon) {
+        this.icon = icon;
         return this;
     }
 
@@ -139,10 +152,10 @@ public class LinkButtonContentElement extends BaseFormElement {
 
     @Nonnull
     public String getResolvedColor() {
-        if (Objects.equals(color, "secondary")) {
-            return color;
-        }
-        return DEFAULT_COLOR;
+        return switch (color) {
+            case "secondary", "success", "info", "warning", "error" -> color;
+            case null, default -> DEFAULT_COLOR;
+        };
     }
 
     public LinkButtonContentElement setColor(@Nullable String color) {

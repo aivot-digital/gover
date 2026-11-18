@@ -18,6 +18,7 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
             <TextFieldComponent
                 value={props.element.src ?? ''}
                 label="URL (Link zur Grafikdatei)"
+                hint="Wählen Sie ein Bild aus Dateien und Medien oder geben Sie eine erreichbare Bild-URL an."
                 onChange={(val) => {
                     props.onPatch({
                         src: val,
@@ -26,7 +27,7 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
                 disabled={!props.editable}
                 endAction={{
                     icon: <ImageSearchOutlinedIcon />,
-                    tooltip: 'Bild suchen',
+                    tooltip: 'Bild aus Dateien und Medien auswählen',
                     onClick: () => {
                         setShowImageSearch(true);
                     },
@@ -68,8 +69,8 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
                                 alt: val,
                             });
                         }}
-                        hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
-                        error={isStringNullOrEmpty(props.element.alt) && isStringNotNullOrEmpty(props.element.src) ? 'Im Sinne der Barrierefreiheit sollten Sie immer einen Alternativtext für das Bild angeben.' : undefined}
+                        hint="Beschreiben Sie den relevanten Bildinhalt kurz und aussagekräftig. Der Alternativtext unterstützt die Nutzung mit Screenreadern."
+                        error={isStringNullOrEmpty(props.element.alt) && isStringNotNullOrEmpty(props.element.src) ? 'Bitte geben Sie einen aussagekräftigen Alternativtext für das Bild an.' : undefined}
                         disabled={!props.editable}
                     />
                 </Grid>

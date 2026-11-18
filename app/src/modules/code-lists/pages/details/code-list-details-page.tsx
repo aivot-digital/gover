@@ -93,7 +93,7 @@ export function CodeListDetailsPage(): ReactNode {
                                     Codelisten bündeln wiederverwendbare Auswahlwerte für Formulare, Prozesse und Schnittstellen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Jede Codeliste legt fest, welche Beschriftung Benutzer:innen angezeigt wird und welcher technische Wert gespeichert oder weitergegeben wird.
+                                    Jede Codeliste legt fest, welche Beschriftung ausfüllenden Personen angezeigt wird und welcher technische Wert gespeichert oder weitergegeben wird.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Einträge können manuell gepflegt oder aus XRepository bzw. einer CSV-Datei synchronisiert werden.

@@ -99,14 +99,20 @@ public class KeyCloakApiService {
         // Extract the created user ID from the Location header because no http body is returned
         var location = response.getHeaders().getFirst("Location");
         if (location == null || location.isEmpty()) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in Das Mitarbeiter:innen-Profil steht nach der nächsten Synchronisation zur Verfügung.");
+            throw ResponseException.internalServerError("Die Anfrage zur Kontoanlage wurde an den Identitätsanbieter übermittelt, die Kennung des Kontos konnte jedoch nicht ermittelt werden. Prüfen Sie beim Identitätsanbieter, ob das Konto angelegt wurde, bevor Sie die Anlage erneut ausführen.");
         }
 
         String createdUserId = location
                 .substring(location.lastIndexOf("/") + 1);
 
-        return retrieveUser(createdUserId)
-                .orElseThrow(() -> ResponseException.internalServerError("Die Mitarbeiter:in konnte nach der Erstellung nicht geladen werden."));
+        var lookupFailureMessage = "Die Anfrage zur Kontoanlage wurde an den Identitätsanbieter übermittelt, das Konto konnte anschließend jedoch nicht geladen werden. Prüfen Sie beim Identitätsanbieter, ob das Konto angelegt wurde, bevor Sie die Anlage erneut ausführen.";
+        final Optional<KeycloakUser> createdUser;
+        try {
+            createdUser = retrieveUser(createdUserId);
+        } catch (ResponseException e) {
+            throw ResponseException.internalServerError(lookupFailureMessage, e);
+        }
+        return createdUser.orElseThrow(() -> ResponseException.internalServerError(lookupFailureMessage));
     }
 
     public Collection<KeycloakUser> listUsers() throws ResponseException {
@@ -347,9 +353,9 @@ public class KeyCloakApiService {
             case "error-person-name-invalid-length" ->
                     String.format("Der eingegebene Wert für „%s“ ist zu kurz oder zu lang.", fieldName);
             case "error-user-attribute-required" ->
-                    String.format("Bitte das Feld „%s“ ausfüllen.", fieldName);
+                    String.format("Bitte füllen Sie das Feld „%s“ aus.", fieldName);
             case "error-invalid-email" ->
-                    "Bitte eine gültige E-Mail-Adresse angeben.";
+                    "Bitte geben Sie eine gültige E-Mail-Adresse an.";
             case "error-email-exists", "error-username-exists", "error-user-attribute-duplicate-email" ->
                     "Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.";
             default ->

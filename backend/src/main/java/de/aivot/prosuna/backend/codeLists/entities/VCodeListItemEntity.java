@@ -33,6 +33,9 @@ public class VCodeListItemEntity {
     @Nonnull
     private String label;
 
+    @Nonnull
+    private Long lockVersion;
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -114,6 +117,16 @@ public class VCodeListItemEntity {
 
     public VCodeListItemEntity setLabel(@Nonnull String label) {
         this.label = label;
+        return this;
+    }
+
+    @Nonnull
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public VCodeListItemEntity setLockVersion(@Nonnull Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

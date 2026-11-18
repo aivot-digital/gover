@@ -69,7 +69,7 @@ export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindH
         details: (
             <>
                 <Typography gutterBottom>
-                    Diese Option greift auf Geschützte Vorgangsdaten (`$$`) zu.
+                    Diese Option greift auf geschützte Vorgangsdaten (`$$`) zu.
                 </Typography>
                 <Typography>
                     Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.

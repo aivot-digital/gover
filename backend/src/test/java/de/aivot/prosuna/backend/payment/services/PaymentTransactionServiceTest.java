@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.repositories.PaymentTransactionRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,7 +82,8 @@ class PaymentTransactionServiceTest {
         var source = new DriverManagerDataSource("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
         service = new PaymentTransactionService(
                 List.of(listener), mock(ProsunaConfig.class), repository, mock(AuditService.class, RETURNS_DEEP_STUBS),
-                definitions, providers, configuration, new DataSourceTransactionManager(source)
+                definitions, providers, configuration, new DataSourceTransactionManager(source),
+                new SimpleMeterRegistry()
         );
     }
 

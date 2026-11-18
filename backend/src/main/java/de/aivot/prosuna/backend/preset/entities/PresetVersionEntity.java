@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.preset.entities;
 import de.aivot.prosuna.backend.core.converters.GroupLayoutConverter;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.preset.enums.PresetStatus;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @Entity
 @IdClass(PresetVersionEntityId.class)
 @Table(name = "preset_versions")
-public class PresetVersionEntity {
+public class PresetVersionEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(columnDefinition = "uuid")
@@ -44,6 +45,11 @@ public class PresetVersionEntity {
 
     @Nullable
     private Instant revoked;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     public PresetVersionEntity() {}
 
@@ -180,6 +186,17 @@ public class PresetVersionEntity {
 
     public PresetVersionEntity setRevoked(@Nullable Instant revoked) {
         this.revoked = revoked;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public PresetVersionEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

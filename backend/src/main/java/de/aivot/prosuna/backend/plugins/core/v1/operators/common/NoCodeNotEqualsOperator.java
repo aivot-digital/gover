@@ -13,7 +13,7 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
 
     @Override
     public String getLabel() {
-        return "Ist nicht Gleich";
+        return "Ist nicht gleich";
     }
 
     @Override
@@ -25,28 +25,28 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Ist Nicht Gleich“** prüft, ob zwei Werte **nicht gleich** sind. \s
+                Der Operator **„Ist nicht gleich“** prüft, ob zwei Werte **nicht gleich** sind. \s
                 Das Ergebnis ist **wahr** (true), wenn die beiden Werte **unterschiedlich** sind. \s
                 Sind die beiden Werte identisch, ergibt der Operator den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob die eingegebene Postleitzahl **nicht** der erwarteten Postleitzahl entspricht.
                 
-                Mit dem Operator **„Ist Nicht Gleich“** wird diese Logik so formuliert: \s
+                Mit dem Operator **„Ist nicht gleich“** wird diese Logik so formuliert: \s
                 `Eingabe Postleitzahl IST NICHT GLEICH Erwartete Postleitzahl`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn die eingegebene Postleitzahl von der erwarteten Postleitzahl abweicht, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn die eingegebene Postleitzahl der erwarteten Postleitzahl entspricht, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Ist Nicht Gleich“-Operator
+                # Wahrheitswerte für den „Ist nicht gleich“-Operator
                 - **10 IST NICHT GLEICH 20** → **wahr** \s
                 - **10 IST NICHT GLEICH 10** → **falsch** \s
                 - **"Hallo" IST NICHT GLEICH "Welt"** → **wahr** \s
                 - **"Hallo" IST NICHT GLEICH "Hallo"** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Ist Nicht Gleich“?
-                Verwenden Sie **„Ist Nicht Gleich“**, wenn Sie prüfen möchten, ob zwei Werte **nicht identisch** sind. \s
+                # Wann verwenden Sie den Operator „Ist nicht gleich“?
+                Verwenden Sie **„Ist nicht gleich“**, wenn Sie prüfen möchten, ob zwei Werte **nicht identisch** sind. \s
                 Dieser Operator ist besonders hilfreich, um Abweichungen zu erkennen, z. B. bei Validierungen, Vergleichen oder wenn eine Übereinstimmung ausgeschlossen werden soll.
                 """;
     }

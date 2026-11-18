@@ -1,6 +1,6 @@
 package de.aivot.prosuna.backend.javascript.providers;
 
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
 import de.aivot.prosuna.backend.plugins.core.v1.javascript.XRepositoryCodelistJavascriptV1;
@@ -49,7 +49,7 @@ class XRepositoryCodelistJavascriptPluginTest {
     void getOptions() {
         try (var jsService = new JavascriptEngine(new XRepositoryCodelistJavascriptV1(codeListService))) {
             when(codeListService.getRadioFieldOptionCodeList("urn:test"))
-                    .thenReturn(List.of(RadioInputElementOption.of("001", "Berlin")));
+                    .thenReturn(List.of(SelectInputElementOption.of("001", "Berlin")));
 
             var result = jsService.evaluateCode(new JavascriptCode().setCode("""
                     const options = _xrp_codelists_v1.getOptions('urn:test');

@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators.list;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import org.junit.jupiter.api.Test;
@@ -164,5 +166,67 @@ class NoCodeListOperatorsTest {
         var operators = new CommonOperatorsV1(null, null, businessTime).getOperators();
 
         assertTrue(Arrays.stream(operators).anyMatch(NoCodeListCountOperator.class::isInstance));
+    }
+
+    @Test
+    void listContainsAllShouldRequireEverySearchedValue() throws NoCodeException {
+        var operator = new NoCodeListContainsAllOperator();
+        var data = runtime();
+
+        assertTrue(operator.evaluate(data, List.of("A", "B", "C"), List.of("C", "A")).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("A", "B"), List.of("A", "D")).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, List.of("A"), List.of()).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of(), List.of("A")).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, List.of(new BigDecimal("1.0"), 2), List.of("1", 2)).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, Arrays.asList("A", null), Arrays.asList((Object) null)).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("A"), Arrays.asList((Object) null)).getValueAsBoolean());
+    }
+
+    /**
+     * Legacy chip and attachment-set conditions: Includes with a list means "contains all", NotIncludes with a list
+     * means "contains none", and a single compared value means membership.
+     */
+    @Test
+    void listOperatorsShouldMatchLegacyChipConditions() throws NoCodeException {
+        var element = new ChipInputElement();
+        var data = runtime();
+        var containsAll = new NoCodeListContainsAllOperator();
+        var overlaps = new NoCodeListOverlapsOperator();
+        var contains = new NoCodeListContainsOperator();
+        var selected = List.of("rot", "grün", "blau");
+
+        for (var compared : List.of(List.of("rot"), List.of("rot", "blau"), List.of("rot", "gelb"), List.of("gelb"), List.<String>of())) {
+            assertEquals(
+                    element.evaluate(ConditionOperator.Includes, selected, compared),
+                    containsAll.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "Includes " + compared
+            );
+            assertEquals(
+                    element.evaluate(ConditionOperator.NotIncludes, selected, compared),
+                    !overlaps.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "NotIncludes " + compared
+            );
+        }
+
+        for (var compared : List.of("rot", "gelb")) {
+            assertEquals(
+                    element.evaluate(ConditionOperator.Includes, selected, compared),
+                    contains.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "Includes " + compared
+            );
+            assertEquals(
+                    element.evaluate(ConditionOperator.NotIncludes, selected, compared),
+                    !contains.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "NotIncludes " + compared
+            );
+        }
+    }
+
+    @Test
+    void commonOperatorsShouldIncludeListContainsAll() {
+        var businessTime = new BusinessTime(ZoneId.of("Europe/Berlin"), Clock.systemUTC());
+        var operators = new CommonOperatorsV1(null, null, businessTime).getOperators();
+
+        assertTrue(Arrays.stream(operators).anyMatch(NoCodeListContainsAllOperator.class::isInstance));
     }
 }

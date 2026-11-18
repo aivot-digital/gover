@@ -22,13 +22,13 @@ public class AiPlugin implements Plugin {
 
     @Override
     public @Nonnull String getName() {
-        return "Prosuna AI-Funktionen";
+        return "Prosuna KI-Funktionen";
     }
 
     @Override
     public @Nonnull String getDescription() {
         return """
-                Dieses Plugin enthält AI-Funktionen von Prosuna.
+                Diese Erweiterung stellt Prozesselemente für KI-Anfragen und die Transformation von Vorgangsdaten mit KI bereit.
                 """;
     }
 

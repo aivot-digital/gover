@@ -6,7 +6,7 @@ export enum CodeListStatus {
 }
 
 export const CodeListStatusLabels: Record<CodeListStatus, string> = {
-    [CodeListStatus.SyncPending]: 'Synchronisation ausstehend',
+    [CodeListStatus.SyncPending]: 'Synchronisierung ausstehend',
     [CodeListStatus.Syncing]: 'Synchronisierung läuft',
     [CodeListStatus.Synced]: 'Synchronisiert',
     [CodeListStatus.SyncFailed]: 'Synchronisierung fehlgeschlagen',

@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.customLink.entities;
 
 import de.aivot.prosuna.backend.customLink.converters.CustomLinkTypeConverter;
 import de.aivot.prosuna.backend.customLink.enums.CustomLinkType;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -13,6 +14,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,7 +23,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "custom_links")
-public class CustomLink {
+public class CustomLink implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "custom_links_id_seq";
 
     @Id
@@ -67,6 +69,11 @@ public class CustomLink {
 
     @NotNull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @PrePersist
     public void prePersist() {
@@ -159,5 +166,16 @@ public class CustomLink {
 
     public Instant getUpdated() {
         return updated;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public CustomLink setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
+        return this;
     }
 }

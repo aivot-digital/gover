@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.payment.dtos;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import java.util.UUID;
 
@@ -22,7 +23,9 @@ public record PaymentProviderResponseDTO(
         @Nonnull
         Boolean isEnabled,
         @Nonnull
-        AuthoredElementValues config
+        AuthoredElementValues config,
+        @Nullable
+        Long lockVersion
 ) {
     @Nonnull
     public static PaymentProviderResponseDTO fromEntity(
@@ -37,7 +40,8 @@ public record PaymentProviderResponseDTO(
                 entity.getPaymentProviderDefinitionVersion(),
                 entity.getTestProvider(),
                 entity.getIsEnabled(),
-                entity.getConfig()
+                entity.getConfig(),
+                entity.getLockVersion()
         );
     }
 }

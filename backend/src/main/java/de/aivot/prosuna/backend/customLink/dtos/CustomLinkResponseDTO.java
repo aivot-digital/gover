@@ -17,7 +17,8 @@ public record CustomLinkResponseDTO(
         int position,
         boolean enabled,
         @Nonnull Instant created,
-        @Nonnull Instant updated
+        @Nonnull Instant updated,
+        @Nullable Long lockVersion
 ) {
     public static CustomLinkResponseDTO fromEntity(CustomLink entity) {
         return new CustomLinkResponseDTO(
@@ -30,7 +31,8 @@ public record CustomLinkResponseDTO(
                 entity.getPosition(),
                 entity.getEnabled(),
                 entity.getCreated(),
-                entity.getUpdated()
+                entity.getUpdated(),
+                entity.getLockVersion()
         );
     }
 }

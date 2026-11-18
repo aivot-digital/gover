@@ -28,6 +28,7 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     public UserDeputyEntity create(@Nonnull UserDeputyEntity entity) throws ResponseException {
         validateDateRange(entity);
         entity.setId(null);
+        validateNoCycle(entity);
         return repository.save(entity);
     }
 
@@ -73,6 +74,7 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
                 .setUntilDate(entity.getUntilDate());
 
         validateDateRange(existingEntity);
+        validateNoCycle(existingEntity);
         return repository.save(existingEntity);
     }
 
@@ -84,6 +86,18 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     private void validateDateRange(@Nonnull UserDeputyEntity entity) throws ResponseException {
         if (!DeputyDateRange.isValid(entity.getFromDate(), entity.getUntilDate())) {
             throw ResponseException.badRequest("Das Ende der Vertretung darf nicht vor dem Start der Vertretung liegen.");
+        }
+    }
+
+    private void validateNoCycle(@Nonnull UserDeputyEntity entity) throws ResponseException {
+        if (repository.createsCycle(
+                entity.getOriginalUserId(),
+                entity.getDeputyUserId(),
+                entity.getFromDate(),
+                entity.getUntilDate(),
+                entity.getId()
+        )) {
+            throw ResponseException.conflict("Die Stellvertretung kann nicht gespeichert werden: Im gewählten Zeitraum wird die ausgewählte Stellvertreter:in bereits von dieser Mitarbeiter:in vertreten, direkt oder über weitere Stellvertretungen. Wählen Sie eine andere Stellvertreter:in oder einen anderen Zeitraum.");
         }
     }
 }

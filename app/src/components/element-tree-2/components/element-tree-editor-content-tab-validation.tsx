@@ -230,8 +230,9 @@ export function ElementTreeEditorContentTabValidation() {
                                                     <Actions
                                                         actions={[
                                                             {
+                                                                color: 'error',
                                                                 icon: <Delete/>,
-                                                                tooltip: 'Delete Expression',
+                                                                tooltip: 'Ausdruck löschen',
                                                                 onClick: () => {
                                                                     const updatedValidationExpressions = [
                                                                         ...(validation.noCodeList ?? []),

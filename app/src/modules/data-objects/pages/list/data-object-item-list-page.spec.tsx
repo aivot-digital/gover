@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../../data/element-type/element-type';
+import {DurationLargestUnit} from '../../../../models/elements/form/input/duration-field-element';
 import {type GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {type DataObjectSchema} from '../../models/data-object-schema';
 import {type DataObjectItem} from '../../models/data-object-item';
@@ -22,6 +23,27 @@ function displayValue(type: ElementType, value: unknown, properties = {}) {
 
 describe('Data-object display columns', () => {
     it.each([
+        [undefined, '27 Stunden 30 Minuten'],
+        [DurationLargestUnit.Day, '1 Tag 3 Stunden 30 Minuten'],
+    ])('keeps duration values numeric for sorting with largest unit %s', (largestUnit, display) => {
+        const schema = {
+            key: 'work', displayFields: ['duration'],
+            schema: {
+                type: ElementType.GroupLayout, id: 'root',
+                children: [{type: ElementType.Duration, id: 'duration', label: 'Aufwand', largestUnit}],
+            },
+        } as DataObjectSchema;
+        const column = dataObjectSchemaExtractDisplayFields(schema)[0];
+        const row: DataObjectItem = {
+            id: '1', schemaKey: 'work', data: {duration: 99000}, created: '', updated: '',
+        };
+        const value = column.valueGetter!(undefined as never, row, column, undefined as never);
+        expect(column.type).toBe('number');
+        expect(value).toBe(99000);
+        expect(column.valueFormatter!(value as never, row, column, undefined as never)).toBe(display);
+    });
+
+    it.each([
         [ElementType.Text, 'Erika Musterfrau', 'Erika Musterfrau'],
         [ElementType.Date, '2021-05-17', '17.05.2021'],
         [ElementType.DataObjectSelect, 'kita-1', 'kita-1'],
@@ -35,7 +57,7 @@ describe('Data-object display columns', () => {
         expect(displayValue(type as ElementType, value)).toEqual(expected);
     });
 
-    it.each([ElementType.Select, ElementType.Radio, ElementType.MultiCheckbox])('resolves option labels for type %s', (type) => {
+    it.each([ElementType.Select, ElementType.MultiCheckbox])('resolves option labels for type %s', (type) => {
         const value = type === ElementType.MultiCheckbox ? ['kita-1'] : 'kita-1';
         expect(displayValue(type, value, {
             options: [{value: 'kita-1', label: 'Kita Sonnenschein'}],

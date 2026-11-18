@@ -1,8 +1,10 @@
+import {PhoneNumberFieldElement} from './phone-number-field-element';
+import {EmailFieldElement} from './email-field-element';
+import {DurationFieldElement} from './duration-field-element';
 import {CheckboxFieldElement} from './checkbox-field-element';
 import {DateFieldElement} from './date-field-element';
 import {MultiCheckboxFieldElement} from './multi-checkbox-field-element';
 import {NumberFieldElement} from './number-field-element';
-import {RadioFieldElement} from './radio-field-element';
 import {SelectFieldElement} from './select-field-element';
 import {TableFieldElement} from './table-field-element';
 import {TextFieldElement} from './text-field-element';
@@ -42,7 +44,9 @@ export type AnyInputElement = (
     DateFieldElement |
     MultiCheckboxFieldElement |
     NumberFieldElement |
-    RadioFieldElement |
+    PhoneNumberFieldElement |
+    EmailFieldElement |
+    DurationFieldElement |
     SelectFieldElement |
     TableFieldElement |
     TextFieldElement |

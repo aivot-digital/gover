@@ -47,7 +47,7 @@ public class AssetStorageProviderController {
     @GetMapping("")
     @Operation(
             summary = "List asset storage providers",
-            description = "Lists storage providers that can be used in Dateien & Medien. " +
+            description = "Lists storage providers that can be used in Dateien und Medien. " +
                     "Returns only asset UI metadata and requires the system-level permission `" +
                     AssetPermissionProvider.ASSET_READ + "`."
     )
@@ -86,7 +86,7 @@ public class AssetStorageProviderController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
         if (storageProvider.getType() != StorageProviderType.Assets) {
-            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Asset-Speicher.");
+            throw ResponseException.forbidden("Der angegebene Speicheranbieter ist kein Speicher für Dateien und Medien.");
         }
         return storageProvider;
     }

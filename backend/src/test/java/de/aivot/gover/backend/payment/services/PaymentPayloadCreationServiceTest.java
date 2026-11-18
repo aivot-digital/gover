@@ -466,6 +466,46 @@ class PaymentPayloadCreationServiceTest {
     }
 
     @Test
+    void shouldInsertProcessDataAsTextForThePaymentProvider() throws PaymentException {
+        var config = new PaymentConfigElementValue(
+                null,
+                "Antrag von {{ $.name }}",
+                "Für {{ $.name }}",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "fee",
+                        "Gebühr für {{ $.name }}",
+                        "AZ {{ $.name }}",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        BigDecimal.TEN,
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        BigDecimal.ZERO,
+                        null
+                )),
+                null,
+                null
+        );
+        var processData = new ProcessExecutionData().addProcessData("name", "O'Brien & Söhne\nGmbH");
+
+        var payload = createService().createRequest(config, null, processData).orElseThrow();
+
+        // Payment providers receive plain text. Only the descriptions keep their line breaks.
+        assertEquals("Antrag von O'Brien & Söhne GmbH", payload.getPurpose());
+        assertEquals("Für O'Brien & Söhne\nGmbH", payload.getDescription());
+        assertEquals("AZ O'Brien & Söhne GmbH", payload.getPaymentItems().getFirst().getReference());
+        assertEquals("Gebühr für O'Brien & Söhne\nGmbH", payload.getPaymentItems().getFirst().getDescription());
+    }
+
+    @Test
     void shouldRejectRequestsWithoutPayableItems() {
         var config = new PaymentConfigElementValue(
                 null,

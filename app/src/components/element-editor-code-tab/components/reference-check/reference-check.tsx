@@ -232,7 +232,8 @@ function getLowCodeReferencedIds(code: string): string[] {
     }
 
     const explicitReferencePattern = />>>([a-zA-Z0-9_-]+)/g;
-    const implicitRegexPattern = /ctx\.([a-zA-Z0-9_-]+)/g;
+    // Matches the implicit references the backend detects in JavascriptCode.getReferencedIds.
+    const implicitRegexPattern = /ctx\.(?:effectiveValues|elementStates)\.([a-zA-Z0-9_-]+)/g;
 
     const ids = new Set<string>();
 

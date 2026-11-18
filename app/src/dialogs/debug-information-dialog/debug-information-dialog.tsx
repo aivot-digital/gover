@@ -453,8 +453,8 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             <DialogContent>
                 <Typography sx={{maxWidth: 900}}>
                     Diese Informationen helfen dem technischen Support bei der Fehleranalyse.
-                    Enthalten sind System-, Browser-, Health- und Benutzerinformationen.
-                    Plugininformationen werden bei vorhandener Berechtigung ergänzt.
+                    Enthalten sind System-, Browser-, Health- und Kontoinformationen.
+                    Informationen zu Erweiterungen werden bei vorhandener Berechtigung ergänzt.
                     Prüfen Sie vor dem Teilen, ob sensible Daten enthalten sind.
                 </Typography>
 

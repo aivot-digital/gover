@@ -55,7 +55,7 @@ export function useDeleteProcess(): (process: ProcessEntity, options?: DeletePro
 
             loadingStarted = true;
             dispatch(setLoadingMessage({
-                message: 'Lösche Prozess',
+                message: 'Prozess wird gelöscht',
                 blocking: false,
                 estimatedTime: 1200,
             }));

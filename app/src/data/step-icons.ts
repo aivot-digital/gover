@@ -85,7 +85,7 @@ export const StepIcons: StepIcon[] = [
 
     // Dokumente & Kommunikation
     {id: 'envelope', def: EmailOutlinedIcon, label: 'E-Mail (Briefumschlag)'},
-    {id: 'attachment', def: AttachFileOutlinedIcon, label: 'Anhang (Büroklammer)'},
+    {id: 'attachment', def: AttachFileOutlinedIcon, label: 'Anlage (Büroklammer)'},
     {id: 'document', def: InsertDriveFileOutlinedIcon, label: 'Dokument (Dateiblatt)'},
     {id: 'dialogue', def: QuestionAnswerOutlinedIcon, label: 'Rückfrage (Sprechblasen)'},
     {id: 'bookmark', def: BookmarkBorderOutlinedIcon, label: 'Lesezeichen (Marker)'},

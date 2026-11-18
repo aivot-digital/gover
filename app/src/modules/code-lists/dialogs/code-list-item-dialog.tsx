@@ -15,7 +15,7 @@ interface CodeListItemDialogProps {
     onSave: (columns: string[]) => void;
 }
 
-const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
+const CodeListLabelColumnHint = 'Der Anzeigename, der für ausfüllende Personen angezeigt wird.';
 const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben wird.';
 
 function getCodeListColumnHint(

@@ -16,10 +16,12 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.xrepository.models.XRepositoryCodeList;
 import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.siegmar.fastcsv.reader.CsvParseException;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRecord;
 import de.siegmar.fastcsv.writer.CsvWriter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     private final AssetService assetService;
     private final StorageService storageService;
     private final TransactionTemplate transaction;
+    private final MeterRegistry meterRegistry;
 
 
     @Autowired
@@ -58,8 +61,10 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             XRepositoryCodeListService xRepositoryCodeListService,
             AssetService assetService,
             StorageService storageService,
-            PlatformTransactionManager transactionManager
+            PlatformTransactionManager transactionManager,
+            MeterRegistry meterRegistry
     ) {
+        this.meterRegistry = meterRegistry;
         this.codeListRepository = codeListRepository;
         this.codeListItemRepository = codeListItemRepository;
         this.vCodeListItemRepository = vCodeListItemRepository;
@@ -73,6 +78,8 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     @Override
     public CodeListEntity create(@Nonnull CodeListEntity entity) throws ResponseException {
         entity.setId(null);
+        // A lock version from the request would make Spring Data look for a row that does not exist yet.
+        entity.setLockVersion(null);
         entity.setCreated(Instant.now());
         entity.setUpdated(Instant.now());
         normalizeCodeList(entity);
@@ -174,6 +181,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
 
             var recorded = transaction.execute(status -> recordSync(codeListKey, runId, codeList, importedItems));
             if (Boolean.TRUE.equals(recorded)) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "success").increment();
                 return false;
             }
         } catch (Exception e) {
@@ -185,6 +193,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                     Instant.now()
             );
             if (failed == 1) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "failed").increment();
                 return false;
             }
         }
@@ -319,6 +328,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         var existingItem = codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(item, existingItem);
 
         existingItem.setColumns(normalizeItemColumns(codeList, item.getColumns()));
         codeListItemRepository.save(existingItem);
@@ -619,7 +629,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         try {
             return UUID.fromString(sourceRef);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.badRequest("Die Asset-Referenz der Codeliste ist keine gültige UUID.", e);
+            throw ResponseException.badRequest("Die Dateireferenz der Codeliste ist keine gültige UUID.", e);
         }
     }
 

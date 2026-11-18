@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.dataObject.entities;
 
 import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -12,7 +13,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "data_object_items")
 @IdClass(DataObjectItemEntityId.class)
-public class DataObjectItemEntity {
+public class DataObjectItemEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(length = 64)
@@ -36,6 +37,11 @@ public class DataObjectItemEntity {
 
     @Nullable
     private Instant deleted;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @PrePersist
     public void prePersist() {
@@ -127,6 +133,17 @@ public class DataObjectItemEntity {
         return this;
     }
 
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public DataObjectItemEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
+        return this;
+    }
 
     // endregion
 }

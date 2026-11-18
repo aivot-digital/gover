@@ -1,8 +1,12 @@
+import PhoneOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Call';
+import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
+import TimerOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Timer';
 import {ElementType} from './element-type';
 import MenuOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Menu';
 import ExpandOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Expand';
 import ImageOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Image';
 import NotesOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Notes';
+import EditNoteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EditNote';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import TextFieldsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/TextFields';
 import NumbersOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Numbers';
@@ -33,7 +37,7 @@ import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import FolderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
-import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import TouchAppOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/TouchApp';
 import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 
 import {type AnyElement} from '../../models/elements/any-element';
@@ -53,9 +57,11 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Headline]: TitleOutlinedIcon,
     [ElementType.MultiCheckbox]: ChecklistOutlinedIcon,
     [ElementType.Number]: NumbersOutlinedIcon,
+    [ElementType.Duration]: TimerOutlinedIcon,
+    [ElementType.PhoneNumber]: PhoneOutlinedIcon,
+    [ElementType.Email]: EmailOutlinedIcon,
     [ElementType.ReplicatingContainer]: PlaylistAddOutlinedIcon,
     [ElementType.RichText]: NotesOutlinedIcon,
-    [ElementType.Radio]: CheckCircleOutlineOutlinedIcon,
     [ElementType.Select]: ListAltOutlinedIcon,
     [ElementType.Spacer]: ExpandOutlinedIcon,
     [ElementType.Table]: TableChartOutlinedIcon,
@@ -71,7 +77,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.ConfigLayout]: UploadFileOutlinedIcon,
     [ElementType.FunctionInput]: UploadFileOutlinedIcon,
     [ElementType.CodeInput]: CodeOutlinedIcon,
-    [ElementType.RichTextInput]: UploadFileOutlinedIcon,
+    [ElementType.RichTextInput]: EditNoteOutlinedIcon,
     [ElementType.UiDefinitionInput]: Dashboard2,
     [ElementType.IdentityConfigElement]: UploadFileOutlinedIcon,
     [ElementType.TabLayout]: UploadFileOutlinedIcon,
@@ -97,7 +103,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.StoragePathSelector]: FolderOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,
     [ElementType.PaymentConfigElement]: PaymentsOutlinedIcon,
-    [ElementType.LinkButton]: LinkOutlinedIcon,
+    [ElementType.LinkButton]: TouchAppOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): SvgIconComponent {

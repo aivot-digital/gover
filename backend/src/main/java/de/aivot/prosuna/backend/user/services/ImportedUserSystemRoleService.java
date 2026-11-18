@@ -120,10 +120,10 @@ public class ImportedUserSystemRoleService {
 
         var systemRoleId = configEntity
                 .getValueAsInteger()
-                .orElseThrow(() -> ResponseException.internalServerError("Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte ist ungültig."));
+                .orElseThrow(() -> ResponseException.internalServerError("Die konfigurierte Standard-Systemrolle für automatische Kontoimporte ist ungültig."));
 
         if (!systemRoleRepository.existsById(systemRoleId)) {
-            throw ResponseException.internalServerError("Die konfigurierte Standard-Systemrolle für automatische Benutzerimporte existiert nicht.");
+            throw ResponseException.internalServerError("Die konfigurierte Standard-Systemrolle für automatische Kontoimporte existiert nicht.");
         }
 
         return systemRoleId;

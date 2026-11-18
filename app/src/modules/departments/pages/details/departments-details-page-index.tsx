@@ -155,7 +155,7 @@ const validateOptionalContactPhone = (legacyValue?: string | null) => optionalSh
 const validateThemeId = () => yup.number()
     .optional()
     .nullable()
-    .test('valid-theme', 'Bitte wählen Sie ein Standard-Theme aus oder übernehmen Sie den geerbten Wert.', (value) => {
+    .test('valid-theme', 'Bitte wählen Sie ein Standard-Erscheinungsbild aus oder übernehmen Sie den geerbten Wert.', (value) => {
         return value == null || value > 0;
     });
 
@@ -306,11 +306,11 @@ export function DepartmentsDetailsPageIndex() {
                 if (isApiError(err) && err.status === 403) {
                     if (isEditable) {
                         dispatch(showErrorSnackbar(
-                            `Die verfügbaren Farbschemata konnten nicht geladen werden. Für die Auswahl ist die Berechtigung ${Permission.THEME_READ} erforderlich.`,
+                            `Die verfügbaren Erscheinungsbilder konnten nicht geladen werden. Für die Auswahl ist die Berechtigung ${Permission.THEME_READ} erforderlich.`,
                         ));
                     }
                 } else {
-                    dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Farbschemata.'));
+                    dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Erscheinungsbilder.'));
                 }
                 setAvailableThemes([]);
             });
@@ -694,8 +694,9 @@ export function DepartmentsDetailsPageIndex() {
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Hinterlegen Sie das Standard-Erscheinungsbild, das für Formulare dieser Organisationseinheit verwendet werden soll.
                 Dieses überschreibt das Erscheinungsbild der Prosuna-Instanz.
-                Bearbeiter:innen können für Formulare weiterhin ein individuelles Erscheinungsbild auswählen.
-                Wenn Sie kein Erscheinungsbild auswählen, wird das Erscheinungsbild der Prosuna-Instanz verwendet.
+                Mitarbeiter:innen können für Formulare weiterhin ein individuelles Erscheinungsbild auswählen.
+                Ohne eigene Auswahl wird das Erscheinungsbild der übergeordneten Organisationseinheit verwendet.
+                Ist auch dort keines hinterlegt, gilt das Standard-Erscheinungsbild der Prosuna-Instanz.
             </Typography>
             <Grid
                 container
@@ -753,10 +754,10 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Kontaktinformationen für antragstellende Personen
+                Kontaktinformationen für ausfüllende Personen
             </Typography>
             <Typography sx={{mb: 2}}>
-                Die hier hinterlegten Kontaktinformationen werden Nutzer:innen zum Beispiel im Hilfe-Dialog zur Verfügung gestellt.
+                Die hier hinterlegten Kontaktinformationen werden Beteiligten zum Beispiel im Hilfe-Dialog zur Verfügung gestellt.
             </Typography>
             <Grid
                 container

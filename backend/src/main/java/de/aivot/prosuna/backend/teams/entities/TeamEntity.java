@@ -8,10 +8,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 
 @Entity
 @Table(name = "teams")
-public class TeamEntity {
+public class TeamEntity implements LockVersioned {
     @Id
     @Nonnull
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "teams_id_seq")
@@ -32,6 +33,11 @@ public class TeamEntity {
     @Nonnull
     @Column(nullable = false)
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signales
 
@@ -87,6 +93,17 @@ public class TeamEntity {
 
     public TeamEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public TeamEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

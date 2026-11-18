@@ -31,6 +31,7 @@ describe('AssetSelectInputView', () => {
                         placeholder: 'PEM-Datei auswählen',
                         allowedMimeTypes: ['application/x-pem-file'],
                         assetVisibility: AssetVisibility.Private,
+                        storageProviderId: 7,
                         required: true,
                         disabled: false,
                     },
@@ -50,6 +51,7 @@ describe('AssetSelectInputView', () => {
             placeholder: 'PEM-Datei auswählen',
             mimetype: ['application/x-pem-file'],
             visibility: AssetVisibility.Private,
+            storageProviderId: 7,
             required: true,
             onChange: setValue,
         }));

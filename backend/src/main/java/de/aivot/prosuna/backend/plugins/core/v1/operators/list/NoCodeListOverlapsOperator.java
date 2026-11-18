@@ -37,7 +37,7 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
                 Gibt es keinen gemeinsamen Eintrag, ist das Ergebnis **falsch**.
                 
                 # Anwendungsbeispiel:
-                Angenommen, Sie haben eine Liste mit erlaubten Kategorien und eine zweite Liste mit den vom Nutzer ausgewählten Kategorien. \s
+                Angenommen, Sie haben eine Liste mit erlaubten Kategorien und eine zweite Liste mit den von der Person ausgewählten Kategorien. \s
                 Mit dem Operator **„Listen überschneiden sich“** können Sie prüfen, ob mindestens eine Auswahl zulässig ist:
                 
                 ```text

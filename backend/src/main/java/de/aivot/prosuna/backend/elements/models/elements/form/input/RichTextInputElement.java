@@ -22,6 +22,8 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
     private String content;
     @Nullable
     private Boolean reducedMode;
+    @Nullable
+    private Integer maxCharacters;
 
     public RichTextInputElement() {
         super(ElementType.RichTextInput);
@@ -41,6 +43,12 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
             }
+            return;
+        }
+
+        // The stored Markdown is limited, so formatting characters and link targets count as well.
+        if (maxCharacters != null && maxCharacters > 0 && value.length() > maxCharacters) {
+            throw new ValidationException(this, "Zu viele Zeichen. Maximal " + maxCharacters + " Zeichen erlaubt.");
         }
     }
 
@@ -132,12 +140,13 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
         RichTextInputElement that = (RichTextInputElement) o;
         return Objects.equals(content, that.content)
                 && Objects.equals(reducedMode, that.reducedMode)
+                && Objects.equals(maxCharacters, that.maxCharacters)
                 && Objects.equals(dynamicTextPolicy, that.dynamicTextPolicy);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), content, reducedMode, dynamicTextPolicy);
+        return Objects.hash(super.hashCode(), content, reducedMode, maxCharacters, dynamicTextPolicy);
     }
 
     // endregion
@@ -174,6 +183,16 @@ public class RichTextInputElement extends BaseInputElement<String> implements Pr
 
     public RichTextInputElement setReducedMode(@Nullable Boolean reducedMode) {
         this.reducedMode = reducedMode;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMaxCharacters() {
+        return maxCharacters;
+    }
+
+    public RichTextInputElement setMaxCharacters(@Nullable Integer maxCharacters) {
+        this.maxCharacters = maxCharacters;
         return this;
     }
 

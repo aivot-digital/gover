@@ -12,7 +12,7 @@ import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
-import de.aivot.prosuna.backend.elements.models.elements.form.input.RadioInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -62,7 +62,7 @@ class MailCommunicationProviderV1Test {
         when(mailConfigurationService.getConfiguration()).thenReturn(mailConfiguration("Prosuna", "service@example.test"));
 
         var layout = definition.getConfigLayout();
-        var senderMode = layout.findChild(MailCommunicationProviderV1.SENDER_MODE_FIELD_ID, RadioInputElement.class).orElseThrow();
+        var senderMode = layout.findChild(MailCommunicationProviderV1.SENDER_MODE_FIELD_ID, SelectInputElement.class).orElseThrow();
         var defaultSenderName = layout.findChild(MailCommunicationProviderV1.DEFAULT_SENDER_NAME_FIELD_ID, TextInputElement.class).orElseThrow();
         var defaultSenderAddress = layout.findChild(MailCommunicationProviderV1.DEFAULT_SENDER_ADDRESS_FIELD_ID, TextInputElement.class).orElseThrow();
         var customSenderName = layout.findChild(MailCommunicationProviderV1.CUSTOM_SENDER_NAME_FIELD_ID, TextInputElement.class).orElseThrow();
@@ -198,7 +198,7 @@ class MailCommunicationProviderV1Test {
 
         assertTrue(email.getDisabled());
         assertEquals("customer@example.test", staticValue(email));
-        assertTrue(email.getHint().contains("Nutzerkonto"));
+        assertTrue(email.getHint().contains("Konto"));
     }
 
     @Test
@@ -314,14 +314,14 @@ class MailCommunicationProviderV1Test {
         var message = messageCaptor.getValue();
         assertEquals("Testnachricht", message.subject());
         assertEquals("Dies ist eine Testnachricht.", message.body());
-        assertEquals("<p>Dies ist eine Testnachricht.</p>", message.htmlBody());
+        assertEquals("Dies ist eine Testnachricht.", message.markdownBody());
         assertNotNull(message.timestamp());
         assertEquals(List.of(), message.attachments());
         var alert = result.findChild("mail-testing-result-alert", AlertContentElement.class).orElseThrow();
         assertEquals("mail-testing-result", result.getId());
         assertEquals(AlertType.Success, alert.getAlertType());
         assertEquals("Testnachricht erfolgreich versendet", alert.getTitle());
-        assertEquals("Empfänger: customer@example.test\nBetreff: Testnachricht", alert.getText());
+        assertEquals("Empfangende Person oder Organisation: customer@example.test\nBetreff: Testnachricht", alert.getText());
     }
 
     @Test
@@ -393,7 +393,7 @@ class MailCommunicationProviderV1Test {
         return new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
-                .htmlBody("Body")
+                .markdownBody("Body")
                 .build();
     }
 

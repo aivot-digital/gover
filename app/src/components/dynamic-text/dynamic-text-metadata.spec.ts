@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {
+    getDynamicTextInsertionReference,
     getDynamicTextTokenTitle,
     getDynamicTextVariableReferences,
 } from './dynamic-text-metadata';
@@ -10,6 +11,16 @@ describe('dynamic text metadata', () => {
             '$.count',
             '$.limit',
         ]);
+    });
+
+    it('inserts Markdown values as text unless they keep their formatting', () => {
+        expect(getDynamicTextInsertionReference('$.nachricht', true, 'text')).toBe('_text_v1.fromMarkdown($.nachricht)');
+        expect(getDynamicTextInsertionReference('$.nachricht', true, 'markdown')).toBe('$.nachricht');
+        expect(getDynamicTextInsertionReference('$.vorname', undefined, 'text')).toBe('$.vorname');
+    });
+
+    it('finds the variable inside the Markdown conversion for the token title', () => {
+        expect(getDynamicTextVariableReferences('{{ _text_v1.fromMarkdown($.nachricht) }}')).toEqual(['$.nachricht']);
     });
 
     it('formats available metadata and keeps unknown references visible', () => {

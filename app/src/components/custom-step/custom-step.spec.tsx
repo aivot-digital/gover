@@ -1,6 +1,6 @@
 import React, {createRef} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {Stepper} from '@mui/material';
 import {CustomStep} from './custom-step';
 import {ElementType} from '../../data/element-type/element-type';
@@ -18,6 +18,7 @@ function renderSteps(withContainer = true) {
     const scrollContainerRef = createRef<HTMLDivElement>();
     const stepRefs = {current: [createRef<HTMLDivElement>(), createRef<HTMLDivElement>(), createRef<HTMLDivElement>()]};
     const scroll = vi.fn();
+    const onNext = vi.fn();
     const tree = (active: number, direction?: 'next' | 'previous') => (
         <div ref={scrollContainerRef} style={{height: 400, overflowY: 'auto'}}>
             <div style={{position: 'relative'}}>
@@ -41,6 +42,7 @@ function renderSteps(withContainer = true) {
                             isFirstStep={index === 0}
                             isLastStep={index === 2}
                             isSubmitStep={false}
+                            onNext={onNext}
                             active={active === index}
                             navDirection={direction}
                             stepRefs={stepRefs}
@@ -68,6 +70,7 @@ function renderSteps(withContainer = true) {
     return {
         ...result,
         scroll,
+        onNext,
         container,
         stepRefs,
         navigate: (active: number, direction: 'next' | 'previous') => result.rerender(tree(active, direction)),
@@ -91,7 +94,7 @@ describe('CustomStep scrolling', () => {
         settings.reducedMotion = reducedMotion;
         const windowScroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
         const focus = vi.spyOn(HTMLElement.prototype, 'focus');
-        const {navigate, scroll, container, stepRefs} = renderSteps();
+        const {navigate, scroll, onNext, container, stepRefs} = renderSteps();
         const behavior = reducedMotion ? 'auto' : 'smooth';
         expect(scroll).not.toHaveBeenCalled();
 
@@ -102,6 +105,9 @@ describe('CustomStep scrolling', () => {
         act(() => {vi.runAllTimers();});
         expect(scroll).toHaveBeenLastCalledWith({top: 718, behavior});
         expect(screen.getByRole('heading', {name: 'Step 2'})).toHaveFocus();
+        expect(screen.getByRole('button', {name: 'Angaben übermitteln'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: 'Angaben übermitteln'}));
+        expect(onNext).toHaveBeenCalledOnce();
         expect(focus).toHaveBeenLastCalledWith({preventScroll: true});
 
         scroll.mockClear();

@@ -481,7 +481,7 @@ export function UserDetailsPageIndex() {
                 new UsersApiService()
                     .resetPassword(user.id)
                     .then(() => {
-                        dispatch(showSuccessSnackbar('Der Passwort-Zurücksetzen-Link wurde erfolgreich versendet.'));
+                        dispatch(showSuccessSnackbar('Der Link zum Zurücksetzen des Passworts wurde erfolgreich versendet.'));
                     })
                     .catch((err) => {
                         dispatch(showApiErrorSnackbar(err, 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.'));
@@ -515,7 +515,7 @@ export function UserDetailsPageIndex() {
                         }}
                     >
                         Bei dieser Mitarbeiter:in handelt es sich um einen Beispieldatensatz.<br/>
-                        Eine Änderung der Daten, sowie ein Löschen ist nicht möglich.
+                        Eine Änderung der Daten sowie ein Löschen sind nicht möglich.
                     </AlertComponent>
                 }
 
@@ -587,7 +587,7 @@ export function UserDetailsPageIndex() {
                                 !canReadSystemRoles
                                     ? systemRoleReadDisabledTooltip
                                     : hasSystemRolesLoadingError
-                                    ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an eine Administrator:in.'
+                                    ? 'Die Rollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder wenden Sie sich an Ihre Administration.'
                                     : undefined
                             }
                             error={errors.systemRoleId}
@@ -630,7 +630,7 @@ export function UserDetailsPageIndex() {
                                 my: 3,
                             }}
                         >
-                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
+                            Dieses Konto wurde beim Identitätsanbieter bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
                             Der Datensatz bleibt in Prosuna erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
                         </AlertComponent>
                     ) : (
@@ -652,7 +652,7 @@ export function UserDetailsPageIndex() {
                                     maxWidth: 900
                                 }}>
                                 Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak.
-                                Benutzer-ID:{' '}
+                                Konto-ID:{' '}
                                 <Box
                                     component="span"
                                     sx={{
@@ -786,7 +786,7 @@ export function UserDetailsPageIndex() {
                         color: 'text.secondary',
                     }}
                 >
-                    Das Konto wird im Identity Provider gelöscht und in Prosuna als gelöscht markiert.
+                    Das Konto wird beim Identitätsanbieter gelöscht und in Prosuna als gelöscht markiert.
                     Anschließend sind keine weiteren Anmeldungen oder Passwort-Resets mehr möglich.
                 </Typography>
             </ConfirmDialog>

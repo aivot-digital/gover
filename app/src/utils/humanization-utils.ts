@@ -57,10 +57,10 @@ export function humanizeNumberCapitalized(num: number, overrides?: Record<number
 }
 
 export function pluralize(num: number, singular: string, plural: string): string {
-    if (num > 1) {
-        return plural;
+    if (num === 1) {
+        return singular;
     }
-    return singular;
+    return plural;
 }
 
 export function humanizeMilliseconds(milliseconds: number): string {

@@ -49,7 +49,7 @@ public class SecretJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Geheimnisse.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht den Zugriff auf hinterlegte Geheimnisse.";
     }
 
     @Nonnull

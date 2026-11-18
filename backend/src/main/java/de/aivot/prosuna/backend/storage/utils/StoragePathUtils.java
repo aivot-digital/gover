@@ -28,7 +28,7 @@ public final class StoragePathUtils {
     public static String normalizeDocumentPath(@Nullable String path) throws StorageException {
         var normalizedPath = normalizePath(path);
         if ("/".equals(normalizedPath)) {
-            throw new StorageException("Ein Dokumentpfad darf nicht auf das Stammverzeichnis zeigen.");
+            throw new StorageException("Ein Dateipfad darf nicht auf das Stammverzeichnis zeigen.");
         }
         return trimTrailingSlash(normalizedPath);
     }

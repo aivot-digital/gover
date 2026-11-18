@@ -78,8 +78,8 @@ describe('AssignmentContextFieldComponent', () => {
         expect(screen.queryByText('Wenn dieselbe Aufgabe im Rahmen einer Schleife erneut ausgeführt wird, wird die Bevorzugung bei erneuter Ausführung berücksichtigt.')).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('combobox', {name: /Bevorzugung bei der Zuweisung/}));
-        expect(screen.queryByText('Bevorzuge die dem Vorgang zugewiesene Mitarbeiter:in')).not.toBeInTheDocument();
-        expect(screen.getByText('Bevorzuge Bearbeiter:in des vorherigen Prozessschritts')).toBeInTheDocument();
+        expect(screen.queryByText('Zuständige Person des Vorgangs bevorzugen')).not.toBeInTheDocument();
+        expect(screen.getByText('Zuständige Person des vorherigen Prozessschritts bevorzugen')).toBeInTheDocument();
     });
 
     it('keeps a saved disabled repeat preference hidden without changing it', () => {

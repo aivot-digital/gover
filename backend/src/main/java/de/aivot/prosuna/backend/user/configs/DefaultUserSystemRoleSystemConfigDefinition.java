@@ -48,7 +48,7 @@ public class DefaultUserSystemRoleSystemConfigDefinition implements SystemConfig
     @Nonnull
     @Override
     public String getCategory() {
-        return "Benutzer:innen";
+        return "Mitarbeiter:innen";
     }
 
     @Nonnull

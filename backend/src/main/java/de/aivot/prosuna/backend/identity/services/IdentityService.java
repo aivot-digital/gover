@@ -141,7 +141,7 @@ public class IdentityService {
         var sessionId = StringUtils.isNullOrEmpty(preexistingIdentitySessionId)
                 ? generateSessionId()
                 : preexistingIdentitySessionId;
-        var emailAddress = EmailAddressUtils.normalizeSingleAddress(rawEmailAddress);
+        var emailAddress = EmailAddressUtils.normalizeTransportAddress(rawEmailAddress);
         var identity = new IdentityCacheEntity(
                 generateEntityId(),
                 sessionId,
@@ -270,7 +270,7 @@ public class IdentityService {
                     } catch (NoSuchAlgorithmException e) {
                         throw ResponseException.internalServerError(
                                 e,
-                                "Der SHA-256 Algorithmus wird nicht unterstützt."
+                                "Der SHA-256-Algorithmus wird nicht unterstützt."
                         );
                     }
                     byte[] encodedhash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
@@ -364,7 +364,7 @@ public class IdentityService {
         var uniqueIdFromIdentityProvider = userInfo.get(provider.getUniqueIdAttribute());
         if (uniqueIdFromIdentityProvider == null || uniqueIdFromIdentityProvider.isBlank()) {
             throw ResponseException.internalServerError(
-                    "Die Nutzerinformationen des Identitätsanbieters %s (%s) enthalten für die konfigurierte Identitätenkennung %s keinen Wert.",
+                    "Die Nutzerinformationen des Identitätsanbieters %s (%s) enthalten für das identifizierende Attribut „%s“ keinen Wert.",
                     provider.getName(),
                     provider.getKey(),
                     provider.getUniqueIdAttribute()
@@ -954,7 +954,7 @@ public class IdentityService {
                     .digest(flowBindingSecret.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("Der SHA-256 Algorithmus wird nicht unterstützt.", e);
+            throw new IllegalStateException("Der SHA-256-Algorithmus wird nicht unterstützt.", e);
         }
     }
 

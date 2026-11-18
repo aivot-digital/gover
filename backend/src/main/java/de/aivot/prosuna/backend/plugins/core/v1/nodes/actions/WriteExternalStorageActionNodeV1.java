@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
@@ -173,22 +174,22 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Nonnull
     @Override
     public String getName() {
-        return "Dokument bei Speicheranbieter schreiben";
+        return "Anlagen bei Speicheranbieter speichern";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert die Anhänge eines Anlagensatzes in einem ausgewählten Speicheranbieter.";
+        return "Speichert die Anlagen eines oder mehrerer Anlagensätze bei Speicheranbietern.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Überträgt Dateien aus Vorgangsanlagensätzen in konfigurierte externe Speicheranbieter.
+                Speichert die Anlagen aus einem oder mehreren Anlagensätzen bei den konfigurierten Speicheranbietern, etwa in einem externen Speicher oder in „Dateien und Medien“. Für jeden Anlagensatz werden Speicheranbieter, Zielpfad und optional angepasste Dateinamen festgelegt.
 
-                Für jeden Anlagensatz werden Zielanbieter, Zielpfad und optional angepasste Dateinamen festgelegt. Das Element kann mehrere Anlagensätze in einem Schritt verarbeiten und stellt Ablageergebnisse, gespeicherte Pfade, Dateinamen und Anzahl der geschriebenen Dateien als Ausgänge bereit.
+                Fehlende oder leere Anlagensätze werden übersprungen, wenn sie als optional markiert sind. Andernfalls schlägt die Aufgabe fehl.
                 """;
     }
 
@@ -293,7 +294,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 new ProcessNodePort(
                         PORT_NAME,
                         "Anlagensatz gespeichert",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Anhänge gespeichert wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Anlagen gespeichert wurden."
                 )
         );
     }
@@ -353,7 +354,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
                     addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist schreibgeschützt.".formatted(rowIndex));
                 } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
-                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Vorgangsanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
                 }
             }
 
@@ -491,7 +492,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Der Prozess-Anhang %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
+                            "Die Anlage %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
                             StringUtils.quote(attachment.getFileName()),
                             storageProviderId,
                             e.getMessage()
@@ -539,7 +540,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             );
         } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Der Speicheranbieter %s (ID %d) ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.",
+                    "Der Speicheranbieter %s (ID %d) ist ein Speicher für Vorgangsanlagen und kann nicht als Ziel verwendet werden.",
                     StringUtils.quote(storageProvider.getName()),
                     storageProviderId
             );
@@ -605,7 +606,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             }
 
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
+                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anlagen.",
                     StringUtils.quote(attachmentSetDataKey)
             );
         }
@@ -642,7 +643,11 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                                          @Nullable String targetPath,
                                          int rowIndex) throws ProcessNodeExecutionException {
         try {
-            var renderedTargetPath = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), targetPath);
+            var renderedTargetPath = templateRenderService.interpolate(
+                    context.getCurrentProcessExecutionData(),
+                    targetPath,
+                    TemplateOutputFormat.SingleLineText
+            );
             if (renderedTargetPath == null) {
                 throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben.".formatted(rowIndex));
             }
@@ -753,7 +758,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         if (normalizedGroupPath.contains("\\") || normalizedGroupPath.contains("\r") || normalizedGroupPath.contains("\n")) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
+                    "Eintrag %d: Der Gruppenname der Anlage ist als Ordnername ungültig.",
                     rowIndex
             );
         }
@@ -764,7 +769,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             var segment = StringUtils.toNullableTrimmedString(rawSegment);
             if (segment == null || ".".equals(segment) || "..".equals(segment)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Eintrag %d: Der Gruppenname des Anhangs ist als Ordnername ungültig.",
+                        "Eintrag %d: Der Gruppenname der Anlage ist als Ordnername ungültig.",
                         rowIndex
                 );
             }
@@ -945,7 +950,11 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                                             int rowIndex,
                                             @Nonnull String metadataKey) throws ProcessNodeExecutionException {
         try {
-            var renderedValue = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), metadataValue);
+            var renderedValue = templateRenderService.interpolate(
+                    context.getCurrentProcessExecutionData(),
+                    metadataValue,
+                    TemplateOutputFormat.SingleLineText
+            );
             return renderedValue == null ? "" : renderedValue;
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -1064,7 +1073,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz des Vorgangs, dessen Anhänge gespeichert werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz des Vorgangs, dessen Anlagen gespeichert werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "minItems", intValue = 1),
                 @ElementPOJOBindingProperty(key = "maxItems", intValue = 1),
@@ -1087,7 +1096,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
          */
         @InputElementPOJOBinding(id = IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Optionaler Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, schlägt der Prozess nicht fehl, wenn kein Anlagensatz vorhanden ist."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Ist diese Option aktiviert, wird ein fehlender oder leerer Anlagensatz übersprungen."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         @Nullable

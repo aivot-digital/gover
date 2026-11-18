@@ -13,7 +13,7 @@ export function UserStatusChip(props: UserStatusChipProps) {
                 color="error"
                 variant="outlined"
                 size="small"
-                title="Diese Mitarbeiter:in wurde im Identity Provider gelöscht und kann sich nicht anmelden."
+                title="Diese Mitarbeiter:in wurde beim Identitätsanbieter gelöscht und kann sich nicht anmelden."
             />
         );
     }

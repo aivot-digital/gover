@@ -5,6 +5,7 @@ import {deepEquals} from './equality-utils';
 import {flattenElements} from './flatten-elements';
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
 import {ElementType} from '../data/element-type/element-type';
+import {normalizeElementDefinition} from './normalize-element-definition';
 
 interface ReferencingFunction {
     referencedIds: string[] | null | undefined;
@@ -43,6 +44,7 @@ function isEmptyGeneratedDefault(value: AnyElement): boolean {
 export function normalizeUiDefinitionForStorage<T extends AnyElement>(
     value: T | null | undefined
 ): T | null {
+    value = normalizeElementDefinition(value);
     if (value == null) {
         return null;
     }

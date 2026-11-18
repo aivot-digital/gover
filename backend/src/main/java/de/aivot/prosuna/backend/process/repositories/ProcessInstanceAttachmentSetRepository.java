@@ -10,6 +10,9 @@ import java.util.Optional;
 public interface ProcessInstanceAttachmentSetRepository extends JpaRepository<ProcessInstanceAttachmentSetEntity, Integer>, JpaSpecificationExecutor<ProcessInstanceAttachmentSetEntity> {
     List<ProcessInstanceAttachmentSetEntity> findAllByProcessInstanceId(Long processInstanceId);
 
+    List<ProcessInstanceAttachmentSetEntity> findAllByProcessInstanceIdAndProcessInstanceTaskId(Long processInstanceId,
+                                                                                               Long processInstanceTaskId);
+
     List<ProcessInstanceAttachmentSetEntity> findAllByProcessInstanceIdAndDataKey(Long processInstanceId,
                                                                                    String dataKey);
 

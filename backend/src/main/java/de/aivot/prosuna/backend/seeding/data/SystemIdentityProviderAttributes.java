@@ -11,7 +11,7 @@ import java.util.List;
  */
 public class SystemIdentityProviderAttributes {
     public static final List<IdentityAttributeMapping> BAYERN_ID = List.of(
-            attribute("Anrede", "Formelle Anrede, z. B. Herr, Frau oder Divers.", "salutation", false),
+            attribute("Anrede", "Anrede, wie sie vom Identitätsanbieter übermittelt wird, zum Beispiel Herr oder Frau.", "salutation", false),
             attribute("Akademischer Titel", "Akademischer Grad wie Dr. oder Prof.", "title", false),
             attribute("Vorname(n)", "Ruf- und ggf. weitere Vornamen der Person.", "given_name", false),
             attribute("Nachname", "Familien- bzw. Nachname der Person.", "family_name", false),
@@ -39,7 +39,7 @@ public class SystemIdentityProviderAttributes {
     );
 
     public static final List<IdentityAttributeMapping> BUND_ID = List.of(
-            attribute("Anrede", "Formelle Anrede, z. B. Herr, Frau oder Divers.", "salutation", false),
+            attribute("Anrede", "Anrede, wie sie vom Identitätsanbieter übermittelt wird, zum Beispiel Herr oder Frau.", "salutation", false),
             attribute("Akademischer Titel", "Akademischer Grad wie Dr. oder Prof.", "title", false),
             attribute("Vorname(n)", "Ruf- und ggf. weitere Vornamen der Person.", "given_name", false),
             attribute("Nachname", "Familien- bzw. Nachname der Person.", "family_name", false),
@@ -68,7 +68,7 @@ public class SystemIdentityProviderAttributes {
 
     public static final List<IdentityAttributeMapping> SH_ID = List.of(
             attribute("Identitätstyp", "Gibt an, ob es sich um eine natürliche Person, eine Organisation oder ein Funktionskonto handelt.", "dataport_identitaetstyp", true),
-            attribute("Anrede", "Formelle Anrede, z. B. Herr, Frau oder Divers.", "salutation", false),
+            attribute("Anrede", "Anrede, wie sie vom Identitätsanbieter übermittelt wird, zum Beispiel Herr oder Frau.", "salutation", false),
             attribute("Akademischer Titel", "Akademischer Grad wie Dr. oder Prof.", "title", false),
             attribute("Vorname(n)", "Ruf- und ggf. weitere Vornamen der Person.", "given_name", false),
             attribute("Nachname", "Familien- bzw. Nachname der Person.", "family_name", false),

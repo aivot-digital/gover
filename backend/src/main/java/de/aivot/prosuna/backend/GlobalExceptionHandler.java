@@ -2,11 +2,14 @@ package de.aivot.prosuna.backend;
 
 import de.aivot.prosuna.backend.exceptions.UserFriendlyResponseStatusException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.models.dtos.ApiErrorDto;
 import de.aivot.prosuna.backend.mail.services.ExceptionMailService;
 import io.sentry.Sentry;
+import jakarta.persistence.OptimisticLockException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -17,9 +20,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.HtmlUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -47,10 +53,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(UserFriendlyResponseStatusException.class)
     public ResponseEntity<Object> handleUserFriendlyResponseException(UserFriendlyResponseStatusException e) {
+        // Reasons may contain request values such as path parameters, so they must not become markup.
+        var reason = HtmlUtils.htmlEscape(Objects.requireNonNullElse(e.getReason(), ""), StandardCharsets.UTF_8.name());
         return ResponseEntity
                 .status(e.getStatusCode())
                 .contentType(MediaType.TEXT_HTML)
-                .body("<html><head><meta charset=\"UTF-8\"><title>Fehler beim Aufruf der Seite</title></head><body>Leider ist beim Aufruf der Seite ein Fehler aufgetreten. Die Fehlermeldung lautet:<br/><br/>" +  e.getReason() + "</body></html>");
+                .body("<html><head><meta charset=\"UTF-8\"><title>Fehler beim Aufruf der Seite</title></head><body>Leider ist beim Aufruf der Seite ein Fehler aufgetreten. Die Fehlermeldung lautet:<br/><br/>" + reason + "</body></html>");
     }
 
     @ExceptionHandler(ResponseException.class)
@@ -68,6 +76,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(apiError);
     }
 
+    // Another transaction updated the entity between loading and saving it. This is an expected conflict, not a server error.
+    // Spring translates the JPA exception only for repository calls and commits, not for a direct EntityManager flush.
+    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+    public ResponseEntity<Object> handleOptimisticLockingFailure() {
+        var apiError = new ApiErrorDto(
+                HttpStatus.CONFLICT,
+                LockVersioned.CONFLICT_MESSAGE,
+                LockVersioned.CONFLICT_DETAILS,
+                true
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(apiError);
+    }
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
@@ -76,21 +101,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             WebRequest request
     ) {
         final List<String> errors = new ArrayList<>();
+        final var fieldErrors = ex.getBindingResult().getFieldErrors();
+        final var globalErrors = ex.getBindingResult().getGlobalErrors();
 
-        for (final FieldError error : ex.getBindingResult().getFieldErrors()) {
+        for (final FieldError error : fieldErrors) {
             errors.add(error.getField() + ": " + error.getDefaultMessage());
         }
 
-        for (final ObjectError error : ex.getBindingResult().getGlobalErrors()) {
+        for (final ObjectError error : globalErrors) {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final String message;
-        if (errors.isEmpty()) {
-            message = "Die Anfrage enthält ungültige Daten.";
-        } else {
-            message = errors.getFirst();
+        // Preserve technical field paths in details, but show only the validation message in the UI.
+        String validationMessage = null;
+        if (!fieldErrors.isEmpty()) {
+            validationMessage = fieldErrors.getFirst().getDefaultMessage();
+        } else if (!globalErrors.isEmpty()) {
+            validationMessage = globalErrors.getFirst().getDefaultMessage();
         }
+        final String message = validationMessage == null || validationMessage.isBlank()
+                ? "Die Anfrage enthält ungültige Daten."
+                : validationMessage;
 
         final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, message, errors, true);
 

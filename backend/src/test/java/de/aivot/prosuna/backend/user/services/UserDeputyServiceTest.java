@@ -93,6 +93,43 @@ class UserDeputyServiceTest {
         verify(repository).save(existingEntity);
     }
 
+    @Test
+    void createThrowsConflictWhenRelationClosesCycle() {
+        var fromDate = LocalDate.of(2026, 4, 1);
+        var deputy = createDeputy(fromDate, null);
+        when(repository.createsCycle(
+                "11111111-1111-1111-1111-111111111111",
+                "22222222-2222-2222-2222-222222222222",
+                fromDate,
+                null,
+                null
+        )).thenReturn(true);
+
+        var exception = assertThrows(ResponseException.class, () -> service.create(deputy));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(repository, never()).save(any(UserDeputyEntity.class));
+    }
+
+    @Test
+    void performUpdateChecksCycleForNewPeriodWithoutItsPreviousVersion() {
+        var existingEntity = createDeputy(LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+        var updateEntity = createDeputy(LocalDate.of(2026, 4, 1), null);
+        when(repository.createsCycle(
+                "11111111-1111-1111-1111-111111111111",
+                "22222222-2222-2222-2222-222222222222",
+                LocalDate.of(2026, 4, 1),
+                null,
+                123
+        )).thenReturn(true);
+
+        var exception = assertThrows(ResponseException.class,
+                () -> service.performUpdate(123, updateEntity, existingEntity));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(repository, never()).save(any(UserDeputyEntity.class));
+    }
+
     private static UserDeputyEntity createDeputy(LocalDate fromDate, LocalDate untilDate) {
         return new UserDeputyEntity()
                 .setId(123)

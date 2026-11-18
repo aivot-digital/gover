@@ -3,6 +3,7 @@ import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
+import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
@@ -29,6 +30,21 @@ vi.mock('../../modules/process/pages/details/components/process-node-editor/proc
 }));
 
 describe('AddElementDialog', () => {
+    it('offers one single-choice element and creates it with radio presentation', async () => {
+        const user = userEvent.setup();
+        const onAddElements = vi.fn();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+            displayContext={ElementDisplayContext.CustomerFacing}
+            limitElementTypes={[ElementType.Select]}
+            onClose={vi.fn()} onAddElements={onAddElements}/>);
+
+        expect(screen.getAllByText('Einzelauswahl', {exact: true})).toHaveLength(1);
+        await user.click(screen.getByRole('button', {name: 'Hinzufügen'}));
+        expect(onAddElements).toHaveBeenCalledWith([expect.objectContaining({
+            type: ElementType.Select, presentation: SelectFieldPresentation.Radio,
+        })]);
+    });
+
     it.each([ElementType.ConfigLayout, ElementType.GroupLayout])(
         'does not offer secret selectors for staff-facing parent type %s',
         async (parentType) => {
@@ -80,6 +96,30 @@ describe('AddElementDialog', () => {
         expect(within(dialog).getByRole('button', {name: 'Hinzufügen'})).toBeEnabled();
         expect(within(dialog).queryByText('Funktionseingabe')).not.toBeInTheDocument();
         expect(within(dialog).queryByText('Sonstige')).not.toBeInTheDocument();
+    });
+
+    it.each([
+        ['steps', ElementType.Step],
+        ['groups', ElementType.GroupLayout],
+        ['repeating sections', ElementType.ReplicatingContainer],
+        ['the introduction', ElementType.IntroductionStep],
+        ['summaries', ElementType.SummaryLayout],
+    ])('offers the Markdown field in customer forms inside %s', async (_, parentType) => {
+        const user = userEvent.setup();
+        render(
+            <AddElementDialog
+                show
+                parentType={parentType}
+                allParents={[]}
+                displayContext={ElementDisplayContext.CustomerFacing}
+                onClose={vi.fn()}
+                onAddElements={vi.fn()}
+            />,
+        );
+
+        const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
+        await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Markdown');
+        expect(await within(dialog).findByText('Markdown-Eingabe', {exact: true})).toBeInTheDocument();
     });
 
     it('focuses search on every opening and restores focus after closing with Escape', async () => {

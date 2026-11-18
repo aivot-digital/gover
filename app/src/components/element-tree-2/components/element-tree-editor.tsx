@@ -144,6 +144,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         if (updatedElement != null) {
             const confirmed = await showConfirm({
                 theme: drawerTheme,
+                confirmButtonColor: 'error',
                 title: 'Änderungen verwerfen?',
                 confirmButtonText: 'Ja, verwerfen',
                 children: (

@@ -36,19 +36,19 @@ public class SubmissionNotificationAssignedUserConfigDefinition implements UserC
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Anträge";
+        return "Vorgänge";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Antrag zugewiesen";
+        return "Vorgang zugewiesen";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen ein Antrag zur Bearbeitung zugewiesen wird – oder wenn ein Ihnen bereits zugewiesener Antrag neu zugeordnet wird.";
+        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen ein Vorgang zur Bearbeitung zugewiesen wird – oder wenn ein Ihnen bereits zugewiesener Vorgang neu zugeordnet wird.";
     }
 
     @Override

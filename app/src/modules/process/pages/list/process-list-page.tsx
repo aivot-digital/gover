@@ -176,9 +176,9 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         color="textSecondary"
                         sx={{fontSize: '0.875rem'}}
-                        title={params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
+                        title={params.row.lastEditorName ?? 'Unbekannte Person'}
                     >
-                        {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
+                        {params.row.lastEditorName ?? 'Unbekannte Person'}
                     </Typography>
                 </Box>
             );
@@ -316,24 +316,26 @@ export function ProcessListPage() {
                     <Typography sx={{
                         mb: 2
                     }}>
-                        Prozesse sind digitale Abläufe, die verschiedene Aufgaben und Genehmigungsschritte innerhalb
-                        Ihrer Organisation abbilden.
-                        In dieser Übersicht sehen Sie alle Prozesse, an deren Entwicklung Sie beteiligt sind oder die
-                        Ihrer Organisationseinheit zugeordnet wurden.
+                        Ein Prozess bündelt alle Prozessversionen eines Ablaufs innerhalb Ihrer Organisation.
+                        Jede Prozessversion enthält einen festen Stand der Prozessdefinition mit ihren Prozesselementen,
+                        Verbindungen und Einstellungen.
+                        In dieser Übersicht sehen Sie die Prozesse, für die Sie Leseberechtigungen haben.
+                        Diese können sich aus Domänenrollen in Organisationseinheiten oder Teams, direkten
+                        Prozessberechtigungen oder Systemberechtigungen ergeben.
                     </Typography>
                     <Typography sx={{
                         mb: 2
                     }}>
                         Sie können neue Prozesse anlegen, bestehende Prozesse bearbeiten oder veröffentlichte Versionen
                         einsehen.
-                        Der Status eines Prozesses zeigt an, ob er sich noch im Entwurf befindet, bereits veröffentlicht
-                        oder zurückgezogen wurde.
+                        Der Status einer Prozessversion zeigt an, ob sie sich im Entwurf befindet, veröffentlicht
+                        oder zurückgezogen ist. Ein konkreter Durchlauf einer Prozessversion heißt Vorgang.
                     </Typography>
                     <Typography>
-                        Um einen neuen Prozess zu starten, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
+                        Um einen neuen Prozess anzulegen, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
                         in den Aktionen neben jedem Prozess.
-                        Sollten Sie keiner Organisationseinheit zugeordnet sein, wenden Sie sich bitte an eine
-                        Administrator:in.
+                        Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration.
+                        Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden.
                     </Typography>
                 </>
             ),
@@ -385,14 +387,12 @@ export function ProcessListPage() {
                         variant="h5"
                         component="h2"
                     >
-                        Noch keiner Organisationseinheit zugeordnet
+                        Keine Prozesse in diesem Bereich
                     </Typography>
                     <Typography>
-                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
-                        eine
-                        Domänenrolle zuweisen.
-                        Erst dann können Sie mit der Entwicklung von Prozessen beginnen. Nach der
-                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
+                        Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt,
+                        wenden Sie sich an die Administration.
+                        Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden.
                     </Typography>
                 </>
             }
@@ -400,8 +400,8 @@ export function ProcessListPage() {
                 memberships != null &&
                 memberships.length > 0 &&
                 <EmptyDataListPlaceholder
-                    title="Noch keine Prozesse angelegt"
-                    description="Prozesse verbinden Auslöser, Aufgaben, Entscheidungen und Automatisierungen zu strukturierten Abläufen."
+                    title="Keine Prozesse in diesem Bereich"
+                    description="Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration. Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden."
                     addText="Neuen Prozess anlegen"
                     onAdd={() => setShowAddDialog(true)}
                 />

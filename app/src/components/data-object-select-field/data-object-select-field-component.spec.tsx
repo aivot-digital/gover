@@ -18,6 +18,20 @@ const options = [
 ];
 
 describe('DataObjectSelectFieldComponent', () => {
+    it('finds visible secondary identifiers and distinguishes a search without matches', () => {
+        const onChange = vi.fn();
+        render(<DataObjectSelectFieldComponent label="Datenobjekt" value={null} onChange={onChange}
+            dataModelKey="persons" options={options}/>);
+        const input = screen.getByRole('combobox');
+        fireEvent.focus(input);
+        fireEvent.change(input, {target: {value: 'person-2'}});
+        expect(screen.getByRole('option', {name: /Erika Musterfrau/})).toBeVisible();
+        expect(screen.queryByRole('option', {name: /Max Mustermann/})).not.toBeInTheDocument();
+        fireEvent.change(input, {target: {value: 'nonexistent'}});
+        expect(screen.getByText('Keine passenden Optionen gefunden')).toBeVisible();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('exposes its external label and helper through the native combobox', () => {
         render(
             <DataObjectSelectFieldComponent

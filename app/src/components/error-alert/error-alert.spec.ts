@@ -34,9 +34,9 @@ describe('collectErrors', () => {
         const derivedData = createDerivedRuntimeElementData({
             elementStates: {
                 intro: {
-                    error: 'Bitte akzeptieren Sie die Hinweise zum Datenschutz.',
+                    error: 'Bitte bestätigen Sie, dass Sie die Hinweise zum Datenschutz zur Kenntnis genommen haben.',
                     errorDetails: {
-                        label: 'Datenschutzrechtliche Einwilligung',
+                        label: 'Kenntnisnahme der Datenschutzhinweise',
                     },
                 },
             },
@@ -45,8 +45,8 @@ describe('collectErrors', () => {
         expect(collectErrors(element, {}, derivedData)).toEqual([
             {
                 id: 'intro',
-                label: 'Datenschutzrechtliche Einwilligung',
-                error: 'Bitte akzeptieren Sie die Hinweise zum Datenschutz.',
+                label: 'Kenntnisnahme der Datenschutzhinweise',
+                error: 'Bitte bestätigen Sie, dass Sie die Hinweise zum Datenschutz zur Kenntnis genommen haben.',
             },
         ]);
     });

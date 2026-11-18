@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../data/element-type/element-type';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {type RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
 import {type FileUploadElement} from '../models/elements/form/input/file-upload-element';
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
@@ -11,8 +12,15 @@ import {type StoragePathSelectorInputElement} from '../models/elements/form/inpu
 import {type AssetSelectInputElement} from '../models/elements/form/input/asset-select-input-element';
 import {type DepartmentSelectInputElement} from '../models/elements/form/input/department-select-input-element';
 import {AssetVisibility} from '../modules/assets/models/asset-visibility';
+import {getElementNameForType} from '../data/element-type/element-names';
 
 describe('generateElementWithDefaultValues', () => {
+    it('should limit new Markdown fields to 5000 characters', () => {
+        const element = generateElementWithDefaultValues(ElementType.RichTextInput) as RichTextInputElement;
+
+        expect(element.maxCharacters).toBe(5000);
+    });
+
     it('should default text fields to not being copyable', () => {
         const element = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
@@ -43,14 +51,15 @@ describe('generateElementWithDefaultValues', () => {
     it('should initialize file upload elements with a submitted file name', () => {
         const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
 
+        expect(element.label).toBe('Anlage');
         expect(element.submittedFileName).toBe('Anlage');
     });
 
     it('should initialize process identity ID inputs as scalar selections', () => {
         const element = generateElementWithDefaultValues(ElementType.ProcessIdentityIdInput) as ProcessIdentityIdInputElement;
 
-        expect(element.label).toBe('Prozessidentität');
-        expect(element.placeholder).toBe('Prozessidentität auswählen');
+        expect(element.label).toBe('Identität');
+        expect(element.placeholder).toBe('Identität auswählen');
         expect(element.requiresCommunication).toBe(false);
         expect(element).not.toHaveProperty('minItems');
         expect(element).not.toHaveProperty('maxItems');
@@ -76,6 +85,8 @@ describe('generateElementWithDefaultValues', () => {
     it('should initialize asset selections with a stable scalar reference', () => {
         const element = generateElementWithDefaultValues(ElementType.AssetSelectInput) as AssetSelectInputElement;
 
+        expect(getElementNameForType(ElementType.AssetSelectInput)).toBe('Datei-Auswahl');
+        expect(element.label).toBe('Datei');
         expect(element.placeholder).toBe('Keine Datei ausgewählt');
         expect(element.dialogTitle).toBe('Datei auswählen');
         expect(element.assetVisibility).toBe(AssetVisibility.All);

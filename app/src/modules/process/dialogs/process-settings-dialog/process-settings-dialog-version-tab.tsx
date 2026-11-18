@@ -396,8 +396,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginTop
                 maxWidth={680}
             >
-                Diese Angaben gelten nur für die aktuell geöffnete Prozessversion und werden erst wirksam, wenn diese
-                Version veröffentlicht wird.
+                Die Angaben gelten für diese Prozessversion. Im Testmodus werden gespeicherte Änderungen bereits
+                verwendet; für die öffentliche Nutzung gelten sie nach der Veröffentlichung.
             </ElementEditorSectionHeader>
 
             {!isEditable && (
@@ -476,8 +476,8 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 maxWidth={680}
             >
                 Nach Abschluss eines Vorgangs bleibt dieser für die angegebene Dauer gespeichert.
-                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anhänge gelöscht.
-                In Abschluss-Elementen kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
+                Ist die Frist abgelaufen, werden der Vorgang und alle zugehörigen Anlagen gelöscht.
+                In Prozesselementen der Kategorie Abschluss kann je nach Prozesspfad eine abweichende Frist festgelegt werden.
                 Vor der Veröffentlichung muss eine Aufbewahrungsfrist festgelegt sein.
             </ElementEditorSectionHeader>
 
@@ -522,7 +522,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 disableMarginBottom
                 maxWidth={680}
             >
-                Das ausgewählte Erscheinungsbild gilt für die Formulare und Kundenansichten dieser Prozessversion.
+                Das ausgewählte Erscheinungsbild gilt für die Formulare und Ansichten für Beteiligte dieser Prozessversion.
             </ElementEditorSectionHeader>
 
             <Box
@@ -548,7 +548,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                         }}
                         externalAction={
                             <Hint
-                                summary="Sie können ein abweichendes Erscheinungsbild für die Formulare und Kundenansichten dieser Prozessversion auswählen."
+                                summary="Sie können ein abweichendes Erscheinungsbild für die Formulare und Ansichten für Beteiligte dieser Prozessversion auswählen."
                                 detailsTitle="Erscheinungsbild"
                                 details={
                                     <>
@@ -559,18 +559,18 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                                         <ol>
                                             <li>Das Erscheinungsbild der Prozessversion</li>
                                             <li>
-                                                Das Erscheinungsbild der zuständigen Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der verantwortlichen Organisationseinheit (nur in
                                                 Formularen)
                                             </li>
                                             <li>
-                                                Das Erscheinungsbild der bewirtschaftenden Organisationseinheit (Nur in
+                                                Das Erscheinungsbild der betreuenden Organisationseinheit (nur in
                                                 Formularen)
                                             </li>
-                                            <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
+                                            <li>Das Erscheinungsbild der verwaltenden Organisationseinheit</li>
                                             <li>Das globale Erscheinungsbild der Prosuna-Instanz</li>
                                         </ol>
                                         <p>
-                                            Das Erscheinungsbild legt Farben, Logo und Favicon der Formulare und Kundenansichten dieser
+                                            Das Erscheinungsbild legt Farben, Logo und Favicon der Formulare und Ansichten für Beteiligte dieser
                                             Prozessversion fest.
                                         </p>
                                     </>
@@ -664,7 +664,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                     <RichTextInputComponent
                         label="Prozessspezifischer Teil der Datenschutzerklärung"
                         value={draft.processSpecificPrivacyStatement}
-                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und zuständige Stellen."
+                        hint="Beschreiben Sie hier die prozessspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und verantwortliche Stellen."
                         onChange={(value) => {
                             setDraft({
                                 ...draft,

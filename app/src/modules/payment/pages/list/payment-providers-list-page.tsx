@@ -193,7 +193,7 @@ export function PaymentProvidersListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => (
         <EmptyDataListPlaceholder
             title="Keine Zahlungsanbieter vorhanden"
-            description="Zahlungsanbieter binden Bezahlverfahren ein, damit Gebühren in Formularen und Vorgängen abgewickelt werden können."
+            description="Zahlungsanbieter binden Bezahlverfahren ein, damit Zahlungen in Formularen und Vorgängen abgewickelt werden können."
             addText="Neuen Zahlungsanbieter anlegen"
             onAdd={() => navigate('/payment-providers/new')}
             addDisabled={!permissions.canCreate}

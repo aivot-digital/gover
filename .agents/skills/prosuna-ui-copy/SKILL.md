@@ -9,7 +9,8 @@ Write clear, respectful German for people submitting information and for staff h
 
 ## Establish the Context
 
-- Read the affected screen or template and the behavior behind the message. Check whether it serves staff, customers, or both; inspect related validation or backend handling only as needed to establish the facts.
+- Before drafting, read the relevant entries and necessary cross-references in [GLOSSAR.md](../../../GLOSSAR.md).
+- Read the affected screen or template and the behavior behind the message. Check whether it serves staff, external participants, or both; inspect related validation or backend handling only as needed to establish the facts.
 - Preserve configured customer wording and forms of address. Do not rewrite customer-authored process content, organization names, quoted or legally prescribed text as part of an ordinary copy change.
 - Keep the requested scope. A wording task does not authorize new UI features, a terminology migration, changes to authorization, or a repository-wide copy cleanup.
 
@@ -17,25 +18,19 @@ Write clear, respectful German for people submitting information and for staff h
 
 - Use correct German spelling, capitalization, and actual UTF-8 umlauts and `ß`: `Änderungen`, `löschen`, `prüfen`, `Schließen`, not ASCII transliterations. Do not mechanically replace valid `ss` spellings or transliterate technical identifiers.
 - Address people as `Sie` with `Ihr`/`Ihre`, unless the affected customer experience deliberately uses another form. Prefer direct instructions such as `Prüfen Sie Ihre Eingaben.` over impersonal administrative phrasing.
-- Prefer neutral wording when it preserves the exact meaning: `Personen`, `Teammitglieder`, or direct address. Do not substitute `Teammitglieder` for all staff, or `Antragstellende` for people who have not submitted an application.
+- Prefer neutral wording when it preserves the exact meaning: `Personen`, `Teammitglieder`, or direct address. Do not substitute `Teammitglieder` for all staff or conflate external participants with staff.
 - Where a neutral expression is awkward or would change the meaning, use the established colon style, for example `Mitarbeiter:innen`. Prefer direct address or plural phrasing over difficult singular article and pronoun combinations. Do not alternate between colon, asterisk, slash, and generic masculine forms for the same group.
-- Keep a calm, factual tone suitable for public administration. Be approachable without jokes, praise, marketing claims, or blame in errors. Explain specialist terms when necessary, but do not erase meaningful domain distinctions.
+- Keep a calm, factual tone suitable for public administration and private organizations. Be approachable without jokes, praise, marketing claims, or blame in errors. Explain specialist terms when necessary, but do not erase meaningful domain distinctions.
 
 ## Product Terminology
 
-Use the affected module's established terms consistently across labels, messages, and accessible names. These distinctions are especially important:
+[GLOSSAR.md](../../../GLOSSAR.md) is the single authoritative terminology source. Use its definitions consistently across labels, messages, and accessible names; do not maintain a separate terminology table here or infer preferred terms from legacy copy.
 
-| Term | Meaning to preserve |
-| --- | --- |
-| `Prosuna` | Product name; legacy `Gover` code identifiers are not a copy-cleanup target. |
-| `Prozess` | The modeled administrative workflow, distinct from an individual execution. |
-| `Vorgang` | A concrete process instance; do not rename it to `Antrag` unless it actually represents an application. |
-| `Organisationseinheit` | The department concept; not interchangeable with `Team`. |
-| `Systemrolle` | A role granting permissions globally, not a synonym for an administrator. |
-| `Domänenrolle` | A scoped role assigned through memberships; legacy `UserRole` identifiers do not imply a separate user-role concept. |
-| `Berechtigung` | An allowed capability; distinguish the permission from the role that grants it. |
+- Choose terms by meaning, not through blanket replacements. Distinguish data from the layer that holds it: `Vorgangsdaten` remains the name for the contents of the `Vorgangsdatenebene`. Ordinary words are allowed even without their own glossary entry.
+- Verify actual behavior in the affected code. Glossary entries marked `Zielbild` describe intended future capabilities, not proof that they are already available.
+- Preserve technical identifiers such as API fields, routes, database objects, and permission keys, as well as customer-authored labels and explicitly requested domain-specific wording. For example, keep a customer-defined form title such as `Antrag`.
 
-Treat this as a terminology guide, not permission to rename API fields, routes, database objects, permission keys, or customer-authored labels. Consult the root `AGENTS.md` for authorization rules.
+Consult the root [AGENTS.md](../../../AGENTS.md) for authorization rules and terminology requirements for German Prosuna texts outside this skill's UI and product-email scope.
 
 ## Writing by UI State
 
@@ -62,6 +57,7 @@ These are patterns to adapt to the actual behavior, not replacement rules for ev
 
 ## Verify the Change
 
+- Check the finished text against the relevant glossary entries and necessary cross-references. Confirm that the chosen terms describe the actual concepts and do not turn a `Zielbild` into a claim about available functionality.
 - Re-read the changed text in its actual state: is the object, action, permission scope, and outcome correct? Check grammar after interpolation, umlauts, inclusive wording, and consistency with related messages.
 - Preserve placeholders, escaping, links, and markup. Do not alter machine-readable values or generated files as copy sources.
 - If production text changes, update affected behavioral or accessible-name assertions without weakening them. Use the smallest relevant checks from `AGENTS.md`; do not start development services or demand screenshots for a wording-only change.

@@ -268,7 +268,7 @@ public class ProcessWorker {
             provider = processNodeProviderService
                     .getProcessNodeDefinition(node)
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionUnknown(
-                            "Der Prozessknoten-Funktionsanbieter mit dem Schlüssel „%s“ und der Version „%d“ wurde nicht gefunden.",
+                            "Der Prozesselementanbieter mit dem Schlüssel „%s“ und der Version „%d“ wurde nicht gefunden.",
                             node.getProcessNodeDefinitionKey(),
                             node.getProcessNodeDefinitionVersion()
                     ));
@@ -367,7 +367,7 @@ public class ProcessWorker {
             processInstanceTaskRepository.save(taskEntity);
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
+                    "Der Prozesselementanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
@@ -412,7 +412,7 @@ public class ProcessWorker {
             processInstanceTaskRepository.save(taskEntity);
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
+                    "Der Prozesselementanbieter „%s“ für das Prozesselement „%s“ konnte die Aufgabe nicht initialisieren.",
                     currentNodeProvider.getName(),
                     currentNode.resolveName(currentNodeProvider)
             );
@@ -443,7 +443,7 @@ public class ProcessWorker {
         } catch (ResponseException e) {
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die Konfiguration des Prozessknotens %s konnte nicht abgeleitet werden.",
+                    "Die Konfiguration des Prozesselements %s konnte nicht abgeleitet werden.",
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );
             logger.logException(ex);
@@ -452,7 +452,7 @@ public class ProcessWorker {
 
         if (configuration.derivedRuntimeElementData().hasAnyError()) {
             var ex = new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die dynamische Konfiguration des Prozessknotens %s konnte nicht aufgelöst werden.",
+                    "Die dynamische Konfiguration des Prozesselements %s konnte nicht aufgelöst werden.",
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );
             logger.logException(ex);
@@ -485,7 +485,7 @@ public class ProcessWorker {
             taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
             var ex = new ProcessNodeExecutionExceptionUnknown(
-                    "Der Prozessknoten-Funktionsanbieter %s für das Prozesselement %s lieferte kein Ergebnis zurück.",
+                    "Der Prozesselementanbieter %s für das Prozesselement %s lieferte kein Ergebnis zurück.",
                     StringUtils.quote(currentNodeProvider.getName()),
                     StringUtils.quote(currentNode.resolveName(currentNodeProvider))
             );

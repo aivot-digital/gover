@@ -3,6 +3,9 @@ package de.aivot.prosuna.backend.process.repositories;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.projections.ProcessVersionStatusCountProjection;
+import jakarta.annotation.Nonnull;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +29,8 @@ public interface ProcessVersionRepository extends JpaRepository<ProcessVersionEn
                         WHERE pv.status = :processVersionStatus AND pn.data_key = :s;
             """, nativeQuery = true)
     long countAllByStatusIsAndHasNode(ProcessVersionStatus processVersionStatus, String s);
+
+    @Nonnull
+    @Query("select version.status as status, count(version) as total from ProcessVersionEntity version group by version.status")
+    List<ProcessVersionStatusCountProjection> countByStatus();
 }

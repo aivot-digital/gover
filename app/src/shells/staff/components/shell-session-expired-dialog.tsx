@@ -43,7 +43,7 @@ export function ShellSessionExpiredDialog() {
             </DialogTitle>
             <DialogContent tabIndex={0}>
                 <Typography>
-                    Ihre Sitzung ist aufgrund von Inaktivität abgelaufen.
+                    Ihre Sitzung ist nicht mehr gültig.
                     Bitte melden Sie sich erneut an.
                 </Typography>
             </DialogContent>
@@ -57,7 +57,7 @@ export function ShellSessionExpiredDialog() {
                     href={loginUrl}
                     disabled={loginUrl.length === 0}
                 >
-                    Erneut Anmelden
+                    Erneut anmelden
                 </Button>
                 <Button
                     sx={{

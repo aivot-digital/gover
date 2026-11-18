@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean>, LayoutElement<BaseFormElement> {
-    private static final String PRIVACY_CONSENT_LABEL = "Datenschutzrechtliche Einwilligung";
+    private static final String PRIVACY_CONSENT_LABEL = "Kenntnisnahme der Datenschutzhinweise";
 
     @Nullable
     private String initiativeName;
@@ -50,7 +50,7 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
         if (!Boolean.TRUE.equals(value)) {
             throw new ValidationException(
                     this,
-                    "Bitte akzeptieren Sie die Hinweise zum Datenschutz.",
+                    "Bitte bestätigen Sie, dass Sie die Hinweise zum Datenschutz zur Kenntnis genommen haben.",
                     Map.of("label", PRIVACY_CONSENT_LABEL)
             );
         }
@@ -87,7 +87,7 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     @Nonnull
     @Override
     public String toDisplayValue(@Nullable Boolean value) {
-        return value == null || !value ? "Nicht akzeptiert" : "Akzeptiert";
+        return value == null || !value ? "Nicht bestätigt" : "Kenntnisnahme bestätigt";
     }
 
     // region Hash & Equals

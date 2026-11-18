@@ -19,12 +19,15 @@ export interface ReadyCustomerTaskView extends CustomerTaskIdentityRequirements 
     layout: GroupLayout;
     data: AuthoredElementValues;
     events: TaskViewEvent[];
+    // The stored uploads of the task, which its upload fields may remove.
+    removableAttachmentKeys: string[];
 }
 
 export interface BlockedCustomerTaskView extends CustomerTaskIdentityRequirements {
     layout: null;
     data: null;
     events: null;
+    removableAttachmentKeys: null;
 }
 
 export type CustomerTaskViewResponse = ReadyCustomerTaskView | BlockedCustomerTaskView;

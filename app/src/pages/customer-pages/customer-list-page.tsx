@@ -166,9 +166,9 @@ export function CustomerListPage() {
                                             filteredApplications.length === 0 &&
                                             <AlertComponent
                                                 color="info"
-                                                title="Noch keine Formulare veröffentlicht"
+                                                title="Keine Formulare verfügbar"
                                             >
-                                                Es wurden noch keine Formulare veröffentlicht.
+                                                Derzeit sind in diesem Verzeichnis keine Formulare verfügbar.
                                                 Schauen Sie einfach später wieder vorbei.
                                             </AlertComponent>
                                         }

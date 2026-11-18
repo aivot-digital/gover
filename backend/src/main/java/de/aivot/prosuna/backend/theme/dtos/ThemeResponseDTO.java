@@ -19,7 +19,9 @@ public record ThemeResponseDTO(
         @Nullable
         UUID logoKeyDark,
         @Nullable
-        UUID faviconKey
+        UUID faviconKey,
+        @Nullable
+        Long lockVersion
 ) {
     public static ThemeResponseDTO fromEntity(ThemeEntity theme) {
         return new ThemeResponseDTO(
@@ -31,7 +33,8 @@ public record ThemeResponseDTO(
                 theme.getSecondaryColorDark(),
                 theme.getLogoKey(),
                 theme.getLogoKeyDark(),
-                theme.getFaviconKey()
+                theme.getFaviconKey(),
+                theme.getLockVersion()
         );
     }
 }

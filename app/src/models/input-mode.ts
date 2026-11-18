@@ -22,14 +22,25 @@ export interface InputModePolicy {
     allowedVariableSources?: InputVariableSource[];
 }
 
+/** How the text of a dynamic-text field is used, matching the backend `TemplateOutputFormat`. */
+export enum TemplateOutputFormat {
+    Html = 'Html',
+    Markdown = 'Markdown',
+    PlainText = 'PlainText',
+    SingleLineText = 'SingleLineText',
+}
+
 export interface DynamicTextPolicy {
     variableSuggestionSources: InputVariableSource[];
+    outputFormat: TemplateOutputFormat;
 }
 
 export interface InputVariableReference {
     source: InputVariableSource;
     path: string;
     nodeDataKey?: string | null;
+    /** The value comes from a Markdown input. Fields that only show text then receive it as plain text. */
+    markdown?: boolean;
 }
 
 export interface InputVariableSuggestion extends InputVariableReference {

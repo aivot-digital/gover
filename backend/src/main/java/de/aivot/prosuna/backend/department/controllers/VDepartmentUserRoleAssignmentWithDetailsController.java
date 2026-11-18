@@ -132,7 +132,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                 .orElseThrow(ResponseException::unauthorized);
 
         if (Objects.isNull(newAssignment.getDepartmentMembershipId())) {
-            throw ResponseException.badRequest("Die ID der Abteilungszugehörigkeit muss angegeben werden.");
+            throw ResponseException.badRequest("Die ID der Mitgliedschaft in der Organisationseinheit muss angegeben werden.");
         }
 
         var membership = departmentMembershipService
@@ -162,7 +162,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                                 "userId", membership.getUserId()
                         ))
                 .withMessage(
-                        "Die Rollen-Zuweisung mit der ID %s zur Abteilungszugehörigkeit %s (Organisationseinheit %s, Mitarbeiter:in %s, Rolle %s) wurde von der Mitarbeiter:in %s erstellt.",
+                        "Die Domänenrollenzuweisung mit der ID %s zur Mitgliedschaft %s in der Organisationseinheit %s (Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(String.valueOf(created.getId())),
                         StringUtils.quote(String.valueOf(created.getDepartmentMembershipId())),
                         StringUtils.quote(String.valueOf(membership.getDepartmentId())),
@@ -235,7 +235,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                 .orElseThrow(ResponseException::notFound);
 
         if (Objects.isNull(entity.getDepartmentMembershipId())) {
-            throw ResponseException.badRequest("Die ID der Abteilungszugehörigkeit muss angegeben werden.");
+            throw ResponseException.badRequest("Die ID der Mitgliedschaft in der Organisationseinheit muss angegeben werden.");
         }
 
         var membership = departmentMembershipService
@@ -265,7 +265,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
                                 "userId", membership.getUserId()
                         ))
                 .withMessage(
-                        "Die Rollen-Zuweisung mit der ID %s zur Abteilungszugehörigkeit %s (Organisationseinheit %s, Mitarbeiter:in %s, Rolle %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Die Domänenrollenzuweisung mit der ID %s zur Mitgliedschaft %s in der Organisationseinheit %s (Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s gelöscht.",
                         StringUtils.quote(String.valueOf(entity.getId())),
                         StringUtils.quote(String.valueOf(entity.getDepartmentMembershipId())),
                         StringUtils.quote(String.valueOf(membership.getDepartmentId())),

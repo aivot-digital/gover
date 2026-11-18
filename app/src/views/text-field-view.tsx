@@ -4,7 +4,7 @@ import {TextFieldElement} from '../models/elements/form/input/text-field-element
 import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {TextFieldComponentProps} from '../components/text-field/text-field-component-props';
-import Autocomplete from '@mui/material/Autocomplete';
+import {AutocompleteTextField} from '../components/text-field/autocomplete-text-field';
 import {isStringNullOrEmpty} from '../utils/string-utils';
 import {DynamicTextInputField} from '../components/dynamic-text/dynamic-text-field';
 
@@ -97,22 +97,8 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         />;
     }
 
-    if (suggestions != null) {
-        return (
-            <Autocomplete
-                freeSolo={true}
-                disablePortal={false}
-                options={suggestions.map(s => ({
-                    label: s,
-                }))}
-                renderInput={(params) => (
-                    <TextFieldComponent
-                        {...textFieldProps}
-                        muiPassTroughProps={params}
-                    />
-                )}
-            />
-        );
+    if (suggestions != null && !isMultiline) {
+        return <AutocompleteTextField {...textFieldProps} suggestions={suggestions} disablePortal={false}/>;
     }
 
     return (

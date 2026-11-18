@@ -7,7 +7,7 @@ export enum CodeListSourceType {
 
 export const CodeListSourceTypeLabels: Record<CodeListSourceType, string> = {
     [CodeListSourceType.Manual]: 'Manuell',
-    [CodeListSourceType.Plugin]: 'Plugin',
+    [CodeListSourceType.Plugin]: 'Erweiterung',
     [CodeListSourceType.XRepository]: 'XRepository',
     [CodeListSourceType.Asset]: 'CSV-Datei',
 };

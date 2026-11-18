@@ -63,7 +63,7 @@ done
 
 # Manually configured environment variables that require user input
 ask_for_env=(
-  "HOSTNAME Der Hostname unter dem Prosuna erreichbar ist"
+  "HOSTNAME Geben Sie den Hostnamen ein, unter dem Prosuna erreichbar sein soll"
 )
 
 # Process the manually configured environment variables and prompt the user for input if they are not already set in the .env file
@@ -72,7 +72,7 @@ for env in "${ask_for_env[@]}"; do
   description="${env#* }"
 
   if ! grep -q "^${key}=" .env 2>/dev/null; then
-    read -rp "Bitte geben Sie den Wert für ${description} (${key}) ein: " value
+    read -rp "${description} (${key}): " value
     echo "${key}=${value}" >> .env
   fi
 done

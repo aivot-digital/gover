@@ -154,7 +154,7 @@ public class DataObjectSchemaController {
                 .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE);
 
         if (request.element() == null) {
-            throw ResponseException.badRequest("Für ein neues Datenmodell muss das Schema angegeben werden.");
+            throw ResponseException.badRequest("Für ein neues Datenmodell muss die UI-Definition angegeben werden.");
         }
 
         return deriveUnsavedSchema(request.element(), request);
@@ -200,7 +200,7 @@ public class DataObjectSchemaController {
     private DerivedRuntimeElementData deriveUnsavedSchema(@Nonnull BaseElement schema,
                                                           @Nonnull ElementDraftDerivationRequestDTO request) throws ResponseException {
         if (schema.getType() != ElementType.GroupLayout) {
-            throw ResponseException.badRequest("Das Schema eines Datenmodells muss ein Gruppenlayout sein.");
+            throw ResponseException.badRequest("Die UI-Definition eines Datenmodells muss ein Gruppenlayout sein.");
         }
 
         ElementStreamUtils.applyAction(schema, BaseElement::recalculateReferencedIds);

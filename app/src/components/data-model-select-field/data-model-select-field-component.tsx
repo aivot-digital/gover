@@ -1,3 +1,4 @@
+import {createOptionFilter} from '../select-field/option-search';
 import {
     Autocomplete,
     Box,
@@ -196,8 +197,9 @@ export function DataModelSelectFieldComponent(props: DataModelSelectFieldCompone
                     disabled={disabled}
                     value={selectedOption}
                     isOptionEqualToValue={(option, selectedOption) => option.key === selectedOption.key}
+                    filterOptions={createOptionFilter<DataModelSelectOption>((option) => [option.label, option.subLabel])}
                     getOptionLabel={(option) => option.label}
-                    noOptionsText={isLoading ? 'Lade Optionen…' : 'Keine Optionen verfügbar'}
+                    noOptionsText={isLoading ? 'Lade Optionen…' : options.length > 0 ? 'Keine passenden Optionen gefunden' : 'Keine Optionen verfügbar'}
                     onChange={(_: SyntheticEvent, nextValue) => {
                         if (!busy) {
                             onChange(nextValue?.value ?? null);

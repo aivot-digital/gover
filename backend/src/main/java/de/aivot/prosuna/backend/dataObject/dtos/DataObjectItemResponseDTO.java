@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.dataObject.dtos;
 
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
 
+import jakarta.annotation.Nullable;
 import jakarta.annotation.Nonnull;
 import java.time.Instant;
 import java.util.Map;
@@ -16,7 +17,9 @@ public record DataObjectItemResponseDTO(
         @Nonnull
         Instant created,
         @Nonnull
-        Instant updated
+        Instant updated,
+        @Nullable
+        Long lockVersion
 ) {
     @Nonnull
     public static DataObjectItemResponseDTO fromEntity(
@@ -27,7 +30,8 @@ public record DataObjectItemResponseDTO(
                 entity.getId(),
                 entity.getData(),
                 entity.getCreated(),
-                entity.getUpdated()
+                entity.getUpdated(),
+                entity.getLockVersion()
         );
     }
 }

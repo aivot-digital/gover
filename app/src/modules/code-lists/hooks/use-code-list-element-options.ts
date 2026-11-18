@@ -185,7 +185,6 @@ function isCodeListBackedElement(element: AnyElement): element is AnyElement & {
     return (
         (
             element.type === ElementType.Select ||
-            element.type === ElementType.Radio ||
             element.type === ElementType.MultiCheckbox ||
             element.type === ElementType.ChipInput
         ) &&
@@ -197,8 +196,6 @@ function getEndpoint(type: ElementType): string | undefined {
     switch (type) {
         case ElementType.Select:
             return 'select';
-        case ElementType.Radio:
-            return 'radio';
         case ElementType.MultiCheckbox:
             return 'multi-checkbox';
         case ElementType.ChipInput:

@@ -42,7 +42,7 @@ import {type StorageIndexItem} from '../entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
-import {humanizeFileSize} from '../../../utils/humanization-utils';
+import {humanizeFileSize, pluralize} from '../../../utils/humanization-utils';
 import {Page} from '../../../models/dtos/page';
 import {AssetsApiService} from '../../assets/assets-api-service';
 import {SearchInput} from '../../../components/search-input/search-input';
@@ -1182,7 +1182,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                     ? 'Suche läuft…'
                                     : hasActiveSearch
                                         ? `${searchResultCount} Treffer`
-                                        : `${folderCount} Ordner, ${fileCount} Dateien`}
+                                        : `${folderCount} Ordner, ${fileCount} ${pluralize(fileCount, 'Datei', 'Dateien')}`}
                             </Typography>
                         </Stack>
 

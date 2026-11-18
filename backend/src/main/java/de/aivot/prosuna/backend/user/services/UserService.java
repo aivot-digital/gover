@@ -176,6 +176,8 @@ public class UserService implements EntityService<UserEntity, String> {
 
         var userToUpdate = UserEntity
                 .from(updatedKeycloakUser)
+                // The rebuilt entity must carry the loaded lock version to update the existing row instead of inserting it.
+                .setLockVersion(existingEntity.getLockVersion())
                 .setSystemRoleId(canUpdateAdministrativeFields
                         ? entity.getSystemRoleId()
                         : existingEntity.getSystemRoleId());

@@ -18,10 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DataJpaTest(properties = {
         "spring.flyway.enabled=false",
         "spring.jpa.hibernate.ddl-auto=none",
-        "spring.jpa.properties.hibernate.connection.url=jdbc:h2:mem:permission-projections",
-        "spring.jpa.properties.hibernate.connection.username=sa",
-        "spring.jpa.properties.hibernate.connection.password=",
-        "spring.jpa.properties.hibernate.connection.driver_class=org.h2.Driver"
+        "spring.test.database.replace=none",
+        "spring.datasource.url=jdbc:h2:mem:permission-projections",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.datasource.driver-class-name=org.h2.Driver"
 })
 @ContextConfiguration(classes = PermissionProjectionRepositoryTest.JpaTestConfiguration.class)
 class PermissionProjectionRepositoryTest {

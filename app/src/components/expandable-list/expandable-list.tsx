@@ -2,6 +2,7 @@ import React, {ReactNode, useEffect, useState} from 'react';
 import {Box, Button, Divider, List, Typography, useTheme} from '@mui/material';
 import UnfoldLessOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
 import UnfoldMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
+import {pluralize} from '../../utils/humanization-utils';
 
 interface ExpandableListProps<T> {
     title?: string;
@@ -34,7 +35,9 @@ export const ExpandableList = <T,>({
             const announceTimeout = setTimeout(() => {
                 setAnnounceText(
                     showAll
-                        ? `Alle ${total} ${pluralLabel} werden jetzt angezeigt.`
+                        ? total === 1
+                            ? `${singularLabel} wird jetzt angezeigt.`
+                            : `Alle ${total} ${pluralLabel} werden jetzt angezeigt.`
                         : `Liste reduziert. ${visibleCount} von ${total} sichtbar.`
                 );
             }, 400); // 🕓 Warten bis Button vorgelesen wurde
@@ -48,7 +51,7 @@ export const ExpandableList = <T,>({
                 clearTimeout(clearTimeoutId);
             };
         }
-    }, [showAll, total, initialVisible, pluralLabel, visibleCount]);
+    }, [showAll, total, initialVisible, singularLabel, pluralLabel, visibleCount]);
 
     const handleToggle = () => {
         setAnnounceText("");
@@ -72,7 +75,7 @@ export const ExpandableList = <T,>({
                 id={`${listId}-description`}
                 sx={{ display: 'none' }}
             >
-                {`Es sind insgesamt ${total} ${pluralLabel} vorhanden. Es werden aktuell ${visibleCount} angezeigt.`}
+                {`Es ${total === 1 ? 'ist' : 'sind'} insgesamt ${total} ${pluralize(total, singularLabel, pluralLabel)} vorhanden. Es ${visibleCount === 1 ? 'wird' : 'werden'} aktuell ${visibleCount} angezeigt.`}
             </Box>
 
             <List
@@ -106,8 +109,8 @@ export const ExpandableList = <T,>({
                             aria-controls={listId}
                             aria-label={
                                 showAll
-                                    ? `Weniger anzeigen. Nur die ersten ${initialVisible} von ${total} sichtbar.`
-                                    : `Alle anzeigen. Es werden ${total - initialVisible} weitere ${pluralLabel} sichtbar.`
+                                    ? `Weniger anzeigen. Nur ${initialVisible} von ${total} sichtbar.`
+                                    : `Alle anzeigen. Zusätzlich sichtbar: ${total - initialVisible} ${pluralize(total - initialVisible, singularLabel, pluralLabel)}.`
                             }
                         >
                             {showAll

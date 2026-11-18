@@ -53,7 +53,8 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    opacity: 0;
+    /* Keep the content visible when reduced motion disables the entry animations. */
+    opacity: 1;
     animation: process-flow-editor-empty-state-fade-in 320ms ease-out 400ms both;
 }
 
@@ -69,7 +70,7 @@
     transform: translateX(-50%);
     filter: blur(16px);
     pointer-events: none;
-    opacity: 0;
+    opacity: 1;
     animation: process-flow-editor-empty-state-glow-enter 760ms ease-out 460ms both;
 }
 
@@ -81,7 +82,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    opacity: 0;
+    opacity: 1;
     animation: process-flow-editor-empty-state-fade-in 320ms ease-out 520ms both;
     cursor: pointer;
 }
@@ -130,20 +131,20 @@
     margin: 10px 0 16px;
     border-radius: 999px;
     background: linear-gradient(180deg, rgba(37, 99, 235, 0.28) 0%, rgba(148, 163, 184, 0.34) 52%, rgba(148, 163, 184, 0) 100%);
-    opacity: 0;
+    opacity: 1;
     transform-origin: top center;
-    transform: scaleY(0.35);
+    transform: scaleY(1);
     animation: process-flow-editor-empty-state-guide-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both;
 }
 
 .process-flow-editor-empty-state-text-block {
-    opacity: 0;
+    opacity: 1;
     animation: process-flow-editor-empty-state-enter 360ms ease-out 760ms both;
 }
 
 .process-flow-editor-empty-state-action {
     margin-top: 26px;
-    opacity: 0;
+    opacity: 1;
     animation: process-flow-editor-empty-state-enter 360ms ease-out 920ms both;
 }
 
@@ -264,6 +265,12 @@
     .process-flow-editor-empty-state-action,
     .process-flow-editor-empty-state-marker-ring {
         animation: none;
+    }
+
+    .process-flow-editor-empty-state-marker-ring-primary {
+        opacity: 0.30;
+        transform: scale(2);
+        will-change: auto;
     }
 
     .process-flow-editor-status-dot::after {

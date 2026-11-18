@@ -61,13 +61,13 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
     @Nonnull
     @Override
     public String getLabel() {
-        return "Standard Speicheranbieter für Anhängen von Vorgängen";
+        return "Standard-Speicheranbieter für Anlagen von Vorgängen";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Legt den Standard Speicheranbieter fest, der für das Speichern von Anhängen von Vorgängen verwendet wird.";
+        return "Legt den Standard-Speicheranbieter fest, der für das Speichern von Anlagen von Vorgängen verwendet wird.";
     }
 
     @Nonnull

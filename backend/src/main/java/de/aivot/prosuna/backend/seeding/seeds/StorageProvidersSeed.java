@@ -72,15 +72,15 @@ public class StorageProvidersSeed implements SeedProvider {
         }
 
         var assetsProvider = storageProviderRepository.save(createLocalDiskProvider(
-                "Lokale Dokumente & Medien",
-                "Dieser Speicheranbieter ermöglicht das Speichern von Dokumenten und Medien auf dem lokalen Dateisystem des Servers.",
+                "Lokale Dateien und Medien",
+                "Dieser Speicheranbieter ermöglicht das Speichern von Dateien und Medien auf dem lokalen Dateisystem des Servers.",
                 StorageProviderType.Assets,
                 "./data/assets/"
         ));
 
         var attachmentsProvider = storageProviderRepository.save(createLocalDiskProvider(
-                "Lokale Vorgangsdokumente",
-                "Dieser Speicheranbieter ermöglicht das Speichern von Vorgangsdokumenten auf dem lokalen Dateisystem des Servers.",
+                "Lokale Vorgangsanlagen",
+                "Dieser Speicheranbieter ermöglicht das Speichern von Vorgangsanlagen auf dem lokalen Dateisystem des Servers.",
                 StorageProviderType.Attachments,
                 "./data/attachments/"
         ));

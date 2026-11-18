@@ -19,7 +19,7 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Liste Beinhaltet";
+        return "Liste beinhaltet";
     }
 
     @Override
@@ -31,15 +31,15 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Liste Beinhaltet“** prüft, ob ein bestimmter Wert in einer Liste enthalten ist. \s
+                Der Operator **„Liste beinhaltet“** prüft, ob ein bestimmter Wert in einer Liste enthalten ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der Wert in der Liste vorkommt. \s
                 Ist der Wert nicht in der Liste enthalten, ergibt der Operator den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine ausgewählte Stadt in einer Liste von unterstützten Städten enthalten ist.
                 
-                Mit dem Operator **„Liste Beinhaltet“** wird diese Logik so formuliert: \s
-                `Liste Beinhaltet Ausgewählte Stadt`
+                Mit dem Operator **„Liste beinhaltet“** wird diese Logik so formuliert: \s
+                `Liste beinhaltet Ausgewählte Stadt`
                 
                 Beispielwerte: \s
                 - **Liste:** ["Berlin", "Hamburg", "München"] \s
@@ -49,14 +49,14 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
                 - **Bedingung wahr:** Wenn die ausgewählte Stadt „Hamburg“ ist, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn die ausgewählte Stadt „Köln“ ist, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Liste Beinhaltet“-Operator
-                - **Liste ["Apfel", "Banane", "Orange"] Beinhaltet "Banane"** → **wahr** \s
-                - **Liste ["Apfel", "Banane", "Orange"] Beinhaltet "Traube"** → **falsch** \s
-                - **Liste [] Beinhaltet "Apfel"** → **falsch** \s
-                - **Liste ["1", "2", "3"] Beinhaltet "2"** → **wahr**
+                # Wahrheitswerte für den „Liste beinhaltet“-Operator
+                - **Liste ["Apfel", "Banane", "Orange"] beinhaltet "Banane"** → **wahr** \s
+                - **Liste ["Apfel", "Banane", "Orange"] beinhaltet "Traube"** → **falsch** \s
+                - **Liste [] beinhaltet "Apfel"** → **falsch** \s
+                - **Liste ["1", "2", "3"] beinhaltet "2"** → **wahr**
                 
-                # Wann verwenden Sie den Operator „Liste Beinhaltet“?
-                Verwenden Sie **„Liste Beinhaltet“**, um zu prüfen, ob ein Wert Teil einer festgelegten Liste ist. \s
+                # Wann verwenden Sie den Operator „Liste beinhaltet“?
+                Verwenden Sie **„Liste beinhaltet“**, um zu prüfen, ob ein Wert Teil einer festgelegten Liste ist. \s
                 Dieser Operator ist besonders hilfreich bei Validierungen, z. B. um zu überprüfen, ob eine Benutzereingabe in einer Liste zulässiger Werte enthalten ist, oder bei Filterfunktionen, um Zugehörigkeiten zu prüfen.
                 """;
     }

@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.uiPresets;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
@@ -20,6 +21,7 @@ import java.net.URI;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,7 +31,7 @@ class PaymentGroupPresetTest {
     void shouldUseConfiguredPaymentResultMessages() throws Exception {
         var paidPreset = createPreset(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
         var paidMessage = renderMessage(paidPreset);
-        assertTrue(paidMessage.contains("# Zahlung erfolgreich\n# Bezahlt\n**Danke.**"));
+        assertTrue(paidMessage.contains("# Zahlung abgeschlossen\n# Bezahlt\n**Danke.**"));
         assertEquals(
                 "https://example.test/payment-confirmation/",
                 paidPreset.findChild("download", LinkButtonContentElement.class).orElseThrow().getHref()
@@ -49,9 +51,14 @@ class PaymentGroupPresetTest {
 
     @Test
     void shouldKeepDefaultPaymentResultMessagesWhenConfiguredMessagesAreBlank() throws Exception {
-        assertTrue(renderMessage(XBezahldienstStatus.PAYED, " ", null).contains("# Zahlung erfolgreich"));
-        assertTrue(renderMessage(XBezahldienstStatus.FAILED, null, " ").contains("# Zahlung fehlgeschlagen"));
-        assertTrue(renderMessage(XBezahldienstStatus.CANCELED, null, " ").contains("# Zahlung abgebrochen"));
+        assertTrue(renderMessage(XBezahldienstStatus.PAYED, " ", null)
+                .contains("# Zahlung abgeschlossen\nDie Zahlung wurde erfolgreich abgeschlossen."));
+        assertTrue(renderMessage(XBezahldienstStatus.FAILED, null, " ")
+                .contains("# Zahlung fehlgeschlagen\nDie Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle. "
+                        + "Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen."));
+        assertTrue(renderMessage(XBezahldienstStatus.CANCELED, null, " ")
+                .contains("# Zahlung abgebrochen\nDie Zahlung wurde abgebrochen. Bei Fragen wenden Sie sich bitte an die verantwortliche Stelle. "
+                        + "Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen."));
     }
 
     @ParameterizedTest
@@ -72,8 +79,31 @@ class PaymentGroupPresetTest {
         assertTrue(text.contains(" Euro inkl. " + formattedTaxRate + "% Steuern"));
         if (taxRate.equals("19")) {
             assertTrue(text.contains("Position: 11,90 Euro inkl. 19% Steuern"));
-            assertTrue(text.contains("Insgesamt zu entrichtende Zahlung: 11,90 Euro inkl. Steuern"));
+            assertTrue(text.contains("Gesamtbetrag: 11,90 Euro inkl. Steuern"));
         }
+    }
+
+    @Test
+    void shouldShowItemDescriptionsAsTextInsideTheirListItem() throws Exception {
+        var item = new PaymentItem();
+        item.setDescription("Bitte bestätigen\n\n[Zum Antrag](https://evil.example) **jetzt**");
+        item.setNetPrice(BigDecimal.ONE);
+        item.setQuantity(1L);
+        item.setTaxRate(BigDecimal.ZERO);
+        var transaction = paymentTransaction(XBezahldienstStatus.INITIAL);
+        transaction.getPaymentInformation().setTransactionRedirectUrl(URI.create("https://example.test/pay"));
+        var preset = new PaymentGroupPreset(paymentProvider(), paymentProviderDefinition(),
+                new PaymentPayload().setPaymentItems(List.of(item)).setTotal(item.getTotalPrice()),
+                transaction, null, null, "https://example.test/confirmation");
+
+        var html = MarkdownRenderer.renderHtml(renderMessage(preset));
+
+        assertEquals(html.indexOf("<li>"), html.lastIndexOf("<li>"), html);
+        assertTrue(html.contains("<li>Bitte bestätigen<br />"), html);
+        assertTrue(html.contains("[Zum Antrag]("), html);
+        assertTrue(html.contains("**jetzt**: 1,00 Euro</li>"), html);
+        assertFalse(html.contains(">Zum Antrag</a>"), html);
+        assertFalse(html.contains("<strong>jetzt</strong>"), html);
     }
 
     private static String renderMessage(XBezahldienstStatus status,

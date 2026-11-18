@@ -45,7 +45,7 @@ export function ExtensionsPage() {
                                     }}
                                 >
                                     Die Übersicht fasst den aktuellen Umfang der installierten Erweiterungen zusammen.
-                                    Im Reiter „Liste der Erweiterungen“ können Sie die einzelnen Plugins, deren Metadaten,
+                                    Im Reiter „Liste der Erweiterungen“ können Sie die einzelnen Erweiterungen, deren Metadaten,
                                     Versionen, Changelogs und enthaltene Komponenten im Detail prüfen.
                                 </Typography>
                             </>

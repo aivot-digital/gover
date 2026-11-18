@@ -121,7 +121,7 @@ function getFlatInsertionDisabledReason(
     allowedChildTypes: Set<ElementType>,
 ): string | undefined {
     if (!isGroupLayout(definition)) {
-        return 'Diese Definition besitzt keinen umschließende Gruppen.';
+        return 'Diese Definition besitzt keine umschließende Gruppe.';
     }
 
     if (definition.children.length === 0) {

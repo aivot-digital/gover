@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.communication.entities;
 
 import de.aivot.prosuna.backend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
@@ -12,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,7 +31,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "communication_provider_bindings")
-public class CommunicationProviderBindingEntity {
+public class CommunicationProviderBindingEntity implements LockVersioned {
     private static final String ID_SEQUENCE_NAME = "communication_provider_bindings_id_seq";
 
     @Id
@@ -74,6 +76,11 @@ public class CommunicationProviderBindingEntity {
     @Column(columnDefinition = "jsonb")
     @Convert(converter = AuthoredElementValuesConverter.class)
     private AuthoredElementValues configuration;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     public CommunicationProviderBindingEntity() {
     }
@@ -175,6 +182,17 @@ public class CommunicationProviderBindingEntity {
 
     public CommunicationProviderBindingEntity setConfiguration(@Nonnull AuthoredElementValues configuration) {
         this.configuration = configuration;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public CommunicationProviderBindingEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

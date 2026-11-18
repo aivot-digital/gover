@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.elements.models.elements;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import de.aivot.prosuna.backend.elements.compatibility.LegacyRadioDeserializerModifier;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.*;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.*;
@@ -39,12 +40,15 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = NumberInputElement.class, name = ElementType.ID_Number),
         @JsonSubTypes.Type(value = ReplicatingContainerLayoutElement.class, name = ElementType.ID_ReplicatingContainer),
         @JsonSubTypes.Type(value = RichTextContentElement.class, name = ElementType.ID_RichText),
-        @JsonSubTypes.Type(value = RadioInputElement.class, name = ElementType.ID_Radio),
+        @JsonSubTypes.Type(value = SelectInputElement.class, name = LegacyRadioDeserializerModifier.LEGACY_RADIO_TYPE_ID),
         @JsonSubTypes.Type(value = SelectInputElement.class, name = ElementType.ID_Select),
         @JsonSubTypes.Type(value = SpacerContentElement.class, name = ElementType.ID_Spacer),
         @JsonSubTypes.Type(value = TableInputElement.class, name = ElementType.ID_Table),
         @JsonSubTypes.Type(value = TextInputElement.class, name = ElementType.ID_Text),
         @JsonSubTypes.Type(value = TimeInputElement.class, name = ElementType.ID_Time),
+        @JsonSubTypes.Type(value = DurationInputElement.class, name = ElementType.ID_Duration),
+        @JsonSubTypes.Type(value = PhoneNumberInputElement.class, name = ElementType.ID_PhoneNumber),
+        @JsonSubTypes.Type(value = EmailInputElement.class, name = ElementType.ID_Email),
         @JsonSubTypes.Type(value = IntroductionStepElement.class, name = ElementType.ID_IntroductionStep),
         @JsonSubTypes.Type(value = SubmitStepElement.class, name = ElementType.ID_SubmitStep),
         @JsonSubTypes.Type(value = SummaryStepElement.class, name = ElementType.ID_SummaryStep),

@@ -51,7 +51,7 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
             .find(op => op.identifier === operand.operatorIdentifier);
 
         if (operator == null) {
-            return `Der Ausdruck mit dem unbekannten No-Code Operand (ID: ${operand.operatorIdentifier})`;
+            return `Der Ausdruck mit dem unbekannten No-Code-Operator (ID: ${operand.operatorIdentifier})`;
         }
 
         const parameterHumanized: (string | null)[] = (operand.operands ?? [])
@@ -75,5 +75,5 @@ export function humanizeNoCode(operand: NoCodeOperand, allElements: ElementWithP
         }
     }
 
-    return 'Unbekannter No-Code Operand';
+    return 'Unbekannter No-Code-Operand';
 }

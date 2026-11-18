@@ -72,11 +72,13 @@ class StorageProvidersSeedTest {
         assertTrue(systemProvider.getReadOnlyStorage());
 
         var assetsProvider = providers.getAllValues().get(1);
+        assertEquals("Lokale Dateien und Medien", assetsProvider.getName());
         assertEquals(StorageProviderType.Assets, assetsProvider.getType());
         assertEquals("./data/assets/", assetsProvider.getConfiguration().getLiteral("root"));
         assertFalse(assetsProvider.getSystemProvider());
 
         var attachmentsProvider = providers.getAllValues().getLast();
+        assertEquals("Lokale Vorgangsanlagen", attachmentsProvider.getName());
         assertEquals(StorageProviderType.Attachments, attachmentsProvider.getType());
         assertEquals("./data/attachments/", attachmentsProvider.getConfiguration().getLiteral("root"));
         assertFalse(attachmentsProvider.getSystemProvider());

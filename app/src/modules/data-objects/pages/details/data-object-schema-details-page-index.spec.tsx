@@ -124,8 +124,8 @@ describe('DataObjectSchemaDetailsPageIndex', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         expect(create).not.toHaveBeenCalled();
-        expect(screen.getByRole('group', {name: 'Datenschema'}))
-            .toHaveAccessibleDescription('Das Datenschema muss mindestens ein Datenfeld enthalten.');
+        expect(screen.getByRole('group', {name: 'UI-Definition'}))
+            .toHaveAccessibleDescription('Die UI-Definition muss mindestens ein Eingabefeld enthalten.');
     });
 
     it.each(['UUID', 'Seriell fortlaufend', 'Formatvorlage'])('can return to manual IDs after switching to %s without duplicating the ID field', alternative => {
@@ -161,26 +161,26 @@ describe('DataObjectSchemaDetailsPageIndex', () => {
 
     it('marks the schema required and rejects an empty group on save', () => {
         const {create} = renderPage();
-        expect(screen.getByRole('group', {name: 'Datenschema'})).toHaveAttribute('aria-required', 'true');
+        expect(screen.getByRole('group', {name: 'UI-Definition'})).toHaveAttribute('aria-required', 'true');
         fireEvent.change(screen.getByRole('textbox', {name: 'Name'}), {target: {value: 'Neuer Name'}});
 
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         expect(create).not.toHaveBeenCalled();
-        expect(screen.getByRole('group', {name: 'Datenschema'}))
-            .toHaveAccessibleDescription('Das Datenschema muss mindestens ein Datenfeld enthalten.');
+        expect(screen.getByRole('group', {name: 'UI-Definition'}))
+            .toHaveAccessibleDescription('Die UI-Definition muss mindestens ein Eingabefeld enthalten.');
     });
 
     it.each([true, false])('validates clearing and correcting the schema (new: %s)', isNew => {
         const {create, update} = renderPage(model(group(textField('original'))), isNew);
         fireEvent.click(screen.getByRole('button', {name: 'Schema leeren'}));
-        expect(screen.getByRole('group', {name: 'Datenschema'})).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByRole('group', {name: 'UI-Definition'})).toHaveAttribute('aria-invalid', 'true');
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
         expect(create).not.toHaveBeenCalled();
         expect(update).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', {name: 'Datenfeld hinzufügen'}));
-        expect(screen.getByRole('group', {name: 'Datenschema'})).not.toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByRole('group', {name: 'UI-Definition'})).not.toHaveAttribute('aria-invalid', 'true');
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
         expect(isNew ? create : update).toHaveBeenCalledTimes(1);
     });

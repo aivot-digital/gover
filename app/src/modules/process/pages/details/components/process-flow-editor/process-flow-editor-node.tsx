@@ -287,6 +287,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
             isDangerous: true,
             onClick: () => {
                 void confirm({
+                    isDestructive: true,
                     title: 'Prozesselement löschen',
                     children: (
                         <Typography>
@@ -331,7 +332,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
             if (associatedTask.status == ProcessTaskStatus.AwaitingPayment || associatedTask.status == ProcessTaskStatus.AwaitingCustomer) {
                 items.push({
-                    label: 'Aufgabe für Nutzer:in aufrufen',
+                    label: 'Aufgabe für Beteiligte aufrufen',
                     icon: ModuleIcons.tasks,
                     href: `/process/${runtimeData?.instance.accessKey}/tasks/${associatedTask.accessKey}`,
                     newTab: true,
@@ -343,22 +344,22 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
             if (associatedTask.status == ProcessTaskStatus.Failed && canRerunTask) {
                 items.push({
-                    label: 'Aufgabe neu starten',
+                    label: 'Aufgabe erneut ausführen',
                     icon: <Replay/>,
                     onClick: () => {
                         dispatch(setLoadingMessage({
                             blocking: true,
-                            message: 'Starte Aufgabe neu',
+                            message: 'Erneute Ausführung der Aufgabe wird angefordert',
                             estimatedTime: 500,
                         }));
                         new ProcessInstanceTaskApiService()
                             .rerunFailedTask(associatedTask.id)
                             .then(() => {
-                                dispatch(showSuccessSnackbar('Der Neustart wurde angestoßen.'));
+                                dispatch(showSuccessSnackbar('Die erneute Ausführung der Aufgabe wurde angefordert.'));
                                 onReloadRuntimeData();
                             })
                             .catch((error) => {
-                                dispatch(showApiErrorSnackbar(error, 'Der Neustart ist fehlgeschlagen.'));
+                                dispatch(showApiErrorSnackbar(error, 'Die erneute Ausführung der Aufgabe konnte nicht angefordert werden.'));
                             })
                             .finally(() => {
                                 dispatch(clearLoadingMessage());

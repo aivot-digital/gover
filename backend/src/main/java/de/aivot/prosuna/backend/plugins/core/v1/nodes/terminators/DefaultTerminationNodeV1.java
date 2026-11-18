@@ -109,9 +109,9 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
     @Override
     public String getDescription() {
         return """
-                Schließt einen laufenden Vorgang regulär ab und beendet damit seine weitere Prozessausführung.
+                Schließt den Vorgang regulär ab und beendet damit seine weitere Bearbeitung. Das Prozesselement besitzt deshalb keinen Ausgangsport.
 
-                Beim Abschluss gilt die Aufbewahrungsfrist der Prozessversion. Optional können Sie für dieses Element eine andere Frist festlegen. Das Element besitzt keinen weiteren Ausgang, da mit seiner Ausführung der gesamte Vorgang beendet wird.
+                Ab dem Abschluss gilt die Aufbewahrungsfrist der Prozessversion; für dieses Prozesselement kann eine abweichende Frist festgelegt werden. Nach Ablauf der Frist wird der Vorgang automatisch gelöscht. Ist keine Frist festgelegt, bleibt der Vorgang erhalten.
                 """;
     }
 

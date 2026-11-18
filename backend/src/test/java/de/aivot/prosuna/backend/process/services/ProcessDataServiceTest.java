@@ -165,7 +165,7 @@ class ProcessDataServiceTest {
         when(nodeRepository.findById(11)).thenReturn(Optional.of(initialNode));
 
         var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
-        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(secondAttachment, thirdAttachment, firstAttachment));
+        when(attachmentRepository.findAllByProcessInstanceIdAndRemovedAtIsNull(42L)).thenReturn(List.of(secondAttachment, thirdAttachment, firstAttachment));
 
         var attachmentSetRepository = mock(ProcessInstanceAttachmentSetRepository.class);
         when(attachmentSetRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(attachmentSet, taskAttachmentSet));

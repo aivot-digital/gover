@@ -13,7 +13,7 @@ export function checkVersion(version?: string): string[] {
     }
 
     if (versionParts.some(p => isNaN(parseInt(p)))) {
-        errors.push('Bitte verwenden Sie nur Zahlen die Version zu beschreiben. Zum Beispiel: 4.12.3');
+        errors.push('Bitte verwenden Sie nur Zahlen, um die Version zu beschreiben. Zum Beispiel: 4.12.3');
     }
 
     return errors;

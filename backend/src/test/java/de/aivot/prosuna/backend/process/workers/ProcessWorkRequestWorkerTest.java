@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskReposito
 import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepository;
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,8 +57,10 @@ class ProcessWorkRequestWorkerTest {
     private final Instant redispatchBefore = now.minus(Duration.ofMinutes(5));
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(1L).setInitialNodeId(3)
             .setStatus(ProcessInstanceStatus.Running);
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private final ProcessWorkRequestWorker worker = new ProcessWorkRequestWorker(requests, requestService, instances, tasks,
-            execution, processWorker, time, connectionFactory, 2, Duration.ofMinutes(5));
+            execution, processWorker, time, connectionFactory, 2, Duration.ofMinutes(5),
+            meterRegistry);
 
     @BeforeEach
     void setup() {
@@ -102,6 +105,8 @@ class ProcessWorkRequestWorkerTest {
 
         verifyNoInteractions(processWorker);
         verify(requests).delete(request);
+
+        assertEquals(1, workRuns("Transition", "success"));
     }
 
     @Test
@@ -294,6 +299,9 @@ class ProcessWorkRequestWorkerTest {
 
         verify(processWorker).recordFailedExecution(1L, null, failure);
         verify(requests, never()).delete(any());
+
+        assertEquals(1, workRuns("Transition", "failed"));
+        assertEquals(0, workRuns("Transition", "success"));
     }
 
     @Test
@@ -344,6 +352,8 @@ class ProcessWorkRequestWorkerTest {
 
         verify(processWorker, never()).recordFailedExecution(any(), any(), any());
         verify(requests, never()).deleteById(any());
+
+        assertEquals(1, workRuns("Resume", "retry"));
     }
 
     @Test
@@ -472,6 +482,19 @@ class ProcessWorkRequestWorkerTest {
 
         verify(requests, times(2)).findDispatchableIds(0L, now, ProcessWorkRequestWorker.DISPATCHABLE_INSTANCE_STATUSES,
                 ProcessWorkRequestWorker.HELD_TASK_STATUSES, PageRequest.of(0, 2));
+    }
+
+    @Test
+    void deliveryOfAnAlreadyFinishedRequestIsCountedAsDiscarded() {
+        when(requests.findById(99L)).thenReturn(Optional.empty());
+
+        worker.consume(99L);
+
+        assertEquals(1, workRuns("unknown", "discarded"));
+    }
+
+    private long workRuns(String kind, String outcome) {
+        return meterRegistry.timer("prosuna.process.work", "kind", kind, "outcome", outcome).count();
     }
 
     private ProcessWorkRequestEntity stored(ProcessWorkRequestEntity request) {

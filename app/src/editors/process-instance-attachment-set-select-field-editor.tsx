@@ -17,7 +17,7 @@ export function ProcessInstanceAttachmentSetSelectFieldEditor(props: BaseEditorP
     }
 
     const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
-    const effectiveMinItems = element.required === true && element.minItems != null && element.minItems > 0
+    const effectiveMinItems = element.minItems != null && element.minItems > 0
         ? element.minItems
         : undefined;
     const minItemsError = effectiveMaxItems != null && effectiveMinItems != null && effectiveMinItems > effectiveMaxItems;
@@ -48,33 +48,30 @@ export function ProcessInstanceAttachmentSetSelectFieldEditor(props: BaseEditorP
                 />
             </Grid>
 
-            {
-                element.required === true &&
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 3,
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 3,
+                }}
+            >
+                <NumberFieldComponent
+                    label="Minimale Anzahl"
+                    value={element.minItems ?? undefined}
+                    onChange={(value) => {
+                        onPatch({
+                            minItems: value,
+                        });
                     }}
-                >
-                    <NumberFieldComponent
-                        label="Minimale Anzahl"
-                        value={element.minItems ?? undefined}
-                        onChange={(value) => {
-                            onPatch({
-                                minItems: value,
-                            });
-                        }}
-                        hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
-                        error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
-                        disabled={!editable}
-                    />
-                </Grid>
-            }
+                    hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                    error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                    disabled={!editable}
+                />
+            </Grid>
 
             <Grid
                 size={{
                     xs: 12,
-                    lg: element.required === true ? 3 : 6,
+                    lg: 3,
                 }}
             >
                 <NumberFieldComponent

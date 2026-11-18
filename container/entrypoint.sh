@@ -10,9 +10,11 @@ echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then
   echo "serve" > /app/runtime-mode
-  echo "Waiting for IdP to be available at ${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:-${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/staff…"
+  # Fail fast instead of polling /realms// forever; the backend requires this variable as well.
+  idp_realm_url="${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:-${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/${PROSUNA_KEYCLOAK_OIDC_REALM:?PROSUNA_KEYCLOAK_OIDC_REALM must be set}"
+  echo "Waiting for IdP to be available at ${idp_realm_url}…"
 
-  until curl --output /dev/null --silent --head --fail "${PROSUNA_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:-${PROSUNA_KEYCLOAK_OIDC_HOSTNAME}}/realms/staff/"; do
+  until curl --output /dev/null --silent --head --fail "${idp_realm_url}/"; do
       sleep 5
   done
 
@@ -26,8 +28,9 @@ if [ "$1" = "serve" ]; then
 else
   echo "app" > /app/runtime-mode
 
-  echo "Waiting for the API to be available at ${PROSUNA_HOSTNAME}/api/actuator/health…"
-  until curl --output /dev/null --silent --head --fail "${PROSUNA_HOSTNAME}/api/actuator/health"; do
+  # The actuator only listens on the internal management port of the API, so wait for a public endpoint instead.
+  echo "Waiting for the API to be available at ${PROSUNA_HOSTNAME}/api/public/system/app-config.js…"
+  until curl --output /dev/null --silent --head --fail "${PROSUNA_HOSTNAME}/api/public/system/app-config.js"; do
     sleep 5
   done
 

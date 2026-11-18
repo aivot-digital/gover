@@ -32,15 +32,15 @@ public class NoCodeListSumOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Summe aus Liste“** berechnet die Summe aller numerischen Werte innerhalb einer Liste. \s
+                Der Operator **„Summe einer Liste“** berechnet die Summe aller numerischen Werte innerhalb einer Liste. \s
                 Er wird verwendet, um schnell und effizient die Gesamtmenge oder den Gesamtwert aus einer Sammlung von Zahlen zu ermitteln.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben eine Liste mit Umsätzen aus mehreren Transaktionen: `[100, 200, 50]`. \s
-                Mit dem Operator **„Summe aus Liste“** können Sie die Gesamtumsätze berechnen:
+                Mit dem Operator **„Summe einer Liste“** können Sie die Gesamtumsätze berechnen:
                 
                 ```text
-                Summe aus Liste Umsätze
+                Summe einer Liste Umsätze
                 ```
                 
                 **Ergebnis:** \s
@@ -50,8 +50,8 @@ public class NoCodeListSumOperator extends NoCodeOperator {
                 - Liste der Werte: `[1, 2, 3, 4]` → **Ergebnis:** `10` \s
                 - Leere Liste: `[]` → **Ergebnis:** `0` \s
                 
-                # Wann verwenden Sie den Operator „Summe aus Liste“?
-                Verwenden Sie **„Summe aus Liste“**, wenn Sie:
+                # Wann verwenden Sie den Operator „Summe einer Liste“?
+                Verwenden Sie **„Summe einer Liste“**, wenn Sie:
                 - Die Gesamtsumme einer Sammlung von Zahlen berechnen möchten (z. B. Umsätze, Preise, Mengen). \s
                 - Daten aus einer Tabelle oder Liste aggregieren, z. B. die Summe aller Werte in einer bestimmten Spalte. \s
                 - Statistiken oder Berichte erstellen, die Summen erfordern. \s

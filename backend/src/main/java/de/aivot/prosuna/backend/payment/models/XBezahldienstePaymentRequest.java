@@ -16,6 +16,11 @@ import java.util.UUID;
 
 
 public class XBezahldienstePaymentRequest implements Serializable {
+    /** Characters of the booking text that payment providers do not accept. They are removed before sending. */
+    public static final String DISALLOWED_PURPOSE_CHARACTERS = "[^\\w\\d\\ \\-]";
+    /** Characters of the description that payment providers do not accept. They are removed before sending. */
+    public static final String DISALLOWED_DESCRIPTION_CHARACTERS = "[^\\w\\d\\s-,\\.\\u00C0-\\u017F]";
+
     // Die Request-ID wird vom Online-Dienst vergeben und vom Bezahldienst abgelegt.
     @JsonProperty("requestId")
     private String requestId = null;
@@ -149,7 +154,7 @@ public class XBezahldienstePaymentRequest implements Serializable {
         if (purpose != null) {
             this.purpose = StringUtils.cleanAndTruncate(
                     purpose,
-                    "[^\\w\\d\\ \\-]",
+                    DISALLOWED_PURPOSE_CHARACTERS,
                     27
             );
         } else {
@@ -165,7 +170,7 @@ public class XBezahldienstePaymentRequest implements Serializable {
         if (description != null) {
             this.description = StringUtils.cleanAndTruncate(
                     description,
-                    "[^\\w\\d\\s-,\\.\\u00C0-\\u017F]",
+                    DISALLOWED_DESCRIPTION_CHARACTERS,
                     250
             );
         } else {

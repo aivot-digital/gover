@@ -1,4 +1,5 @@
 import {BaseInputElement} from '../base-input-element';
+import {type OptionsSourceType} from './options-source-type';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {type DynamicTextPolicy} from '../../../input-mode';
 
@@ -12,5 +13,7 @@ export interface TextFieldElement extends BaseInputElement<ElementType.Text> {
     prefix: string | null | undefined;
     copyable: boolean | null | undefined;
     copyValueTemplate: string | null | undefined;
+    optionsSource?: OptionsSourceType | null;
+    codeListKey?: string | null;
     suggestions: string[] | null | undefined;
 }

@@ -324,7 +324,7 @@ export function SystemInformation(): React.ReactElement {
             children: getStorageStatusLabel(),
         },
         {
-            label: 'PDF Service',
+            label: 'PDF-Service',
             icon: getStatusIcon('gotenberg'),
             children: getStatusLabel('gotenberg'),
         },

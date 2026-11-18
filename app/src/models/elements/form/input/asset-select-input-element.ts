@@ -3,6 +3,7 @@ import {ElementType} from '../../../../data/element-type/element-type';
 import {AssetVisibility} from '../../../../modules/assets/models/asset-visibility';
 
 export interface AssetSelectInputElement extends BaseInputElement<ElementType.AssetSelectInput> {
+    storageProviderId?: number | null;
     placeholder: string | null | undefined;
     dialogTitle: string | null | undefined;
     allowedMimeTypes: string[] | null | undefined;

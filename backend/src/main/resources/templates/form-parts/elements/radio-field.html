@@ -5,7 +5,7 @@
     <div class="input">
         <div class="label">
             <strong th:text="${child.element.label}"></strong>
-            <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required != null && child.element.required}">Pflichtangabe, </span>Bitte nur eine Option auswählen)</span>
+            <span th:if="${base.isBlankPrint()}">(<span th:if="${child.element.required != null && child.element.required}">Pflichtangabe, </span>nur eine Option auswählen)</span>
         </div>
 
         <ul class="content">

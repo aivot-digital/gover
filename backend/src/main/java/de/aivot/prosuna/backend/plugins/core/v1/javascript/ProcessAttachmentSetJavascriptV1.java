@@ -72,7 +72,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Dieses Paket enthält Funktionen für Anlagensätze von Vorgängen.";
+        return "Diese JavaScript-Funktionsbibliothek ermöglicht die Arbeit mit Anlagensätzen von Vorgängen.";
     }
 
     @Nonnull

@@ -314,6 +314,18 @@ class CommunicationProviderManagementServiceTest {
     }
 
     @Test
+    void unsupportedConnectionTestProducesAReadableErrorLayout() throws Exception {
+        var inputs = new AuthoredElementValues();
+        var configuration = new Object();
+        when(configurationService.mapProviderConfiguration(provider, definition)).thenReturn(configuration);
+        when(definition.handleTest(provider, configuration, inputs)).thenCallRealMethod();
+
+        var result = service.testProvider(provider.getId(), inputs);
+
+        assertFailedTestResult(result, "Dieser Kommunikationsanbieter unterstützt keinen Verbindungstest.");
+    }
+
+    @Test
     void unexpectedFailureDuringTestBecomesInternalServerError() throws Exception {
         var inputs = new AuthoredElementValues();
         var configuration = new Object();

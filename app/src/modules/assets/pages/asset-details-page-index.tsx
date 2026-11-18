@@ -125,7 +125,7 @@ export function AssetDetailsPageIndex() {
         }
 
         if (isStringNullOrEmpty(item.uploaderId)) {
-            setUploader('System-Synchronisation');
+            setUploader('System-Synchronisierung');
         } else {
             new UsersApiService()
                 .retrieve(item.uploaderId)

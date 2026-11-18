@@ -20,12 +20,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /*
- * The declared repository queries of the checks get no transaction of their own. Within a request, open-in-view shares
- * one connection without autocommit, so a check outside a transaction would leave a database transaction open. A
- * following transaction with its own isolation level, such as the instance lock, then fails on PostgreSQL.
+ * The declared repository queries of the checks get no transaction of their own, so each check runs its queries in
+ * one read-only transaction.
  */
 @Service
 @Transactional(readOnly = true)
@@ -274,6 +276,23 @@ public class PermissionService {
 
         return processInstanceRepository.hasPermission(userId, processInstanceId, permission)
                 || vUserSystemPermissionRepository.hasPermission(userId, permission);
+    }
+
+    /** Returns the users among the given ones for whom {@link #hasProcessInstancePermission} is true. */
+    @Nonnull
+    public Set<String> filterUsersWithProcessInstancePermission(@Nonnull Collection<String> userIds,
+                                                                @Nonnull Long processInstanceId,
+                                                                @Nonnull String permission) {
+        if (userIds.isEmpty()) {
+            return Set.of();
+        }
+
+        var allowed = new HashSet<>(vUserSystemPermissionRepository.findUserIdsWithPermission(userIds, permission));
+        var scoped = userIds.stream().filter(userId -> !allowed.contains(userId)).toList();
+        if (!scoped.isEmpty()) {
+            allowed.addAll(processInstanceRepository.findUserIdsWithPermission(scoped, processInstanceId, permission));
+        }
+        return allowed;
     }
 
     public List<Long> getProcessInstancesWithPermission(@Nonnull String userId,

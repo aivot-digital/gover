@@ -50,9 +50,9 @@ export function ChipInputFieldSummary(props: BaseSummaryProps<ChipInputFieldElem
                     values.length > 0 &&
                     <List dense disablePadding>
                         {
-                            values.map((item) => (
+                            values.map((item, index) => (
                                 <ListItem
-                                    key={item}
+                                    key={index}
                                     disablePadding
                                 >
                                     <Typography>{item}</Typography>

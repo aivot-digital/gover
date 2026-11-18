@@ -54,7 +54,7 @@ public class NoCodeAddOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** 8
                 
-                # Wahrheitswerte für den „Addiere“-Operator
+                # Beispiele und Ergebnisse
                 - **Addiere 1 2** → **3** \s
                 - **Addiere 10 20 30** → **60** \s
                 - **Addiere -5 5** → **0**

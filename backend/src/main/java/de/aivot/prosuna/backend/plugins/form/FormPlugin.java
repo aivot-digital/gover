@@ -27,7 +27,7 @@ public class FormPlugin implements Plugin {
 
     @Override
     public @Nonnull String getDescription() {
-        return "Die Formularerweiterung von Prosuna.";
+        return "Diese Erweiterung stellt den Formulareingang als Prozesselement zur Erfassung und Übermittlung von Angaben bereit.";
     }
 
     @Override

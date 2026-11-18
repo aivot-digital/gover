@@ -3,12 +3,14 @@ package de.aivot.prosuna.backend.codeLists.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.OptimisticLock;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,7 +19,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "code_lists")
-public class CodeListEntity {
+public class CodeListEntity implements LockVersioned {
     @Id
     @Nonnull
     @Column(length = 255)
@@ -43,27 +45,41 @@ public class CodeListEntity {
     private Integer valueColumnIndex;
     @Nonnull
     private Integer labelColumnIndex;
+    // Sync bookkeeping and the update timestamp do not raise the lock version, so a finished sync
+    // does not make open edit forms outdated. Content changes by a sync still do.
+    @OptimisticLock(excluded = true)
     @Nonnull
     private CodeListStatus status;
+    @OptimisticLock(excluded = true)
     @Nullable
     private String statusMessage;
     // The option of the requested synchronization, so a request that is published again keeps it.
+    @OptimisticLock(excluded = true)
     @Nonnull
     @JsonIgnore
     private Boolean syncKeepOutdated;
     // The run that claimed the requested synchronization and when it started. Only this run records its result.
+    @OptimisticLock(excluded = true)
     @Nullable
     @JsonIgnore
     private UUID syncRunId;
+    @OptimisticLock(excluded = true)
     @Nullable
     @JsonIgnore
     private Instant syncStarted;
+    @OptimisticLock(excluded = true)
     @Nullable
     private Instant lastSync;
     @Nonnull
     private Instant created;
+    @OptimisticLock(excluded = true)
     @Nonnull
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @PrePersist
     public void prePersist() {
@@ -285,6 +301,17 @@ public class CodeListEntity {
 
     public CodeListEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public CodeListEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

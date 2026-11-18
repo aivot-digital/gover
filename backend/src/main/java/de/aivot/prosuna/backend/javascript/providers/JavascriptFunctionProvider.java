@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.javascript.providers;
 
 
+import de.aivot.prosuna.backend.javascript.enums.JavascriptExecutionContext;
 import de.aivot.prosuna.backend.plugin.enums.PluginComponentType;
 import de.aivot.prosuna.backend.plugin.models.PluginComponent;
 import jakarta.annotation.Nonnull;
@@ -28,6 +29,20 @@ public interface JavascriptFunctionProvider extends PluginComponent {
      */
     default String getObjectName() {
         return String.format("_%s_v%d", getComponentKey(), getMajorVersion()).toLowerCase();
+    }
+
+    /**
+     * Returns whether the functions are available in the given context. Code in a context other than
+     * {@link JavascriptExecutionContext#Default} can be changed by users without permission to edit the process, so
+     * providers must opt in to each of these contexts explicitly. Only opt in if everyone who can change such code may
+     * use the functions. Functions that read secrets or files, send requests, add process attachments, or create or
+     * change data objects must not be available there.
+     *
+     * @param context the context in which the code is executed
+     * @return whether the functions are available in the given context
+     */
+    default boolean isAvailableIn(@Nonnull JavascriptExecutionContext context) {
+        return context == JavascriptExecutionContext.Default;
     }
 
     /**

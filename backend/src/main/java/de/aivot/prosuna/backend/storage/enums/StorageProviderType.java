@@ -1,9 +1,9 @@
 package de.aivot.prosuna.backend.storage.enums;
 
 public enum StorageProviderType {
-    Assets("Dokumente und Medien"),
-    Attachments("Prozessanlagen"),
-    External("Externe Dokumentenablage"),
+    Assets("Dateien und Medien"),
+    Attachments("Vorgangsanlagen"),
+    External("Externe Dateiablage"),
     ;
 
     private final String label;

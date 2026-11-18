@@ -58,9 +58,9 @@ export function TeamsListPage() {
             content: (
                 <>
                     <Typography>
-                        Teams fassen Mitarbeiter:innen für fachliche oder organisatorische
-                        Aufgabenbereiche zusammen und können unabhängig von
-                        Organisationseinheiten genutzt werden.
+                        Teams bündeln Mitarbeiter:innen vor allem für die Zusammenarbeit über Organisationseinheiten hinweg.
+                        Sie ergänzen die Hierarchie der Organisationseinheiten und können über deren Grenzen
+                        hinweg genutzt werden.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Teammitgliedschaften können mit Domänenrollen kombiniert werden, um

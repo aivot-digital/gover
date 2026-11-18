@@ -50,7 +50,7 @@ import {
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {type PermissionSet} from '../../../../permissions/models/permission-set';
 
-const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+const deletedUserMembershipTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
 const membershipIdsLoadingTooltip = 'Lade bestehende Mitgliedschaften…';
 const membershipIdsLoadErrorTooltip = 'Die bestehenden Mitgliedschaften konnten nicht geladen werden.';
 type MembershipIdsLoadState = 'loading' | 'loaded' | 'error';
@@ -264,13 +264,15 @@ export function UserDetailsPageDepartmentMemberships() {
         }
 
         confirm({
+            isDestructive: true,
             title: 'Mitgliedschaft löschen',
             children: (
                 <>
                     <Typography>
-                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus der
-                        Organisationseinheit <strong>{membership.departmentName}</strong> verliert diese alle
-                        zugewiesenen Rollen und Berechtigungen in dieser Organisationseinheit.
+                        Die Mitgliedschaft von <strong>{membership.userFullName}</strong> in der
+                        Organisationseinheit <strong>{membership.departmentName}</strong> und die damit verbundenen
+                        Domänenrollenzuweisungen werden entfernt. Berechtigungen aus anderen Zuweisungen können
+                        weiterhin gelten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Diese Aktion kann nicht rückgängig gemacht werden.
@@ -322,7 +324,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und der
                     dazugehörigen
                     Rollen.
                 </Typography>
@@ -388,6 +390,7 @@ export function UserDetailsPageDepartmentMemberships() {
                                 disabled: !canReadDepartment,
                                 disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
                             }, {
+                                color: 'error',
                                 icon: <Delete/>,
                                 tooltip: 'Mitgliedschaft löschen',
                                 disabled: !canDeleteMembership,

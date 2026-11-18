@@ -14,9 +14,11 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.Headline]: [],
     [ElementType.MultiCheckbox]: [],
     [ElementType.Number]: [],
+    [ElementType.Duration]: [],
+    [ElementType.PhoneNumber]: ['tel'],
+    [ElementType.Email]: ['email'],
     [ElementType.ReplicatingContainer]: [],
     [ElementType.RichText]: [],
-    [ElementType.Radio]: [],
     [ElementType.Select]: [
         'honorific-prefix',
         'honorific-suffix',

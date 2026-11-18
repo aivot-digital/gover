@@ -15,8 +15,13 @@ export default defineConfig({
             },
         },
         setupFiles: './src/setupTests.ts',
-        // Layout regressions in shared accessibility styles need the real CSS, not Vitest's empty CSS stub.
-        css: {include: [/\/src\/index\.scss(?:\?|$)/]},
+        // Layout and visibility regressions need the real CSS, not Vitest's empty CSS stub.
+        css: {
+            include: [
+                /\/src\/index\.scss(?:\?|$)/,
+                /\/process-flow-editor\.css(?:\?|$)/,
+            ],
+        },
         include: ['src/**/*.{spec,test}.{ts,tsx}'],
         clearMocks: true,
         restoreMocks: true,

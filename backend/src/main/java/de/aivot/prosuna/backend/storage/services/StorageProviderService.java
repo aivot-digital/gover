@@ -220,8 +220,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                     .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
-        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Vorgangsdokumente");
-        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dokument & Medien");
+        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Anlagen von Vorgängen");
+        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dateien und Medien");
 
         // TODO: Check if any file of this storage provider is used in a process or process instance.
 

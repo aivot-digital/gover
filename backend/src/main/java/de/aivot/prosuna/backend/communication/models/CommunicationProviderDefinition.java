@@ -52,7 +52,7 @@ public interface CommunicationProviderDefinition<C, I> extends PluginComponent {
     default GroupLayoutElement handleTest(@Nonnull CommunicationProviderEntity providerEntity,
                                           @Nonnull C config,
                                           @Nonnull AuthoredElementValues inputs) throws CommunicationException {
-        throw new CommunicationException("Testing is not supported for this communication provider.");
+        throw new CommunicationException("Dieser Kommunikationsanbieter unterstützt keinen Verbindungstest.");
     }
 
     @Nullable

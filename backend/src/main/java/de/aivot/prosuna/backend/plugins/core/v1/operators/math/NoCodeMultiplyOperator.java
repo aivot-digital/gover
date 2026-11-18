@@ -48,7 +48,7 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** 15
                 
-                # Wahrheitswerte für den „Multipliziere“-Operator
+                # Beispiele und Ergebnisse
                 - **Multipliziere 2 3** → **6** \s
                 - **Multipliziere 4 5 6** → **120** \s
                 - **Multipliziere -2 3** → **-6**

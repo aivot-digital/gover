@@ -33,9 +33,8 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 }}
                 variant="body2"
             >
-                Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie das Formular einreichen. Durch
-                einen Klick auf das jeweilige Datenfeld gelangen Sie zurück zu dem dazugehörigen Abschnitt um die
-                Eingabe zu ändern.
+                Bitte prüfen Sie Ihre Angaben sorgfältig, bevor Sie sie übermitteln. Wählen Sie eine Angabe aus,
+                um zum zugehörigen Abschnitt zurückzukehren und die Eingabe zu ändern.
             </Typography>
 
             <SummaryDispatcherComponent
@@ -62,9 +61,8 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 }}
                 variant="body2"
             >
-                Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben geprüft haben.
-                Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung durch
-                die zuständige und/oder bewirtschaftende Stelle führen.
+                Bitte bestätigen Sie, dass Sie Ihre Angaben geprüft haben.
+                Fehlerhafte Angaben können die weitere Bearbeitung verzögern.
             </Typography>
 
             <Box>

@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -134,6 +135,8 @@ public class PresetVersionController {
         newVersion.setUpdated(null);
         newVersion.setPublished(null);
         newVersion.setRevoked(null);
+        // A lock version sent with a copied version would make Spring Data look up a row that does not exist.
+        newVersion.setLockVersion(null);
 
         var savedVersion = versionRepository
                 .save(newVersion);
@@ -218,6 +221,7 @@ public class PresetVersionController {
         var presetVersion = versionRepository
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(updatedPreset, presetVersion);
 
         if (presetVersion.getStatus() != PresetStatus.Drafted) {
             throw ResponseException.conflict("Veröffentlichte Versionen können nicht bearbeitet werden.");
@@ -363,7 +367,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::notFound);
 
         if (presetVersion.getStatus() == PresetStatus.Revoked) {
-            throw ResponseException.conflict("Die Version ist bereits widerrufen.");
+            throw ResponseException.conflict("Die Version ist bereits zurückgezogen.");
         }
 
         presetVersion.setStatus(PresetStatus.Revoked);

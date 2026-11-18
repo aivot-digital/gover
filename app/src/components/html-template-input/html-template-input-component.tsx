@@ -48,6 +48,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
 
         if (assetKey == null || isStringNullOrEmpty(assetKey)) {
             setTemplateAsset(null);
+            setIsLoadingTemplate(false);
             return;
         }
 
@@ -59,9 +60,16 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 abort: abortController.signal,
             })
             .then((asset) => {
-                setTemplateAsset(asset);
+                if (!abortController.signal.aborted) {
+                    setTemplateAsset(asset);
+                }
             })
             .catch((err) => {
+                // The cleanup aborts superseded or unmounted loads; that is not a load failure.
+                if (abortController.signal.aborted) {
+                    return;
+                }
+
                 dispatch(showApiErrorSnackbar(err, 'HTML-Vorlage konnte nicht geladen werden'));
 
                 if (isApiError(err) && err.displayableToUser) {
@@ -71,7 +79,10 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 }
             })
             .finally(() => {
-                setIsLoadingTemplate(false);
+                // A newer load may already be running and owns the loading state.
+                if (!abortController.signal.aborted) {
+                    setIsLoadingTemplate(false);
+                }
             });
 
         return () => {

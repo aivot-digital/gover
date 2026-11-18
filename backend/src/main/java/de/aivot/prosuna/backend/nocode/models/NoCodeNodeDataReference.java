@@ -35,11 +35,11 @@ public class NoCodeNodeDataReference extends NoCodeOperand {
     @Nonnull
     public NoCodeOperandError validate() {
         if (StringUtils.isNullOrEmpty(nodeDataKey)) {
-            return new NoCodeOperandError(this, "Der Knotenschlüssel darf nicht leer sein.", null);
+            return new NoCodeOperandError(this, "Der Datenschlüssel des Prozesselements darf nicht leer sein.", null);
         }
 
         if (!NODE_KEY_PATTERN.matcher(nodeDataKey).matches()) {
-            return new NoCodeOperandError(this, "Der Knotenschlüssel darf nur Buchstaben (A-Z), Zahlen und Unterstriche enthalten", null);
+            return new NoCodeOperandError(this, "Der Datenschlüssel des Prozesselements darf nur Buchstaben (A-Z), Zahlen und Unterstriche enthalten", null);
         }
 
         if (StringUtils.isNullOrEmpty(path)) {

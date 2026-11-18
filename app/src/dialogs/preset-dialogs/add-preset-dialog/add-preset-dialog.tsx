@@ -44,7 +44,7 @@ function validate(preset: PresetCreateReqeustDTO): Errors | null {
     if (preset.title == null || preset.title.length < 3 || preset.title.length > 190) {
         errors = {
             ...(errors ?? {}),
-            title: 'Bitte geben Sie einen Titel mit mindestens 3 und weniger als 190 Zeichen ein',
+            title: 'Bitte geben Sie einen Titel mit mindestens 3 und höchstens 190 Zeichen ein.',
         };
     }
 
@@ -137,8 +137,8 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                         mb: 2,
                     }}
                 >
-                    Vergeben Sie einen Titel für die Vorlage um es besser identifizieren zu können.
-                    Diesen Titel können nur Sie und ihre Kolleg:innen einsehen.
+                    Vergeben Sie einen Titel, um die Vorlage besser identifizieren zu können.
+                    Diesen Titel können nur Sie und Ihre Kolleg:innen einsehen.
                 </Typography>
 
                 <TextFieldComponent
@@ -173,7 +173,7 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                         severity="error"
                         sx={{mt: 2}}
                     >
-                        Bitte beheben Sie die markierten Fehler um fortzufahren.
+                        Bitte beheben Sie die markierten Fehler, um fortzufahren.
                     </Alert>
                 }
             </DialogContent>

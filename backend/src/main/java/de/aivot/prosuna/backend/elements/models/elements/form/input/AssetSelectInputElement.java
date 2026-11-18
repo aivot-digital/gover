@@ -25,6 +25,9 @@ public class AssetSelectInputElement extends BaseInputElement<String> implements
     @Nullable
     private List<String> allowedMimeTypes;
 
+    @Nullable
+    private Integer storageProviderId;
+
     @Nonnull
     private AssetVisibility assetVisibility = AssetVisibility.All;
 
@@ -83,12 +86,13 @@ public class AssetSelectInputElement extends BaseInputElement<String> implements
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(dialogTitle, that.dialogTitle)
                 && Objects.equals(allowedMimeTypes, that.allowedMimeTypes)
+                && Objects.equals(storageProviderId, that.storageProviderId)
                 && assetVisibility == that.assetVisibility;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), placeholder, dialogTitle, allowedMimeTypes, assetVisibility);
+        return Objects.hash(super.hashCode(), placeholder, dialogTitle, allowedMimeTypes, assetVisibility, storageProviderId);
     }
 
     @Nullable
@@ -128,6 +132,17 @@ public class AssetSelectInputElement extends BaseInputElement<String> implements
 
     public AssetSelectInputElement setAssetVisibility(@Nullable AssetVisibility assetVisibility) {
         this.assetVisibility = Objects.requireNonNullElse(assetVisibility, AssetVisibility.All);
+        return this;
+    }
+
+    @Nullable
+    public Integer getStorageProviderId() {
+        return storageProviderId;
+    }
+
+    @Nonnull
+    public AssetSelectInputElement setStorageProviderId(@Nullable Integer storageProviderId) {
+        this.storageProviderId = storageProviderId;
         return this;
     }
 }

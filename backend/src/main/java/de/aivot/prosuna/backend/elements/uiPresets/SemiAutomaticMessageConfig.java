@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -27,10 +28,10 @@ public class SemiAutomaticMessageConfig {
                                                @Nonnull final Integer processId,
                                                @Nonnull final Integer processVersion) {
         layout
-                .findChild(LayoutConfig.EXECUTION_TYPE_FIELD_ID, RadioInputElement.class)
+                .findChild(LayoutConfig.EXECUTION_TYPE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(executionType -> executionType.setOptions(List.of(
-                        RadioInputElementOption.of(LayoutConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
-                        RadioInputElementOption.of(LayoutConfig.EXECUTION_TYPE_MANUAL, "Manuell bearbeiten und versenden")
+                        SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
+                        SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_MANUAL, "Manuell bearbeiten und versenden")
                 )));
 
         layout
@@ -131,10 +132,11 @@ public class SemiAutomaticMessageConfig {
          */
         @InputElementPOJOBinding(
                 id = EXECUTION_TYPE_FIELD_ID,
-                type = ElementType.Radio,
+                type = ElementType.Select,
                 properties = {
+                        @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                         @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Auswahl, ob die Nachricht automatisch versendet oder vorher durch eine Mitarbeiter:in bearbeitet wird."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie zwischen automatischem Versand und teilautomatisierter Ausführung. Bei teilautomatisierter Ausführung wird die Nachricht anhand der Nachrichtenbausteine vorbereitet und vor dem Versand durch eine Mitarbeiter:in geprüft und bei Bedarf bearbeitet."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -167,6 +169,7 @@ public class SemiAutomaticMessageConfig {
                 id = SUBJECT_FIELD_ID,
                 type = ElementType.Text,
                 dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.SingleLineText,
                 allowedInputModes = {
                         InputMode.Literal,
                         InputMode.Variable,
@@ -175,7 +178,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -196,7 +199,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorlage für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -233,6 +236,7 @@ public class SemiAutomaticMessageConfig {
                 id = SUBJECT_FIELD_ID,
                 type = ElementType.Text,
                 dynamicText = true,
+                dynamicTextFormat = TemplateOutputFormat.SingleLineText,
                 allowedInputModes = {
                         InputMode.Literal,
                         InputMode.Variable,
@@ -240,7 +244,7 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für den Betreff"),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für den Betreff"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
@@ -261,7 +265,7 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage für die Nachricht"),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für die Nachricht"),
                         @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }

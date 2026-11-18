@@ -329,7 +329,7 @@ public class ProcessController {
                                 "newEdgeIds", createdEdgesIds
                         )
                 ).withMessage(
-                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s aus einem Import erstellt (Version %s, %s Knoten, %s Kanten).",
+                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s aus einem Import erstellt (Version %s, %s Prozesselemente, %s Verbindungen).",
                         StringUtils.quote(String.valueOf(newProcess.getId())),
                         StringUtils.quote(execUser.getFullName()),
                         StringUtils.quote(String.valueOf(newVersion.getProcessVersion())),

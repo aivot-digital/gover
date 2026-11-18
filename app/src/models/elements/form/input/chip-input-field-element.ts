@@ -9,5 +9,7 @@ export interface ChipInputFieldElement extends BaseInputElement<ElementType.Chip
     codeListKey: string | null | undefined;
     minItems: number | null | undefined;
     maxItems: number | null | undefined;
+    maxItemLength?: number | null;
+    pasteSeparators?: string[] | null;
     allowDuplicates: boolean | null | undefined;
 }

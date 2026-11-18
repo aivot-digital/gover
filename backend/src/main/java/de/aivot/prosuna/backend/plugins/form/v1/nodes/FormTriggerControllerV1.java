@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
-import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
+import de.aivot.prosuna.backend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -104,7 +104,7 @@ public class FormTriggerControllerV1 {
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final SystemConfigService systemConfigService;
     private final StorageProviderService storageProviderService;
-    private final CaptchaReplayGuard captchaReplayGuard;
+    private final RedisCaptchaReplayGuard captchaReplayGuard;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
@@ -137,7 +137,7 @@ public class FormTriggerControllerV1 {
                                    ProcessNodeDefinitionService processNodeDefinitionService,
                                    SystemConfigService systemConfigService,
                                    StorageProviderService storageProviderService,
-                                   CaptchaReplayGuard captchaReplayGuard,
+                                   RedisCaptchaReplayGuard captchaReplayGuard,
                                    ProcessInstanceService processInstanceService,
                                    ProcessInstanceTaskService processInstanceTaskService,
                                    ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
@@ -811,16 +811,25 @@ public class FormTriggerControllerV1 {
             // submitter can submit again without creating a duplicate.
             submissionSecret = processSubmissionBindingService.bind(createdInstance.getId());
 
+            // Store the payload while the instance is still paused, so a payload the database rejects marks the instance
+            // as failed below while the identities stay in the session. update() copies only selected fields and would
+            // drop the payload.
+            processInstanceService.save(createdInstance.setInitialPayload(initialPayload));
+
             // The instance holds the identities now. Remove them from the session as the last step before the instance
             // is released, so the session ID cannot be used to submit the form again with the same identities. If any
             // step fails before, the identities stay in the session for another attempt.
             identityService.clearIdentitySession(identitySessionId, nodeEntity.getId());
 
-            createdInstance
-                    .setInitialPayload(initialPayload)
-                    .setStatus(ProcessInstanceStatus.Created);
+            createdInstance.setStatus(ProcessInstanceStatus.Created);
         } catch (Exception e) {
-            createdInstance.setStatus(ProcessInstanceStatus.Failed);
+            // Drop a payload that was already stored when marking the instance as failed. The submitter did not receive
+            // the access key and submits again, so restarting this instance would duplicate the case; a restart refuses
+            // an instance without initial data. update() would keep the stored payload, so the full state is saved, and
+            // a payload the database rejected is not sent again.
+            createdInstance
+                    .setInitialPayload(new HashMap<>())
+                    .setStatus(ProcessInstanceStatus.Failed);
 
             var logger = processNodeExecutionLoggerFactory
                     .create(
@@ -831,7 +840,7 @@ public class FormTriggerControllerV1 {
                     );
             logger.logException(e);
 
-            processInstanceService.update(createdInstance.getId(), createdInstance);
+            processInstanceService.save(createdInstance);
 
             if (e instanceof ResponseException responseException) {
                 throw responseException;
@@ -1095,7 +1104,7 @@ public class FormTriggerControllerV1 {
 
         return vDepartmentShadowedService
                 .retrieve(context.process().getDepartmentId())
-                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für die Zahlungsbestätigung gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Keine Organisationseinheit für die Zahlungsbestätigung gefunden."));
     }
 
     @Nullable

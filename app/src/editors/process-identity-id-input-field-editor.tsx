@@ -35,7 +35,7 @@ export function ProcessIdentityIdInputFieldEditor(props: BaseEditorProps<Process
                             placeholder: value,
                         });
                     }}
-                    hint="Ein Platzhalter zeigt beispielhaft, welche Prozessidentität ausgewählt werden kann."
+                    hint="Ein Platzhalter zeigt beispielhaft, welche Identität ausgewählt werden kann."
                     disabled={!editable}
                 />
             </Grid>

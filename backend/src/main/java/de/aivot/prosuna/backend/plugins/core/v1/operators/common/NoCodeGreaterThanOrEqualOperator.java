@@ -47,9 +47,9 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
                 - **10 GRÖßER ALS ODER GLEICH 5** → **wahr** \s
                 - **5 GRÖßER ALS ODER GLEICH 10** → **falsch** \s
                 - **10 GRÖßER ALS ODER GLEICH 10** → **wahr** \s
-                - **"abcd" GRÖßER ALS ODER GLEICH "abc"** → **wahr** (länge des Textes) \s
-                - **"abc" GRÖßER ALS ODER GLEICH "abcd"** → **falsch** (länge des Textes) \s
-                - **"abcd" GRÖßER ALS ODER GLEICH "abcd"** → **wahr** (länge des Textes)
+                - **"abcd" GRÖßER ALS ODER GLEICH "abc"** → **wahr** (Länge des Textes) \s
+                - **"abc" GRÖßER ALS ODER GLEICH "abcd"** → **falsch** (Länge des Textes) \s
+                - **"abcd" GRÖßER ALS ODER GLEICH "abcd"** → **wahr** (Länge des Textes)
                 
                 # Wann verwenden Sie den Operator „Größer als oder gleich“?
                 Verwenden Sie **„Größer als oder gleich“**, wenn Sie prüfen möchten, ob ein Wert größer oder gleich einem anderen Wert ist. \s

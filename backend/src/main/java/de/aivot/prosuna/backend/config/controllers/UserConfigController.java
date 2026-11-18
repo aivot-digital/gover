@@ -170,7 +170,7 @@ public class UserConfigController {
                                 "userId", userId
                         ))
                 .withMessage(
-                        "Die Mitarbeiterkonfiguration %s für %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Die persönliche Einstellung %s für %s wurde von der Mitarbeiter:in %s aktualisiert.",
                         StringUtils.quote(config.getKey()),
                         StringUtils.quote(config.getUserId()),
                         StringUtils.quote(user.getFullName())

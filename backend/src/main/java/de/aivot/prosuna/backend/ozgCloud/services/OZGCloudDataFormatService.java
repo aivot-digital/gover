@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplica
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.elements.models.input.LiteralAuthoredInputValue;
 import de.aivot.prosuna.backend.enums.TableColumnDataType;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.ozgCloud.models.OZGCloudFormDataItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -90,11 +91,12 @@ public class OZGCloudDataFormatService {
                     List.of(buildMultiCheckboxField(multiCheckboxField, context));
             case NumberInputElement numberField -> List.of(buildNumberField(numberField, context));
             case SelectInputElement selectField -> List.of(buildSelectField(selectField, context));
-            case RadioInputElement radioField -> List.of(buildRadioField(radioField, context));
             case TableInputElement tableField -> List.of(buildTableField(tableField, context));
+            case ContactInputElement contactField -> List.of(buildContactField(contactField, context));
             case TextInputElement textField -> List.of(buildTextField(textField, context));
             case ChipInputElement chipInputField -> List.of(buildChipInputField(chipInputField, context));
             case TimeInputElement timeField -> List.of(buildTimeField(timeField, context));
+            case DurationInputElement durationField -> List.of(buildDurationField(durationField, context));
             default -> List.of();
         };
     }
@@ -520,23 +522,6 @@ public class OZGCloudDataFormatService {
         );
     }
 
-    private OZGCloudFormDataItem buildRadioField(
-            @Nonnull RadioInputElement radioField,
-            @Nonnull FormattingContext context
-    ) {
-        var edo = context.resolve(radioField);
-
-        return new OZGCloudFormDataItem(
-                radioField.getId(),
-                radioField.getLabel(),
-                radioField.toDisplayValue(edo.getValue(String.class, null)),
-                null,
-                null,
-                null,
-                null
-        );
-    }
-
     private OZGCloudFormDataItem buildSelectField(
             @Nonnull SelectInputElement selectField,
             @Nonnull FormattingContext context
@@ -710,11 +695,13 @@ public class OZGCloudDataFormatService {
             @Nonnull FormattingContext context
     ) {
         var edo = context.resolve(richTextInputField);
+        // OZG-Cloud shows values as text, so the Markdown is sent as readable plain text, as in the text part of mails.
+        var plainText = MarkdownRenderer.renderPlainText(richTextInputField.formatValue(edo.getValue()));
 
         return new OZGCloudFormDataItem(
                 richTextInputField.getId(),
                 richTextInputField.getLabel(),
-                richTextInputField.toDisplayValue(richTextInputField.formatValue(edo.getValue())),
+                plainText.isEmpty() ? richTextInputField.toDisplayValue(null) : plainText,
                 null,
                 null,
                 null,
@@ -805,6 +792,19 @@ public class OZGCloudDataFormatService {
                 null,
                 null
         );
+    }
+
+    private OZGCloudFormDataItem buildContactField(@Nonnull ContactInputElement field, @Nonnull FormattingContext context) {
+        var value = field.formatValue(context.resolve(field).getValue());
+        return new OZGCloudFormDataItem(field.getId(), field.getLabel(), field.toDisplayValue(value), null, null, null, null);
+    }
+
+    private OZGCloudFormDataItem buildDurationField(
+            @Nonnull DurationInputElement field,
+            @Nonnull FormattingContext context
+    ) {
+        var value = context.resolve(field).getValue();
+        return new OZGCloudFormDataItem(field.getId(), field.getLabel(), field.display(value), null, null, null, null);
     }
 
     private OZGCloudFormDataItem buildTimeField(

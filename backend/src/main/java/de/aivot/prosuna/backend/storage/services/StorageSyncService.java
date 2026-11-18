@@ -16,7 +16,9 @@ import de.aivot.prosuna.backend.storage.models.StorageItemMetadata;
 import de.aivot.prosuna.backend.storage.models.StorageProviderDefinition;
 import de.aivot.prosuna.backend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -46,6 +48,7 @@ public class StorageSyncService {
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final AssetRepository assetRepository;
     private final TransactionTemplate transaction;
+    private final MeterRegistry meterRegistry;
 
     public StorageSyncService(KnownExtensionsService knownExtensions,
                               StorageProviderRepository storageProviderRepository,
@@ -53,7 +56,9 @@ public class StorageSyncService {
                               StorageProviderConfigurationService storageProviderConfigurationService,
                               StorageIndexItemRepository storageIndexItemRepository,
                               AssetRepository assetRepository,
-                              PlatformTransactionManager transactionManager) {
+                              PlatformTransactionManager transactionManager,
+                              MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.knownExtensions = knownExtensions;
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
@@ -86,8 +91,9 @@ public class StorageSyncService {
                 return false;
             }
 
-            var recorded = transaction.execute(status -> syncClaimed(storageProvider, runId, status));
-            if (Boolean.TRUE.equals(recorded)) {
+            var outcome = transaction.execute(status -> syncClaimed(storageProvider, runId, status));
+            if (outcome != null) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", outcome).increment();
                 return false;
             }
         } catch (RuntimeException e) {
@@ -100,6 +106,7 @@ public class StorageSyncService {
                     .log();
 
             if (storageProviderRepository.failSync(id, runId, e.getMessage(), Instant.now()) == 1) {
+                meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "failed").increment();
                 return false;
             }
         }
@@ -113,9 +120,11 @@ public class StorageSyncService {
      * Synchronizes the index and records the result in one transaction. Returns false and rolls back if the run no
      * longer owns the synchronization.
      */
-    private boolean syncClaimed(@Nonnull StorageProviderEntity storageProvider,
-                                @Nonnull UUID runId,
-                                @Nonnull TransactionStatus status) {
+    /** Returns the outcome of the recorded run, or {@code null} if the run was superseded and rolled back. */
+    @Nullable
+    private String syncClaimed(@Nonnull StorageProviderEntity storageProvider,
+                               @Nonnull UUID runId,
+                               @Nonnull TransactionStatus status) {
         String failureMessage = null;
         var failed = false;
         try {
@@ -145,7 +154,7 @@ public class StorageSyncService {
 
         if (current == null || current.getStatus() != StorageProviderStatus.Syncing || !runId.equals(current.getSyncRunId())) {
             status.setRollbackOnly();
-            return false;
+            return null;
         }
 
         if (failed) {
@@ -162,7 +171,7 @@ public class StorageSyncService {
         storageProviderRepository.save(current
                 .setSyncRunId(null)
                 .setSyncStarted(null));
-        return true;
+        return failed ? "failed" : "success";
     }
 
     private void performSync(@Nonnull StorageProviderEntity storageProvider) {
@@ -180,7 +189,7 @@ public class StorageSyncService {
                                 storageProvider.getStorageProviderDefinitionKey() +
                                 " und der Version " +
                                 storageProvider.getStorageProviderDefinitionVersion() +
-                                " konnte nicht gefunden werden. Bitte stellen Sie sicher, dass das entsprechende Plugin installiert ist und Sie die Anwendung neu gestartet haben."
+                                " konnte nicht gefunden werden. Bitte stellen Sie sicher, dass die entsprechende Erweiterung installiert ist und Sie die Anwendung neu gestartet haben."
                 ));
 
         var root = getRoot(storageProvider, storageDefinition);

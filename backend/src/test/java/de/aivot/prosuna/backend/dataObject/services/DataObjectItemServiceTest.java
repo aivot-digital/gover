@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.dataObject.services;
 
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.dataObject.dtos.DataObjectItemResponseDTO;
 import de.aivot.prosuna.backend.dataObject.entities.DataObjectItemEntity;
@@ -20,6 +22,7 @@ import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryServi
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
+import org.mockito.Mockito;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -41,7 +44,8 @@ class DataObjectItemServiceTest {
     private final ElementDerivationService derivation = new ElementDerivationService(
             new JavascriptEngineFactoryService(List.of()), new NoCodeEvaluationService(List.of()),
             new ElementDataTransformService(), new CodeListElementOptionsService(null, null),
-            authoredValues, new InputVariableResolver()
+            authoredValues, new InputVariableResolver(),
+            new AssetSelectionValidationService(Mockito.mock(AssetRepository.class))
     );
     private final DataObjectItemService service = new DataObjectItemService(items, schemas, derivation, authoredValues);
 

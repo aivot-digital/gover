@@ -16,7 +16,8 @@ public record CustomLinkRequestDTO(
         @NotNull @NotBlank @Size(max = 500) @URL @Pattern(regexp = "(?i)^https?://.+$") String url,
         @Nullable @Size(max = 64) @Pattern(regexp = "^[a-zA-Z0-9_-]*$") String icon,
         @NotNull CustomLinkType type,
-        @NotNull Boolean enabled
+        @NotNull Boolean enabled,
+        @Nullable Long lockVersion
 ) implements RequestDTO<CustomLink> {
     @Override
     public CustomLink toEntity() {
@@ -26,6 +27,7 @@ public record CustomLinkRequestDTO(
                 .setUrl(url.trim())
                 .setIcon(icon == null || icon.isBlank() ? null : icon)
                 .setType(type)
-                .setEnabled(enabled);
+                .setEnabled(enabled)
+                .setLockVersion(lockVersion);
     }
 }

@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.security;
 
 import de.aivot.prosuna.backend.system.controllers.AuthController;
+import de.aivot.prosuna.backend.user.entities.UserApiKeyEntity;
+import de.aivot.prosuna.backend.user.repositories.UserApiKeyRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,26 +15,34 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
@@ -51,8 +61,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SecurityConfigurationCsrfWebMvcTest {
     private static final String ACCESS_TOKEN = "staff-access-token";
     private static final String CSRF_ID = "csrf-id";
+    private static final String API_KEY = ApiKeyJwtDecoder.API_KEY_PREFIX + "test-key";
+    private static final String API_KEY_USER_ID = "00000000-0000-0000-0000-000000000001";
 
     @Autowired
+    private WebApplicationContext applicationContext;
+
+    @Autowired
+    private FilterChainProxy springSecurityFilterChain;
+
     private MockMvc mockMvc;
 
     @MockitoBean
@@ -61,11 +78,18 @@ class SecurityConfigurationCsrfWebMvcTest {
     @MockitoBean
     private JwtDecoder jwtDecoder;
 
+    @MockitoBean
+    private UserApiKeyRepository userApiKeyRepository;
+
     @SuppressWarnings("unchecked")
     private final ValueOperations<String, String> valueOperations = mock(ValueOperations.class);
 
     @BeforeEach
     void setUp() {
+        // Register the chain so the CSRF response filter runs at its configured security-filter position
+        mockMvc = MockMvcBuilders.webAppContextSetup(applicationContext)
+                .addFilters(springSecurityFilterChain)
+                .build();
         when(redis.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("csrf:token:" + CSRF_ID)).thenReturn("stored-csrf-token");
         when(jwtDecoder.decode(ACCESS_TOKEN)).thenReturn(Jwt
@@ -76,6 +100,13 @@ class SecurityConfigurationCsrfWebMvcTest {
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build());
+        when(userApiKeyRepository.findByKeyHashOfActiveUser(ApiKeyJwtDecoder.hash(API_KEY))).thenReturn(Optional.of(new UserApiKeyEntity()
+                .setId(1)
+                .setName("Test")
+                .setCreated(Instant.now())
+                .setUserId(API_KEY_USER_ID)
+                .setExpiration(Instant.now().plusSeconds(60))
+                .setKeyHash(ApiKeyJwtDecoder.hash(API_KEY))));
     }
 
     @Test
@@ -120,6 +151,73 @@ class SecurityConfigurationCsrfWebMvcTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void acceptsStateChangingRequestsWithApiKeyWithoutCsrfTokenAsTheKeyUser() throws Exception {
+        mockMvc
+                .perform(post("/api/csrf-test/")
+                        .header("Authorization", "Bearer " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(content().string(API_KEY_USER_ID));
+    }
+
+    @Test
+    void acceptsApiKeyAfterSeveralSpaces() throws Exception {
+        mockMvc
+                .perform(post("/api/csrf-test/")
+                        .header("Authorization", "Bearer   " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(content().string(API_KEY_USER_ID));
+    }
+
+    @Test
+    void prefersApiKeyAfterSeveralSpacesOverAccessCookie() throws Exception {
+        mockMvc
+                .perform(post("/api/csrf-test/")
+                        .cookie(accessCookie(), csrfCookie())
+                        .header("Authorization", "Bearer   " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(content().string(API_KEY_USER_ID));
+    }
+
+    @Test
+    void rejectsUnknownApiKeyInsteadOfFallingBackToAccessCookie() throws Exception {
+        // The API key exempts the request from CSRF protection, so the cookie must not authenticate it instead
+        mockMvc
+                .perform(post("/api/csrf-test/")
+                        .cookie(accessCookie(), csrfCookie())
+                        .header("Authorization", "Bearer " + ApiKeyJwtDecoder.API_KEY_PREFIX + "unknown"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void issuesCsrfTokenForAccessCookieRequests() throws Exception {
+        mockMvc
+                .perform(get("/api/csrf-test/")
+                        .cookie(accessCookie(), csrfCookie()))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(RedisCsrfTokenRepository.HEADER_NAME));
+    }
+
+    @Test
+    void issuesNoCsrfTokenForApiKeyRequests() throws Exception {
+        // API clients usually keep no cookies, so every request would store another unused token in Redis
+        mockMvc
+                .perform(get("/api/csrf-test/")
+                        .header("Authorization", "Bearer " + API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist(RedisCsrfTokenRepository.HEADER_NAME));
+
+        verifyNoInteractions(redis);
+    }
+
+    @Test
+    void rejectsApiKeyFromAccessCookie() throws Exception {
+        mockMvc
+                .perform(get("/api/csrf-test/")
+                        .cookie(new Cookie(AuthController.ACCESS_COOKIE_NAME, API_KEY)))
+                .andExpect(status().isUnauthorized());
+    }
+
     /**
      * Masks the stored token like the CSRF token that the backend hands out in the response header, which the frontend
      * sends back unchanged.
@@ -154,8 +252,8 @@ class SecurityConfigurationCsrfWebMvcTest {
         }
 
         @PostMapping("/api/csrf-test/")
-        public String change() {
-            return "changed";
+        public String change(@AuthenticationPrincipal Jwt jwt) {
+            return jwt.getSubject();
         }
 
         @PostMapping("/api/public/csrf-test/")

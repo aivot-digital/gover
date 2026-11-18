@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -173,6 +174,7 @@ public class PresetController {
         var preset = presetRepository
                 .findById(key)
                 .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent(updatedPresetEntity, preset);
 
         preset.setTitle(updatedPresetEntity.getTitle());
         preset.setUpdated(Instant.now());

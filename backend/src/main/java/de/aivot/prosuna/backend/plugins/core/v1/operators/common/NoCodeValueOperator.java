@@ -34,7 +34,7 @@ public class NoCodeValueOperator extends NoCodeOperator {
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten einen statischen Wert oder eine Benutzereingabe direkt weiterverarbeiten.
                 
-                Mit dem Operator **„Wert zurückgeben“** wird diese Logik so formuliert: \\s
+                Mit dem Operator **„Wert zurückgeben“** wird diese Logik so formuliert:
                 `Eingabewert WIRD ZURÜCKGEGEBEN`
                 
                 **Ergebnis:**

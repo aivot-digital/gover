@@ -28,7 +28,7 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
     const handleFetchMetadata = async () => {
         if (!identityProvider) return;
 
-        const metadataLink = links.find(l => l.label.includes('SAML Metadaten'))?.url;
+        const metadataLink = links.find(l => l.label.includes('SAML-Metadaten'))?.url;
         if (!metadataLink) return;
 
         setLoading(true);
@@ -62,15 +62,15 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
             if (identityProvider.type === IdentityProviderType.BundID) {
                 fieldsToShow.push(
                     { label: 'EntityID', value: entityID },
-                    { label: 'Primäres X509 Zertifikat (signing)', value: signingCert },
-                    { label: 'X509 Zertifikat (encryption)', value: encryptionCert },
+                    { label: 'Primäres X.509-Zertifikat (Signatur)', value: signingCert },
+                    { label: 'X.509-Zertifikat (Verschlüsselung)', value: encryptionCert },
                     { label: 'Assertion Consumer Service URL', value: assertionConsumerServiceURL },
                 );
             } else if (identityProvider.type === IdentityProviderType.MUK) {
                 fieldsToShow.push(
                     { label: 'EntityID', value: entityID },
-                    { label: 'Primäres X509 Zertifikat (signing)', value: signingCert },
-                    { label: 'X509 Zertifikat (encryption)', value: encryptionCert },
+                    { label: 'Primäres X.509-Zertifikat (Signatur)', value: signingCert },
+                    { label: 'X.509-Zertifikat (Verschlüsselung)', value: encryptionCert },
                     { label: 'Assertion Consumer Service URL', value: assertionConsumerServiceURL },
                     { label: 'Single Logout Service URL', value: singleLogoutServiceURL || 'Nicht angegeben' },
                 );
@@ -183,7 +183,7 @@ export function IdentityProviderDetailsPageSetup() {
                         },
                         {
                             icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
+                            label: 'SAML-Metadaten',
                             url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}
@@ -207,7 +207,7 @@ export function IdentityProviderDetailsPageSetup() {
                         },
                         {
                             icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
+                            label: 'SAML-Metadaten',
                             url: `/idp/realms/customer/bayernid/${idpHint?.value}/metadata`,
                         },
                     ]}
@@ -216,8 +216,8 @@ export function IdentityProviderDetailsPageSetup() {
 
             {identityProvider?.type === IdentityProviderType.SHID && (
                 <SetupInfoBlock
-                    title="Einrichtung des Servicekonto Schleswig-Holstein"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei der Dataport bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    title="Einrichtung des Servicekontos Schleswig-Holstein"
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei Dataport bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
@@ -231,7 +231,7 @@ export function IdentityProviderDetailsPageSetup() {
                         },
                         {
                             icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
+                            label: 'SAML-Metadaten',
                             url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}
@@ -240,12 +240,12 @@ export function IdentityProviderDetailsPageSetup() {
 
             {identityProvider?.type === IdentityProviderType.MUK && (
                 <SetupInfoBlock
-                    title="Einrichtung des Mein Unternehmenskonto (MUK)"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Mein Unternehmenskontos einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    title="Einrichtung von Mein Unternehmenskonto (MUK)"
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit von Mein Unternehmenskonto einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
-                            label: 'Leitfaden zur Anbindung des Mein Unternehmenskontos',
+                            label: 'Leitfaden zur Anbindung von Mein Unternehmenskonto',
                             url: 'https://docs.prosuna.de',
                         },
                         {
@@ -260,7 +260,7 @@ export function IdentityProviderDetailsPageSetup() {
                         },
                         {
                             icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
+                            label: 'SAML-Metadaten',
                             url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
                         },
                     ]}

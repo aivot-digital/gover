@@ -15,7 +15,6 @@ import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessWorkRequestRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,7 +37,7 @@ class ProcessInstanceRestartServiceTest {
     private final ProcessTaskExecutionService execution = ProcessTaskExecutionTestSupport.passthrough();
     private final ProcessNodeExecutionLoggerFactory loggers = mock(ProcessNodeExecutionLoggerFactory.class);
     private final ProcessNodeExecutionLogger logger = mock(ProcessNodeExecutionLogger.class);
-    private final EntityManager entityManager = mock(EntityManager.class);
+    private final ProcessInstanceAttachmentService attachments = mock(ProcessInstanceAttachmentService.class);
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(7L).setProcessId(1).setInitialNodeId(11)
             .setInitialPayload(Map.of("input", "test")).setStatus(ProcessInstanceStatus.Failed);
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(34L).setProcessInstanceId(7L)
@@ -54,7 +53,7 @@ class ProcessInstanceRestartServiceTest {
         when(auditService.createScopedAuditService(ProcessInstanceRestartService.class, "Vorgänge")).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
         service = new ProcessInstanceRestartService(instances, tasks, requests, workRequests, execution, loggers,
-                entityManager, auditService);
+                auditService, attachments);
         when(instances.findById(7L)).thenReturn(Optional.of(instance));
         when(instances.save(instance)).thenReturn(instance);
         when(tasks.findById(34L)).thenReturn(Optional.of(task));
@@ -75,9 +74,10 @@ class ProcessInstanceRestartServiceTest {
         verify(tasks).save(task);
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(workRequests, never()).enqueueStart(any());
+        verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
         verify(loggers).create(7L, 34L, "actor", null);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Vorgang neu gestartet",
-                "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert",
+                "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt.");
     }
 
     @Test
@@ -114,8 +114,8 @@ class ProcessInstanceRestartServiceTest {
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
         verify(workRequests).redispatchAfterCommit(List.of(3L));
         verify(workRequests, never()).enqueueRestart(any(), any());
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Vorgang neu gestartet",
-                "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Fortsetzung des Vorgangs angefordert",
+                "Die Fortsetzung des fehlgeschlagenen Vorgangs wurde manuell angefordert. Die ausstehenden Verarbeitungsschritte werden erneut ausgeführt.");
     }
 
     @Test
@@ -132,8 +132,11 @@ class ProcessInstanceRestartServiceTest {
 
     @Test
     void concurrentRestartSeesTheFirstRestartAfterTheLock() throws Exception {
-        // The first restart committed while this one waited for the instance lock.
-        doAnswer(call -> instance.setStatus(ProcessInstanceStatus.Running)).when(entityManager).refresh(instance);
+        // The first restart committed while this one waited for the instance lock, so loading under the lock sees it.
+        when(instances.findById(7L)).thenAnswer(call -> {
+            verify(execution).inInstance(eq(7L), any());
+            return Optional.of(instance.setStatus(ProcessInstanceStatus.Running));
+        });
 
         var exception = assertThrows(ResponseException.class, () -> service.restartFailedInstance(7L, "actor", () -> {}));
 
@@ -170,8 +173,8 @@ class ProcessInstanceRestartServiceTest {
         verify(workRequests).redispatchAfterCommit(List.of(3L));
         verify(workRequests).enqueueRestart(7L, 34L);
         verify(loggers).create(7L, 34L, "actor", null);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Aufgabe neu gestartet",
-                "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet. Der fehlgeschlagene Vorgang wird fortgesetzt.");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert",
+                "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert. Der fehlgeschlagene Vorgang wird fortgesetzt.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addRequiredAuditEntry(payload.capture());
         assertEquals("actor", payload.getValue().getActorId());
@@ -180,7 +183,7 @@ class ProcessInstanceRestartServiceTest {
                 "processInstanceStatus", Map.of("old", ProcessInstanceStatus.Failed, "new", ProcessInstanceStatus.Running),
                 "status", Map.of("old", ProcessTaskStatus.Failed, "new", ProcessTaskStatus.Restarted)
         ), payload.getValue().getDiff());
-        assertEquals("Die fehlgeschlagene Aufgabe mit der ID „34“ im Vorgang mit der ID „7“ wurde von der Mitarbeiter:in „Erika Muster“ neu gestartet.",
+        assertEquals("Die erneute Ausführung der fehlgeschlagenen Aufgabe mit der ID „34“ im Vorgang mit der ID „7“ wurde von der Mitarbeiter:in „Erika Muster“ angefordert.",
                 payload.getValue().getMessage());
     }
 
@@ -193,8 +196,9 @@ class ProcessInstanceRestartServiceTest {
         verify(instances, never()).save(any());
         verify(workRequests, never()).redispatchAfterCommit(any());
         verify(workRequests).enqueueRestart(7L, 34L);
-        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Aufgabe neu gestartet",
-                "Die fehlgeschlagene Aufgabe wurde manuell neu gestartet.");
+        verify(attachments).deleteRemovedUploadsOfTask(task, "actor");
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, true, true, "Erneute Ausführung der Aufgabe angefordert",
+                "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert.");
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addRequiredAuditEntry(payload.capture());
         assertEquals(Map.of("status", Map.of("old", ProcessTaskStatus.Failed, "new", ProcessTaskStatus.Restarted)),
@@ -210,13 +214,16 @@ class ProcessInstanceRestartServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
-        verifyNoInteractions(workRequests, loggers, audit);
+        verifyNoInteractions(workRequests, loggers, audit, attachments);
     }
 
     @Test
     void concurrentRerunSeesTheFirstRerunAfterTheLock() {
-        // The first rerun committed while this one waited for the instance lock.
-        doAnswer(call -> task.setStatus(ProcessTaskStatus.Restarted)).when(entityManager).refresh(task);
+        // The first rerun committed while this one waited for the instance lock, so loading under the lock sees it.
+        when(tasks.findById(34L)).thenAnswer(call -> {
+            verify(execution).inInstance(eq(7L), any());
+            return Optional.of(task.setStatus(ProcessTaskStatus.Restarted));
+        });
 
         var exception = assertThrows(ResponseException.class, () -> service.rerunFailedTask(7L, 34L, actor, () -> {}));
 

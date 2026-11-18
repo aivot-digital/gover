@@ -31,8 +31,9 @@ public class CodeListElementOptionsService {
     public BaseElement resolve(@Nonnull BaseElement element) throws ResponseException {
         return switch (element) {
             case SelectInputElement select when select.getOptionsSource() == OptionsSourceType.CodeList -> resolveSelect(select);
-            case RadioInputElement radio when radio.getOptionsSource() == OptionsSourceType.CodeList -> resolveRadio(radio);
             case MultiCheckboxInputElement multiCheckbox when multiCheckbox.getOptionsSource() == OptionsSourceType.CodeList -> resolveMultiCheckbox(multiCheckbox);
+            case TextInputElement text when text.getOptionsSource() == OptionsSourceType.CodeList
+                    && !Boolean.TRUE.equals(text.getIsMultiline()) && text.getDynamicTextPolicy() == null -> resolveText(text);
             case ChipInputElement chipInput when chipInput.getOptionsSource() == OptionsSourceType.CodeList -> resolveChipInput(chipInput);
             default -> element;
         };
@@ -48,16 +49,16 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
-        var copy = copy(element, ChipInputElement.class);
+    private TextInputElement resolveText(@Nonnull TextInputElement element) throws ResponseException {
+        var copy = copy(element, TextInputElement.class);
         copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
         return copy;
     }
 
     @Nonnull
-    private RadioInputElement resolveRadio(@Nonnull RadioInputElement element) throws ResponseException {
-        var copy = copy(element, RadioInputElement.class);
-        copy.setOptions(listAsRadioItems(requireConfiguredCodeListId(element.getCodeListKey())));
+    private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
+        var copy = copy(element, ChipInputElement.class);
+        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
         return copy;
     }
 
@@ -79,20 +80,6 @@ public class CodeListElementOptionsService {
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
                 .map(item -> SelectInputElementOption.of(item.getValue(), item.getLabel()))
-                .toList();
-    }
-
-    @Nonnull
-    public List<RadioInputElementOption> listAsRadio(@Nonnull String codeListKey) throws ResponseException {
-        return listAsRadioItems(requireCodeListId(codeListKey));
-    }
-
-    @Nonnull
-    private List<RadioInputElementOption> listAsRadioItems(@Nonnull Integer codeListId) {
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
-                .stream()
-                .map(item -> RadioInputElementOption.of(item.getValue(), item.getLabel()))
                 .toList();
     }
 
@@ -122,7 +109,7 @@ public class CodeListElementOptionsService {
         return vCodeListItemRepository
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
-                // Chip inputs store plain strings, so codelists can only provide label-based suggestions here.
+                // Free-text inputs store the suggestion text, not the technical codelist value.
                 .map(item -> item.getLabel())
                 .filter(label -> label != null && !label.isBlank())
                 .map(String::trim)

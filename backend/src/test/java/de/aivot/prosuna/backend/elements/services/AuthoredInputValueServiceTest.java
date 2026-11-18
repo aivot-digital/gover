@@ -19,10 +19,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthoredInputValueServiceTest {
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -102,6 +104,10 @@ class AuthoredInputValueServiceTest {
                   "variable": {
                     "type": "Variable",
                     "reference": {"source": "ProcessData", "path": "person.name"}
+                  },
+                  "markdownVariable": {
+                    "type": "Variable",
+                    "reference": {"source": "ProcessData", "path": "message", "markdown": true}
                   }
                 }
                 """;
@@ -112,6 +118,9 @@ class AuthoredInputValueServiceTest {
         var variable = assertInstanceOf(VariableAuthoredInputValue.class, values.get("variable"));
         assertEquals(InputVariableSource.ProcessData, variable.reference().source());
         assertEquals("person.name", variable.reference().path());
+        // References stored before the flag existed are not Markdown.
+        assertFalse(variable.reference().markdown());
+        assertTrue(assertInstanceOf(VariableAuthoredInputValue.class, values.get("markdownVariable")).reference().markdown());
     }
 
     @Test

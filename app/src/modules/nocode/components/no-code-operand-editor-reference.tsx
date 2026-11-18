@@ -69,6 +69,7 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
                 startIcon={<MyLocation />}
                 endAction={[
                     {
+                        color: 'error',
                         tooltip: 'Diesen Verweis auf ein Element löschen',
                         icon: <Delete />,
                         onClick: () => {

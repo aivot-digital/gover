@@ -225,8 +225,7 @@ export function ShellSearchDialog() {
                                 }}
                             >
                                 <strong>Tipp:</strong>{' '}
-                                Durchsuchen Sie schnell &amp; einfach Formulare, Prozesse und
-                                Vorgangsdaten mit unserer Komfort-Suchfunktion.
+                                Durchsuchen Sie Formulare und Prozesse sowie Vorgänge anhand ihrer Vorgangskennung oder Aktenzeichen.
                             </Typography>
                         </Box>
                     )}
@@ -357,7 +356,7 @@ export function ShellSearchDialog() {
                                 color: 'text.secondary',
                             }}
                         >
-                            Bitte geben Sie einen Suchbegriff ein, um nach Formularen, Prozessen oder Vorgangsdaten zu suchen.
+                            Bitte geben Sie einen Suchbegriff ein, um nach Formularen, Prozessen oder Vorgängen zu suchen.
                         </Typography>
                     )}
                 </Box>

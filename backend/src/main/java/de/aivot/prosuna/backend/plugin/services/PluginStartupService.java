@@ -43,9 +43,9 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
         for (var entry : knownPluginKeys.entrySet()) {
             if (entry.getValue().size() > 1) {
                 logger.warn(
-                        "Für den eindeutigen Plugin-Schlüssel {} werden mehrere Plugins registriert. " +
-                                "Bitte stellen Sie sicher, dass für einen Schlüssel nur ein einziges Plugin registriert wird. " +
-                                "Die Schlüssel der folgenden Plugins doppeln sich:\n{}",
+                        "Für den eindeutigen Erweiterungsschlüssel {} werden mehrere Erweiterungen registriert. " +
+                                "Bitte stellen Sie sicher, dass für einen Schlüssel nur eine einzige Erweiterung registriert wird. " +
+                                "Die Schlüssel der folgenden Erweiterungen doppeln sich:\n{}",
                         StringUtils.quote(entry.getKey()),
                         entry
                                 .getValue()
@@ -64,7 +64,7 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
         }
 
         if (hasErrors) {
-            throw new RuntimeException("Es wurden doppelte Plugin-Schlüssel gefunden. Bitte korrigieren Sie die Fehler in den Log-Ausgaben und starten Sie die Anwendung erneut.");
+            throw new RuntimeException("Es wurden doppelte Erweiterungsschlüssel gefunden. Bitte korrigieren Sie die Fehler in den Log-Ausgaben und starten Sie die Anwendung erneut.");
         }
 
         var knownComponentKeys = new HashMap<String, Map<Integer, List<PluginComponent>>>();
@@ -81,7 +81,7 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
             for (var entry : keyEntry.getValue().entrySet()) {
                 if (entry.getValue().size() > 1) {
                     logger.warn(
-                            "Für die Major-Version {} des eindeutigen Plugin-Komponenten-Schlüssels {} werden mehrere Komponenten registriert. " +
+                            "Für die Major-Version {} des eindeutigen Erweiterungskomponentenschlüssels {} werden mehrere Komponenten registriert. " +
                                     "Bitte stellen Sie sicher, dass für einen Schlüssel nur eine einzige Komponente registriert wird. " +
                                     "Die Schlüssel der folgenden Komponenten doppeln sich:\n{}",
                             entry.getKey(),
@@ -101,7 +101,7 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
                                                     .getFirst();
 
                                             return String.format(
-                                                    "- %s Version %s des Plugins %s Version %s von %s (Klasse %s)",
+                                                    "- %s Version %s der Erweiterung %s Version %s von %s (Klasse %s)",
                                                     component.getName(),
                                                     component.getComponentVersion(),
                                                     plugin.getName(),
@@ -126,7 +126,7 @@ public class PluginStartupService implements ApplicationListener<ApplicationRead
         }
 
         if (hasErrors) {
-            throw new RuntimeException("Es wurden doppelte Plugin-Komponenten-Schlüssel gefunden. Bitte korrigieren Sie die Fehler in den Log-Ausgaben und starten Sie die Anwendung erneut.");
+            throw new RuntimeException("Es wurden doppelte Erweiterungskomponentenschlüssel gefunden. Bitte korrigieren Sie die Fehler in den Log-Ausgaben und starten Sie die Anwendung erneut.");
         }
     }
 }

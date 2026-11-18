@@ -20,7 +20,7 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Ist nicht Leer";
+        return "Ist nicht leer";
     }
 
     @Override
@@ -32,29 +32,29 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
     public String getDescription() {
         return """                
                 # Beschreibung:
-                Der Operator **„Ist Nicht Leer“** prüft, ob ein gegebener Wert **nicht leer** ist. \s
+                Der Operator **„Ist nicht leer“** prüft, ob ein gegebener Wert **nicht leer** ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der Wert vorhanden ist, also nicht leer, null oder undefiniert. \s
                 Ist der Wert leer (z. B. ein leeres Feld, null oder ein nicht gesetzter Wert), ergibt der Operator den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob ein Benutzer eine Telefonnummer angegeben hat.
+                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person eine Telefonnummer angegeben hat.
                 
-                Mit dem Operator **„Ist Nicht Leer“** wird diese Logik so formuliert: \s
+                Mit dem Operator **„Ist nicht leer“** wird diese Logik so formuliert: \s
                 `IST NICHT LEER Telefonnummer`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn eine Telefonnummer angegeben ist, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn das Feld leer ist, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Ist Nicht Leer“-Operator
+                # Wahrheitswerte für den „Ist nicht leer“-Operator
                 - **IST NICHT LEER Hallo** → **wahr** \s
                 - **IST NICHT LEER ""** (leerer Text) → **falsch** \s
                 - **IST NICHT LEER 123** → **wahr** \s
                 - **IST NICHT LEER null** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Ist Nicht Leer“?
-                Verwenden Sie **„Ist Nicht Leer“**, um sicherzustellen, dass ein Wert vorhanden ist, bevor Sie damit arbeiten. \s
-                Dieser Operator ist besonders hilfreich bei Formularen, um zu prüfen, ob ein Benutzer Pflichtfelder ausgefüllt hat oder ob wichtige Daten bereitstehen.
+                # Wann verwenden Sie den Operator „Ist nicht leer“?
+                Verwenden Sie **„Ist nicht leer“**, um sicherzustellen, dass ein Wert vorhanden ist, bevor Sie damit arbeiten. \s
+                Dieser Operator ist besonders hilfreich bei Formularen, um zu prüfen, ob eine Person Pflichtfelder ausgefüllt hat oder ob wichtige Daten bereitstehen.
                 """;
     }
 

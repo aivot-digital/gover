@@ -5,7 +5,8 @@ const E164PhoneNumberRegex = /^\+[1-9]\d{1,14}$/;
 export type PhoneNumberValidationMode = 'strict' | 'possible';
 
 function parseValidPhoneNumber(value: string, validationMode: PhoneNumberValidationMode = 'strict'): ReturnType<typeof parsePhoneNumberFromString> {
-    const phoneNumber = parsePhoneNumberFromString(value);
+    if (!/^\+[0-9\s()./\-]+$/.test(value)) return undefined;
+    const phoneNumber = parsePhoneNumberFromString(value, {extract: false});
     if (phoneNumber == null || phoneNumber.ext != null) {
         return undefined;
     }

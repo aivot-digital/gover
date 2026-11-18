@@ -185,8 +185,8 @@
                     <div
                             data-slot="anschrift"
                             data-slot-type="richtext"
-                            data-slot-label="Anschrift des Empfängers"
-                            data-slot-hint="Diese Anschrift wird im Briefkopf der PDF-Datei angezeigt. Sie sollte die Anschrift des Empfängers enthalten."
+                            data-slot-label="Anschrift der empfangenden Person oder Organisation"
+                            data-slot-hint="Diese Anschrift wird im Briefkopf der PDF-Datei angezeigt. Sie sollte die Anschrift der empfangenden Person oder Organisation enthalten."
                     >
                         {{ $.person.vorname }} {{ $.person.nachname }} <br/>
                         {{ $.anschrift.strasse }} {{ $.anschrift.hausnummer }} <br/>
@@ -218,7 +218,7 @@
                     <div>
                         <p>
                             Datum: {{ _date_v1.today() }} <br/>
-                            Aktenzeichen: {{ $$.caseNumber }}
+                            Vorgangskennung: {{ $$.caseNumber }}
                         </p>
                     </div>
                 </div>
@@ -242,7 +242,7 @@
                     data-slot-label="Nachricht"
                     data-slot-hint="Dieser Text wird als Nachricht im Brief angezeigt. Er sollte den Inhalt des Briefs enthalten."
             >
-                Sehr geehrte/r {{ $.person.vorname }} {{ $.person.nachname }}, <br/><br/>
+                Guten Tag {{ $.person.vorname }} {{ $.person.nachname }}, <br/><br/>
                 dies ist Ihre Nachricht.
             </div>
 

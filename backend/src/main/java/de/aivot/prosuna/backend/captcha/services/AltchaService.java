@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.captcha.services;
 
 import de.aivot.prosuna.backend.captcha.properties.CaptchaConfigurationProperties;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.altcha.altcha.v2.Altcha;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ public class AltchaService {
 
     /** HMAC key used for signing and verifying the challenge. */
     private final String hmacKey;
+    private final MeterRegistry meterRegistry;
 
     /** Proof-of-work difficulty (higher = more client CPU time). */
     private static final int COST = 5_000;
@@ -23,7 +25,8 @@ public class AltchaService {
     /** Challenge validity in seconds. */
     private static final int EXPIRES_SEC = 300;  // 5 minutes
 
-    public AltchaService(CaptchaConfigurationProperties config) {
+    public AltchaService(CaptchaConfigurationProperties config, MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.hmacKey = config.getKey();
     }
 
@@ -53,7 +56,13 @@ public class AltchaService {
      * @throws Exception if an error occurs while verifying the solution
      */
     public boolean verify(String base64Payload) throws Exception {
-        var result = Altcha.verifySolution(base64Payload, hmacKey, Altcha.kdf(ALGORITHM));
-        return result.verified();
+        try {
+            var verified = Altcha.verifySolution(base64Payload, hmacKey, Altcha.kdf(ALGORITHM)).verified();
+            meterRegistry.counter("prosuna.captcha.verifications", "outcome", verified ? "solved" : "failed").increment();
+            return verified;
+        } catch (Exception exception) {
+            meterRegistry.counter("prosuna.captcha.verifications", "outcome", "error").increment();
+            throw exception;
+        }
     }
 }

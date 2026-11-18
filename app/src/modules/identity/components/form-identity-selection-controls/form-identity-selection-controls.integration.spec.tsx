@@ -53,7 +53,7 @@ describe('FormIdentitySelectionControls integration', () => {
         const email = screen.getByRole('textbox', {name: /E-Mail-Adresse/});
         expect(email).toHaveValue('customer@example.test');
         expect(email).toBeDisabled();
-        expect(screen.getByText(/aus Ihrem Nutzerkonto übernommen/)).toBeVisible();
+        expect(screen.getByText(/aus Ihrem Konto übernommen/)).toBeVisible();
         await waitFor(() => expect(deriveCommunication).not.toHaveBeenCalled());
     });
 
@@ -193,7 +193,7 @@ function emailLayout(disabled: boolean): GroupLayout {
             type: ElementType.Text,
             label: 'E-Mail-Adresse',
             hint: disabled
-                ? 'Diese E-Mail-Adresse wurde aus Ihrem Nutzerkonto übernommen und kann hier nicht geändert werden.'
+                ? 'Diese E-Mail-Adresse wurde aus Ihrem Konto übernommen und kann hier nicht geändert werden.'
                 : 'An diese Adresse werden Nachrichten zu Ihrem Vorgang gesendet.',
             autocomplete: 'email',
             required: true,

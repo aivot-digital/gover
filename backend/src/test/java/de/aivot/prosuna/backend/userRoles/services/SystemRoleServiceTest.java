@@ -71,7 +71,7 @@ class SystemRoleServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Bitte wählen Sie eine Ersatz-Systemrolle aus, damit vorhandene Nutzer:innen und Systemeinstellungen migriert werden können.",
+                "Bitte wählen Sie eine Ersatz-Systemrolle aus, damit vorhandene Mitarbeiter:innen und Systemeinstellungen migriert werden können.",
                 exception.getTitle()
         );
         verify(repository, never()).delete(entity);

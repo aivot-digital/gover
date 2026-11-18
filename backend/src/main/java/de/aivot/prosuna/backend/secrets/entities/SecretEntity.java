@@ -1,10 +1,13 @@
 package de.aivot.prosuna.backend.secrets.entities;
 
 import de.aivot.prosuna.backend.secrets.properties.SecretConfigurationProperties;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -22,7 +25,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "secrets")
-public class SecretEntity {
+public class SecretEntity implements LockVersioned {
     @Id
     @Column(columnDefinition = "uuid")
     private UUID key;
@@ -45,6 +48,11 @@ public class SecretEntity {
     @NotNull(message = "Salt cannot be null")
     @NotBlank(message = "Salt cannot be blank")
     private String salt;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     @Override
     public boolean equals(Object object) {
@@ -110,5 +118,15 @@ public class SecretEntity {
 
     public void setKey(UUID key) {
         this.key = key;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public void setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
     }
 }

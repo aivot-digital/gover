@@ -45,8 +45,8 @@ public class ProcessPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PROCESS_DEFINITION_UPDATE, "Prozess bearbeiten", "Erlaubt das Bearbeiten bestehender Prozesse."),
                 PermissionEntry.of(PROCESS_DEFINITION_DELETE, "Prozess löschen", "Erlaubt das Löschen von Prozessen."),
                 PermissionEntry.of(PROCESS_DEFINITION_AUDIT, "Prozess-Audit einsehen", "Erlaubt das Einsehen des Audit-Logs eines Prozesses."),
-                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_TEST, "Prozess als Test veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses als Testversion."),
-                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_LOCAL, "Prozess lokal veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im lokalen System."),
+                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_TEST, "Testmodus verwenden", "Erlaubt das Starten und Beenden von Testsitzungen für eine Prozessversion."),
+                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_LOCAL, "Prozessversion lokal veröffentlichen", "Erlaubt das Veröffentlichen einer Prozessversion im lokalen System."),
                 PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_MARKETPLACE, "Prozess im Marktplatz veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im zentralen Marktplatz."),
         };
     }

@@ -128,7 +128,7 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
                     <Box>
                         <Button
                             onClick={handleAddRow}
-                            disabled={props.maximumRows != null && rows.length >= props.maximumRows}
+                            disabled={props.maximumRows != null && props.maximumRows > 0 && rows.length >= props.maximumRows}
                         >
                             Hinzufügen
                         </Button>
@@ -188,6 +188,7 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
             }
 
             <ConfirmDialog
+                isDestructive
                 title="Möchten Sie die ausgewählten Einträge wirklich löschen?"
                 onConfirm={confirmDelete}
                 onCancel={() => setConfirmDelete(undefined)}

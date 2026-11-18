@@ -345,7 +345,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData, Events extends 
         if (props.getHeaderTitle) {
             return props.getHeaderTitle(item, isNewItem, notFound);
         }
-        return resolvedHeader.title ?? 'Resource bearbeiten';
+        return resolvedHeader.title ?? 'Ressource bearbeiten';
     }, [props.getHeaderTitle, item, isNewItem, notFound, resolvedHeader]);
 
     const searchItemId = !isNewItem && !notFound && item != null && entityType != null

@@ -33,7 +33,8 @@ class ProcessNodeOutputTest {
                         "key", "result",
                         "label", "Ergebnis",
                         "description", "Das erzeugte Ergebnis.",
-                        "typeDefinition", "string | null"
+                        "typeDefinition", "string | null",
+                        "markdown", false
                 ),
                 serializedOutput
         );

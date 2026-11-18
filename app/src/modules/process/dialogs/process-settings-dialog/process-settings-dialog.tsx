@@ -116,6 +116,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
         }
 
         return await confirm({
+            confirmButtonColor: 'error',
             title: 'Ungespeicherte Änderungen',
             confirmButtonText: 'Änderungen verwerfen',
             children: (

@@ -3,7 +3,7 @@ import {HealthData} from '../../models/dtos/health-data';
 
 export class SystemApiService extends BaseApiService {
     public getHealth(): Promise<HealthData> {
-        return this.get<HealthData>('/api/actuator/health/', {
+        return this.get<HealthData>('/api/system/health/', {
             doNotHandleStatusCodes: true,
         });
     }

@@ -33,7 +33,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     title="Fachliche Anforderungen"
                     variant={"h5"}
                 >
-                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code Funktion.
+                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code-Funktion.
                 </ElementEditorSectionHeader>
 
                 <Grid
@@ -145,9 +145,9 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     }}
                 >
                     <ListItemIcon>
-                        <Delete />
+                        <Delete color="error" />
                     </ListItemIcon>
-                    <ListItemText>
+                    <ListItemText sx={{color: 'error.main'}}>
                         Funktion löschen
                     </ListItemText>
                 </MenuItem>
@@ -217,6 +217,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 </DialogContent>
             </Dialog>
             <ConfirmDialog
+                isDestructive
                 title="Funktion löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {
@@ -224,8 +225,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 }}
             >
                 <Typography>
-                    Möchten Sie die Funktion wirklich löschen?
-                    Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann.
+                    Die konfigurierte Funktion wird entfernt.
                 </Typography>
             </ConfirmDialog>
             <ConfirmDialog
@@ -236,8 +236,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 }}
             >
                 <Typography>
-                    Möchten Sie den Typ der Funktion wirklich ändern?
-                    Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann.
+                    Die bisherige Funktion wird durch eine neue Funktion des ausgewählten Typs ersetzt.
                 </Typography>
             </ConfirmDialog>
         </>

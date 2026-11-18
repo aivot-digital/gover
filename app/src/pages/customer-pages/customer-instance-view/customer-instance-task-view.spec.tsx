@@ -19,6 +19,7 @@ import {CustomerTaskViewApiService, type TaskViewResponse} from './customer-task
 const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
     elementDerivationProps: undefined as any,
+    removableAttachmentKeys: undefined as ReadonlySet<string> | undefined,
     invalidateInstanceTasks: vi.fn(),
     navigate: vi.fn(),
     refreshInstanceStatus: vi.fn(),
@@ -47,9 +48,12 @@ vi.mock('../../../utils/with-delay', () => ({
     withDelay: (promise: Promise<unknown>) => promise,
 }));
 
-vi.mock('../../../modules/elements/components/element-derivation-context', () => ({
-    ElementDerivationContext: function ElementDerivationContextMock(props: any) {
+vi.mock('../../../modules/elements/components/element-derivation-context', async () => {
+    const {useRemovableFileUploadAttachments} = await import('../../../components/file-upload-field/removable-file-upload-attachments-context');
+
+    return {ElementDerivationContext: function ElementDerivationContextMock(props: any) {
         mocks.elementDerivationProps = props;
+        mocks.removableAttachmentKeys = useRemovableFileUploadAttachments();
 
         return (
             <div>
@@ -81,8 +85,8 @@ vi.mock('../../../modules/elements/components/element-derivation-context', () =>
                 </output>
             </div>
         );
-    },
-}));
+    }};
+});
 
 describe('CustomerInstanceTaskView', () => {
     beforeEach(() => {
@@ -90,6 +94,7 @@ describe('CustomerInstanceTaskView', () => {
         window.history.replaceState({}, '', '/process/instance-key/tasks/task-key');
         mocks.dispatch.mockReset();
         mocks.elementDerivationProps = undefined;
+        mocks.removableAttachmentKeys = undefined;
         mocks.invalidateInstanceTasks.mockReset();
         mocks.navigate.mockReset();
         mocks.refreshInstanceStatus.mockReset().mockResolvedValue(createInstanceStatus());
@@ -149,9 +154,9 @@ describe('CustomerInstanceTaskView', () => {
 
         render(<CustomerInstanceTaskView/>);
 
-        expect(await screen.findByText('Anderes Nutzerkonto erforderlich')).toBeInTheDocument();
+        expect(await screen.findByText('Anderes Konto erforderlich')).toBeInTheDocument();
         expect(screen.getByText(/gehört nicht zu „Antragsteller:in“/)).toBeInTheDocument();
-        expect(screen.getAllByText(/Melden Sie sich mit dem Nutzerkonto an/)).toHaveLength(1);
+        expect(screen.getAllByText(/Melden Sie sich mit dem Konto an/)).toHaveLength(1);
         expect(screen.getByRole('link', {name: /Mit „BundID“ anmelden/})).toBeInTheDocument();
         await waitFor(() => expect(window.location.search).toBe(''));
     });
@@ -170,7 +175,7 @@ describe('CustomerInstanceTaskView', () => {
 
         expect(await screen.findByRole('status')).toHaveTextContent('Mit „BundID“ angemeldet');
         expect(screen.getByText(/Ihre Identität ist bestätigt/)).toBeVisible();
-        expect(screen.queryByText(/Melden Sie sich mit dem Nutzerkonto an/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Melden Sie sich mit dem Konto an/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Daten einreichen'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Fortfahren'}));
 
@@ -458,8 +463,19 @@ describe('CustomerInstanceTaskView', () => {
         expectDispatchedAction('shell/setLoadingMessage', {
             blocking: true,
             estimatedTime: 500,
-            message: 'Verarbeite Aktion: Daten einreichen',
+            message: 'Aktion wird verarbeitet: Daten einreichen',
         });
+    });
+
+    it('lets the upload fields remove the stored uploads of the task after an event keeps it open', async () => {
+        const user = userEvent.setup();
+        vi.mocked(ProcessInstanceTaskApiService.prototype.putCustomerTaskView)
+            .mockResolvedValue(createTaskView({removableAttachmentKeys: ['own']}));
+
+        render(<CustomerInstanceTaskView/>);
+        await user.click(await screen.findByRole('button', {name: 'Daten einreichen'}));
+
+        await waitFor(() => expect(mocks.removableAttachmentKeys).toEqual(new Set(['own'])));
     });
 
     it('uses the same event metadata and handler for inline events', async () => {
@@ -476,7 +492,7 @@ describe('CustomerInstanceTaskView', () => {
             'submit',
         ));
         expectDispatchedAction('shell/setLoadingMessage', expect.objectContaining({
-            message: 'Verarbeite Aktion: Daten einreichen',
+            message: 'Aktion wird verarbeitet: Daten einreichen',
         }));
     });
 
@@ -654,6 +670,7 @@ function createTaskView(overrides?: Partial<ReadyCustomerTaskView>): ReadyCustom
         layout: {} as GroupLayout,
         data: {field: literalAuthoredValue('initial')},
         events: [createEvent('submit', 'Daten einreichen')],
+        removableAttachmentKeys: [],
         newIdentitySlot: null,
         existingIdentitySlot: null,
         ...overrides,

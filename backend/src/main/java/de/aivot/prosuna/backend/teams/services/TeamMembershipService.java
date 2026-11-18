@@ -54,7 +54,7 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
 
         // Check if user exists
         if (!userRepository.existsById(entity.getUserId()))  {
-            throw ResponseException.badRequest("Der angegebene Benutzer existiert nicht.");
+            throw ResponseException.badRequest("Das angegebene Konto existiert nicht.");
         }
 
         var spec = TeamMembershipFilter

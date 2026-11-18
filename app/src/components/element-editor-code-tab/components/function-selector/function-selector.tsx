@@ -40,7 +40,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
     options.push(
         {
             title: 'Low-Code (Individuelle Logik und Zugriff auf externe Datenquellen)',
-            description: 'Diese Funktion bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Für die Nutzung ist technisches Verständnis und Erfahrung im Umgang mit Skriptsprachen hilfreich.',
+            description: 'Diese Funktion bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Für die Nutzung sind technisches Verständnis und Erfahrung im Umgang mit Skriptsprachen hilfreich.',
             onSelect: props.onSelectCloudCode,
             icon: FunctionTypeIcon['code'],
         },
@@ -49,7 +49,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
     return (
         <Box>
             <ElementEditorSectionHeader
-                title="No-/Low-Code Funktion"
+                title="No-/Low-Code-Funktion"
                 variant="h5"
             >
                 Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.

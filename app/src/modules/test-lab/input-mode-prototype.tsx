@@ -37,7 +37,7 @@ import {InputModeIconComparison} from './input-mode-icon-comparison';
 const VARIABLES: InputModeVariable[] = [
     {
         id: 'applicant-first-name',
-        label: 'Vorname der antragstellenden Person',
+        label: 'Vorname der ausfüllenden Person',
         path: 'antragsteller.vorname',
         origin: 'Antrag eingereicht',
         source: InputVariableSource.ProcessData,
@@ -45,7 +45,7 @@ const VARIABLES: InputModeVariable[] = [
     },
     {
         id: 'applicant-last-name',
-        label: 'Nachname der antragstellenden Person',
+        label: 'Nachname der ausfüllenden Person',
         path: 'antragsteller.nachname',
         origin: 'Antrag eingereicht',
         source: InputVariableSource.ProcessData,
@@ -541,7 +541,7 @@ export function InputModePrototype() {
                                     <InputModeField
                                         label="Leerer Pflichtwert"
                                         hint="Ein Pflichtfeld mit sichtbarer Validierung."
-                                        error="Bitte gib einen Wert ein."
+                                        error="Bitte geben Sie einen Wert ein."
                                         required
                                         variables={VARIABLES}
                                         value={emptyRequiredTitle}
