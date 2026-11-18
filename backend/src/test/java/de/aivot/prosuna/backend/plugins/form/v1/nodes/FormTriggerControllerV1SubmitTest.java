@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
-import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
+import de.aivot.prosuna.backend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInpu
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.prosuna.backend.elements.models.input.DynamicTextPolicy;
 import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
@@ -61,9 +62,14 @@ import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -361,6 +367,53 @@ class FormTriggerControllerV1SubmitTest {
         assertEquals(typed, assertInstanceOf(Map.class, initialPayload.get(FormTriggerNodeV1.DATA_KEY_UNMAPPED)).get("message"));
     }
 
+    @Test
+    void submitShouldAcceptACaptchaSolutionOnceAndRejectItsReuse() throws Exception {
+        var submitStep = new SubmitStepElement();
+        submitStep.setId("submit");
+        var formLayout = new FormLayoutElement()
+                .setPublicTitle("Example form")
+                .setChildren(List.of(submitStep));
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("submit", Map.of("payload",
+                Base64.getEncoder().encodeToString("solution".getBytes(StandardCharsets.UTF_8))));
+        var identities = new IdentityDataMap();
+        var elementDerivationService = mock(ElementDerivationService.class);
+        when(elementDerivationService.derive(
+                any(ElementDerivationRequest.class),
+                any(),
+                any(ElementDerivationLogger.class)
+        )).thenReturn(new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates()));
+        var elementDataTransformService = mock(ElementDataTransformService.class);
+        when(elementDataTransformService.buildPayload(
+                any(FormLayoutElement.class),
+                any(EffectiveElementValues.class),
+                any(ComputedElementStates.class)
+        )).thenReturn(Map.of("mapped", "payload"));
+        var fixture = createFixture(formLayout, elementDerivationService, elementDataTransformService, identities,
+                UUID.randomUUID().toString());
+
+        fixture.controller().submit(null, fixture.processSlug(), fixture.formSlug(), null, null, "{}", null, null,
+                new MockHttpServletResponse());
+        var reuse = assertThrows(ResponseException.class, () -> fixture.controller().submit(null,
+                fixture.processSlug(), fixture.formSlug(), null, null, "{}", null, null, new MockHttpServletResponse()));
+
+        assertEquals(HttpStatus.BAD_REQUEST, reuse.getStatus());
+        verify(fixture.processInstanceService(), times(1)).create(any(ProcessInstanceEntity.class));
+    }
+
+    /** Stands in for Redis' SET NX: only the first write of a key succeeds. */
+    @SuppressWarnings("unchecked")
+    private static StringRedisTemplate inMemoryRedis() {
+        var keys = new HashSet<String>();
+        var values = (ValueOperations<String, String>) mock(ValueOperations.class);
+        when(values.setIfAbsent(anyString(), anyString(), anyLong(), any(TimeUnit.class)))
+                .thenAnswer(invocation -> keys.add(invocation.getArgument(0)));
+        var redis = mock(StringRedisTemplate.class);
+        when(redis.opsForValue()).thenReturn(values);
+        return redis;
+    }
+
     private SubmitFixture createFixture(
             DerivedRuntimeElementData derivedRuntimeElementData,
             IdentityDataMap identities,
@@ -507,7 +560,7 @@ class FormTriggerControllerV1SubmitTest {
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
-                mock(CaptchaReplayGuard.class),
+                new RedisCaptchaReplayGuard(inMemoryRedis()),
                 processInstanceService,
                 mock(ProcessInstanceTaskService.class),
                 mock(ProcessInstanceAttachmentSetService.class),
