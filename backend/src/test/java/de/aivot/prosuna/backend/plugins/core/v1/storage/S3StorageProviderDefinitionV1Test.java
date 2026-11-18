@@ -95,6 +95,34 @@ class S3StorageProviderDefinitionV1Test {
     }
 
     @Test
+    void retrieveFolderReturnsEmptyRootForEmptyBucket() throws Exception {
+        var client = mock(MinioClient.class);
+        Iterable<Result<Item>> noObjects = List.of();
+        when(client.listObjects(any(ListObjectsArgs.class))).thenReturn(noObjects);
+
+        var provider = new ClientOnlyS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        var root = provider.rootFolder(config, true);
+
+        assertEquals("/", root.getPathFromRoot());
+        assertTrue(root.getDocuments().isEmpty());
+        assertTrue(root.getSubfolders().isEmpty());
+    }
+
+    @Test
+    void retrieveFolderReturnsEmptyForMissingSubfolder() throws Exception {
+        var client = mock(MinioClient.class);
+        Iterable<Result<Item>> noObjects = List.of();
+        when(client.listObjects(any(ListObjectsArgs.class))).thenReturn(noObjects);
+
+        var provider = new ClientOnlyS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        assertTrue(provider.retrieveFolder(config, "/missing/", false).isEmpty());
+    }
+
+    @Test
     void copyFolderDoesNotDeleteTargetWhenSourceFolderIsMissing() throws Exception {
         var client = mock(MinioClient.class);
         Iterable<Result<Item>> noObjects = List.of();
