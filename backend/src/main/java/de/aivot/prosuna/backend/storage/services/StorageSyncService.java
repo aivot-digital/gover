@@ -197,6 +197,10 @@ public class StorageSyncService {
                                 " konnte nicht gefunden werden. Bitte stellen Sie sicher, dass die entsprechende Erweiterung installiert ist und Sie die Anwendung neu gestartet haben."
                 ));
 
+        // Read before the listing. At READ COMMITTED the run also sees rows committed later (an upload during the run);
+        // the listing misses them, but they are not missing. Only rows unchanged since this read may be marked missing.
+        var indexedBeforeListing = storageIndexItemRepository.findStatesByStorageProviderId(storageProvider.getId());
+
         var root = getRoot(storageProvider, storageDefinition);
         var supportsMetadataAttributes = storageDefinition.getSupportsMetadataAttributes();
 
@@ -308,24 +312,32 @@ public class StorageSyncService {
         );
 
         // Mark old entries as missing
-        var allItems = storageIndexItemRepository.
-                findAllByStorageProviderId(storageProvider.getId());
+        for (var item : indexedBeforeListing) {
+            if (syncedPaths.contains(item.pathFromRoot())) {
+                continue;
+            }
 
-        for (var item : allItems) {
-            if (!syncedPaths.contains(item.getPathFromRoot())) {
-                logger
-                        .atInfo()
-                        .setMessage("Removing stale storage index item at path '{}' for storage provider '{}' ({})")
-                        .addArgument(item::getPathFromRoot)
-                        .addArgument(storageProvider::getName)
-                        .addArgument(storageProvider::getId)
-                        .log();
+            // An item changed, moved or deleted during the run is skipped.
+            var marked = storageIndexItemRepository.markMissingIfUnchanged(
+                    storageProvider.getId(),
+                    item.pathFromRoot(),
+                    item.updated(),
+                    Instant.now()
+            );
+            if (marked == 0) {
+                continue;
+            }
 
-                storageIndexItemRepository.save(item
-                        .setMissing(true)
-                        .setUpdated(Instant.now()));
+            logger
+                    .atInfo()
+                    .setMessage("Removing stale storage index item at path '{}' for storage provider '{}' ({})")
+                    .addArgument(item::pathFromRoot)
+                    .addArgument(storageProvider::getName)
+                    .addArgument(storageProvider::getId)
+                    .log();
 
-                removeAssetEntityForMissingDocument(storageProvider, item);
+            if (!item.directory()) {
+                removeAssetEntityForMissingDocument(storageProvider, item.pathFromRoot());
             }
         }
     }
@@ -463,13 +475,13 @@ public class StorageSyncService {
     }
 
     private void removeAssetEntityForMissingDocument(@Nonnull StorageProviderEntity storageProvider,
-                                                     @Nonnull StorageIndexItemEntity indexItem) {
-        if (storageProvider.getType() != StorageProviderType.Assets || Boolean.TRUE.equals(indexItem.getDirectory())) {
+                                                     @Nonnull String pathFromRoot) {
+        if (storageProvider.getType() != StorageProviderType.Assets) {
             return;
         }
 
         assetRepository
-                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), indexItem.getPathFromRoot())
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), pathFromRoot)
                 .ifPresent(assetRepository::delete);
     }
 }
