@@ -22,7 +22,7 @@ interface MergeRequest<T> {
     theirs: T;
     spec: MergeSpec<T>;
     mode: MergeConflictDialogMode;
-    /** A recovery decision expires when the editor loads a different snapshot. */
+    /** Dismisses a pending decision when its save or draft recovery is no longer current. */
     signal?: AbortSignal;
     /** Whether a newer state was stored since the changes were started, known from the lock version. */
     storedStateChanged: boolean;

@@ -12,6 +12,8 @@ export type QueryParams = Record<string, string | number | boolean | string[] | 
 
 export interface RequestOptions {
     abort?: AbortSignal;
+    /** Cancels a request waiting for authentication while preserving the response of an already dispatched write. */
+    abortBeforeSend?: AbortSignal;
     headers?: Record<string, string | null>;
     query?: QueryParams;
     doNotHandleStatusCodes?: boolean;
@@ -105,6 +107,7 @@ export class BaseApiService {
     }
 
     public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
+        options?.abortBeforeSend?.throwIfAborted();
         if (!options?.skipAuthCheck && (!this.auth.isAccessTokenValid() || (this.requiresCsrfProtection(method) && this.auth.getCsrfToken() == null))) {
             try {
                 await this.auth.refresh();
@@ -121,6 +124,7 @@ export class BaseApiService {
             }
         }
 
+        options?.abortBeforeSend?.throwIfAborted();
         let response: Response;
         try {
             response = await fetch(this.combineUrl(path, options), {

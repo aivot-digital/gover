@@ -97,6 +97,7 @@ import {SearchItemService} from '../../../search/search-item-service';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
+import {applySavedProcessNode} from './apply-saved-process-node';
 import {Permission} from '../../../../data/permissions/permission';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
@@ -1552,10 +1553,7 @@ export function ProcessDetailsPage(): ReactNode {
         const updated = await new ProcessNodeApiService()
             .update(node.id, node, options);
 
-        setProcessFlow({
-            ...processFlow,
-            nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
-        });
+        setProcessFlow((current) => applySavedProcessNode(current, updated));
 
         setShowProcessNodeProblemsForNodes((prev) => ({
             ...prev,
