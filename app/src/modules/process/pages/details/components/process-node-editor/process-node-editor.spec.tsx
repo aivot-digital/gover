@@ -385,8 +385,8 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
 
         const dialog = await screen.findByRole('dialog', {name: 'Neuerer Stand gespeichert'});
-        expect(within(dialog).getByRole('group', {name: 'Name des Elementes'})).toBeInTheDocument();
-        fireEvent.click(within(dialog).getByRole('radio', {name: /Gespeicherter Stand/}));
+        expect(within(dialog).getByRole('group', {name: 'Abweichende Einstellung: Name des Elementes'})).toBeInTheDocument();
+        fireEvent.click(within(dialog).getByRole('radio', {name: 'Gespeicherter Stand soll übernommen werden'}));
         fireEvent.click(within(dialog).getByRole('button', {name: 'Übernehmen und speichern'}));
 
         await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));

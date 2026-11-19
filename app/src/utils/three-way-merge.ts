@@ -22,6 +22,14 @@ export interface MergeResult<T> {
     conflicts: MergeConflict[];
 }
 
+export interface MergeConflictPresentation {
+    group: {
+        id: string;
+        label: string;
+    };
+    propertyLabel: string;
+}
+
 /**
  * Describes how the objects of one type are merged.
  * Each type that can be recovered from a lock version conflict defines its own spec next to its entity.
@@ -40,6 +48,8 @@ export interface MergeSpec<T> {
     validate?: (merged: T) => boolean;
     /** A readable name for a conflict path, shown in the conflict dialog. */
     label?: (path: string[], states: {base: T; mine: T; theirs: T}) => string;
+    /** Stable grouping and a separate property name for the conflict dialog. */
+    describeConflict?: (path: string[], states: {base: T; mine: T; theirs: T}) => MergeConflictPresentation;
 }
 
 export const ORDER_SEGMENT = '#order';

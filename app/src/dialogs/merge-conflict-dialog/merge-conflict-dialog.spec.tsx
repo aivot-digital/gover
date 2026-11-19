@@ -1,10 +1,29 @@
 import {type ComponentProps} from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {MergeConflictDialog} from './merge-conflict-dialog';
+import {InputMode, InputVariableSource} from '../../models/input-mode';
 
 const restoreTitle = 'Ungespeicherte Änderungen wiederherstellen?';
+const mineLabel = 'Meine Änderung soll behalten werden';
+const theirsLabel = 'Gespeicherter Stand soll übernommen werden';
+const searchLabel = 'Abweichende Angaben suchen';
+
+const groupedConflicts = [
+    {
+        id: 'street', label: 'Adresse: Platzhalter', propertyLabel: 'Platzhalter',
+        group: {id: 'address', label: 'Adresse'}, mine: 'Straße eingeben', theirs: 'Neue Straße',
+    },
+    {
+        id: 'required', label: 'Adresse: Pflichtfeld', propertyLabel: 'Pflichtfeld',
+        group: {id: 'address', label: 'Adresse'}, mine: true, theirs: false,
+    },
+    {
+        id: 'hint', label: 'Kontaktdaten: Hilfetext', propertyLabel: 'Hilfetext',
+        group: {id: 'contact', label: 'Kontaktdaten'}, mine: 'Meine Hilfe', theirs: 'Gespeicherte Hilfe',
+    },
+];
 
 function setup(overrides: Partial<ComponentProps<typeof MergeConflictDialog>> = {}) {
     const props = {
@@ -59,24 +78,32 @@ describe('MergeConflictDialog', () => {
             mode,
             storedStateChanged: true,
             conflicts: [
-                {id: 'name', label: 'Name des Elementes', mine: 'Mein Name', theirs: 'Gespeicherter Name'},
-                {id: 'description', label: 'Beschreibung', mine: 'Meine Beschreibung', theirs: 'Gespeicherte Beschreibung'},
+                {
+                    id: 'name', label: 'Name des Elementes', mine: 'Mein Name', theirs: 'Gespeicherter Name',
+                    group: {id: 'element', label: 'Element'},
+                },
+                {
+                    id: 'description', label: 'Beschreibung', mine: 'Meine Beschreibung', theirs: 'Gespeicherte Beschreibung',
+                    group: {id: 'element', label: 'Element'},
+                },
             ],
         });
         const dialog = screen.getByRole('dialog', {
             name: mode === 'restore' ? restoreTitle : 'Neuerer Stand gespeichert',
         });
-        const name = within(dialog).getByRole('group', {name: 'Name des Elementes'});
-        const description = within(dialog).getByRole('group', {name: 'Beschreibung'});
-        expect(within(name).getByRole('radio', {name: 'Meine Änderung'})).toBeChecked();
-        expect(within(description).getByRole('radio', {name: 'Meine Änderung'})).toBeChecked();
+        const name = within(dialog).getByRole('group', {name: 'Abweichende Einstellung: Name des Elementes'});
+        const description = within(dialog).getByRole('group', {name: 'Abweichende Einstellung: Beschreibung'});
+        expect(within(name).getByRole('radio', {name: mineLabel})).toBeChecked();
+        expect(within(description).getByRole('radio', {name: mineLabel})).toBeChecked();
+        expect(within(name).getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription('Mein Name');
+        expect(within(name).getByRole('radio', {name: theirsLabel})).toHaveAccessibleDescription('Gespeicherter Name');
         if (mode === 'restore') {
             expect(within(dialog).getByText(/Einige Angaben wurden in beiden Fassungen unterschiedlich geändert/))
                 .toHaveTextContent('Alle übrigen Änderungen werden zusammengeführt.');
         }
 
         const user = userEvent.setup();
-        await user.click(within(name).getByRole('radio', {name: 'Gespeicherter Stand'}));
+        await user.click(within(name).getByRole('radio', {name: theirsLabel}));
         await user.click(within(dialog).getByRole('button', {
             name: mode === 'restore' ? 'Änderungen wiederherstellen' : 'Übernehmen und speichern',
         }));
@@ -84,6 +111,202 @@ describe('MergeConflictDialog', () => {
         expect(props.onApply).toHaveBeenCalledExactlyOnceWith({name: 'theirs', description: 'mine'});
         expect(props.onDiscard).not.toHaveBeenCalled();
         expect(props.onCancel).not.toHaveBeenCalled();
+    });
+
+    it('groups settings under their element and preserves choices while groups are collapsed', async () => {
+        const props = setup({conflicts: groupedConflicts});
+        const address = screen.getByRole('button', {name: /^Adresse/});
+        const contact = screen.getByRole('button', {name: /^Kontaktdaten/});
+        expect(address).toHaveAttribute('aria-expanded', 'true');
+        expect(contact).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByRole('group', {name: 'Abweichende Einstellung: Platzhalter'})).toBeVisible();
+        const user = userEvent.setup();
+
+        await user.click(within(screen.getByRole('group', {name: 'Abweichende Einstellung: Platzhalter'}))
+            .getByRole('radio', {name: theirsLabel}));
+        await user.click(contact);
+        expect(address).toHaveAttribute('aria-expanded', 'true');
+        expect(contact).toHaveAttribute('aria-expanded', 'true');
+        await user.click(address);
+        await waitFor(() => expect(screen.queryByRole('group', {name: 'Abweichende Einstellung: Platzhalter'}))
+            .not.toBeInTheDocument());
+        await user.click(address);
+        expect(within(screen.getByRole('group', {name: 'Abweichende Einstellung: Platzhalter'}))
+            .getByRole('radio', {name: theirsLabel})).toBeChecked();
+        await user.click(screen.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+
+        expect(props.onApply).toHaveBeenCalledExactlyOnceWith({street: 'theirs', required: 'mine', hint: 'mine'});
+    });
+
+    it('uses conflict labels when no grouping or property metadata is available', async () => {
+        setup({conflicts: [
+            {id: 'first', label: 'Erste Angabe', mine: 'Mein Wert', theirs: 'Anderer Wert'},
+            {id: 'second', label: 'Zweite Angabe', mine: 'Mein zweiter Wert', theirs: 'Anderer zweiter Wert'},
+        ]});
+        expect(screen.getByRole('button', {name: /^Erste Angabe/})).toHaveAttribute('aria-expanded', 'true');
+        const second = screen.getByRole('button', {name: /^Zweite Angabe/});
+        expect(second).toHaveAttribute('aria-expanded', 'false');
+        await userEvent.setup().click(second);
+
+        expect(screen.getByRole('group', {name: 'Abweichende Einstellung: Zweite Angabe'})).toBeVisible();
+    });
+
+    it('searches group names, settings and values while preserving expansion and selections', async () => {
+        const props = setup({conflicts: groupedConflicts});
+        const user = userEvent.setup();
+        const search = screen.getByRole('searchbox', {name: searchLabel});
+        const address = screen.getByRole('button', {name: /^Adresse/});
+        await user.click(address);
+        expect(address).toHaveAttribute('aria-expanded', 'false');
+
+        for (const term of ['KONTAKTDATEN', 'Hilfetext', 'Gespeicherte Hilfe']) {
+            await user.clear(search);
+            await user.type(search, term);
+            await user.tab();
+            expect(await screen.findByRole('group', {name: 'Abweichende Einstellung: Hilfetext'})).toBeVisible();
+            await waitFor(() => expect(screen.queryByRole('button', {name: /^Adresse/})).not.toBeInTheDocument());
+        }
+        await user.click(within(screen.getByRole('group', {name: 'Abweichende Einstellung: Hilfetext'}))
+            .getByRole('radio', {name: theirsLabel}));
+        await user.clear(search);
+
+        expect(await screen.findByRole('button', {name: /^Adresse/})).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByRole('button', {name: /^Kontaktdaten/})).toHaveAttribute('aria-expanded', 'false');
+        await user.click(screen.getByRole('button', {name: /^Kontaktdaten/}));
+        expect(within(screen.getByRole('group', {name: 'Abweichende Einstellung: Hilfetext'}))
+            .getByRole('radio', {name: theirsLabel})).toBeChecked();
+        await user.click(screen.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+
+        expect(props.onApply).toHaveBeenCalledExactlyOnceWith({street: 'mine', required: 'mine', hint: 'theirs'});
+    });
+
+    it.each([
+        {bulkAction: 'Gespeicherten Stand für alle übernehmen', singleLabel: mineLabel, expected: {street: 'mine', required: 'theirs', hint: 'theirs'}},
+        {bulkAction: 'Meine Änderungen für alle behalten', singleLabel: theirsLabel, expected: {street: 'theirs', required: 'mine', hint: 'mine'}},
+    ])('applies "$bulkAction" to hidden conflicts and allows a later individual choice', async ({bulkAction, singleLabel, expected}) => {
+        const props = setup({conflicts: groupedConflicts});
+        const user = userEvent.setup();
+        if (bulkAction === 'Meine Änderungen für alle behalten') {
+            await user.click(screen.getByRole('button', {name: 'Gespeicherten Stand für alle übernehmen'}));
+        }
+        await user.type(screen.getByRole('searchbox', {name: searchLabel}), 'Platzhalter');
+        await user.tab();
+        const setting = await screen.findByRole('group', {name: 'Abweichende Einstellung: Platzhalter'});
+        await waitFor(() => expect(screen.queryByRole('group', {name: 'Abweichende Einstellung: Pflichtfeld'}))
+            .not.toBeInTheDocument());
+        await user.click(screen.getByRole('button', {name: bulkAction}));
+        await user.click(within(setting).getByRole('radio', {name: singleLabel}));
+        await user.type(screen.getByRole('searchbox', {name: searchLabel}), ' ohne Treffer');
+        await waitFor(() => expect(screen.queryByRole('radio')).not.toBeInTheDocument());
+        await user.click(screen.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+
+        expect(props.onApply).toHaveBeenCalledExactlyOnceWith(expected);
+        expect(props.onDiscard).not.toHaveBeenCalled();
+    });
+
+    it('omits bulk actions for a single conflict', () => {
+        setup({conflicts: [groupedConflicts[0]]});
+
+        expect(screen.queryByRole('button', {name: 'Meine Änderungen für alle behalten'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Gespeicherten Stand für alle übernehmen'})).not.toBeInTheDocument();
+    });
+
+    it.each([
+        {value: undefined, expected: 'Entfernt'},
+        {value: null, expected: 'Leer'},
+        {value: '', expected: 'Leer'},
+        {value: true, expected: 'Ja'},
+        {value: false, expected: 'Nein'},
+        {value: 0, expected: '0'},
+        {value: {type: InputMode.Literal, value: 'Vorgegebener Text'}, expected: 'Vorgegebener Text'},
+        {value: {type: InputMode.Literal, value: false}, expected: 'Nein'},
+    ])('describes the authored value as "$expected"', ({value, expected}) => {
+        setup({conflicts: [{id: 'value', label: 'Wert', mine: value, theirs: 'Gespeichert'}]});
+
+        expect(screen.getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription(expected);
+    });
+
+    it('shows markup as text and lets people inspect and search the full value', async () => {
+        const longValue = `${'Langer Inhalt '.repeat(40)}<script>alert("Sicher als Text")</script>`;
+        const props = setup({conflicts: [{id: 'value', label: 'Beschreibung', mine: longValue, theirs: 'Gespeichert'}]});
+        const user = userEvent.setup();
+        const mine = screen.getByRole('radio', {name: mineLabel});
+        expect(mine).not.toHaveAccessibleDescription(longValue);
+        await user.click(screen.getByRole('button', {name: 'Vollständigen Wert anzeigen'}));
+
+        expect(mine).toHaveAccessibleDescription(longValue);
+        expect(screen.getByText(longValue)).toBeVisible();
+        expect(screen.getByRole('dialog').querySelector('script')).toBeNull();
+        await user.click(screen.getByRole('button', {name: 'Wert kürzen'}));
+        expect(mine).not.toHaveAccessibleDescription(longValue);
+        await user.type(screen.getByRole('searchbox', {name: searchLabel}), 'Sicher als Text');
+        await user.tab();
+        expect(await screen.findByRole('group', {name: 'Abweichende Einstellung: Beschreibung'})).toBeVisible();
+        await user.click(screen.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+
+        expect(props.onApply).toHaveBeenCalledExactlyOnceWith({value: 'mine'});
+    });
+
+    it('describes dynamic input sources, scripts and expressions as inert text', () => {
+        const group = {id: 'dynamic', label: 'Dynamische Angaben'};
+        setup({conflicts: [
+            {
+                id: 'variable', label: 'Variable', group,
+                mine: {type: InputMode.Variable, reference: {source: InputVariableSource.ElementData, nodeDataKey: 'person', path: 'name'}},
+                theirs: {type: InputMode.Literal, value: 'Gespeicherter Name'},
+            },
+            {
+                id: 'script', label: 'Skript', group,
+                mine: {type: InputMode.LowCode, code: 'return "<b>Name</b>";'},
+                theirs: {type: InputMode.Literal, value: 'Gespeicherter Text'},
+            },
+            {
+                id: 'expression', label: 'Ausdruck', group,
+                mine: {type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: '<b>Vorlage</b>'}},
+                theirs: {type: InputMode.Literal, value: 'Gespeicherte Vorlage'},
+            },
+        ]});
+        const variable = screen.getByRole('group', {name: 'Abweichende Einstellung: Variable'});
+        expect(within(variable).getByRole('radio', {name: mineLabel}))
+            .toHaveAccessibleDescription(/Variable: _\.person\.name/);
+        expect(within(variable).getByRole('radio', {name: theirsLabel}))
+            .toHaveAccessibleDescription('Gespeicherter Name');
+        const script = screen.getByRole('group', {name: 'Abweichende Einstellung: Skript'});
+        expect(within(script).getByRole('radio', {name: mineLabel}))
+            .toHaveAccessibleDescription(/Low-Code-Skript:[\s\S]*return "<b>Name<\/b>";/);
+        expect(within(script).getByText(/return "<b>Name<\/b>";/)).toBeVisible();
+        const expression = screen.getByRole('group', {name: 'Abweichende Einstellung: Ausdruck'});
+        expect(within(expression).getByRole('radio', {name: mineLabel}))
+            .toHaveAccessibleDescription(/No-Code-Ausdruck:[\s\S]*"type": "NoCodeStaticValue"[\s\S]*"value": "<b>Vorlage<\/b>"/);
+        expect(within(expression).getByText(/"value": "<b>Vorlage<\/b>"/)).toBeVisible();
+        expect(screen.getByRole('dialog').querySelector('b')).toBeNull();
+    });
+
+    it('changes choices with the keyboard and expands a value without changing the chosen side', async () => {
+        const longValue = 'Vollständig lesbarer Inhalt '.repeat(8).trim();
+        const props = setup({conflicts: [{id: 'value', label: 'Beschreibung', mine: longValue, theirs: 'Gespeichert'}]});
+        const user = userEvent.setup();
+        const mine = screen.getByRole('radio', {name: mineLabel});
+        const theirs = screen.getByRole('radio', {name: theirsLabel});
+        for (let attempts = 0; document.activeElement !== mine && attempts < 12; attempts += 1) {
+            await user.tab();
+        }
+        expect(mine).toHaveFocus();
+        await user.keyboard('{ArrowRight}');
+        expect(theirs).toHaveFocus();
+        expect(theirs).toBeChecked();
+        await user.tab({shift: true});
+        expect(screen.getByRole('button', {name: 'Vollständigen Wert anzeigen'})).toHaveFocus();
+        await user.keyboard('{Enter}');
+
+        expect(mine).toHaveAccessibleDescription(longValue);
+        expect(theirs).toBeChecked();
+        await user.tab();
+        await user.tab();
+        expect(screen.getByRole('button', {name: 'Änderungen wiederherstellen'})).toHaveFocus();
+        await user.keyboard('{Enter}');
+
+        expect(props.onApply).toHaveBeenCalledExactlyOnceWith({value: 'theirs'});
     });
 
     it.each(['restore', 'save'] as const)('discards changes only after the explicit %s discard action', async (mode) => {

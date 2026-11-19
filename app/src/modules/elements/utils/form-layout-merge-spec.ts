@@ -1,9 +1,10 @@
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {type AnyElement} from '../../../models/elements/any-element';
-import {keyById, type MergeSpec, ORDER_SEGMENT} from '../../../utils/three-way-merge';
+import {keyById, type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {getElementName} from '../../../data/element-type/element-names';
+import {describeElementProperty} from './element-conflict-labels';
 
 export const formLayoutMergeSpec: MergeSpec<FormLayoutElement | null> = {
     // Elements are merged by their ID, so changes to different elements of the same form can be combined.
@@ -11,6 +12,7 @@ export const formLayoutMergeSpec: MergeSpec<FormLayoutElement | null> = {
     normalize: normalizeUiDefinitionForStorage,
     validate: (layout) => layout == null || hasUniqueElementIds(layout),
     label: (path, {base, mine, theirs}) => describeElementPath(path, [mine, theirs, base], 'Gesamtes Formular'),
+    describeConflict: (path, {base, mine, theirs}) => describeElementConflict(path, [mine, theirs, base], 'Formular'),
 };
 
 export function isElementTree(value: unknown): value is AnyElement {
@@ -31,33 +33,51 @@ export function hasUniqueElementIds(root: AnyElement): boolean {
  * Paths that end at a property of the element name the property as well.
  */
 export function describeElementPath(path: string[], trees: unknown[], rootLabel: string): string {
-    const elements = trees
-        .filter(isElementTree)
-        .flatMap((tree) => flattenElements(tree));
+    if (path.length === 0) return rootLabel;
+    return formatElementConflictLabel(describeElementConflict(path, trees, rootLabel));
+}
+
+/** Groups by element IDs so equal or changed titles never merge unrelated decisions. */
+export function describeElementConflict(
+    path: string[],
+    trees: unknown[],
+    rootLabel: string,
+    groupPrefix?: (string | number)[],
+): MergeConflictPresentation {
+    const roots = trees.filter(isElementTree);
+    const elements = roots.flatMap((tree) => flattenElements(tree));
+    const prefix = groupPrefix ?? ['form', roots[0]?.id ?? 'root'];
 
     for (let index = path.length - 1; index >= 0; index--) {
+        if (path[index - 1] !== 'children') continue;
         const itemId = /^\[(.+)]$/.exec(path[index])?.[1];
         const element = itemId == null ? undefined : elements.find((candidate) => candidate.id === itemId);
         if (element != null) {
-            return describeRest(describeElement(element), path.slice(index + 1));
+            const rest = path.slice(index + 1);
+            return {
+                group: {
+                    id: JSON.stringify([...prefix, element.id]),
+                    label: groupPrefix == null ? describeElement(element) : `${rootLabel} › ${describeElement(element)}`,
+                },
+                propertyLabel: rest.length === 0 ? 'Gesamtes Element' : describeElementProperty(rest, elements.filter((candidate) => candidate.id === element.id), element),
+            };
         }
     }
 
-    return describeRest(rootLabel, path);
+    return {
+        group: {id: JSON.stringify(prefix), label: rootLabel},
+        propertyLabel: path.length === 0 ? 'Gesamtes Formular' : describeElementProperty(path, roots, roots[0]),
+    };
+}
+
+export function formatElementConflictLabel(presentation: MergeConflictPresentation): string {
+    return presentation.propertyLabel === 'Gesamtes Element' ? presentation.group.label :
+        `${presentation.group.label}, Eigenschaft „${presentation.propertyLabel}“`;
 }
 
 function describeElement(element: AnyElement): string {
-    const label = (element as {label?: string | null}).label ?? element.name;
-    const typeName = getElementName(element);
-    return label != null && label.trim().length > 0 ? `${typeName} „${label.trim()}“` : typeName;
-}
-
-function describeRest(subject: string, rest: string[]): string {
-    if (rest.length === 0) {
-        return subject;
-    }
-    if (rest[rest.length - 1] === ORDER_SEGMENT) {
-        return `Reihenfolge der Elemente in ${subject}`;
-    }
-    return `${subject}, Eigenschaft „${rest.filter((segment) => !segment.startsWith('[')).join('.')}“`;
+    const label = [(element as {label?: string | null}).label, element.name]
+        .find((value) => value != null && value.trim().length > 0);
+    const typeName = getElementName(element) ?? 'Formularelement';
+    return label != null ? `${typeName} „${label.trim()}“` : typeName;
 }

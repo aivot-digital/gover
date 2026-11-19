@@ -1,13 +1,15 @@
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
-import {keyById, type MergeSpec} from '../../../utils/three-way-merge';
+import {keyById, type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {getLiteralAuthoredValue} from '../../../models/element-data';
 import {
-    describeElementPath,
+    describeElementConflict,
+    formatElementConflictLabel,
     hasUniqueElementIds,
     isElementTree,
 } from '../../elements/utils/form-layout-merge-spec';
+import {describeConfigurationProperty} from '../../elements/utils/element-conflict-labels';
 
 const FieldLabels: Record<string, string> = {
     name: 'Name des Elementes',
@@ -17,6 +19,7 @@ const FieldLabels: Record<string, string> = {
     deadlines: 'Frist',
     requirements: 'Fachliche Anforderungen',
     notes: 'Notizen',
+    configuration: 'Konfiguration',
 };
 
 /**
@@ -25,6 +28,39 @@ const FieldLabels: Record<string, string> = {
  */
 export function createProcessNodeMergeSpec(layout: GroupLayout | null): MergeSpec<ProcessNodeEntity> {
     const layoutElements = layout == null ? [] : flattenElements(layout);
+    const describeConflict: NonNullable<MergeSpec<ProcessNodeEntity>['describeConflict']> = (path, {base, mine, theirs}) => {
+        const [field, configurationKey, ...rest] = path;
+        const nodePrefix = ['process-node', mine.id];
+
+        if (field !== 'configuration' || configurationKey == null) {
+            let propertyLabel = field == null ? 'Gesamte Konfiguration des Prozesselements' : FieldLabels[field] ?? field;
+            if (field === 'deadlines' && configurationKey != null) {
+                const definition = [theirs, mine, base].flatMap((node) => node.deadlineDefinitions).find((candidate) => candidate.key === configurationKey);
+                const detailLabels: Record<string, string> = {days: 'Frist', strict: 'Aufgabe bei Fristüberschreitung beenden'};
+                propertyLabel = [propertyLabel, definition?.label ?? configurationKey, ...rest.map((key) => detailLabels[key] ?? key)].join(' › ');
+            } else if (path.length > 1) {
+                // Output mapping keys and extensions are authored identifiers, not property names.
+                propertyLabel = [propertyLabel, ...path.slice(1)].join(' › ');
+            }
+            return {group: {id: JSON.stringify([...nodePrefix, 'general']), label: 'Allgemeine Angaben'}, propertyLabel};
+        }
+
+        const fieldElement = layoutElements.find((element) => element.id === configurationKey);
+        const fieldLabel = (fieldElement as {label?: string | null} | undefined)?.label?.trim() || configurationKey;
+        const groupPrefix = [...nodePrefix, 'configuration', configurationKey];
+        const values = [mine, theirs, base].map((node) => node.configuration?.[configurationKey]);
+        const trees = values.map((value) => getLiteralAuthoredValue(value));
+
+        // A configuration field can contain an entire form. Its root belongs to the field's own group.
+        if (rest[0] === 'value' && trees.some(isElementTree)) {
+            return describeElementConflict(rest.slice(1), trees, fieldLabel, groupPrefix);
+        }
+
+        return {
+            group: {id: JSON.stringify(groupPrefix), label: fieldLabel},
+            propertyLabel: describeConfigurationProperty(rest, values),
+        };
+    };
 
     return {
         // The server derives these on every save; the lock version must be the stored one, so the save passes its check.
@@ -42,26 +78,11 @@ export function createProcessNodeMergeSpec(layout: GroupLayout | null): MergeSpe
             .map((value) => getLiteralAuthoredValue(value))
             .filter(isElementTree)
             .every(hasUniqueElementIds),
-        label: (path, {base, mine, theirs}) => {
-            const [field, configurationKey, ...rest] = path;
-
-            if (field == null) {
-                return 'Gesamte Konfiguration des Prozesselements';
-            }
-
-            if (field !== 'configuration' || configurationKey == null) {
-                return FieldLabels[field] ?? field;
-            }
-
-            const fieldElement = layoutElements.find((element) => element.id === configurationKey);
-            const fieldLabel = (fieldElement as {label?: string | null} | undefined)?.label ?? configurationKey;
-            if (rest[0] !== 'value' || rest.length === 1) {
-                return fieldLabel;
-            }
-
-            // A field can hold a whole form, e.g. the form layout of a form trigger.
-            const trees = [mine, theirs, base].map((node) => getLiteralAuthoredValue(node.configuration?.[configurationKey]));
-            return describeElementPath(rest.slice(1), trees, fieldLabel);
+        describeConflict,
+        label: (path, states) => {
+            const presentation: MergeConflictPresentation = describeConflict(path, states);
+            if (path[0] !== 'configuration' || path[1] == null) return presentation.propertyLabel;
+            return presentation.propertyLabel === 'Wert' ? presentation.group.label : formatElementConflictLabel(presentation);
         },
     };
 }

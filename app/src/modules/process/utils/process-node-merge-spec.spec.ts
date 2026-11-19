@@ -90,4 +90,55 @@ describe('createProcessNodeMergeSpec', () => {
         expect(threeWayMerge(base, mine, theirs, spec, {'configuration/subject': 'mine'}).merged.configuration)
             .toEqual({subject: lowCode});
     });
+
+    it('groups general properties separately from individual configuration fields', () => {
+        const value = node({});
+        const states = {base: value, mine: value, theirs: value};
+        const name = spec.describeConflict!(['name'], states);
+
+        expect(name).toEqual({group: {id: '["process-node",1,"general"]', label: 'Allgemeine Angaben'}, propertyLabel: 'Name des Elementes'});
+        expect(spec.describeConflict!(['notes'], states)).toEqual({...name, propertyLabel: 'Notizen'});
+        expect(spec.describeConflict!(['configuration', 'subject', 'value'], states)).toEqual({
+            group: {id: '["process-node",1,"configuration","subject"]', label: 'Betreff'}, propertyLabel: 'Wert',
+        });
+        expect(spec.describeConflict!([], states)).toEqual({...name, propertyLabel: 'Gesamte Konfiguration des Prozesselements'});
+    });
+
+    it('keeps an embedded form root in its field group and groups its elements by ID', () => {
+        const form = {
+            id: 'root', type: ElementType.FormLayout,
+            children: [{id: 'first', type: ElementType.Text, label: 'Vorname'}],
+        };
+        const value = node({configuration: {formLayout: literalAuthoredValue(form)}});
+        const states = {base: value, mine: value, theirs: value};
+        const root = spec.describeConflict!(['configuration', 'formLayout', 'value', 'publicTitle'], states);
+
+        expect(root).toEqual({
+            group: {id: '["process-node",1,"configuration","formLayout"]', label: 'Formular'},
+            propertyLabel: 'Öffentlicher Titel & Überschrift des Formulars',
+        });
+        expect(spec.describeConflict!(['configuration', 'formLayout', 'value'], states)).toEqual({...root, propertyLabel: 'Gesamtes Formular'});
+        expect(spec.describeConflict!(['configuration', 'formLayout', 'value', 'children', '[first]', 'placeholder'], states)).toEqual({
+            group: {id: '["process-node",1,"configuration","formLayout","first"]', label: 'Formular › Text „Vorname“'},
+            propertyLabel: 'Platzhalter',
+        });
+    });
+
+    it('preserves unknown configuration and output mapping identifiers', () => {
+        const value = node({configuration: {extension: literalAuthoredValue({placeholder: 'Beispiel'})}});
+        const states = {base: value, mine: value, theirs: value};
+
+        expect(spec.describeConflict!(['configuration', 'extension', 'value', 'placeholder'], states)).toEqual({
+            group: {id: '["process-node",1,"configuration","extension"]', label: 'extension'}, propertyLabel: 'placeholder',
+        });
+        expect(spec.describeConflict!(['outputMappings', 'placeholder'], states).propertyLabel).toBe('Zielpfad in den Vorgangsdaten › placeholder');
+    });
+
+    it('uses deadline labels and their editable property names', () => {
+        const value = node({deadlineDefinitions: [{key: 'review', label: 'Prüfung', description: '', port: {key: 'expired', label: '', description: '', deadlineKey: 'review'}}]});
+        const states = {base: value, mine: value, theirs: value};
+
+        expect(spec.describeConflict!(['deadlines', 'review', 'strict'], states).propertyLabel)
+            .toBe('Frist › Prüfung › Aufgabe bei Fristüberschreitung beenden');
+    });
 });

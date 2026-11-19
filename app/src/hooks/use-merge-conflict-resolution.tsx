@@ -67,12 +67,17 @@ export function useMergeConflictResolution() {
                 setDialogState({
                     mode,
                     storedStateChanged,
-                    conflicts: result.conflicts.map((conflict) => ({
-                        id: conflict.id,
-                        label: spec.label?.(conflict.path, {base, mine, theirs}) ?? (pathToId(conflict.path) || 'Gesamter Inhalt'),
-                        mine: conflict.mine,
-                        theirs: conflict.theirs,
-                    })),
+                    conflicts: result.conflicts.map((conflict) => {
+                        const presentation = spec.describeConflict?.(conflict.path, {base, mine, theirs});
+                        return {
+                            id: conflict.id,
+                            label: spec.label?.(conflict.path, {base, mine, theirs}) ?? (pathToId(conflict.path) || 'Gesamter Inhalt'),
+                            group: presentation?.group,
+                            propertyLabel: presentation?.propertyLabel,
+                            mine: conflict.mine,
+                            theirs: conflict.theirs,
+                        };
+                    }),
                     answer,
                 });
             });
