@@ -14,6 +14,7 @@ import {
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementTree} from '../../../components/element-tree-2/element-tree';
+import type {ElementPanelDraft} from '../../../components/element-tree-2/element-panel-draft';
 import {HelpDialog, HelpDialogId} from '../../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialog, PrivacyDialogId} from '../../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../../dialogs/imprint-dialog/imprint-dialog';
@@ -139,6 +140,8 @@ import {isApiError, isLockVersionConflictError} from '../../../models/api-error'
 import {useEditorDraft} from '../../../hooks/use-editor-draft';
 import {useMergeConflictResolution} from '../../../hooks/use-merge-conflict-resolution';
 import {formLayoutMergeSpec} from '../utils/form-layout-merge-spec';
+import {mergeFormDraft} from '../utils/merge-form-draft';
+import {deepEquals} from '../../../utils/equality-utils';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {resolvePrintablePdfFilename} from '../../forms/utils/printable-pdf-filename';
@@ -197,6 +200,7 @@ export function FormNodeEditorPage() {
 
     const [node, setNode] = useState<ProcessNodeEntity | null>(null);
     const [formLayout, setFormLayout] = useState<FormLayoutElement | null>(null);
+    const [panelDraft, setPanelDraft] = useState<ElementPanelDraft | null>(null);
     const configuredFormSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
 
     const [process, setProcess] = useState<ProcessEntity | null>(null);
@@ -243,13 +247,17 @@ export function FormNodeEditorPage() {
     } | null>(null);
 
     const storedFormLayout = useMemo(() => node == null ? null : getStoredFormLayout(node), [node]);
+    const hasLayoutChanges = useMemo(() => !deepEquals(
+        normalizeUiDefinitionForStorage(storedFormLayout),
+        normalizeUiDefinitionForStorage(formLayout),
+    ), [storedFormLayout, formLayout]);
 
     const {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
-        original: normalizeUiDefinitionForStorage(storedFormLayout),
-        edited: normalizeUiDefinitionForStorage(formLayout),
+        original: false,
+        edited: hasLayoutChanges || panelDraft != null,
         onConfirmNavigation: (): Promise<void> => discardForNavigation(),
     });
 
@@ -258,6 +266,7 @@ export function FormNodeEditorPage() {
     const [isDraftChecked, setIsDraftChecked] = useState(false);
     const {
         resolve: resolveMerge,
+        resolvePrepared,
         dialog: mergeConflictDialog,
     } = useMergeConflictResolution();
 
@@ -365,6 +374,7 @@ export function FormNodeEditorPage() {
                 setPastLoadedForm([]);
                 setFutureLoadedForm([]);
                 setIsDraftChecked(false);
+                setPanelDraft(null);
                 setNode(node);
                 setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
             })
@@ -535,6 +545,8 @@ export function FormNodeEditorPage() {
 
     const {
         navigateToElementEditor,
+        currentEditedElementId,
+        closeElementEditor,
     } = useElementEditorNavigation();
 
     const [showPrefillDialog, setShowPrefillDialog] = useState(false);
@@ -579,11 +591,12 @@ export function FormNodeEditorPage() {
         clearDraft,
         discardForNavigation,
         isReady: isDraftStorageReady,
-    } = useEditorDraft<FormLayoutElement | null>({
+    } = useEditorDraft<FormLayoutElement | null, ElementPanelDraft>({
         draftKey: node?.id === Number(nodeId) ? `process-node/${node.id}/form-layout` : null,
         base: storedFormLayout,
         baseLockVersion: node?.lockVersion,
         edited: formLayout,
+        context: panelDraft ?? undefined,
         hasChanged,
         enabled: isDraftChecked && isEditable,
     });
@@ -592,7 +605,7 @@ export function FormNodeEditorPage() {
         processVersion.processId === node.processId && processVersion.processVersion === node.processVersion;
     // Revisit recovery only on a different editor load, not on a save that updates the same node.
     useEffect(() => {
-        if (node == null || !draftNodeReady || !isDraftStorageReady) {
+        if (node == null || formLayout == null || !draftNodeReady || !isDraftStorageReady) {
             return;
         }
         const controller = new AbortController();
@@ -603,11 +616,14 @@ export function FormNodeEditorPage() {
                 return;
             }
 
-            const outcome = await resolveMerge({
-                base: draft.base,
-                mine: draft.mine,
-                theirs: storedFormLayout,
-                spec: formLayoutMergeSpec,
+            const outcome = await resolvePrepared({
+                merge: (choices) => mergeFormDraft({
+                    base: draft.base,
+                    mine: draft.mine,
+                    theirs: storedFormLayout,
+                    editableRoot: formLayout,
+                    panel: draft.context,
+                }, choices),
                 mode: 'restore',
                 signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (node.lockVersion ?? null),
@@ -615,8 +631,18 @@ export function FormNodeEditorPage() {
             if (controller.signal.aborted) {
                 return;
             }
+            const recoveredPanel = outcome.status === 'apply' ? outcome.value.panel : undefined;
+            if (recoveredPanel) {
+                navigateToElementEditor(recoveredPanel.base.id, recoveredPanel.tab);
+            } else if (draft.context && currentEditedElementId === draft.context.base.id) {
+                closeElementEditor();
+            }
             if (outcome.status === 'apply') {
-                handlePatch(toEditableFormLayout(outcome.value));
+                const {layout} = outcome.value;
+                if (!deepEquals(normalizeUiDefinitionForStorage(layout), normalizeUiDefinitionForStorage(formLayout))) {
+                    handlePatch(toEditableFormLayout(layout));
+                }
+                setPanelDraft(recoveredPanel ?? null);
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
                 await clearDraft().catch(() => {
@@ -633,6 +659,7 @@ export function FormNodeEditorPage() {
         return () => controller.abort();
     }, [draftNodeReady, nodeId, isDraftStorageReady, isEditable, loadDraft]);
     const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
+    const checkingDraft = isDraftStorageReady && !isDraftChecked;
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
             draftPreviewThemeChain == null ?
@@ -890,7 +917,7 @@ export function FormNodeEditorPage() {
 
         let filenameLayout = formLayout;
 
-        if (hasChanged) {
+        if (hasLayoutChanges) {
             const saveNow = await confirm({
                 title: 'Ungespeicherte Änderungen',
                 children: (
@@ -1186,7 +1213,7 @@ export function FormNodeEditorPage() {
             iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            disabled: !hasChanged || !isEditable || isSaving,
+            disabled: !hasLayoutChanges || !isEditable || isSaving,
         },
     ];
 
@@ -1270,7 +1297,7 @@ export function FormNodeEditorPage() {
             }
 
             // Check if changes exist. If so, ask for saving them.
-            if (hasChanged) {
+            if (hasLayoutChanges) {
                 const saveNow = await confirm({
                     title: 'Ungespeicherte Änderungen',
                     children: (
@@ -1413,6 +1440,7 @@ export function FormNodeEditorPage() {
         >
             <Box
                 ref={containerRef}
+                inert={checkingDraft}
                 sx={{
                     height: '100vh',
                     '--focus-border': (theme) => theme.palette.secondary.main,
@@ -1574,7 +1602,7 @@ export function FormNodeEditorPage() {
                             </Allotment.Pane>
                             {/* Element Tree */}
                             {
-                                !hideComponentTree &&
+                                (!hideComponentTree || panelDraft != null) && !checkingDraft &&
                                 (
                                     <Allotment.Pane
                                         minSize={480}
@@ -1593,6 +1621,8 @@ export function FormNodeEditorPage() {
                                         >
                                             <ElementTree
                                                 value={formLayout}
+                                                panelDraft={panelDraft}
+                                                onPanelDraftChange={setPanelDraft}
                                                 onChange={handlePatch}
                                                 editable={isEditable}
                                                 displayContext={ElementDisplayContext.CustomerFacing}

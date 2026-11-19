@@ -48,6 +48,13 @@ describe('threeWayMerge', () => {
         expect(result.merged).toEqual({a: 3});
     });
 
+    it('keeps explicit undefined fields when both editor models define the key', () => {
+        const base = {label: 'A', hint: undefined};
+        const mine = {...base, label: 'B'};
+        const theirs = {...base, label: 'C'};
+        expect(threeWayMerge(base, mine, theirs, {}, {label: 'theirs'}).merged).toStrictEqual(theirs);
+    });
+
     it('takes server-managed fields from the stored state', () => {
         const base = {name: 'A', lockVersion: 1};
         const mine = {name: 'B', lockVersion: 1};

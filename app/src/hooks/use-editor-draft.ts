@@ -7,13 +7,14 @@ import {type EditorDraft, EditorDraftStorage} from '../services/editor-draft-sto
 // Short enough that hardly any work is lost, long enough not to write on every keystroke.
 const DRAFT_SAVE_DELAY = 1000;
 
-interface EditorDraftProps<T> {
+interface EditorDraftProps<T, Context> {
     /** Identifies the edited object, e.g. `process-node/17/form-layout`. Must stay `null` until the object is loaded. */
     draftKey: string | null;
     /** The stored state the editor started from. May be `null`, e.g. for a form that was never saved. */
     base: T | null;
     baseLockVersion: number | null | undefined;
     edited: T | null;
+    context?: Context;
     hasChanged: boolean;
     /**
      * Must stay false until the editor has decided about an existing draft. Otherwise the freshly loaded, unchanged
@@ -22,14 +23,16 @@ interface EditorDraftProps<T> {
     enabled: boolean;
 }
 
-type DraftSnapshot<T> = Pick<EditorDraft<T>, 'base' | 'baseLockVersion' | 'mine'>;
+type DraftSnapshot<T, Context> = Pick<EditorDraft<T, Context>, 'base' | 'baseLockVersion' | 'mine' | 'context'>;
 
-function createDraftSession<T>(userId: string, key: string) {
-    let pending: DraftSnapshot<T> | undefined;
+function createDraftSession<T, Context>(userId: string, key: string) {
+    let pending: DraftSnapshot<T, Context> | undefined;
     let timer: number | undefined;
     let lastOperation: Promise<unknown> | undefined;
     let stored = false;
+    let hadContext = false;
     let leaving = false;
+    let revision = 0;
 
     // Opening the database, taking ownership of a draft, and committing writes are asynchronous. Keep them in
     // editor order even when a discard or a login redirect starts while a previous operation is still waiting.
@@ -61,13 +64,21 @@ function createDraftSession<T>(userId: string, key: string) {
         }
     }
 
-    function schedule(snapshot: DraftSnapshot<T>) {
+    function schedule(snapshot: DraftSnapshot<T, Context>) {
         if (leaving) {
             return;
         }
+        revision++;
         cancelPending();
         pending = snapshot;
-        timer = window.setTimeout(() => flush()?.catch(console.error), DRAFT_SAVE_DELAY);
+        const closedNestedEditor = hadContext && snapshot.context === undefined;
+        hadContext = snapshot.context !== undefined;
+        if (closedNestedEditor) {
+            // Applying or discarding the nested edits invalidates their previous backup immediately.
+            flush()?.catch(console.error);
+        } else {
+            timer = window.setTimeout(() => flush()?.catch(console.error), DRAFT_SAVE_DELAY);
+        }
     }
 
     function remove() {
@@ -89,7 +100,9 @@ function createDraftSession<T>(userId: string, key: string) {
         cancelPending,
         async clearDraft() {
             if (!leaving) {
+                revision++;
                 cancelPending();
+                hadContext = false;
                 await remove();
             }
         },
@@ -111,13 +124,22 @@ function createDraftSession<T>(userId: string, key: string) {
             if (leaving) {
                 return null;
             }
-            const draft = await EditorDraftStorage.load<T>(userId, key, getEditorDraftReturnId());
+            const draft = await EditorDraftStorage.load<T, Context>(userId, key, getEditorDraftReturnId());
             stored = draft != null;
+            hadContext = draft?.context !== undefined;
             return draft;
         }),
         async reserve(returnId: string) {
-            await flush();
-            return inOrder(async () => !leaving && await EditorDraftStorage.reserve(userId, key, returnId));
+            // An edit or a completed nested apply can arrive while a preceding transaction is committing.
+            // In that case flush and reserve the newer snapshot before letting the document navigate away.
+            for (;;) {
+                const reservingRevision = revision;
+                await flush();
+                const reserved = await inOrder(async () => !leaving && await EditorDraftStorage.reserve(userId, key, returnId));
+                if (leaving || revision === reservingRevision) {
+                    return !leaving && reserved;
+                }
+            }
         },
         async stopForLogout() {
             leaving = true;
@@ -131,10 +153,10 @@ function createDraftSession<T>(userId: string, key: string) {
  * Keeps the unsaved changes of an editor in the browser while they exist and removes them once they are saved or
  * reverted, so they can be offered again after an expired session or a reload.
  */
-export function useEditorDraft<T>(props: EditorDraftProps<T>) {
-    const {draftKey, base, baseLockVersion, edited, hasChanged, enabled} = props;
+export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, Context>) {
+    const {draftKey, base, baseLockVersion, edited, context, hasChanged, enabled} = props;
     const userId = useAppSelector(selectUser)?.id;
-    const session = useMemo(() => userId == null || draftKey == null ? null : createDraftSession<T>(userId, draftKey), [userId, draftKey]);
+    const session = useMemo(() => userId == null || draftKey == null ? null : createDraftSession<T, Context>(userId, draftKey), [userId, draftKey]);
 
     useLayoutEffect(() => {
         if (!enabled || session == null || edited == null) {
@@ -145,10 +167,10 @@ export function useEditorDraft<T>(props: EditorDraftProps<T>) {
             session.clearDraft().catch(console.error);
         } else {
             // A null base represents the empty stored state of an object that has never been saved.
-            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited});
+            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, context});
         }
         return session.cancelPending;
-    }, [enabled, session, base, baseLockVersion, edited, hasChanged]);
+    }, [enabled, session, base, baseLockVersion, edited, context, hasChanged]);
 
     useLayoutEffect(() => {
         if (session != null) {
@@ -156,7 +178,7 @@ export function useEditorDraft<T>(props: EditorDraftProps<T>) {
         }
     }, [session]);
 
-    const loadDraft = useCallback(async (): Promise<EditorDraft<T> | null> => {
+    const loadDraft = useCallback(async (): Promise<EditorDraft<T, Context> | null> => {
         try {
             return await session?.load() ?? null;
         } catch (error) {

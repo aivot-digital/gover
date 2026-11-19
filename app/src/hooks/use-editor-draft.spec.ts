@@ -102,6 +102,47 @@ describe('useEditorDraft', () => {
         expect(EditorDraftStorage.remove).not.toHaveBeenCalled();
     });
 
+    it('flushes edits that arrive while a login reservation is pending, even with an unchanged form', async () => {
+        const reservation = Promise.withResolvers<boolean>();
+        const reserve = vi.spyOn(EditorDraftStorage, 'reserve').mockReturnValueOnce(reservation.promise).mockResolvedValue(true);
+        const form = {...props, edited: props.base};
+        const {rerender} = renderHook((label: string) => useEditorDraft({...form, context: {label}}), {
+            initialProps: 'Erste Eingabe',
+        });
+        const redirect = prepareEditorDraftLogin();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(reserve).toHaveBeenCalledOnce();
+        rerender('Letzte Eingabe');
+        reservation.resolve(true);
+
+        expect(await redirect).toBeTruthy();
+        expect(EditorDraftStorage.save).toHaveBeenLastCalledWith(expect.objectContaining({
+            base: form.base, mine: form.base, context: {label: 'Letzte Eingabe'},
+        }));
+        expect(reserve).toHaveBeenCalledTimes(2);
+    });
+
+    it('immediately replaces a discarded nested draft with the remaining form edits after an outstanding write', async () => {
+        const commit = Promise.withResolvers<void>();
+        vi.mocked(EditorDraftStorage.save).mockReturnValueOnce(commit.promise);
+        const {rerender} = renderHook((context: {label: string} | undefined) => useEditorDraft({...props, context}), {
+            initialProps: {label: 'Elementänderung'} as {label: string} | undefined,
+        });
+        vi.advanceTimersByTime(1000);
+        rerender(undefined);
+        // An older write is in flight. Finishing it must also write the remaining form without waiting for a timer.
+        commit.resolve();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(EditorDraftStorage.remove).not.toHaveBeenCalled();
+        expect(EditorDraftStorage.save).toHaveBeenCalledTimes(2);
+        expect(EditorDraftStorage.save).toHaveBeenLastCalledWith(expect.objectContaining({
+            mine: props.edited, context: undefined,
+        }));
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(EditorDraftStorage.save).toHaveBeenCalledTimes(2);
+    });
+
     it('drops the debounce on explicit logout and waits for an outstanding write before storage is cleared', async () => {
         const commit = Promise.withResolvers<void>();
         vi.mocked(EditorDraftStorage.save).mockReturnValueOnce(commit.promise);

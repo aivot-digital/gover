@@ -38,12 +38,15 @@ export interface MergeConflictDialogConflict {
  */
 export type MergeConflictDialogMode = 'restore' | 'save';
 
+export type DependentMergeConflicts = (choices: MergeChoices, defaultChoice?: MergeChoice) => MergeConflictDialogConflict[];
+
 interface MergeConflictDialogProps {
     open: boolean;
     mode: MergeConflictDialogMode;
     /** Whether a newer state was stored since the changes were started. */
     storedStateChanged: boolean;
     conflicts: MergeConflictDialogConflict[];
+    dependentConflicts?: DependentMergeConflicts;
     onApply: (choices: MergeChoices) => void;
     onDiscard: () => void;
     /** Only in the `save` mode: keeps editing without saving. */
@@ -68,8 +71,13 @@ const ChoiceLabels: Record<MergeChoice, string> = {
 };
 
 export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode {
-    const {open, mode, storedStateChanged, conflicts, onApply, onDiscard, onCancel} = props;
-    const [choices, setChoices] = useState<MergeChoices>({});
+    const {open, mode, storedStateChanged, conflicts: primaryConflicts, dependentConflicts, onApply, onDiscard, onCancel} = props;
+    const [selected, setSelected] = useState<MergeChoices>({});
+    const conflicts = useMemo(() => dependentConflicts == null ? primaryConflicts : [
+        ...primaryConflicts,
+        ...dependentConflicts(selected),
+    ], [primaryConflicts, dependentConflicts, selected]);
+    const choices: MergeChoices = Object.fromEntries(conflicts.map(({id}) => [id, selected[id] ?? 'mine']));
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [search, setSearch] = useState('');
     const groups = useMemo(() => {
@@ -85,11 +93,12 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
 
     useEffect(() => {
         if (open) {
-            setChoices(Object.fromEntries(conflicts.map((conflict) => [conflict.id, 'mine' as MergeChoice])));
-            setExpandedGroups(groups[0] == null ? {} : {[groups[0].id]: true});
+            setSelected({});
+            const first = primaryConflicts[0];
+            setExpandedGroups(first == null ? {} : {[first.group?.id ?? JSON.stringify(['conflict', first.id])]: true});
             setSearch('');
         }
-    }, [open, conflicts, groups]);
+    }, [open, primaryConflicts]);
 
     const query = search.trim().toLocaleLowerCase('de');
     const visibleGroups = groups.map((group) => ({
@@ -102,7 +111,9 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
     const title = mode === 'restore' ? 'Ungespeicherte Änderungen wiederherstellen?' : 'Neuerer Stand gespeichert';
     const chooseAll = (choice: MergeChoice) => {
         // The action explicitly covers every conflict, including collapsed groups and filtered-out entries.
-        setChoices(Object.fromEntries(conflicts.map((conflict) => [conflict.id, choice])));
+        const primary = Object.fromEntries(primaryConflicts.map(({id}) => [id, choice]));
+        const additional = dependentConflicts?.(primary, choice) ?? [];
+        setSelected({...primary, ...Object.fromEntries(additional.map(({id}) => [id, choice]))});
     };
 
     return (
@@ -180,7 +191,7 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
                                 searching={query.length > 0}
                                 onExpand={(expanded) => setExpandedGroups((previous) => ({...previous, [group.id]: expanded}))}
                                 choices={choices}
-                                onChoose={(id, choice) => setChoices((previous) => ({...previous, [id]: choice}))}
+                                onChoose={(id, choice) => setSelected((previous) => ({...previous, [id]: choice}))}
                             />
                         ))}
                     </Box>

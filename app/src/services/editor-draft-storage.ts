@@ -2,7 +2,7 @@
  * Unsaved editor changes kept in the browser, so that they survive an expired session, a reload or a closed tab.
  * `base` is the stored state the changes started from; it is needed to merge them with a newer stored state.
  */
-export interface EditorDraft<T> {
+export interface EditorDraft<T, Context = unknown> {
     userId: string;
     key: string;
     /** The tab that edits the draft. Each tab keeps its own draft, so tabs editing the same object cannot replace or remove each other's. */
@@ -11,6 +11,8 @@ export interface EditorDraft<T> {
     /** The lock version of the stored object that `base` belongs to. */
     baseLockVersion: number | null;
     mine: T;
+    /** Work still open in a nested editor, saved together with its enclosing draft. */
+    context?: Context;
     savedAt: number;
 }
 
@@ -22,7 +24,7 @@ const DRAFT_MAX_AGE = 14 * 24 * 60 * 60_000;
 const RESERVATION_MAX_AGE = 10 * 60_000;
 const TAB_LOCK_PREFIX = 'prosuna_editor_draft_tab/';
 
-interface StoredDraft<T> extends EditorDraft<T> {
+interface StoredDraft<T, Context = unknown> extends EditorDraft<T, Context> {
     // Existing v2 records predate this flag and follow the normal owner-lock convention.
     shareable?: boolean;
     reservation?: {id: string; expiresAt: number};
@@ -118,13 +120,13 @@ function canAdopt(draft: StoredDraft<unknown>, returnId?: string): boolean {
     );
 }
 
-function listDrafts<T>(userId: string, key: string): Promise<StoredDraft<T>[]> {
+function listDrafts<T, Context>(userId: string, key: string): Promise<StoredDraft<T, Context>[]> {
     return write((store, setResult) => {
         // The final key component is always a string; an array sorts after every string in IndexedDB.
         const request = store.getAll(IDBKeyRange.bound([userId, key], [userId, key, []]));
         request.onsuccess = () => {
-            const drafts: StoredDraft<T>[] = [];
-            for (const draft of request.result as StoredDraft<T>[]) {
+            const drafts: StoredDraft<T, Context>[] = [];
+            for (const draft of request.result as StoredDraft<T, Context>[]) {
                 if (isExpired(draft)) {
                     store.delete([userId, key, draft.tabId]);
                 } else {
@@ -136,19 +138,19 @@ function listDrafts<T>(userId: string, key: string): Promise<StoredDraft<T>[]> {
     });
 }
 
-function adopt<T>(userId: string, key: string, sourceTab: string, returnId?: string): Promise<EditorDraft<T> | null> {
+function adopt<T, Context>(userId: string, key: string, sourceTab: string, returnId?: string): Promise<EditorDraft<T, Context> | null> {
     return write((store, setResult) => {
         const destination = store.get([userId, key, tabId]);
         const sourceKey = [userId, key, sourceTab];
         const source = store.get(sourceKey);
         // IDB delivers both results in request order within this single transaction.
         source.onsuccess = () => {
-            const own: StoredDraft<T> | undefined = destination.result;
+            const own: StoredDraft<T, Context> | undefined = destination.result;
             if (own && !isExpired(own)) {
                 setResult(own);
                 return;
             }
-            const current: StoredDraft<T> | undefined = source.result;
+            const current: StoredDraft<T, Context> | undefined = source.result;
             if (!current || isExpired(current) || !canAdopt(current, returnId)) {
                 setResult(null);
                 return;
@@ -156,7 +158,7 @@ function adopt<T>(userId: string, key: string, sourceTab: string, returnId?: str
 
             // The source may have been deleted, reserved, or edited since it was listed.
             // Move its current contents and consume the reservation in the same commit.
-            const adopted: StoredDraft<T> = {...current, tabId, shareable: true};
+            const adopted: StoredDraft<T, Context> = {...current, tabId, shareable: true};
             delete adopted.reservation;
             store.put(adopted);
             store.delete(sourceKey);
@@ -165,9 +167,9 @@ function adopt<T>(userId: string, key: string, sourceTab: string, returnId?: str
     });
 }
 
-async function loadDraft<T>(userId: string, key: string, returnId?: string): Promise<EditorDraft<T> | null> {
+async function loadDraft<T, Context>(userId: string, key: string, returnId?: string): Promise<EditorDraft<T, Context> | null> {
     const locks = await ownerLocks;
-    const drafts = await listDrafts<T>(userId, key);
+    const drafts = await listDrafts<T, Context>(userId, key);
     const own = drafts.find((draft) => draft.tabId === tabId);
     if (own || !locks) {
         return own ?? null;
@@ -182,7 +184,7 @@ async function loadDraft<T>(userId: string, key: string, returnId?: string): Pro
     }
     for (const candidate of candidates) {
         const draft = await locks.request(TAB_LOCK_PREFIX + candidate.tabId, {ifAvailable: true}, (lock) =>
-            lock ? adopt<T>(userId, key, candidate.tabId, returnId) : null);
+            lock ? adopt<T, Context>(userId, key, candidate.tabId, returnId) : null);
         if (draft) {
             return draft;
         }
@@ -196,11 +198,11 @@ export const EditorDraftStorage = {
     /**
      * Loads this tab's draft, then a matching login reservation, then the newest eligible draft of a closed tab.
      */
-    async load<T>(userId: string, key: string, returnId?: string): Promise<EditorDraft<T> | null> {
+    async load<T, Context = unknown>(userId: string, key: string, returnId?: string): Promise<EditorDraft<T, Context> | null> {
         // Overlapping mounts in the same document would compete for the source lock and one could miss its draft.
         const scope = JSON.stringify([userId, key]);
         const previous = pendingLoads.get(scope);
-        const read = () => loadDraft<T>(userId, key, returnId);
+        const read = () => loadDraft<T, Context>(userId, key, returnId);
         const pending = previous ? previous.then(read, read) : read();
         pendingLoads.set(scope, pending);
         try {
@@ -212,7 +214,7 @@ export const EditorDraftStorage = {
         }
     },
 
-    async save<T>(draft: Omit<EditorDraft<T>, 'tabId'>): Promise<void> {
+    async save<T, Context = unknown>(draft: Omit<EditorDraft<T, Context>, 'tabId'>): Promise<void> {
         const locks = await ownerLocks;
         await write<void>((store) => {
             const request = store.get([draft.userId, draft.key, tabId]);

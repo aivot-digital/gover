@@ -145,8 +145,9 @@ function mergeObject(base: Record<string, unknown>, mine: Record<string, unknown
 
     for (const key of keys) {
         const merged = mergeValue(base[key], mine[key], theirs[key], [...path, key], context);
-        // A property removed by one side stays removed instead of reappearing as undefined.
-        if (merged !== undefined) {
+        // Preserve explicit undefined fields common to both editor models. Dropping them would
+        // mark an unchanged model dirty, while reintroducing a missing key would undo a removal.
+        if (merged !== undefined || (Object.hasOwn(mine, key) && Object.hasOwn(theirs, key))) {
             result[key] = merged;
         }
     }

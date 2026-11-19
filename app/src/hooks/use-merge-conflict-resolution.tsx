@@ -3,6 +3,7 @@ import {type MergeChoices, type MergeSpec, pathToId, threeWayMerge} from '../uti
 import {deepEquals} from '../utils/equality-utils';
 import {
     MergeConflictDialog,
+    type DependentMergeConflicts,
     type MergeConflictDialogConflict,
     type MergeConflictDialogMode,
 } from '../dialogs/merge-conflict-dialog/merge-conflict-dialog';
@@ -28,6 +29,64 @@ interface MergeRequest<T> {
     storedStateChanged: boolean;
 }
 
+export interface PreparedMerge<T> {
+    value: T;
+    changed: boolean;
+    conflicts: MergeConflictDialogConflict[];
+    /** Some choices determine the base for additional fields in the same dialog. */
+    dependentConflicts?: DependentMergeConflicts;
+}
+
+/** Preview every decision reachable through the current selection before the dialog is confirmed. */
+export function prepareDependentMerge<T>(merge: (choices: MergeChoices) => PreparedMerge<T>, choices: MergeChoices): PreparedMerge<T> {
+    const result = merge(choices);
+    if (result.conflicts.length === 0) return result;
+    return {
+        ...result,
+        dependentConflicts: (selected, defaultChoice = 'mine') => {
+            const decisions = {...choices};
+            const additional: MergeConflictDialogConflict[] = [];
+            let pending = result.conflicts;
+            while (pending.length > 0) {
+                for (const {id} of pending) decisions[id] = selected[id] ?? defaultChoice;
+                pending = merge(decisions).conflicts.filter(({id}) => !Object.hasOwn(decisions, id));
+                additional.push(...pending);
+            }
+            return additional;
+        },
+    };
+}
+
+/** Presents the result of a three-way merge, including the spec's domain-specific labels. */
+export function prepareMerge<T>(
+    {base, mine, theirs, spec}: Pick<MergeRequest<T>, 'base' | 'mine' | 'theirs' | 'spec'>,
+    choices: MergeChoices,
+): PreparedMerge<T> {
+    const {merged, conflicts} = threeWayMerge(base, mine, theirs, spec, choices);
+    return {
+        value: merged,
+        changed: !deepEquals(merged, spec.normalize ? spec.normalize(theirs) : theirs),
+        conflicts: conflicts.map((conflict) => {
+            const presentation = spec.describeConflict?.(conflict.path, {base, mine, theirs});
+            return {
+                id: conflict.id,
+                label: spec.label?.(conflict.path, {base, mine, theirs}) ?? (pathToId(conflict.path) || 'Gesamter Inhalt'),
+                group: presentation?.group,
+                propertyLabel: presentation?.propertyLabel,
+                mine: conflict.mine,
+                theirs: conflict.theirs,
+            };
+        }),
+    };
+}
+
+interface PreparedMergeRequest<T> {
+    mode: MergeConflictDialogMode;
+    storedStateChanged: boolean;
+    signal?: AbortSignal;
+    merge: (choices: MergeChoices) => PreparedMerge<T>;
+}
+
 type DialogAnswer =
     | {status: 'apply'; choices: MergeChoices}
     | {status: 'discard'}
@@ -37,6 +96,7 @@ interface DialogState {
     mode: MergeConflictDialogMode;
     storedStateChanged: boolean;
     conflicts: MergeConflictDialogConflict[];
+    dependentConflicts?: PreparedMerge<unknown>['dependentConflicts'];
     answer: (answer: DialogAnswer) => void;
 }
 
@@ -49,20 +109,19 @@ interface DialogState {
 export function useMergeConflictResolution() {
     const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
-    const resolve = useCallback(async <T, >(request: MergeRequest<T>): Promise<MergeOutcome<T>> => {
-        const {base, mine, theirs, spec, mode, storedStateChanged, signal} = request;
+    const resolvePrepared = useCallback(async <T, >({merge, mode, storedStateChanged, signal}: PreparedMergeRequest<T>): Promise<MergeOutcome<T>> => {
         let choices: MergeChoices = {};
         let asked = false;
 
         for (;;) {
-            const result = threeWayMerge(base, mine, theirs, spec, choices);
+            const result = merge(choices);
 
-            if (mode === 'restore' && !asked && result.conflicts.length === 0 && deepEquals(result.merged, threeWayMerge(theirs, theirs, theirs, spec).merged)) {
+            if (mode === 'restore' && !asked && result.conflicts.length === 0 && !result.changed) {
                 return {status: 'unchanged'};
             }
 
             if (result.conflicts.length === 0 && (mode === 'save' || asked)) {
-                return {status: 'apply', value: result.merged};
+                return {status: 'apply', value: result.value};
             }
 
             const answer = await new Promise<DialogAnswer>((finish) => {
@@ -80,17 +139,8 @@ export function useMergeConflictResolution() {
                 setDialogState({
                     mode,
                     storedStateChanged,
-                    conflicts: result.conflicts.map((conflict) => {
-                        const presentation = spec.describeConflict?.(conflict.path, {base, mine, theirs});
-                        return {
-                            id: conflict.id,
-                            label: spec.label?.(conflict.path, {base, mine, theirs}) ?? (pathToId(conflict.path) || 'Gesamter Inhalt'),
-                            group: presentation?.group,
-                            propertyLabel: presentation?.propertyLabel,
-                            mine: conflict.mine,
-                            theirs: conflict.theirs,
-                        };
-                    }),
+                    conflicts: result.conflicts,
+                    dependentConflicts: result.dependentConflicts,
                     answer: answerDialog,
                 });
             });
@@ -105,17 +155,21 @@ export function useMergeConflictResolution() {
         }
     }, []);
 
+    const resolve = useCallback(<T, >(request: MergeRequest<T>): Promise<MergeOutcome<T>> =>
+        resolvePrepared({...request, merge: (choices) => prepareMerge(request, choices)}), [resolvePrepared]);
+
     const dialog: ReactNode = dialogState == null ? null : (
         <MergeConflictDialog
             open={true}
             mode={dialogState.mode}
             storedStateChanged={dialogState.storedStateChanged}
             conflicts={dialogState.conflicts}
+            dependentConflicts={dialogState.dependentConflicts}
             onApply={(choices) => dialogState.answer({status: 'apply', choices})}
             onDiscard={() => dialogState.answer({status: 'discard'})}
             onCancel={dialogState.mode === 'save' ? () => dialogState.answer({status: 'cancel'}) : undefined}
         />
     );
 
-    return {resolve, dialog};
+    return {resolve, resolvePrepared, dialog};
 }

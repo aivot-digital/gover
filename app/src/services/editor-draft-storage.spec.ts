@@ -173,7 +173,7 @@ describe('EditorDraftStorage', () => {
 
     it('returns the reserved draft to the matching login and keeps another tab independent', async () => {
         const old = await openTab();
-        await old.save(draft('Vor der Anmeldung'));
+        await old.save({...draft('Vor der Anmeldung'), context: {title: 'Erste offene Bearbeitung'}});
         expect(await old.reserve(user, key, 'return')).toBe(true);
         locks.held.clear();
         const fresh = await openTab();
@@ -181,10 +181,19 @@ describe('EditorDraftStorage', () => {
         expect(await fresh.load(user, key, 'other-login')).toBeNull();
         expect(await fresh.load('other-user', key, 'return')).toBeNull();
         expect(await fresh.load(user, 'other-object', 'return')).toBeNull();
-        await fresh.save(draft('Zweiter Tab'));
+        await fresh.save({...draft('Zweiter Tab'), context: {title: 'Zweite offene Bearbeitung'}});
         const returning = await openTab();
-        expect((await returning.load(user, key, 'return'))?.mine).toBe('Vor der Anmeldung');
-        expect((await fresh.load(user, key))?.mine).toBe('Zweiter Tab');
+        expect(await returning.load(user, key, 'return')).toMatchObject({
+            mine: 'Vor der Anmeldung', context: {title: 'Erste offene Bearbeitung'},
+        });
+        // Dismissing a nested edit leaves the restored outer draft and the other tab's nested edits intact.
+        await returning.save(draft('Vor der Anmeldung'));
+        const restored = await returning.load<string, {title: string}>(user, key);
+        expect(restored?.mine).toBe('Vor der Anmeldung');
+        expect(restored?.context).toBeUndefined();
+        expect(await fresh.load(user, key)).toMatchObject({
+            mine: 'Zweiter Tab', context: {title: 'Zweite offene Bearbeitung'},
+        });
         expect(await (await openTab()).load(user, key, 'return')).toBeNull();
     });
 

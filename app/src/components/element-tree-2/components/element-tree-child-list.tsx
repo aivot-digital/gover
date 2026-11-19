@@ -91,6 +91,8 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
         editable,
         displayContext,
         registerNewElement,
+        panelDraft,
+        onPanelDraftChange,
     } = useElementTreeContext();
 
     const {
@@ -154,6 +156,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                     const updatedValue = [...value];
                     const clonedElement = cloneElement(originalElement);
                     updatedValue.splice(index + 1, 0, clonedElement);
+                    if (panelDraft?.base.id === originalElement.id) onPanelDraftChange?.(null);
                     onChange(updatedValue);
                     setTimeout(() => {
                         navigateToElementEditor(clonedElement.id);

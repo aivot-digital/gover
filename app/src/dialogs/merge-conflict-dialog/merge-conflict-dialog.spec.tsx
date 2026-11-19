@@ -41,6 +41,23 @@ function setup(overrides: Partial<ComponentProps<typeof MergeConflictDialog>> = 
 }
 
 describe('MergeConflictDialog', () => {
+    it('updates a dependent element decision in the open dialog and submits only the visible decisions', async () => {
+        const props = setup({
+            conflicts: [groupedConflicts[0]],
+            dependentConflicts: (choices) => choices.street === 'theirs' ? [groupedConflicts[1]] : [],
+        });
+        const dialog = screen.getByRole('dialog', {name: restoreTitle});
+        const primary = within(dialog).getByRole('group', {name: /Platzhalter/});
+        const user = userEvent.setup();
+        expect(within(dialog).queryByRole('group', {name: /Pflichtfeld/})).not.toBeInTheDocument();
+        await user.click(within(primary).getByRole('radio', {name: theirsLabel}));
+        await user.click(within(within(dialog).getByRole('group', {name: /Pflichtfeld/})).getByRole('radio', {name: theirsLabel}));
+        await user.click(within(primary).getByRole('radio', {name: mineLabel}));
+        expect(within(dialog).queryByRole('group', {name: /Pflichtfeld/})).not.toBeInTheDocument();
+        await user.click(within(dialog).getByRole('button', {name: 'Änderungen wiederherstellen'}));
+        expect(props.onApply).toHaveBeenCalledExactlyOnceWith({street: 'mine'});
+    });
+
     it('explains recovery and discarding before restoring changes without conflicts', async () => {
         const props = setup();
         const dialog = screen.getByRole('dialog', {name: restoreTitle});
