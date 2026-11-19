@@ -153,8 +153,6 @@ class ProcessNodeInputModePolicyTest {
                 "auth_password",
                 "auth_token",
                 "request_body_type",
-                "processing_type",
-                "processing_code",
                 "copy_to_process_data"
         );
         assertLiteralOnlyFields(FormTriggerConfigV1.class, "formSlug", "formLayout", "identities", "payment");

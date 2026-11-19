@@ -267,15 +267,24 @@ public class ProcessInstanceAttachmentService implements ReadEntityService<Proce
     @Nonnull
     public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTask(@Nonnull Long processInstanceTaskId,
                                                                       @Nonnull Collection<Integer> attachmentSetIds) {
+        return findAllUploadsOfTaskIncludingRemoved(processInstanceTaskId, attachmentSetIds)
+                .stream()
+                .filter(attachment -> attachment.getRemovedAt() == null)
+                .toList();
+    }
+
+    /**
+     * Returns the attachments that a task uploaded into the given attachment sets, including those flagged as removed.
+     */
+    @Nonnull
+    public List<ProcessInstanceAttachmentEntity> findAllUploadsOfTaskIncludingRemoved(@Nonnull Long processInstanceTaskId,
+                                                                                      @Nonnull Collection<Integer> attachmentSetIds) {
         if (attachmentSetIds.isEmpty()) {
             return List.of();
         }
 
         return processInstanceAttachmentRepository
-                .findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(processInstanceTaskId, attachmentSetIds)
-                .stream()
-                .filter(attachment -> attachment.getRemovedAt() == null)
-                .toList();
+                .findAllByProcessInstanceTaskIdAndAttachmentSetIdIn(processInstanceTaskId, attachmentSetIds);
     }
 
     /**
