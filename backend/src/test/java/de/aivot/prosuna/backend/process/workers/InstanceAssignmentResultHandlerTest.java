@@ -28,6 +28,7 @@ import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
@@ -49,7 +50,7 @@ class InstanceAssignmentResultHandlerTest {
     private final ProcessInstanceMailService instanceMail = mock(ProcessInstanceMailService.class);
     private final ProcessNodeExecutionLogger logger = mock(ProcessNodeExecutionLogger.class);
     private final InstanceAssignmentActionNodeV1 provider = new InstanceAssignmentActionNodeV1(
-            mock(AssignmentContextAssigneeResolverService.class), assignments);
+            mock(AssignmentContextAssigneeResolverService.class), assignments, mock(UserDeputyService.class));
     private final InstanceUnassignmentActionNodeV1 unassignmentProvider = new InstanceUnassignmentActionNodeV1();
     private final de.aivot.prosuna.backend.process.services.ProcessNodeService nodeService = mock(de.aivot.prosuna.backend.process.services.ProcessNodeService.class);
     private final ProcessNodeExecutionResultHandler handler = new ProcessNodeExecutionResultHandler(

@@ -83,6 +83,13 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
         repository.delete(entity);
     }
 
+    /**
+     * Whether the deputy currently represents the original user, directly or through further deputies.
+     */
+    public boolean isActiveDeputyFor(@Nonnull String deputyUserId, @Nonnull String originalUserId) {
+        return repository.isActiveDeputyFor(deputyUserId, originalUserId);
+    }
+
     private void validateDateRange(@Nonnull UserDeputyEntity entity) throws ResponseException {
         if (!DeputyDateRange.isValid(entity.getFromDate(), entity.getUntilDate())) {
             throw ResponseException.badRequest("Das Ende der Vertretung darf nicht vor dem Start der Vertretung liegen.");

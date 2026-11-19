@@ -26,4 +26,16 @@ public interface UserDeputyRepository extends JpaRepository<UserDeputyEntity, In
                          @Nonnull @Param("fromDate") LocalDate fromDate,
                          @Nullable @Param("untilDate") LocalDate untilDate,
                          @Nullable @Param("ignoredId") Integer ignoredId);
+
+    // The view contains only relations valid today and resolves chains to the represented user.
+    @Query(value = """
+            SELECT EXISTS(
+                SELECT 1
+                FROM v_user_is_recursively_deputy_for
+                WHERE deputy_user_id = :deputyUserId
+                  AND original_user_id = :originalUserId
+            )
+            """, nativeQuery = true)
+    boolean isActiveDeputyFor(@Nonnull @Param("deputyUserId") String deputyUserId,
+                              @Nonnull @Param("originalUserId") String originalUserId);
 }

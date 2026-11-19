@@ -34,6 +34,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,8 @@ import static org.mockito.Mockito.*;
 class InstanceAssignmentActionNodeV1Test {
     private final AssignmentContextAssigneeResolverService resolver = mock(AssignmentContextAssigneeResolverService.class);
     private final ProcessAssignmentService assignments = mock(ProcessAssignmentService.class);
-    private final InstanceAssignmentActionNodeV1 node = new InstanceAssignmentActionNodeV1(resolver, assignments);
+    private final UserDeputyService deputies = mock(UserDeputyService.class);
+    private final InstanceAssignmentActionNodeV1 node = new InstanceAssignmentActionNodeV1(resolver, assignments, deputies);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -194,6 +196,23 @@ class InstanceAssignmentActionNodeV1Test {
     }
 
     @Test
+    void manualTaskAllowsActiveDeputyOfTheAssignee() throws Exception {
+        when(deputies.isActiveDeputyFor("deputy", "dispatcher")).thenReturn(true);
+        when(assignments.instanceOptions("deputy", 99L)).thenReturn(List.of(option("recipient")));
+        var context = staffContext(config("manual"), "deputy");
+
+        var field = ((GroupLayoutElement) node.getStaffTaskView(context).layout())
+                .findChild("assignedUserId", SelectInputElement.class).orElseThrow();
+        var result = assertInstanceOf(ProcessNodeExecutionResultInstanceAssigned.class,
+                node.onEventFromStaffTaskView(context,
+                        new AuthoredElementValues().putLiteral("assignedUserId", "recipient"), "assign")
+                        .orElseThrow());
+
+        assertEquals(List.of("recipient"), field.getOptions().stream().map(o -> o.getValue()).toList());
+        assertEquals("recipient", result.getAssignedUserId());
+    }
+
+    @Test
     void configurationRequiresOnlyTheSelectedModeContext() throws Exception {
         var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
                 null, new ProcessEntity().setId(42), new ProcessVersionEntity().setProcessVersion(3), processNode()));
@@ -306,8 +325,13 @@ class InstanceAssignmentActionNodeV1Test {
 
     private static ProcessNodeExecutionContextUIStaff<InstanceAssignmentActionNodeV1.Config> staffContext(
             InstanceAssignmentActionNodeV1.Config config) {
+        return staffContext(config, "dispatcher");
+    }
+
+    private static ProcessNodeExecutionContextUIStaff<InstanceAssignmentActionNodeV1.Config> staffContext(
+            InstanceAssignmentActionNodeV1.Config config, String callingUserId) {
         return new ProcessNodeExecutionContextUIStaff<>(mock(ProcessNodeExecutionLogger.class), processNode(),
-                instance(), task(), null, new UserEntity().setId("dispatcher"), config,
+                instance(), task(), null, new UserEntity().setId(callingUserId), config,
                 new ProcessExecutionData().addProcessData(Map.of("case", "data")));
     }
 

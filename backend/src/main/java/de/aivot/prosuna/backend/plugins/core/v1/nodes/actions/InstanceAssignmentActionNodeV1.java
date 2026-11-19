@@ -47,6 +47,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -99,11 +100,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ProcessAssignmentService assignmentService;
+    private final UserDeputyService deputyService;
 
     public InstanceAssignmentActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
-                                          ProcessAssignmentService assignmentService) {
+                                          ProcessAssignmentService assignmentService,
+                                          UserDeputyService deputyService) {
         this.assigneeResolverService = assigneeResolverService;
         this.assignmentService = assignmentService;
+        this.deputyService = deputyService;
     }
 
     @Nonnull
@@ -472,9 +476,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                 .setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
     }
 
-    private static void requireAssignedTaskUser(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context)
+    private void requireAssignedTaskUser(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context)
             throws ResponseException {
-        if (!context.getCallingUser().getId().equals(context.getThisTask().getAssignedUserId())) {
+        var callingUserId = context.getCallingUser().getId();
+        var assignedUserId = context.getThisTask().getAssignedUserId();
+        // Only the assignee decides the assignment, other staff do not even with instance rights. An active deputy
+        // takes over the assignee's tasks, so the process does not stall during an absence.
+        if (assignedUserId == null || !(callingUserId.equals(assignedUserId)
+                || deputyService.isActiveDeputyFor(callingUserId, assignedUserId))) {
             throw ResponseException.forbidden();
         }
     }
