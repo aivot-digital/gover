@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
@@ -133,9 +134,12 @@ class GlobalExceptionHandlerTest {
         var resolver = new ExceptionHandlerMethodResolver(GlobalExceptionHandler.class);
         var springException = new ObjectOptimisticLockingFailureException("TeamEntity", 17);
         var jpaException = new OptimisticLockException();
+        // Postgres serialization failure (40001) or deadlock under REPEATABLE READ.
+        var serializationFailure = new CannotAcquireLockException("could not serialize access due to concurrent update");
 
         assertEquals("handleOptimisticLockingFailure", resolver.resolveMethod(springException).getName());
         assertEquals("handleOptimisticLockingFailure", resolver.resolveMethod(jpaException).getName());
+        assertEquals("handleOptimisticLockingFailure", resolver.resolveMethod(serializationFailure).getName());
     }
 
     @Test

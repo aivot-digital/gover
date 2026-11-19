@@ -17,6 +17,7 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -69,14 +70,16 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
     }
 
     @PutMapping("instance/{instanceId}/")
-    @Operation(summary = "Replace process instance permissions", description = "Atomically replaces instance access rules. Requires process_instance.update. Rejects changes that withdraw read or task-edit rights from active task assignees.")
+    @Operation(summary = "Replace process instance permissions", description = "Atomically replaces instance access rules. Requires process_instance.update. Rejects changes that withdraw read or task-edit rights from active task assignees. With `basedOn`, rejects the change with 409 when the stored rules differ from the ones the client loaded.")
     public List<ProcessInstanceAccessControlEntity> replace(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long instanceId,
-            @Nonnull @RequestBody @Valid List<@Valid ProcessInstanceAccessRuleDTO> rules
+            @Nonnull @RequestBody @Valid List<@Valid ProcessInstanceAccessRuleDTO> rules,
+            @Parameter(description = "The stored rules the change is based on, as comma-separated `id:lockVersion` pairs; empty when there were none. Omitted, the last save wins.")
+            @Nullable @RequestParam(required = false) String basedOn
     ) throws ResponseException {
         var actor = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
-        return processInstanceAccessControlService.replace(actor, instanceId, rules);
+        return processInstanceAccessControlService.replace(actor, instanceId, rules, basedOn);
     }
 
     @GetMapping("potential-options/")

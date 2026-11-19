@@ -6,4 +6,5 @@ export interface ProcessInstanceAccessControlEntity {
     permissions: string[];
     created: string;
     updated: string;
+    lockVersion?: number | null;
 }

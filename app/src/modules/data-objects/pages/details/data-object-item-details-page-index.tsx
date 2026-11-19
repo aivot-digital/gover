@@ -19,7 +19,7 @@ import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {DataObjectItem} from '../../models/data-object-item';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar, showLockConflictSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {applyYupErrorsToElementData, prosunaSchemaToYup} from '../../../../utils/prosuna-schema-to-yup';
 import Grid from '@mui/material/Grid';
@@ -225,7 +225,7 @@ export function DataObjectItemDetailsPageIndex() {
                         console.error(err);
                     }
 
-                    dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
                     setIsBusy(false);

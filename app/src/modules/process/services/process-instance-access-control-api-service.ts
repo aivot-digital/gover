@@ -36,16 +36,24 @@ export class ProcessInstanceAccessControlApiService extends BaseCrudApiService<
         };
     }
 
+    /**
+     * Replaces all rules of the instance. `loaded` are the stored rules the change is based on; the server rejects the
+     * save with a conflict when they were changed, removed or joined by other rules meanwhile.
+     */
     public replace(
         instanceId: number,
         entries: ProcessInstanceAccessControlEntity[],
+        loaded: ProcessInstanceAccessControlEntity[],
     ): Promise<ProcessInstanceAccessControlEntity[]> {
         const rules = entries.map(({sourceDepartmentId, sourceTeamId, permissions}) => ({
             sourceDepartmentId,
             sourceTeamId,
             permissions,
         }));
-        return this.put(`${this.path}instance/${instanceId}/`, rules);
+        const basedOn = loaded.every((entry) => entry.lockVersion != null)
+            ? loaded.map((entry) => `${entry.id}:${entry.lockVersion}`).join(',')
+            : undefined;
+        return this.put(`${this.path}instance/${instanceId}/`, rules, {query: {basedOn}});
     }
 
     public async listPotentialSelectableItems(

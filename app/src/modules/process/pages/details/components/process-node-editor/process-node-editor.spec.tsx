@@ -142,6 +142,24 @@ describe('ProcessNodeEditor metadata loading', () => {
         await waitFor(() => expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeDisabled());
     });
 
+    it('sends only one save while a save is running', async () => {
+        let finishSave: (node: unknown) => void = () => undefined;
+        testState.save.mockReturnValueOnce(new Promise((resolve) => {
+            finishSave = resolve;
+        }));
+        renderEditor();
+        fireEvent.change(await screen.findByRole('textbox', {name: 'Name bearbeiten'}), {target: {value: 'Geändert'}});
+
+        const saveButton = screen.getByRole('button', {name: 'Konfiguration speichern'});
+        fireEvent.click(saveButton);
+        fireEvent.click(saveButton);
+
+        await waitFor(() => expect(saveButton).toBeDisabled());
+        expect(testState.save).toHaveBeenCalledOnce();
+        finishSave({...createNode(1), name: 'Geändert'});
+        await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+    });
+
     it('preserves the unlocked state across tabs and failed saves, and relocks after a successful save', async () => {
         vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
         const user = userEvent.setup();
