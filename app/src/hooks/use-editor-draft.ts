@@ -31,6 +31,7 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     let timer: number | undefined;
     let lastOperation: Promise<unknown> | undefined;
     let stored = false;
+    let readFailed = false;
     let hadContext = false;
     let leaving = false;
     let revision = 0;
@@ -59,6 +60,7 @@ function createDraftSession<T, Context>(userId: string, key: string) {
         cancelPending();
         if (snapshot != null) {
             return inOrder(async () => {
+                if (readFailed) return;
                 await EditorDraftStorage.save({...snapshot, userId, key, savedAt: Date.now()});
                 stored = true;
             });
@@ -66,7 +68,7 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     }
 
     function schedule(snapshot: DraftSnapshot<T, Context>) {
-        if (leaving) {
+        if (leaving || readFailed) {
             return;
         }
         revision++;
@@ -82,11 +84,14 @@ function createDraftSession<T, Context>(userId: string, key: string) {
         }
     }
 
-    function remove() {
+    function remove(automatic = false) {
         return inOrder(async () => {
+            // A failed lookup can hide an existing draft. Only an explicit discard may remove it.
+            if (automatic && readFailed) return;
             try {
                 await EditorDraftStorage.remove(userId, key);
                 stored = false;
+                readFailed = false;
             } catch (error) {
                 // A browser without working draft storage can still discard changes kept only in memory.
                 if (stored) {
@@ -99,12 +104,12 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     return {
         schedule,
         cancelPending,
-        async clearDraft() {
+        async clearDraft(automatic = false) {
             if (!leaving) {
                 revision++;
                 cancelPending();
                 hadContext = false;
-                await remove();
+                await remove(automatic);
             }
         },
         async discardForNavigation() {
@@ -125,10 +130,17 @@ function createDraftSession<T, Context>(userId: string, key: string) {
             if (leaving) {
                 return null;
             }
-            const draft = await EditorDraftStorage.load<T, Context>(userId, key, getEditorDraftReturnId());
-            stored = draft != null;
-            hadContext = draft?.context !== undefined;
-            return draft;
+            try {
+                const draft = await EditorDraftStorage.load<T, Context>(userId, key, getEditorDraftReturnId());
+                readFailed = false;
+                stored = draft != null;
+                hadContext = draft?.context !== undefined;
+                return draft;
+            } catch (error) {
+                readFailed = true;
+                cancelPending();
+                throw error;
+            }
         }),
         async reserve(returnId: string) {
             // An edit or a completed nested apply can arrive while a preceding transaction is committing.
@@ -136,7 +148,8 @@ function createDraftSession<T, Context>(userId: string, key: string) {
             for (;;) {
                 const reservingRevision = revision;
                 await flush();
-                const reserved = await inOrder(async () => !leaving && await EditorDraftStorage.reserve(userId, key, returnId));
+                const reserved = await inOrder(async () =>
+                    !leaving && !readFailed && await EditorDraftStorage.reserve(userId, key, returnId));
                 if (leaving || revision === reservingRevision) {
                     return !leaving && reserved;
                 }
@@ -165,7 +178,7 @@ export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, 
         }
 
         if (!hasChanged && saveCheckpoint?.phase !== 'pending') {
-            session.clearDraft().catch(console.error);
+            session.clearDraft(true).catch(console.error);
         } else {
             // A null base represents the empty stored state of an object that has never been saved.
             session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, context, saveCheckpoint});

@@ -24,11 +24,14 @@ import {ElementType} from '../../../../../../data/element-type/element-type';
 import {InputMode, InputVariableSource} from '../../../../../../models/input-mode';
 import {type DerivedRuntimeElementData} from '../../../../../../models/element-data';
 
-const testState = vi.hoisted(() => ({dispatch: vi.fn(), save: vi.fn(), stored: vi.fn(), confirm: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn(), trackDraft: vi.fn()}));
+const testState = vi.hoisted(() => ({
+    userId: 'user', dispatch: vi.fn(), save: vi.fn(), stored: vi.fn(), confirm: vi.fn(),
+    remove: vi.fn(), replace: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn(), trackDraft: vi.fn(),
+}));
 
 vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => testState.dispatch}));
+vi.mock('../../../../../../hooks/use-app-selector', () => ({useAppSelector: () => ({id: testState.userId})}));
 vi.mock('../../../../../../providers/confirm-provider', () => ({useConfirm: () => testState.confirm}));
-vi.mock('./components/process-node-editor-menu', () => ({ProcessNodeEditorMenu: () => null}));
 vi.mock('../../../../../../components/view-dispatcher/view-dispatcher.component', () => ({ViewDispatcherComponent: () => null}));
 vi.mock('../../../../../../hooks/use-editor-draft', () => ({
     useEditorDraft: (props: unknown) => {
@@ -69,16 +72,16 @@ function createMetadata(): ProcessNodeDefinitionMetadata {
 }
 
 function EditorFields() {
-    const {node, setNode} = useProcessNodeEditorContext();
+    const {node, setNode, isEditable} = useProcessNodeEditorContext();
     const mapping = node.configuration.reference;
     return <>
         <label>
             Name bearbeiten
-            <input value={node.name ?? ''} onChange={(event) => setNode({...node, name: event.target.value}, false)}/>
+            <input disabled={!isEditable} value={node.name ?? ''} onChange={(event) => setNode({...node, name: event.target.value}, false)}/>
         </label>
         {mapping?.type === InputMode.Variable && <label>
             Variablenpfad
-            <input value={mapping.reference.path} onChange={(event) => setNode({
+            <input disabled={!isEditable} value={mapping.reference.path} onChange={(event) => setNode({
                 ...node, configuration: {...node.configuration, reference: {...mapping, reference: {...mapping.reference, path: event.target.value}}},
             }, false)}/>
         </label>}
@@ -86,19 +89,22 @@ function EditorFields() {
             label="Gespeicherter Pfad"
             scopeProcessDataKey="people"
             value={node.outputMappings.result}
+            disabled={!isEditable}
             onChange={(value) => setNode({...node, outputMappings: {...node.outputMappings, result: value}}, false)}
         />
     </>;
 }
 
-function EditorPage({editable}: {editable: boolean}) {
+function EditorPage({editable: initiallyEditable}: {editable: boolean}) {
+    const [editable, setEditable] = useState(initiallyEditable);
     const [version, setVersion] = useState(0);
     return <ProcessDetailsPageProvider value={{
         editable, structureEditable: editable, onSave: testState.save, onStoredNode: testState.stored,
-        onDelete: async () => {}, onStartReplaceNode: () => {}, testClaim: null,
+        onDelete: testState.remove, onStartReplaceNode: testState.replace, testClaim: null,
         nodeRefreshSignal: {nodeId: 1, version}, nodeProblems: [], showNodeProblemsForNodes: {},
     }}>
         <button onClick={() => setVersion((value) => value + 1)}>Element neu laden</button>
+        <button onClick={() => setEditable((value) => !value)}>Bearbeitungsrecht wechseln</button>
         <ProcessNodeEditor/>
     </ProcessDetailsPageProvider>;
 }
@@ -117,10 +123,19 @@ function renderEditor({editable = true, tab = 'configuration', realConfiguration
     return router;
 }
 
+async function findReadyTextbox(name: string | RegExp) {
+    return waitFor(() => {
+        const field = screen.getByRole('textbox', {name});
+        expect(field.closest('[inert]')).toBeNull();
+        return field;
+    });
+}
+
 describe('ProcessNodeEditor metadata loading', () => {
     let logError: MockInstance<typeof console.error>;
 
     beforeEach(() => {
+        testState.userId = 'user';
         logError = vi.spyOn(console, 'error').mockImplementation(() => {});
         // jsdom does not implement element scrolling, which the editor uses on navigation.
         Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
@@ -165,7 +180,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
         const user = userEvent.setup();
         renderEditor({tab: 'outputs'});
-        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        const input = await findReadyTextbox(/^Datenschlüssel/);
         expect(input).toHaveAttribute('readonly');
         await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(input, {target: {value: 'renamed_node'}});
@@ -184,7 +199,7 @@ describe('ProcessNodeEditor metadata loading', () => {
 
     it('rejects an empty required node key even without blur', async () => {
         renderEditor({tab: 'outputs'});
-        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        const input = await findReadyTextbox(/^Datenschlüssel/);
         await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(input, {target: {value: ''}});
         fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
@@ -215,7 +230,7 @@ describe('ProcessNodeEditor metadata loading', () => {
         vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
         const user = userEvent.setup();
         renderEditor({tab: 'outputs'});
-        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        const input = await findReadyTextbox(/^Datenschlüssel/);
         await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(input, {target: {value: 'renamed_node'}});
         await user.click(screen.getByRole('button', {name: 'Datenschlüssel sperren'}));
@@ -236,6 +251,8 @@ describe('ProcessNodeEditor metadata loading', () => {
 
         const alert = await screen.findByRole('alert');
         expect(alert).toHaveTextContent(warning);
+        expect(testState.loadDraft).not.toHaveBeenCalled();
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({draftKey: null, enabled: false});
         expect(alert).not.toHaveTextContent('bearbeiten');
     });
 
@@ -347,6 +364,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
     };
 
     beforeEach(() => {
+        testState.userId = 'user';
         vi.spyOn(console, 'error').mockImplementation(() => {});
         Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
         testState.dispatch.mockReset();
@@ -367,7 +385,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
     });
 
     async function editName(name: string) {
-        const input = await screen.findByRole('textbox', {name: 'Name bearbeiten'});
+        const input = await findReadyTextbox('Name bearbeiten');
         fireEvent.change(input, {target: {value: name}});
     }
 
@@ -591,7 +609,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         vi.spyOn(ProcessNodeApiService.prototype, 'deriveConfiguration').mockReturnValue(derivation.promise);
         testState.save.mockReturnValueOnce(first.promise);
         renderEditor({realConfiguration: true});
-        const input = await screen.findByRole('textbox', {name: /^Name des Elementes/});
+        const input = await findReadyTextbox(/^Name des Elementes/);
         fireEvent.change(input, {target: {value: 'Gesendet'}});
         fireEvent.click(saveButton());
         fireEvent.change(input, {target: {value: 'Spätere Eingabe'}});
@@ -779,7 +797,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         const validation = Promise.withResolvers<ProcessNodeProblems>();
         testState.save.mockImplementation(async (node: ProcessNodeEntity) => ({...node, lockVersion: 2}));
         renderEditor({tab: 'outputs'});
-        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        const input = await findReadyTextbox(/^Datenschlüssel/);
         await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
         fireEvent.change(input, {target: {value: 'gesendet'}});
         vi.mocked(ProcessNodeApiService.prototype.validate).mockReturnValueOnce(validation.promise);
@@ -866,20 +884,122 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         expect(testState.save).toHaveBeenCalledTimes(3);
     });
 
-    it('offers to restore a draft from an earlier visit', async () => {
+    it('keeps the server preview locked across tabs until the draft is restored', async () => {
         const node = {...createNode(1), lockVersion: 1};
-        testState.loadDraft.mockResolvedValue({
-            userId: 'user', key: 'process-node/1/configuration', savedAt: Date.now(),
-            base: node, baseLockVersion: 1, mine: {...node, name: 'Entwurf'},
-        });
+        const draft = {base: node, baseLockVersion: 1, mine: {...node, name: 'Entwurf'}};
+        const read = Promise.withResolvers<typeof draft>();
+        testState.loadDraft.mockReturnValueOnce(read.promise);
         renderEditor();
-
+        const input = await screen.findByRole('textbox', {name: 'Name bearbeiten'});
+        expect(input).toHaveValue('Element 1');
+        expect(input).toBeDisabled();
+        expect(input.closest('[inert]')).not.toBeNull();
+        // Nested editors can deliver a callback even when the browser blocks direct interaction.
+        fireEvent.change(input, {target: {value: 'Verfrüht'}});
+        fireEvent.click(saveButton());
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({enabled: false, edited: {name: 'Element 1'}});
+        expect(testState.save).not.toHaveBeenCalled();
+        const user = userEvent.setup();
+        await user.click(screen.getByRole('button', {name: ''}));
+        expect(screen.getByRole('menuitem', {name: 'Ersetzen'})).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('menuitem', {name: 'Löschen'})).toHaveAttribute('aria-disabled', 'true');
+        await user.keyboard('{Escape}');
+        await user.click(screen.getByRole('tab', {name: 'Weiteres'}));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeDisabled();
+        expect(testState.loadDraft).toHaveBeenCalledTimes(1);
+        await act(async () => read.resolve(draft));
         const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'});
+        expect(testState.trackDraft.mock.lastCall?.[0].enabled).toBe(false);
         fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen wiederherstellen'}));
-
         await waitFor(() => expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Entwurf'));
-        expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeEnabled();
+        expect(testState.trackDraft.mock.lastCall?.[0].enabled).toBe(true);
+        expect(saveButton()).toBeEnabled();
         expect(testState.clearDraft).not.toHaveBeenCalled();
+    });
+
+    it('invalidates a pending lookup on same-node refresh before the fresh node is available', async () => {
+        const base = {...createNode(1), lockVersion: 1};
+        const draft = {base, baseLockVersion: 1, mine: {...base, name: 'Alter Entwurf'}};
+        const read = Promise.withResolvers<typeof draft>();
+        const fetchNode = Promise.withResolvers<ProcessNodeEntity>();
+        testState.loadDraft.mockReturnValueOnce(read.promise);
+        renderEditor();
+        await waitFor(() => expect(testState.loadDraft).toHaveBeenCalledOnce());
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockReturnValueOnce(fetchNode.promise);
+        fireEvent.click(screen.getByRole('button', {name: 'Element neu laden'}));
+        await act(async () => read.resolve(draft));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeDisabled();
+        expect(testState.clearDraft).not.toHaveBeenCalled();
+        await act(async () => fetchNode.resolve({...base, name: 'Neu geladen', lockVersion: 2}));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Neu geladen');
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeEnabled();
+        expect(testState.loadDraft).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['delete', 'unlock'])('ignores a stale %s confirmation after refreshing the same node', async (action) => {
+        const confirmation = Promise.withResolvers<boolean>();
+        testState.confirm.mockReturnValueOnce(confirmation.promise);
+        renderEditor({tab: 'outputs'});
+        await findReadyTextbox(/^Datenschlüssel/);
+        const user = userEvent.setup();
+        if (action === 'delete') {
+            await user.click(screen.getByRole('button', {name: ''}));
+            await user.click(screen.getByRole('menuitem', {name: 'Löschen'}));
+        } else {
+            await user.click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        }
+        expect(testState.confirm).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', {name: 'Element neu laden'}));
+        await waitFor(() => expect(testState.loadDraft).toHaveBeenCalledTimes(2));
+        const field = await findReadyTextbox(/^Datenschlüssel/);
+        await act(async () => confirmation.resolve(true));
+        expect(testState.remove).not.toHaveBeenCalled();
+        expect(field).toHaveAttribute('readonly');
+    });
+
+    it('requires a new decision when the account changes on the same route', async () => {
+        const read = Promise.withResolvers<null>();
+        const router = renderEditor();
+        await editName('Änderung des ersten Kontos');
+        testState.trackDraft.mockClear();
+        testState.userId = 'second-user';
+        testState.loadDraft.mockReturnValueOnce(read.promise);
+        await act(() => router.navigate(nodeRoute(1) + '?account=second'));
+        await waitFor(() => expect(testState.loadDraft).toHaveBeenCalledTimes(2));
+        const input = screen.getByRole('textbox', {name: 'Name bearbeiten'});
+        expect(input).toBeDisabled();
+        expect(input).toHaveValue('Element 1');
+        expect(testState.trackDraft.mock.calls.every(([props]) => !props.enabled)).toBe(true);
+        await act(async () => read.resolve(null));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeEnabled();
+        expect(saveButton()).toBeDisabled();
+    });
+
+    it('starts a new check when editing becomes available again for the same node', async () => {
+        renderEditor();
+        await findReadyTextbox('Name bearbeiten');
+        const toggle = screen.getByRole('button', {name: 'Bearbeitungsrecht wechseln'});
+        fireEvent.click(toggle);
+        await waitFor(() => expect(testState.trackDraft.mock.lastCall?.[0].draftKey).toBeNull());
+        const read = Promise.withResolvers<null>();
+        testState.loadDraft.mockReturnValueOnce(read.promise);
+        fireEvent.click(toggle);
+        await waitFor(() => expect(testState.loadDraft).toHaveBeenCalledTimes(2));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeDisabled();
+        expect(testState.trackDraft.mock.lastCall?.[0].enabled).toBe(false);
+        await act(async () => read.resolve(null));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeEnabled();
+    });
+
+    it('releases the server preview if draft storage is unavailable', async () => {
+        testState.loadDraft.mockRejectedValueOnce(new Error('Storage unavailable'));
+        renderEditor();
+        await editName('Eingabe nach Speicherfehler');
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Eingabe nach Speicherfehler');
+        expect(saveButton()).toBeEnabled();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it.each([false, true])('expires recovery when the route changes (dialog already open: %s)', async (shown) => {
@@ -905,8 +1025,10 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         expect(testState.clearDraft).not.toHaveBeenCalled();
     });
 
-    it('removes a draft that the person discards', async () => {
+    it('unlocks the server state only after the discarded draft has been removed', async () => {
         const node = {...createNode(1), lockVersion: 1};
+        const deletion = Promise.withResolvers<void>();
+        testState.clearDraft.mockReturnValueOnce(deletion.promise);
         testState.loadDraft.mockResolvedValue({
             userId: 'user', key: 'process-node/1/configuration', savedAt: Date.now(),
             base: node, baseLockVersion: 1, mine: {...node, name: 'Entwurf'},
@@ -917,7 +1039,12 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen verwerfen'}));
 
         await waitFor(() => expect(testState.clearDraft).toHaveBeenCalled());
-        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 1');
+        const preview = screen.getByRole('textbox', {name: 'Name bearbeiten'});
+        expect(preview).toHaveValue('Element 1');
+        expect(preview).toBeDisabled();
+        expect(testState.trackDraft.mock.lastCall?.[0].enabled).toBe(false);
+        await act(async () => deletion.resolve());
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toBeEnabled();
     });
 
     it('removes a draft without asking when its changes were saved elsewhere', async () => {

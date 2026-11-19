@@ -7,6 +7,7 @@ import {AuthService} from '../../../services/auth-service';
 import {type EditorDraft, EditorDraftStorage} from '../../../services/editor-draft-storage';
 import {initializeEditorDraftLoginReturn, prepareEditorDraftLogin, EDITOR_DRAFT_RETURN_PARAM} from '../../../services/editor-draft-login';
 import {DragAndDropProvider} from '../../../providers/drag-and-drop-provider';
+import {useElementTreeInlineEditorContext} from '../../../components/element-tree-2/components/element-tree-inline-editor-context';
 import {ElementsApiService} from '../elements-api-service';
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {FormNodeEditorPage} from './form-node-editor-page';
@@ -22,6 +23,8 @@ import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ProcessStatus} from '../../process/enums/process-status';
 import {literalAuthoredValue} from '../../../models/element-data';
+
+const StaffAccount = React.createContext<string | undefined>('staff-user');
 
 const mocks = vi.hoisted(() => ({
     api: {},
@@ -59,20 +62,23 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
 }));
 
 vi.mock('../../../hooks/use-app-selector', () => ({
-    useAppSelector: (selector: (state: unknown) => unknown) => selector({
-        adminSettings: {
-            devToolsTab: mocks.devToolsTab,
-            disableAutoScrollForSteps: false,
-            disableElementContextMenu: false,
-            hideComponentTree: !mocks.withRouter,
-        },
-        app: {
-            showDialog: undefined,
-        },
-        user: {
-            user: mocks.withRouter ? {id: 'staff-user'} : undefined,
-        },
-    }),
+    useAppSelector: (selector: (state: unknown) => unknown) => {
+        const userId = React.useContext(StaffAccount);
+        return selector({
+            adminSettings: {
+                devToolsTab: mocks.devToolsTab,
+                disableAutoScrollForSteps: false,
+                disableElementContextMenu: false,
+                hideComponentTree: !mocks.withRouter,
+            },
+            app: {
+                showDialog: undefined,
+            },
+            user: {
+                user: userId == null ? undefined : {id: userId},
+            },
+        });
+    },
 }));
 
 vi.mock('../../../providers/confirm-provider', () => ({
@@ -142,28 +148,10 @@ vi.mock('../../../components/generic-page-header/generic-page-header', () => ({
     ),
 }));
 
-vi.mock('../../forms/pages/details/components/form-details-page-more-menu', () => ({
-    FormDetailsPageMoreMenu: ({items}: {items: any[]}) => (
-        <div>
-            {items
-                .filter((item) => item !== 'separator')
-                .map((item) => (
-                    <button
-                        key={item.label}
-                        type="button"
-                        disabled={item.disabled}
-                        onClick={item.onClick ?? item.onToggle}
-                    >
-                        {item.label}
-                    </button>
-                ))}
-        </div>
-    ),
-}));
-
 vi.mock('../components/element-derivation-context', () => ({
     ElementDerivationContext: React.forwardRef((
-        {onEvent, onDerive, scrollContainerRef}: {
+        {element, onEvent, onDerive, scrollContainerRef}: {
+            element: FormLayoutElement;
             onEvent: (values: Record<string, unknown>, event: string) => Promise<void>;
             onDerive?: (values: Record<string, unknown>, derivationOptions: unknown, abort?: AbortSignal) => Promise<unknown>;
             scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
@@ -172,19 +160,21 @@ vi.mock('../components/element-derivation-context', () => ({
     ) => {
         mocks.observeScrollContainer(scrollContainerRef);
         mocks.onDerive = onDerive;
+        const inlineEditor = useElementTreeInlineEditorContext();
+        const firstSection = element.children?.[0];
         React.useImperativeHandle(ref, () => ({
             replaceAuthoredElementValues: mocks.replaceAuthoredElementValues,
         }));
 
         return (
-            <button
-                type="button"
-                onClick={() => {
-                    void onEvent(mocks.submitValues, 'submit');
-                }}
-            >
-                Testformular absenden
-            </button>
+            <>
+                <button type="button" onClick={() => { void onEvent(mocks.submitValues, 'submit'); }}>
+                    Testformular absenden
+                </button>
+                {firstSection && inlineEditor?.editable && (
+                    <button type="button" onClick={() => inlineEditor.deleteElement(firstSection)}>Abschnitt löschen</button>
+                )}
+            </>
         );
     }),
 }));
@@ -201,9 +191,9 @@ vi.mock('../../../components/element-tree-2/element-tree', async (importOriginal
         ElementTree: (props: React.ComponentProps<typeof ElementTree<FormLayoutElement>>) =>
             mocks.withRealTree ? <ElementTree {...props}/> : (
                 <>
-                    <input aria-label="Formulartitel" value={props.value.publicTitle ?? ''}
+                    <input aria-label="Formulartitel" readOnly={!props.editable} value={props.value.publicTitle ?? ''}
                         onChange={(event) => props.onChange({...props.value, publicTitle: event.target.value})}/>
-                    <input aria-label="Reitertitel" value={props.value.tabTitle ?? ''}
+                    <input aria-label="Reitertitel" readOnly={!props.editable} value={props.value.tabTitle ?? ''}
                         onChange={(event) => props.onChange({...props.value, tabTitle: event.target.value})}/>
                 </>
             ),
@@ -223,9 +213,6 @@ vi.mock('../../../components/developer-tools/developer-tools', () => ({
 }));
 vi.mock('../../../components/form/form-header-component', () => ({FormHeaderComponent: () => null}));
 vi.mock('../../../components/form/root-component-footer', () => ({RootComponentFooter: () => null}));
-vi.mock('../../../components/element-tree-2/components/element-tree-inline-editor-context', () => ({
-    ElementTreeInlineEditorContextProvider: ({children}: {children?: React.ReactNode}) => <>{children}</>,
-}));
 vi.mock('../../../components/form/root-structure-actions-context', () => ({
     RootStructureActionsContextProvider: ({children}: {children?: React.ReactNode}) => <>{children}</>,
 }));
@@ -269,6 +256,8 @@ describe('FormNodeEditorPage', () => {
         });
 
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockResolvedValue(createNode());
+        vi.spyOn(EditorDraftStorage, 'load').mockResolvedValue(null);
+        vi.spyOn(EditorDraftStorage, 'remove').mockResolvedValue(undefined);
         vi.spyOn(ProcessNodeApiService.prototype, 'update').mockResolvedValue(createNode());
         vi.spyOn(ProcessNodeApiService.prototype, 'deriveUiDefinition').mockResolvedValue({
             effectiveValues: {},
@@ -294,7 +283,7 @@ describe('FormNodeEditorPage', () => {
     });
 
     it.each(['Übernehmen', 'Abbrechen'])('restores the pending title in the same element editor until %s', async (action) => {
-        const {save, returnFromLogin} = await renderOpenTextElement();
+        const {load, save, returnFromLogin} = await renderOpenTextElement();
         const title = () => screen.getByRole('textbox', {name: /^Titel/});
 
         if (action === 'Abbrechen') {
@@ -307,7 +296,16 @@ describe('FormNodeEditorPage', () => {
             fireEvent.click(screen.getByRole('tab', {name: 'Elementstruktur'}));
         }
 
-        await returnFromLogin();
+        const storedLoad = load.getMockImplementation()!;
+        const gate = Promise.withResolvers<void>();
+        load.mockImplementationOnce(async (...args) => {
+            await gate.promise;
+            return storedLoad(...args);
+        });
+        await returnFromLogin('#first-name/properties');
+        await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+        expect(screen.queryByRole('textbox', {name: /^Titel/})).not.toBeInTheDocument();
+        await act(async () => gate.resolve());
         const priorTitle = action === 'Abbrechen' ? 'Bereits übernommen' : 'Vorname';
         expect(save).toHaveBeenLastCalledWith(expect.objectContaining({
             mine: expect.objectContaining({children: [expect.objectContaining({children: [expect.objectContaining({label: priorTitle})]})]}),
@@ -387,6 +385,145 @@ describe('FormNodeEditorPage', () => {
         await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
         expect(await load.mock.results[1].value).toBeNull();
         expect(screen.queryByRole('button', {name: 'Änderungen wiederherstellen'})).not.toBeInTheDocument();
+    });
+
+    it.each(['restore', 'discard', 'absent', 'read failure'])('waits for the new form and its recovery before accepting edits (%s)', async (result) => {
+        const {router, load, remove, save} = await renderDraftEditor();
+        const get = Promise.withResolvers<ProcessNodeEntity>();
+        const read = Promise.withResolvers<EditorDraft<FormLayoutElement> | null>();
+        const deletion = Promise.withResolvers<void>();
+        const stored = {...createFormLayout(), publicTitle: 'Zweites Formular'};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockReturnValueOnce(get.promise);
+        load.mockReturnValueOnce(read.promise);
+        remove.mockClear();
+        fireEvent.click(screen.getByRole('button', {name: 'Weitere Optionen'}));
+        expect(screen.getByRole('menuitem', {name: 'XDatenfeld-Schema importieren'})).toBeVisible();
+
+        await act(async () => { await router.navigate('/form/2'); });
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('Testformular')).not.toBeInTheDocument();
+        await act(async () => get.resolve({...createNode(stored), id: 2}));
+        await waitFor(() => expect(load.mock.lastCall?.slice(0, 2)).toEqual(['staff-user', 'process-node/2/form-layout']));
+        expect(screen.queryByRole('textbox', {name: 'Formulartitel'})).not.toBeInTheDocument();
+        expect(remove).not.toHaveBeenCalled();
+        expect(save).not.toHaveBeenCalled();
+        if (result === 'restore') {
+            const submit = screen.queryByRole('button', {name: 'Testformular absenden'});
+            if (submit) await act(async () => { fireEvent.click(submit); });
+            expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();
+            expect(ProcessNodeApiService.prototype.update).not.toHaveBeenCalled();
+        }
+
+        if (result === 'read failure') {
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            await act(async () => read.reject(new Error('Storage unavailable')));
+        } else {
+            await act(async () => read.resolve(result === 'absent' ? null : formDraft(2, stored, 'Gesicherter Entwurf')));
+        }
+        if (result === 'restore' || result === 'discard') {
+            const restore = await screen.findByRole('button', {name: 'Änderungen wiederherstellen'});
+            expect(screen.queryByRole('textbox', {name: 'Formulartitel', hidden: true})).not.toBeInTheDocument();
+            expect(remove).not.toHaveBeenCalled();
+            if (result === 'restore') {
+                fireEvent.click(restore);
+            } else {
+                remove.mockReturnValueOnce(deletion.promise);
+                fireEvent.click(screen.getByRole('button', {name: 'Änderungen verwerfen'}));
+                await waitFor(() => expect(remove).toHaveBeenCalledWith('staff-user', 'process-node/2/form-layout'));
+                expect(screen.queryByRole('textbox', {name: 'Formulartitel'})).not.toBeInTheDocument();
+                await act(async () => deletion.resolve());
+            }
+        }
+        expect(await screen.findByRole('textbox', {name: 'Formulartitel'}))
+            .toHaveValue(result === 'restore' ? 'Gesicherter Entwurf' : stored.publicTitle);
+        editFormTitle('Neue Eingabe');
+        await prepareEditorDraftLogin();
+        expect(ProcessNodeApiService.prototype.update).not.toHaveBeenCalled();
+        if (result === 'read failure') {
+            expect(remove).not.toHaveBeenCalled();
+            expect(save).not.toHaveBeenCalled();
+            vi.mocked(ProcessNodeApiService.prototype.update).mockImplementationOnce(async (id, updated) => ({
+                ...updated, id, ports: [], portResolutionProblems: [], deadlineDefinitions: [],
+            }));
+            fireEvent.click(formSaveButton());
+            await waitFor(() => expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.lastCall?.[1])
+                .toMatchObject({configuration: {formLayout: {value: {publicTitle: 'Neue Eingabe'}}}}));
+        } else {
+            expect(save.mock.lastCall?.[0]).toMatchObject({
+                userId: 'staff-user', key: 'process-node/2/form-layout', mine: {publicTitle: 'Neue Eingabe'},
+            });
+        }
+    });
+
+    it('ignores the first visit’s draft after reopening the same form and editing it', async () => {
+        const {router, load, save} = await renderDraftEditor();
+        const firstRead = Promise.withResolvers<EditorDraft<FormLayoutElement>>();
+        load.mockReturnValueOnce(firstRead.promise);
+        const firstForm = createFormLayout();
+        const secondForm = {...createFormLayout(), publicTitle: 'Zweites Formular'};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockImplementation(async (id) => ({
+            ...createNode(id === 1 ? firstForm : secondForm), id,
+        }));
+        await act(async () => { await router.navigate('/form/2'); });
+        await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+        await act(async () => { await router.navigate('/form/1'); });
+        await screen.findByDisplayValue(firstForm.publicTitle);
+        await act(async () => { await router.navigate('/form/2'); });
+        await screen.findByDisplayValue(secondForm.publicTitle);
+        editFormTitle('Eingabe beim zweiten Besuch');
+
+        await act(async () => firstRead.resolve(formDraft(2, secondForm, 'Entwurf vom ersten Besuch')));
+        expect(screen.queryByRole('button', {name: 'Änderungen wiederherstellen'})).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Eingabe beim zweiten Besuch');
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({key: 'process-node/2/form-layout', mine: {publicTitle: 'Eingabe beim zweiten Besuch'}});
+    });
+
+    it('checks the account’s own draft before the same form can be edited or autosaved', async () => {
+        const {changeAccount, load, remove, save} = await renderDraftEditor();
+        const read = Promise.withResolvers<EditorDraft<FormLayoutElement>>();
+        load.mockReturnValueOnce(read.promise);
+        remove.mockClear();
+        const stored = {...createFormLayout(), publicTitle: 'Gespeicherter Stand des zweiten Kontos'};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(createNode(stored));
+        changeAccount('second-user');
+        await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+        expect(load.mock.lastCall?.slice(0, 2)).toEqual(['second-user', 'process-node/1/form-layout']);
+        expect(screen.queryByRole('textbox', {name: 'Formulartitel'})).not.toBeInTheDocument();
+        expect(remove).not.toHaveBeenCalled();
+        expect(save).not.toHaveBeenCalled();
+
+        await act(async () => read.resolve({...formDraft(1, stored, 'Entwurf des zweiten Kontos'), userId: 'second-user'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen wiederherstellen'}));
+        expect(await screen.findByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Entwurf des zweiten Kontos');
+        editFormTitle('Neue Eingabe');
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({userId: 'second-user', key: 'process-node/1/form-layout', base: stored, mine: {publicTitle: 'Neue Eingabe'}});
+    });
+
+    it('starts loading only when the staff account is available', async () => {
+        const view = render(<StaffAccount.Provider value={undefined}><FormNodeEditorPage/></StaffAccount.Provider>);
+        expect(ProcessNodeApiService.prototype.retrieve).not.toHaveBeenCalled();
+        expect(EditorDraftStorage.load).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: 'Speichern'})).not.toBeInTheDocument();
+        view.rerender(<StaffAccount.Provider value="staff-user"><FormNodeEditorPage/></StaffAccount.Provider>);
+        await waitFor(() => expect(EditorDraftStorage.remove).toHaveBeenCalledWith('staff-user', 'process-node/1/form-layout'));
+        expect(await screen.findByRole('button', {name: 'Testformular absenden'})).toBeEnabled();
+    });
+
+    it('keeps published forms available for viewing without reading or changing their drafts', async () => {
+        const {router, load, remove, save} = await renderDraftEditor();
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(), id: 2, processVersion: 3});
+        vi.mocked(ProcessDefinitionVersionApiService.prototype.retrieve).mockResolvedValue({
+            ...createProcessVersion(), processVersion: 3, status: ProcessStatus.Published,
+        });
+        remove.mockClear();
+        await act(async () => { await router.navigate('/form/2'); });
+        expect(await screen.findByRole('textbox', {name: 'Formulartitel'})).toHaveAttribute('readonly');
+        expect(formSaveButton()).toBeDisabled();
+        expect(load).toHaveBeenCalledTimes(1);
+        expect(remove).not.toHaveBeenCalled();
+        expect(save).not.toHaveBeenCalled();
     });
 
     it.each([false, true])('discards the edited form before returning to the process (debounce elapsed: %s)', async (saved) => {
@@ -805,7 +942,7 @@ describe('FormNodeEditorPage', () => {
         const download = vi.spyOn(FormTriggerApiService.prototype, 'downloadPrintablePdf').mockResolvedValue(pdf);
         const put = pendingFormSave();
         editFormTitle('Abgesendet');
-        fireEvent.click(screen.getByRole('button', {name: 'Vordruck exportieren (.pdf)'}));
+        chooseMoreOption('Vordruck exportieren (.pdf)');
         await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce());
         editFormTitle('Spätere Eingabe');
         await act(async () => put.resolve(createNode({...createFormLayout(), publicTitle: 'Bestätigter Titel'})));
@@ -854,7 +991,7 @@ describe('FormNodeEditorPage', () => {
         vi.mocked(XdfApiService.prototype.xdfTransform).mockRejectedValue(new Error('invalid XDF'));
         await renderLoadedEditor();
 
-        fireEvent.click(screen.getByRole('button', {name: 'XDatenfeld-Schema importieren'}));
+        chooseMoreOption('XDatenfeld-Schema importieren');
 
         await waitFor(() => expectSnackbar('Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
         expectDispatchedAction('shell/setLoadingMessage', {
@@ -863,6 +1000,64 @@ describe('FormNodeEditorPage', () => {
             message: 'Importiere XDF',
         });
         expectActionTypeDispatched('shell/clearLoadingMessage');
+    });
+
+    it.each(['file selection', 'transformation'])('ignores an XDF import left in %s when another form opens', async (stage) => {
+        const {router, save} = await renderDraftEditor();
+        const file = Promise.withResolvers<string>();
+        const transformation = Promise.withResolvers<FormLayoutElement>();
+        const transform = vi.mocked(XdfApiService.prototype.xdfTransform);
+        if (stage === 'file selection') mocks.uploadTextFile.mockReturnValueOnce(file.promise);
+        else transform.mockReturnValueOnce(transformation.promise);
+        chooseMoreOption('XDatenfeld-Schema importieren');
+        await waitFor(() => expect(stage === 'file selection' ? mocks.uploadTextFile : transform).toHaveBeenCalledOnce());
+
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode({...createFormLayout(), publicTitle: 'Zweites Formular'}), id: 2});
+        await act(async () => { await router.navigate('/form/2'); });
+        await screen.findByDisplayValue('Zweites Formular');
+        editFormTitle('Frische Eingabe');
+        const currentImport = Promise.withResolvers<FormLayoutElement>();
+        if (stage === 'file selection') {
+            await act(async () => file.resolve('<xdf/>'));
+            expect(transform).not.toHaveBeenCalled();
+        } else {
+            expectActionTypeDispatched('shell/clearLoadingMessage');
+            mocks.dispatch.mockClear();
+            transform.mockReturnValueOnce(currentImport.promise);
+            chooseMoreOption('XDatenfeld-Schema importieren');
+            await waitFor(() => expectDispatchedAction('shell/setLoadingMessage', expect.objectContaining({message: 'Importiere XDF'})));
+            await act(async () => transformation.resolve({...createFormLayout(), publicTitle: 'Importiertes Formular'}));
+            expectActionTypeNotDispatched('shell/clearLoadingMessage');
+        }
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Frische Eingabe');
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({key: 'process-node/2/form-layout', mine: {publicTitle: 'Frische Eingabe'}});
+        if (stage === 'transformation') {
+            await act(async () => currentImport.resolve({...createFormLayout(), publicTitle: 'Import der neuen Ansicht'}));
+            expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Import der neuen Ansicht');
+            expectActionTypeDispatched('shell/clearLoadingMessage');
+        }
+    });
+
+    it('ignores an element deletion confirmed after a different form has opened', async () => {
+        const section = {type: ElementType.Step, id: 'section', title: 'Abschnitt', children: []};
+        const layout = createFormLayout([section]);
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(createNode(layout));
+        const {router, save} = await renderDraftEditor();
+        const confirmation = Promise.withResolvers<boolean>();
+        mocks.confirm.mockReturnValueOnce(confirmation.promise);
+        fireEvent.click(screen.getByRole('button', {name: 'Abschnitt löschen'}));
+        expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({title: 'Element wirklich löschen'}));
+        const next = {...layout, publicTitle: 'Zweites Formular'};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(next), id: 2});
+        await act(async () => { await router.navigate('/form/2'); });
+        await screen.findByDisplayValue(next.publicTitle);
+        editFormTitle('Neue Eingabe');
+        await act(async () => confirmation.resolve(true));
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({
+            key: 'process-node/2/form-layout', mine: {publicTitle: 'Neue Eingabe', children: [section]},
+        });
     });
 
     it('derives element data imported through the developer tools', async () => {
@@ -994,6 +1189,7 @@ describe('FormNodeEditorPage', () => {
 async function renderLoadedEditor(): Promise<void> {
     render(<FormNodeEditorPage/>);
     await screen.findByRole('button', {name: 'Testformular absenden'});
+    await waitFor(() => expect(EditorDraftStorage.remove).toHaveBeenCalled());
 }
 
 async function renderModifiedEditor(): Promise<void> {
@@ -1020,6 +1216,18 @@ function editFormTitle(title: string) {
 
 function formSaveButton() {
     return screen.getByRole('button', {name: 'Speichern'});
+}
+
+function chooseMoreOption(name: string) {
+    fireEvent.click(screen.getByRole('button', {name: 'Weitere Optionen'}));
+    fireEvent.click(screen.getByRole('menuitem', {name}));
+}
+
+function formDraft(id: number, base: FormLayoutElement, title: string): EditorDraft<FormLayoutElement> {
+    return {
+        userId: 'staff-user', tabId: 'editor-tab', key: `process-node/${id}/form-layout`, savedAt: Date.now(),
+        baseLockVersion: null, base, mine: {...base, publicTitle: title},
+    };
 }
 
 async function renderOpenTextElement() {
@@ -1069,10 +1277,15 @@ async function renderDraftEditor() {
             {path: '/form/:nodeId?', element: <FormNodeEditorPage/>},
             {path: '/processes/10/versions/1/nodes/1', element: <Link to="/form">Formular öffnen</Link>},
         ], {initialEntries: ['/form']});
-        const view = render(<DragAndDropProvider><RouterProvider router={router}/></DragAndDropProvider>);
-        return {view, router};
+        const content = (userId: string) => (
+            <StaffAccount.Provider value={userId}>
+                <DragAndDropProvider><RouterProvider router={router}/></DragAndDropProvider>
+            </StaffAccount.Provider>
+        );
+        const view = render(content('staff-user'));
+        return {view, router, changeAccount: (userId: string) => view.rerender(content(userId))};
     };
-    const {view, router} = mount();
+    const {view, router, changeAccount} = mount();
     await waitFor(() => expect(remove).toHaveBeenCalled());
     async function returnFromLogin(hash = '') {
         const returnId = await prepareEditorDraftLogin();
@@ -1082,7 +1295,7 @@ async function renderDraftEditor() {
         initializeEditorDraftLoginReturn();
         mount();
     }
-    return {load, save, remove, router, returnFromLogin};
+    return {load, save, remove, router, returnFromLogin, changeAccount};
 }
 
 function createFormLayout(children: any[] = []): any {

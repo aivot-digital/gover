@@ -22,6 +22,9 @@ import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {getNodeName} from '../process-flow-editor/utils/node-utils';
 import {isApiError} from '../../../../../../models/api-error';
 import {useEditorDraft} from '../../../../../../hooks/use-editor-draft';
+import {useEditorDraftVisit} from '../../../../../../hooks/use-editor-draft-visit';
+import {useAppSelector} from '../../../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../../../slices/user-slice';
 import {useMergeConflictResolution} from '../../../../../../hooks/use-merge-conflict-resolution';
 import {createProcessNodeMergeSpec, getExternallyEditedFields} from '../../../../utils/process-node-merge-spec';
 import {
@@ -83,6 +86,7 @@ export function ProcessNodeEditor(): ReactNode {
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
     const theme = useTheme();
+    const userId = useAppSelector(selectUser)?.id;
 
     const [originalNode, setOriginalNode, currentOriginal] = useCurrentState<ProcessNodeEntity | null>(null);
     // Replaced together with the node so the suggestions always belong to the configuration on screen.
@@ -115,9 +119,6 @@ export function ProcessNodeEditor(): ReactNode {
     const [saveCheckpoint, setSaveCheckpoint, currentCheckpoint] = useCurrentState<EditorSaveCheckpoint<ProcessNodeEntity> | undefined>(undefined);
     const validatingNode = useRef<ProcessNodeEntity | null>(null);
     const keyLockRevision = useRef(0);
-    // Raised with every load, so the draft is checked again for the freshly loaded node.
-    const [nodeLoadCount, setNodeLoadCount] = useState(0);
-    const [isDraftChecked, setIsDraftChecked] = useState(false);
     const {
         resolvePrepared,
         dialog: mergeConflictDialog,
@@ -139,6 +140,16 @@ export function ProcessNodeEditor(): ReactNode {
         return parseInt(rawNodeId, 10);
     })();
     const nodeRefreshVersion = nodeRefreshSignal.nodeId === nodeId ? nodeRefreshSignal.version : 0;
+    // A change of editor tab keeps the existing visit. Revisiting the same node starts a new one.
+    const request = useMemo(() => ({
+        userId, nodeId, processId: params.processId, processVersion: params.processVersion, nodeRefreshVersion, editable,
+    }), [userId, nodeId, params.processId, params.processVersion, nodeRefreshVersion, editable]);
+    const [loaded, setLoaded] = useState<{request: typeof request; generation: number} | null>(null);
+    const matchesRequest = loaded?.request === request && originalNode?.id === nodeId &&
+        originalNode.processId === Number(params.processId) && originalNode.processVersion === Number(params.processVersion);
+    const visitKey = matchesRequest && editable && userId != null ? JSON.stringify([userId, nodeId, loaded.generation]) : null;
+    const {checked, isCurrent, finish, canEdit} = useEditorDraftVisit(visitKey);
+    const previewLocked = !matchesRequest || (editable && !checked);
 
     const cancelActiveSave = useCallback(() => {
         validatingNode.current = null;
@@ -150,20 +161,22 @@ export function ProcessNodeEditor(): ReactNode {
     }, []);
 
     // A new load owns its editor even when revisiting the same node. Its internal tabs share the current save.
-    useLayoutEffect(() => cancelActiveSave, [cancelActiveSave, params.processId, params.processVersion, nodeId, nodeRefreshVersion]);
+    useLayoutEffect(() => cancelActiveSave, [cancelActiveSave, request]);
 
     const hasNodeChanges = useMemo(() => !deepEquals(originalNode, editedNode), [originalNode, editedNode]);
     const {
         hasChanged,
         dialog: changeBlockerDialog,
     } = useChangeBlocker({
+        visitKey,
         original: false,
         // Even a return to the old stored value needs protecting until the PUT's result is known.
-        edited: saveCheckpoint?.phase === 'pending' || hasNodeChanges,
+        edited: checked && (saveCheckpoint?.phase === 'pending' || hasNodeChanges),
         onConfirmNavigation: async () => {
+            if (!canEdit()) return;
             cancelActiveSave();
             await discardForNavigation();
-            if (currentEdit.current === editedNode) {
+            if (canEdit() && currentEdit.current === editedNode) {
                 setEditedNode(originalNode);
                 setSaveCheckpoint(undefined);
             }
@@ -175,7 +188,7 @@ export function ProcessNodeEditor(): ReactNode {
             shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
     });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         let isCancelled = false;
         const hasEditorContent = originalNode != null && layout != null && provider != null;
 
@@ -189,6 +202,8 @@ export function ProcessNodeEditor(): ReactNode {
 
         setIsNodeLoading(true);
         setShowNodeLoadedFeedback(false);
+        setMenuAnchorEl(null);
+        setIsProviderDetailsDialogOpen(false);
 
         (async () => {
             const [node, configurationLayout, problems, incomingMetadataState] = await Promise.all([
@@ -224,8 +239,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setOriginalNode(node);
                 setEditedNode(node);
                 setSaveCheckpoint(undefined);
-                setIsDraftChecked(false);
-                setNodeLoadCount((count) => count + 1);
+                setLoaded((previous) => ({request, generation: (previous?.generation ?? 0) + 1}));
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
@@ -251,7 +265,7 @@ export function ProcessNodeEditor(): ReactNode {
         return () => {
             isCancelled = true;
         };
-    }, [params.processId, params.processVersion, nodeId, nodeRefreshVersion]);
+    }, [request]);
 
     useEffect(() => {
         if (!showNodeLoadingOverlay) {
@@ -297,26 +311,25 @@ export function ProcessNodeEditor(): ReactNode {
         discardForNavigation,
         isReady: isDraftStorageReady,
     } = useEditorDraft<ProcessNodeEntity>({
-        draftKey: originalNode?.id === nodeId ? `process-node/${nodeId}/configuration` : null,
+        draftKey: visitKey != null ? `process-node/${nodeId}/configuration` : null,
         base: originalNode,
         baseLockVersion: originalNode?.lockVersion,
         edited: editedNode,
         saveCheckpoint,
         hasChanged,
-        enabled: isDraftChecked && editable,
+        enabled: checked,
     });
 
-    const draftNodeReady = originalNode?.id === nodeId && layout != null;
     // Offers the unsaved changes of an earlier visit after each load, e.g. after the session expired.
-    useEffect(() => {
-        if (originalNode == null || !draftNodeReady || !isDraftStorageReady || nodeLoadCount === 0) {
+    useLayoutEffect(() => {
+        if (originalNode == null || !isCurrent() || !isDraftStorageReady) {
             return;
         }
         const controller = new AbortController();
 
         (async () => {
-            const draft = editable ? await loadDraft() : null;
-            if (draft == null || controller.signal.aborted) {
+            const draft = await loadDraft();
+            if (draft == null || controller.signal.aborted || !isCurrent()) {
                 return;
             }
 
@@ -333,7 +346,7 @@ export function ProcessNodeEditor(): ReactNode {
                 signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (originalNode.lockVersion ?? null),
             });
-            if (controller.signal.aborted) {
+            if (controller.signal.aborted || !isCurrent()) {
                 return;
             }
             if (outcome.status === 'apply') {
@@ -342,18 +355,20 @@ export function ProcessNodeEditor(): ReactNode {
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
                 await clearDraft().catch(() => {
-                    dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                    if (!controller.signal.aborted && isCurrent()) {
+                        dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                    }
                 });
             }
         })()
             .catch(console.error)
             .finally(() => {
                 if (!controller.signal.aborted) {
-                    setIsDraftChecked(true);
+                    finish();
                 }
             });
         return () => controller.abort();
-    }, [draftNodeReady, isDraftStorageReady, nodeLoadCount, editable, loadDraft]);
+    }, [isCurrent, finish, isDraftStorageReady, loadDraft]);
 
     const {
         Icon: TypeIcon,
@@ -402,13 +417,11 @@ export function ProcessNodeEditor(): ReactNode {
         });
     }, [location]);
 
-    const canSave = editable && hasChanged && !isNodeLoading &&
-        originalNode?.id === nodeId && editedNode?.id === nodeId &&
-        originalNode.processId === Number(params.processId) && originalNode.processVersion === Number(params.processVersion);
+    const canSave = checked && hasChanged && !isNodeLoading && editedNode?.id === nodeId;
     const handleSaveSelected = async (): Promise<void> => {
         // Guards against a second click while the first save is still running, which would end in a needless conflict.
         const submitted = currentEdit.current;
-        if (!canSave || submitted?.id !== nodeId || activeSave.current != null) {
+        if (!canSave || !canEdit() || originalNode == null || submitted?.id !== nodeId || activeSave.current != null) {
             return;
         }
 
@@ -512,7 +525,7 @@ export function ProcessNodeEditor(): ReactNode {
     };
 
     const handleDeleteSelected = (): void => {
-        if (!structureEditable || originalNode == null || provider == null) {
+        if (!structureEditable || !canEdit() || originalNode == null || provider == null) {
             return;
         }
 
@@ -529,7 +542,7 @@ export function ProcessNodeEditor(): ReactNode {
             ),
         })
             .then((confirm) => {
-                if (confirm) {
+                if (confirm && canEdit()) {
                     setEditedNode(originalNode);
                     onDelete(originalNode);
                 }
@@ -541,7 +554,7 @@ export function ProcessNodeEditor(): ReactNode {
     };
 
     const handleExportSelected = (): void => {
-        if (originalNode == null || provider == null) {
+        if (!matchesRequest || originalNode == null || provider == null) {
             return;
         }
 
@@ -555,7 +568,7 @@ export function ProcessNodeEditor(): ReactNode {
             });
     };
 
-    if (!hasEditorContent) {
+    if (!hasEditorContent || loaded?.request.userId !== userId) {
         return showInitialNodeEditorSkeleton ?
             <ProcessNodeEditorSkeleton/> :
             <Box sx={{height: '100vh'}}/>;
@@ -579,6 +592,7 @@ export function ProcessNodeEditor(): ReactNode {
                             position: 'absolute',
                             inset: 0,
                             zIndex: 2,
+                            pointerEvents: 'none',
                             bgcolor: theme.palette.mode === 'dark'
                                 ? alpha(theme.palette.common.black, 0.42)
                                 : alpha(theme.palette.common.white, 0.42),
@@ -592,7 +606,6 @@ export function ProcessNodeEditor(): ReactNode {
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'hidden',
-                        pointerEvents: isNodeLoading ? 'none' : 'auto',
                         opacity: showNodeLoadingOverlay ? 0.78 : 1,
                         transition: 'opacity 140ms ease',
                     }}
@@ -675,6 +688,7 @@ export function ProcessNodeEditor(): ReactNode {
                         </Box>
 
                         <IconButton
+                            disabled={!matchesRequest}
                             sx={{
                                 marginLeft: 'auto',
                                 flexShrink: 0,
@@ -690,7 +704,7 @@ export function ProcessNodeEditor(): ReactNode {
                     <Tabs
                         value={currentTab}
                         onChange={(_, value) => {
-                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
+                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${nodeId}/tabs/${value}?${searchParams.toString()}`);
                         }}
                         sx={{
                             mt: 0.25,
@@ -724,6 +738,8 @@ export function ProcessNodeEditor(): ReactNode {
 
                     <Box
                         ref={editorTabContentContainerRef}
+                        inert={previewLocked}
+                        aria-busy={isNodeLoading || (matchesRequest && previewLocked)}
                         sx={{
                             px: 2,
                             py: 1,
@@ -734,29 +750,33 @@ export function ProcessNodeEditor(): ReactNode {
                         {incomingMetadataState.status === 'failed' && tabUsesIncomingMetadata && (
                             <Alert severity="warning" sx={{mb: 2}}>
                                 Auswahlvorschläge und wiederverwendbare Inhalte konnten nicht geladen werden.
-                                {editable && ' Sie können die Konfiguration weiterhin bearbeiten.'}
+                                {checked && ' Sie können die Konfiguration weiterhin bearbeiten.'}
                             </Alert>
                         )}
+                        {/* Nested dialogs can live outside the inert subtree. Each working copy starts with fresh controls. */}
                         <ProcessNodeEditorProvider
-                            key={nodeId}
+                            key={JSON.stringify([nodeId, loaded?.generation, matchesRequest, checked])}
                             value={{
                                 provider,
                                 layout,
                                 testClaim,
-                                node: editedNode ?? originalNode,
+                                node: checked ? editedNode ?? originalNode : originalNode,
                                 originalNode,
                                 dataKeyUnlocked,
                                 onUnlockDataKey: () => {
+                                    if (!canEdit()) return;
                                     keyLockRevision.current++;
                                     setDataKeyUnlocked(true);
                                 },
                                 onLockDataKey: () => {
+                                    if (!canEdit()) return;
                                     keyLockRevision.current++;
                                     setDataKeyUnlocked(false);
                                 },
                                 dataKeyValidationRequested,
                                 outputMappingErrors,
                                 setNode: (node, updateOriginal) => {
+                                    if (!canEdit()) return;
                                     if (updateOriginal) {
                                         setOriginalNode(node);
                                     }
@@ -772,7 +792,7 @@ export function ProcessNodeEditor(): ReactNode {
                                     }
                                     setEditedNode(node);
                                 },
-                                isEditable: editable,
+                                isEditable: checked,
                                 problems: problems,
                                 incomingMetadata: incomingMetadataState.status === 'loaded'
                                     ? incomingMetadataState.metadata
@@ -826,13 +846,13 @@ export function ProcessNodeEditor(): ReactNode {
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
-                editable={structureEditable}
+                editable={structureEditable && checked}
                 onShowNodeProviderDetails={() => {
                     setIsProviderDetailsDialogOpen(true);
                 }}
                 onExportNode={handleExportSelected}
                 onReplaceNode={() => {
-                    if (!structureEditable || originalNode == null) {
+                    if (!structureEditable || !canEdit() || originalNode == null) {
                         return;
                     }
 

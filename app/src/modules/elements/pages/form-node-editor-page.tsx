@@ -3,6 +3,7 @@ import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surfac
 import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
+import {selectUser} from '../../../slices/user-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {
     selectDevToolsTab,
@@ -47,7 +48,7 @@ import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';
 import {Allotment} from 'allotment';
 import {useElementSize} from '../../../utils/element-size';
-import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../../slices/shell-slice';
+import {clearLoadingMessage, setErrorMessage, setLoadingMessage, type ShellLoadingMessage} from '../../../slices/shell-slice';
 import {PrefillFormDialog} from '../../../dialogs/prefill-form-dialog/prefill-form-dialog';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import QrCode from '@aivot/mui-material-symbols-400-n25-outlined/QrCode';
@@ -139,6 +140,7 @@ import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
 import {isApiError} from '../../../models/api-error';
 import {useEditorDraft} from '../../../hooks/use-editor-draft';
+import {useEditorDraftVisit} from '../../../hooks/use-editor-draft-visit';
 import {useMergeConflictResolution} from '../../../hooks/use-merge-conflict-resolution';
 import {formLayoutMergeSpec} from '../utils/form-layout-merge-spec';
 import {mergeFormDraft, rebaseOpenElementDraft} from '../utils/merge-form-draft';
@@ -189,14 +191,14 @@ function toEditableFormLayout(layout: FormLayoutElement | null, rootId?: string)
 }
 
 export function FormNodeEditorPage() {
-    const {
-        nodeId = '',
-    } = useParams<{
-        nodeId: string;
-        fieldKey: string;
-        elementType: string;
-    }>();
+    const {nodeId = ''} = useParams<{nodeId: string}>();
+    const userId = useAppSelector(selectUser)?.id;
+    if (userId == null) return null;
+    // A different account or form owns its own layout, open dialogs and outstanding callbacks.
+    return <FormNodeEditor key={JSON.stringify([userId, nodeId])} nodeId={nodeId}/>;
+}
 
+function FormNodeEditor({nodeId}: {nodeId: string}) {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
@@ -213,15 +215,6 @@ export function FormNodeEditorPage() {
     const activeSave = useRef<AbortController | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const visit = useRef<AbortSignal | null>(null);
-    useLayoutEffect(() => {
-        const controller = new AbortController();
-        visit.current = controller.signal;
-        return () => {
-            controller.abort();
-            activeSave.current?.abort();
-            activeSave.current = null;
-        };
-    }, [nodeId]);
     const configuredFormSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
 
     const [process, setProcess] = useState<ProcessEntity | null>(null);
@@ -275,6 +268,12 @@ export function FormNodeEditorPage() {
         }
     }, [saveCheckpoint, hasLayoutChanges, panelDraft, setSaveCheckpoint]);
     const hasLayoutToSave = hasLayoutChanges || saveCheckpoint?.phase === 'pending';
+    const isEditable = processVersion?.status === ProcessStatus.Drafted;
+    const draftNodeReady = node?.id === Number(nodeId) && processVersion != null &&
+        processVersion.processId === node.processId && processVersion.processVersion === node.processVersion;
+    const visitKey = draftNodeReady && isEditable ? nodeId : null;
+    const {checked, isCurrent, finish, canEdit} = useEditorDraftVisit(visitKey);
+    const checkingDraft = isEditable && !checked;
 
     const {
         dialog: changeBlockerDialog,
@@ -282,7 +281,10 @@ export function FormNodeEditorPage() {
     } = useChangeBlocker({
         original: false,
         edited: hasLayoutToSave || panelDraft != null,
+        isActive: checked,
+        visitKey,
         onConfirmNavigation: async () => {
+            if (!canEdit()) return;
             activeSave.current?.abort();
             activeSave.current = null;
             setIsSaving(false);
@@ -290,7 +292,6 @@ export function FormNodeEditorPage() {
         },
     });
 
-    const [isDraftChecked, setIsDraftChecked] = useState(false);
     const {
         resolvePrepared,
         dialog: mergeConflictDialog,
@@ -397,12 +398,6 @@ export function FormNodeEditorPage() {
                     uiElement = generateElementWithDefaultValues(ElementType.FormLayout);
                 }
 
-                setPastLoadedForm([]);
-                setFutureLoadedForm([]);
-                setIsDraftChecked(false);
-                setIsSaving(false);
-                setSaveCheckpoint(undefined);
-                setPanelDraft(null);
                 setNode(node);
                 setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
             })
@@ -612,36 +607,44 @@ export function FormNodeEditorPage() {
 
     const notImplemented = useNotImplemented();
 
-    const isEditable = processVersion?.status === ProcessStatus.Drafted;
+    useLayoutEffect(() => {
+        const controller = new AbortController();
+        visit.current = controller.signal;
+        setShowRootAddElementDialog(false);
+        setShowMoreMenuAtEl(null);
+        setIsSaving(false);
+        return () => {
+            controller.abort();
+            activeSave.current?.abort();
+            activeSave.current = null;
+        };
+    }, [isCurrent]);
 
     const {
         loadDraft,
         clearDraft,
         discardForNavigation,
-        isReady: isDraftStorageReady,
     } = useEditorDraft<FormLayoutElement | null, ElementPanelDraft>({
-        draftKey: node?.id === Number(nodeId) ? `process-node/${node.id}/form-layout` : null,
+        draftKey: visitKey == null ? null : `process-node/${nodeId}/form-layout`,
         base: storedFormLayout,
         baseLockVersion: node?.lockVersion,
         edited: formLayout,
         context: panelDraft ?? undefined,
         saveCheckpoint,
         hasChanged,
-        enabled: isDraftChecked && isEditable,
+        enabled: checked,
     });
 
-    const draftNodeReady = node?.id === Number(nodeId) && processVersion != null &&
-        processVersion.processId === node.processId && processVersion.processVersion === node.processVersion;
     // Revisit recovery only on a different editor load, not on a save that updates the same node.
     useEffect(() => {
-        if (node == null || formLayout == null || !draftNodeReady || !isDraftStorageReady) {
+        if (node == null || formLayout == null || !isCurrent()) {
             return;
         }
         const controller = new AbortController();
 
         (async () => {
-            const draft = isEditable ? await loadDraft() : null;
-            if (draft == null || controller.signal.aborted) {
+            const draft = await loadDraft();
+            if (draft == null || controller.signal.aborted || !isCurrent()) {
                 return;
             }
 
@@ -662,7 +665,7 @@ export function FormNodeEditorPage() {
                 signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (node.lockVersion ?? null),
             });
-            if (controller.signal.aborted) {
+            if (controller.signal.aborted || !isCurrent()) {
                 return;
             }
             const recoveredPanel = outcome.status === 'apply' ? outcome.value.panel : undefined;
@@ -674,27 +677,28 @@ export function FormNodeEditorPage() {
             if (outcome.status === 'apply') {
                 const {layout} = outcome.value;
                 if (!sameFormLayout(layout, formLayout)) {
-                    handlePatch(toEditableFormLayout(layout));
+                    applyFormLayout(toEditableFormLayout(layout));
                 }
                 if (stillPending) setSaveCheckpoint(checkpoint);
                 setPanelDraft(recoveredPanel ?? null);
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
                 await clearDraft().catch(() => {
-                    dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                    if (isCurrent() && !controller.signal.aborted) {
+                        dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                    }
                 });
             }
         })()
             .catch(console.error)
             .finally(() => {
                 if (!controller.signal.aborted) {
-                    setIsDraftChecked(true);
+                    finish();
                 }
             });
         return () => controller.abort();
-    }, [draftNodeReady, nodeId, isDraftStorageReady, isEditable, loadDraft]);
+    }, [isCurrent, finish, loadDraft]);
     const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
-    const checkingDraft = isDraftStorageReady && !isDraftChecked;
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
             draftPreviewThemeChain == null ?
@@ -720,7 +724,7 @@ export function FormNodeEditorPage() {
     }, [metaDialogName]);
 
     const handleUndo = () => {
-        if (formLayout == null || pastLoadedForm.length === 0) {
+        if (!canEdit() || formLayout == null || pastLoadedForm.length === 0) {
             return;
         }
 
@@ -734,7 +738,7 @@ export function FormNodeEditorPage() {
     };
 
     const handleRedo = () => {
-        if (formLayout == null || futureLoadedForm.length === 0) {
+        if (!canEdit() || formLayout == null || futureLoadedForm.length === 0) {
             return;
         }
 
@@ -778,8 +782,7 @@ export function FormNodeEditorPage() {
     const saveForm = async (): Promise<ProcessNodeEntity | null> => {
         const submitted = currentLayout.current;
         const original = currentNode.current;
-        if (original == null || original.id !== Number(nodeId) || submitted == null || !isEditable ||
-            !draftNodeReady || activeSave.current != null) {
+        if (!canEdit() || original == null || submitted == null || activeSave.current != null) {
             return null;
         }
 
@@ -849,8 +852,20 @@ export function FormNodeEditorPage() {
 
     const publicFormLink = createCustomerPath(`/form/${process?.slug}/${configuredFormSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
+    const showLoadingForVisit = (message: ShellLoadingMessage, signal: AbortSignal) => {
+        // Release the shell indicator when leaving. A late completion must not clear the next page's indicator.
+        const clear = () => dispatch(clearLoadingMessage());
+        signal.addEventListener('abort', clear, {once: true});
+        dispatch(setLoadingMessage(message));
+        return () => {
+            signal.removeEventListener('abort', clear);
+            if (!signal.aborted) clear();
+        };
+    };
+
     const handleImportFromXDF = async () => {
-        if (!isEditable) {
+        const signal = visit.current;
+        if (!canEdit() || signal == null) {
             return;
         }
 
@@ -873,34 +888,34 @@ export function FormNodeEditorPage() {
                 confirmButtonText: 'Ja, mit dem Import fortfahren',
             });
 
-            if (!conf) {
+            if (!conf || !canEdit()) {
                 return;
             }
 
             xmlContent = await uploadTextFile('text/xml');
 
-            if (xmlContent == null) {
+            if (xmlContent == null || !canEdit()) {
                 return;
             }
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
+            if (canEdit()) dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
             return;
         }
 
-        dispatch(setLoadingMessage({
+        const stopLoading = showLoadingForVisit({
             blocking: true,
             estimatedTime: 1000,
             message: 'Importiere XDF',
-        }));
+        }, signal);
 
         try {
             const transformed = await new XdfApiService().xdfTransform(xmlContent);
 
-            setFormLayout(transformed);
+            if (canEdit()) setFormLayout(transformed);
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
+            if (canEdit()) dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
         } finally {
-            dispatch(clearLoadingMessage());
+            stopLoading();
         }
     };
 
@@ -930,11 +945,11 @@ export function FormNodeEditorPage() {
     const downloadPersistedPdfFile = async (stored: ProcessNodeEntity, signal: AbortSignal): Promise<void> => {
         const filename = resolvePrintablePdfFilename(getStoredFormLayout(stored)?.publicTitle, stored.name);
 
-        dispatch(setLoadingMessage({
+        const stopLoading = showLoadingForVisit({
             blocking: false,
             estimatedTime: 1500,
             message: 'Vordruck wird generiert',
-        }));
+        }, signal);
 
         try {
             const blob = await new FormTriggerApiService()
@@ -948,13 +963,13 @@ export function FormNodeEditorPage() {
             console.error(err);
             dispatch(showApiErrorSnackbar(err, 'Fehler beim Generieren des Vordrucks'));
         } finally {
-            dispatch(clearLoadingMessage());
+            stopLoading();
         }
     };
 
     const handleDownloadPdfFile = async (): Promise<void> => {
         const signal = visit.current;
-        if (node?.id !== Number(nodeId) || signal == null || signal.aborted) {
+        if (checkingDraft || node?.id !== Number(nodeId) || signal == null || signal.aborted) {
             return;
         }
 
@@ -991,23 +1006,24 @@ export function FormNodeEditorPage() {
         await downloadPersistedPdfFile(confirmed, signal);
     };
 
-    const handlePatch = (element: FormLayoutElement) => {
-        if (!isEditable) {
-            return;
-        }
-
-        if (formLayout != null) {
+    const applyFormLayout = (element: FormLayoutElement) => {
+        const previous = currentLayout.current;
+        if (previous != null) {
             setPastLoadedForm((currentPastLoadedForm) => [
                 ...currentPastLoadedForm,
-                cloneFormLayoutSnapshot(formLayout),
+                cloneFormLayoutSnapshot(previous),
             ]);
         }
         setFutureLoadedForm([]);
         setFormLayout(cloneFormLayoutSnapshot(element));
     };
 
+    const handlePatch = (element: FormLayoutElement) => {
+        if (canEdit()) applyFormLayout(element);
+    };
+
     const handleCloneElement = (element: AnyElement) => {
-        if (formLayout == null) {
+        if (!canEdit() || formLayout == null) {
             return;
         }
 
@@ -1052,7 +1068,7 @@ export function FormNodeEditorPage() {
     };
 
     const handleDeleteElement = (element: AnyElement) => {
-        if (formLayout == null) {
+        if (!canEdit() || formLayout == null) {
             return;
         }
 
@@ -1066,7 +1082,8 @@ export function FormNodeEditorPage() {
             ),
         })
             .then((conf) => {
-                if (!conf) {
+                const latest = currentLayout.current;
+                if (!conf || !canEdit() || latest == null) {
                     return;
                 }
 
@@ -1084,7 +1101,7 @@ export function FormNodeEditorPage() {
                     }
                 }
 
-                handlePatch(deleteElementRecursive(formLayout));
+                handlePatch(deleteElementRecursive(latest));
             });
     };
 
@@ -1146,7 +1163,7 @@ export function FormNodeEditorPage() {
             label: 'XDatenfeld-Schema importieren',
             icon: <Code/>,
             onClick: handleImportFromXDF,
-            disabled: !isEditable,
+            disabled: !checked,
         },
         'separator',
         {
@@ -1198,13 +1215,13 @@ export function FormNodeEditorPage() {
             tooltip: 'Änderung rückgängig machen',
             icon: <UndoIcon/>,
             onClick: handleUndo,
-            disabled: !hasPastLoadedForm || !isEditable,
+            disabled: !hasPastLoadedForm || !checked,
         },
         {
             tooltip: 'Änderung wiederherstellen',
             icon: <RedoIcon/>,
             onClick: handleRedo,
-            disabled: !hasFutureLoadedForm || !isEditable,
+            disabled: !hasFutureLoadedForm || !checked,
         },
         'separator' as const,
         {
@@ -1225,6 +1242,7 @@ export function FormNodeEditorPage() {
         {
             tooltip: 'Formular-Einstellungen öffnen',
             icon: <Settings/>,
+            disabled: checkingDraft,
             onClick: () => {
                 if (formLayout == null) {
                     return;
@@ -1236,6 +1254,7 @@ export function FormNodeEditorPage() {
         {
             tooltip: 'Weitere Optionen',
             icon: <MoreVert/>,
+            disabled: checkingDraft,
             onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                 setShowMoreMenuAtEl(event.currentTarget);
             },
@@ -1256,11 +1275,11 @@ export function FormNodeEditorPage() {
             iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            disabled: !hasLayoutToSave || !isEditable || isSaving,
+            disabled: !hasLayoutToSave || !checked || isSaving,
         },
     ];
 
-    if (formLayout == null || node == null || process == null || processVersion == null) {
+    if (formLayout == null || node == null || process == null || processVersion == null || !draftNodeReady) {
         return;
     }
 
@@ -1288,12 +1307,12 @@ export function FormNodeEditorPage() {
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
         const signal = visit.current;
-        if (event != SUBMIT_EVENT || node.id !== Number(nodeId) || signal == null || signal.aborted) {
+        if (checkingDraft || event != SUBMIT_EVENT || node.id !== Number(nodeId) || signal == null || signal.aborted) {
             return;
         }
 
         let errorMessage = 'Das Absenden des Formulars konnte nicht vorbereitet werden.';
-        let loadingStarted = false;
+        let stopLoading: (() => void) | undefined;
         let confirmedLayout = formLayout;
         let formSlug = configuredFormSlug;
         const showMissingSlug = () => confirm({
@@ -1461,12 +1480,11 @@ export function FormNodeEditorPage() {
             }
 
             signal.throwIfAborted();
-            dispatch(setLoadingMessage({
+            stopLoading = showLoadingForVisit({
                 blocking: true,
                 estimatedTime: 1000,
                 message: 'Formular wird abgesendet',
-            }));
-            loadingStarted = true;
+            }, signal);
             errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten';
 
             const startRes = await new FormTriggerApiService()
@@ -1481,9 +1499,7 @@ export function FormNodeEditorPage() {
         } catch (err) {
             if (!signal.aborted) dispatch(showApiErrorSnackbar(err, errorMessage));
         } finally {
-            if (loadingStarted) {
-                dispatch(clearLoadingMessage());
-            }
+            stopLoading?.();
         }
     };
 
@@ -1495,7 +1511,6 @@ export function FormNodeEditorPage() {
         >
             <Box
                 ref={containerRef}
-                inert={checkingDraft}
                 sx={{
                     height: '100vh',
                     '--focus-border': (theme) => theme.palette.secondary.main,
@@ -1504,9 +1519,9 @@ export function FormNodeEditorPage() {
                 <Allotment vertical>
                     <RootStructureActionsContextProvider
                         value={{
-                            canAddAtRoot: isAnyElementWithChildren(formLayout),
+                            canAddAtRoot: checked && isAnyElementWithChildren(formLayout),
                             openAddAtRootDialog: () => {
-                                setShowRootAddElementDialog(true);
+                                if (canEdit()) setShowRootAddElementDialog(true);
                             },
                         }}
                     >
@@ -1530,6 +1545,8 @@ export function FormNodeEditorPage() {
                                     />
 
                                     <Paper
+                                        inert={checkingDraft}
+                                        aria-busy={checkingDraft}
                                         sx={{
                                             overflowY: 'auto',
                                             flex: 1,
@@ -1574,7 +1591,7 @@ export function FormNodeEditorPage() {
                                                             deleteElement: handleDeleteElement,
                                                             navigateToElementEditor: handleOpenElement,
                                                             highlightElementInTree: handleHighlightElementInTree,
-                                                            editable: isEditable,
+                                                            editable: checked,
                                                         }}
                                                     >
                                                         <ElementDerivationContext
@@ -1677,9 +1694,11 @@ export function FormNodeEditorPage() {
                                             <ElementTree
                                                 value={formLayout}
                                                 panelDraft={panelDraft}
-                                                onPanelDraftChange={setPanelDraft}
+                                                onPanelDraftChange={(draft) => {
+                                                    if (canEdit()) setPanelDraft(draft);
+                                                }}
                                                 onChange={handlePatch}
-                                                editable={isEditable}
+                                                editable={checked}
                                                 displayContext={ElementDisplayContext.CustomerFacing}
                                                 allowElementIdEditing={false}
                                                 highlightElementId={highlightElementId}
@@ -1702,6 +1721,7 @@ export function FormNodeEditorPage() {
                             preferredSize={420}
                         >
                             <Box
+                                inert={checkingDraft}
                                 sx={{
                                     height: '100%',
                                     overflow: 'hidden',
@@ -1725,7 +1745,7 @@ export function FormNodeEditorPage() {
             </Box>
 
             <FormDetailsPageMoreMenu
-                anchorEl={showMoreMenuAtEl}
+                anchorEl={checkingDraft ? null : showMoreMenuAtEl}
                 onClose={() => {
                     setShowMoreMenuAtEl(null);
                 }}
@@ -1741,7 +1761,7 @@ export function FormNodeEditorPage() {
             />
 
             <AddElementDialog
-                show={showRootAddElementDialog}
+                show={checked && showRootAddElementDialog}
                 parentType={formLayout.type}
                 parentElement={formLayout}
                 allParents={[formLayout]}

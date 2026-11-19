@@ -189,6 +189,44 @@ describe('useEditorDraft', () => {
         expect(EditorDraftStorage.save).not.toHaveBeenCalled();
     });
 
+    it('protects an unread draft from cleanup, writes and login reservations until its next successful lookup', async () => {
+        const lookup = Promise.withResolvers<null>();
+        vi.spyOn(EditorDraftStorage, 'load').mockReturnValueOnce(lookup.promise).mockResolvedValue(null);
+        const reserve = vi.spyOn(EditorDraftStorage, 'reserve').mockResolvedValue(true);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const {result, rerender} = renderHook((current) => useEditorDraft(current), {
+            initialProps: {...props, enabled: false},
+        });
+
+        const reading = result.current.loadDraft();
+        // This cleanup is already queued behind the still-pending read.
+        rerender({...props, hasChanged: false});
+        lookup.reject(new Error('Transaction aborted'));
+        await expect(reading).resolves.toBeNull();
+        rerender(props);
+        await vi.advanceTimersByTimeAsync(1000);
+        await expect(prepareEditorDraftLogin()).resolves.toBeUndefined();
+        expect(EditorDraftStorage.remove).not.toHaveBeenCalled();
+        expect(EditorDraftStorage.save).not.toHaveBeenCalled();
+        expect(reserve).not.toHaveBeenCalled();
+
+        await result.current.loadDraft();
+        rerender({...props, edited: {label: 'Nach erneutem Laden'}});
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(EditorDraftStorage.save).toHaveBeenCalledTimes(1);
+        rerender({...props, hasChanged: false});
+        expect(EditorDraftStorage.remove).toHaveBeenCalledWith('user-1', props.draftKey);
+    });
+
+    it('keeps an explicit discard available after a failed draft lookup', async () => {
+        vi.spyOn(EditorDraftStorage, 'load').mockRejectedValue(new Error('Transaction aborted'));
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const {result} = renderHook(() => useEditorDraft({...props, enabled: false}));
+        await result.current.loadDraft();
+        await result.current.discardForNavigation();
+        expect(EditorDraftStorage.remove).toHaveBeenCalledWith('user-1', props.draftKey);
+    });
+
     it('stores the changes of an object that was never saved, whose stored state is empty', () => {
         renderHook(() => useEditorDraft<{label: string} | null>({...props, base: null, baseLockVersion: 0}));
         vi.advanceTimersByTime(1000);

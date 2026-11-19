@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import Alert from '@mui/material/Alert';
 import {useBeforeUnload, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
@@ -13,6 +13,8 @@ interface ChangeBlockerProps<T> {
     customConfirmButtonText?: string;
     useDeepEquals?: boolean;
     isActive?: boolean;
+    /** A reload or account change starts a new visit even when the route stays the same. */
+    visitKey?: string | null;
     onConfirmNavigation?: () => void | Promise<void>;
     shouldAllowNavigation?: (navigation: {
         currentLocation: {
@@ -41,6 +43,7 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         customConfirmButtonText = DEFAULT_CONFIRM_BUTTON_TEXT,
         useDeepEquals = true,
         isActive = true,
+        visitKey,
         onConfirmNavigation,
         shouldAllowNavigation,
     } = props;
@@ -66,7 +69,8 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         event.returnValue = '';
     }, [hasChanged]));
 
-    const confirmationPending = useRef(false);
+    const visit = useMemo(() => ({key: visitKey, active: false, pending: false}), [visitKey]);
+    const previousVisit = useRef(visit);
     const [confirming, setConfirming] = useState(false);
     const [confirmationFailed, setConfirmationFailed] = useState(false);
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
@@ -86,36 +90,51 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         return hasChanged;
     });
 
+    useLayoutEffect(() => {
+        visit.active = true;
+        return () => { visit.active = false; };
+    }, [visit]);
+
+    useLayoutEffect(() => {
+        if (previousVisit.current === visit) return;
+        previousVisit.current = visit;
+        setConfirming(false);
+        setConfirmationFailed(false);
+        if (blocker.state === 'blocked') blocker.reset();
+    }, [blocker, visit]);
+
     const handleConfirm = async () => {
-        if (blocker.state !== 'blocked' || confirmationPending.current) {
+        if (!visit.active || blocker.state !== 'blocked' || visit.pending) {
             return;
         }
 
-        confirmationPending.current = true;
+        visit.pending = true;
         setConfirming(true);
         setConfirmationFailed(false);
         try {
             if (onConfirmNavigation != null) {
                 await onConfirmNavigation();
             }
-            blocker.proceed();
+            if (visit.active) blocker.proceed();
         } catch (error) {
-            console.error(error);
-            setConfirmationFailed(true);
+            if (visit.active) {
+                console.error(error);
+                setConfirmationFailed(true);
+            }
         } finally {
-            confirmationPending.current = false;
-            setConfirming(false);
+            visit.pending = false;
+            if (visit.active) setConfirming(false);
         }
     };
 
     const handleCancel = () => {
-        if (blocker.state === 'blocked' && !confirmationPending.current) {
+        if (visit.active && blocker.state === 'blocked' && !visit.pending) {
             setConfirmationFailed(false);
             blocker.reset();
         }
     };
 
-    const dialog = blocker.state === 'blocked' ? (
+    const dialog = blocker.state === 'blocked' && previousVisit.current === visit ? (
         <ConfirmDialog
             title={customTitle}
             onConfirm={handleConfirm}
