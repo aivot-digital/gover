@@ -48,8 +48,10 @@ import de.aivot.prosuna.backend.process.models.TaskViewEvent;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.prosuna.backend.process.services.*;
+import de.aivot.prosuna.backend.process.utils.ProcessInstanceAttachmentContentResponseUtils;
 import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.prosuna.backend.services.PdfService;
+import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,8 +59,10 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -105,6 +109,8 @@ public class CustomerProcessInstanceTaskViewController {
     private final ThemeService themeService;
     private final CustomerTaskIdentityService customerTaskIdentityService;
     private final IdentitySlotService identitySlotService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final StorageService storageService;
 
     public CustomerProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                      ProcessInstanceTaskService processInstanceTaskService,
@@ -123,7 +129,9 @@ public class CustomerProcessInstanceTaskViewController {
                                                      ThemeService themeService,
                                                      CustomerTaskIdentityService customerTaskIdentityService,
                                                      IdentitySlotService identitySlotService,
-                                                     ProcessTaskExecutionService execution) {
+                                                     ProcessTaskExecutionService execution,
+                                                     ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                                     StorageService storageService) {
         this.execution = execution;
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
@@ -142,6 +150,8 @@ public class CustomerProcessInstanceTaskViewController {
         this.themeService = themeService;
         this.customerTaskIdentityService = customerTaskIdentityService;
         this.identitySlotService = identitySlotService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.storageService = storageService;
     }
 
     @GetMapping("")
@@ -466,6 +476,53 @@ public class CustomerProcessInstanceTaskViewController {
         response.getOutputStream().write(pdfBytes);
     }
 
+    @GetMapping("attachments/{key}/file/")
+    @Operation(
+            summary = "Download a stored attachment of a customer task view",
+            description = "Streams a stored attachment that an upload field of the customer task view references. " +
+                    "Only PDF documents, PNG, JPEG, GIF and WebP images and plain text can be displayed inline. " +
+                    "All other files are always served as downloads with the media type `application/octet-stream`. " +
+                    "Requires the identities that the task view requires."
+    )
+    public ResponseEntity<InputStreamResource> downloadAttachment(
+            @Nonnull @PathVariable String procAccess,
+            @Nonnull @PathVariable String taskAccess,
+            @Nonnull @PathVariable UUID key,
+            @RequestParam(defaultValue = "true") boolean download,
+            @RequestParam(required = false) Map<String, List<String>> queryParameters,
+            @Nullable @CookieValue(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
+    ) throws ResponseException {
+        var taskViewData = fetchTaskViewData(procAccess, taskAccess);
+        var context = createCustomerContext(taskViewData, identitySessionId, queryParameters);
+        var customerView = resolveCustomerTaskView(taskViewData, context);
+        customerTaskIdentityService.requireAuthenticatedIdentity(
+                taskViewData.instance(),
+                taskViewData.node(),
+                customerView,
+                identitySessionId
+        );
+
+        // The access keys only grant the attachments that the task view shows, never other documents of the instance.
+        // A reference that the customer saved in an upload field grants nothing by itself.
+        if (!fileUploadMultipartInputService
+                .findReferencedAttachmentKeys(customerView.layout(), customerView.data())
+                .contains(key)
+                || !findAuthorizedAttachmentKeys(taskViewData, customerView).contains(key)) {
+            throw ResponseException.notFound();
+        }
+
+        var attachment = processInstanceAttachmentService
+                .retrieve(key)
+                .filter(candidate -> Objects.equals(candidate.getProcessInstanceId(), taskViewData.instance().getId()))
+                .filter(candidate -> candidate.getRemovedAt() == null)
+                .orElseThrow(ResponseException::notFound);
+
+        var inputStream = storageService
+                .getDocumentContent(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
+
+        return ProcessInstanceAttachmentContentResponseUtils.createContentResponse(attachment, download, inputStream);
+    }
+
     @PutMapping("")
     @Operation(
             summary = "Retrieve Process Instance Task View Layout",
@@ -562,6 +619,13 @@ public class CustomerProcessInstanceTaskViewController {
                     .readValue(rawInputs, AuthoredElementValues.class);
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
+
+        // Customers may keep references to attachments, but not add references to other attachments of the instance,
+        // which the download of the task view would grant.
+        if (!findAuthorizedAttachmentKeys(taskViewData, customerView)
+                .containsAll(fileUploadMultipartInputService.findReferencedAttachmentKeys(layout, inputs))) {
+            throw ResponseException.badRequest("Die übermittelten Angaben verweisen auf Anlagen, die in dieser Aufgabe nicht verfügbar sind.");
         }
 
         // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
@@ -688,6 +752,17 @@ public class CustomerProcessInstanceTaskViewController {
                 updatedView.layout(),
                 updatedView.data(),
                 updatedView.events()
+        );
+    }
+
+    @Nonnull
+    private Set<UUID> findAuthorizedAttachmentKeys(@Nonnull TaskViewData<?> taskViewData,
+                                                   @Nonnull ProcessNodeCustomerView customerView) throws ResponseException {
+        return fileUploadMultipartInputService.findAuthorizedAttachmentKeys(
+                customerView.layout(),
+                customerView.trustedData(),
+                taskViewData.instance().getId(),
+                taskViewData.task().getId()
         );
     }
 
