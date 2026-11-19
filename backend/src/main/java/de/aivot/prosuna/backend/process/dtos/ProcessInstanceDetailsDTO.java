@@ -23,6 +23,7 @@ public record ProcessInstanceDetailsDTO(
             @Nonnull ProcessTaskStatus status,
             @Nullable String statusOverride,
             @Nullable String assignedUserId,
+            @Nonnull List<ProcessDeputyDTO> assignedUserDeputies,
             @Nullable String assignedCustomerIdentityId,
             @Nullable Instant deadline
     ) {

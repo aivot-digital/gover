@@ -37,6 +37,7 @@ vi.mock('./process-task-view-page', () => ({
 
 function createItem(): ProcessTaskDetailsPageItem {
     return {
+        assignedUserDeputies: [],
         task: {
             ...new ProcessInstanceTaskApiService().initialize(),
             status: ProcessTaskStatus.AwaitingPayment,

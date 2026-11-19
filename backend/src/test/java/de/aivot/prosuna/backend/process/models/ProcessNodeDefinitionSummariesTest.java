@@ -378,6 +378,6 @@ class ProcessNodeDefinitionSummariesTest {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private String summary(ProcessNodeDefinition definition, Object config) throws Exception {
-        return definition.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(config, node, instance, task, null, actor, port));
+        return definition.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(config, node, instance, task, null, actor, null, port));
     }
 }

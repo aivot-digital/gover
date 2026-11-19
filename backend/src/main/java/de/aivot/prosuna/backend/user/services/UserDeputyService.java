@@ -5,7 +5,9 @@ import de.aivot.prosuna.backend.lib.models.Filter;
 import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.user.entities.UserDeputyEntity;
 import de.aivot.prosuna.backend.user.models.DeputyDateRange;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserDeputyRepository;
+import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Page;
@@ -13,15 +15,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class UserDeputyService implements EntityService<UserDeputyEntity, Integer> {
     private final UserDeputyRepository repository;
+    private final UserRepository users;
 
-    public UserDeputyService(UserDeputyRepository repository) {
+    public UserDeputyService(UserDeputyRepository repository, UserRepository users) {
         this.repository = repository;
+        this.users = users;
     }
 
     @Nonnull
@@ -90,6 +101,26 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     @Nonnull
     public List<String> findActivelyRepresentedUserIds(@Nonnull String deputyUserId) {
         return repository.findActivelyRepresentedUserIds(deputyUserId);
+    }
+
+    /**
+     * Users currently representing each of the given users, directly or through further deputies, sorted by name.
+     * Users without an active deputy are missing from the result.
+     */
+    @Nonnull
+    public Map<String, List<UserEntity>> findActiveDeputies(@Nonnull Collection<String> representedUserIds) {
+        if (representedUserIds.isEmpty()) return Map.of();
+        var relations = repository.findActiveDeputies(representedUserIds);
+        var deputiesById = users.findAllById(relations.stream()
+                        .map(UserDeputyRepository.ActiveDeputyProjection::getDeputyUserId).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(UserEntity::getId, Function.identity()));
+        var result = new HashMap<String, List<UserEntity>>();
+        for (var relation : relations) {
+            var deputy = deputiesById.get(relation.getDeputyUserId());
+            if (deputy != null) result.computeIfAbsent(relation.getOriginalUserId(), id -> new ArrayList<>()).add(deputy);
+        }
+        result.values().forEach(deputies -> deputies.sort(Comparator.comparing(UserEntity::getFullName, String.CASE_INSENSITIVE_ORDER)));
+        return result;
     }
 
     /**

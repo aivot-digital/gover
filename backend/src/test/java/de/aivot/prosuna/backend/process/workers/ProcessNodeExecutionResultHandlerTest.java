@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -1286,7 +1287,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 null,
-                attachmentService
+                attachmentService,
+                mock(UserDeputyService.class)
         );
     }
 

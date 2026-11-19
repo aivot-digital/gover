@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
@@ -89,7 +90,7 @@ class ProcessTaskDeadlineResultHandlerTest {
             assignments, mock(ProcessWorkRequestService.class), communication, mock(ProcessInstanceRepository.class), versions, tasks,
             edges, users, mail, mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class),
             processes, departments, null, nodes, new BusinessTime(ZoneId.of("Europe/Berlin"), clock),
-            mock(ProcessInstanceAttachmentService.class));
+            mock(ProcessInstanceAttachmentService.class), mock(UserDeputyService.class));
 
     @BeforeEach
     void setup() throws Exception {

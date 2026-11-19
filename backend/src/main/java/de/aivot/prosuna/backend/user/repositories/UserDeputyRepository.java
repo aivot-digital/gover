@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface UserDeputyRepository extends JpaRepository<UserDeputyEntity, Integer>, JpaSpecificationExecutor<UserDeputyEntity> {
@@ -35,4 +36,17 @@ public interface UserDeputyRepository extends JpaRepository<UserDeputyEntity, In
             WHERE deputy_user_id = :deputyUserId
             """, nativeQuery = true)
     List<String> findActivelyRepresentedUserIds(@Nonnull @Param("deputyUserId") String deputyUserId);
+
+    @Query(value = """
+            SELECT DISTINCT original_user_id AS "originalUserId", deputy_user_id AS "deputyUserId"
+            FROM v_user_is_recursively_deputy_for
+            WHERE original_user_id IN (:originalUserIds)
+            """, nativeQuery = true)
+    List<ActiveDeputyProjection> findActiveDeputies(@Nonnull @Param("originalUserIds") Collection<String> originalUserIds);
+
+    interface ActiveDeputyProjection {
+        String getOriginalUserId();
+
+        String getDeputyUserId();
+    }
 }

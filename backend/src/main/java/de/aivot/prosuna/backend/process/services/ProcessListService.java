@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.utils.CrockfordCaseNumber;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.dtos.ProcessDeputyDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessListDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessListFilter;
 import de.aivot.prosuna.backend.process.entities.*;
@@ -70,6 +71,10 @@ public class ProcessListService {
                                            @Nonnull ProcessListFilter filter) throws ResponseException {
         var rows = rows(userId, page, filter, true);
         var names = assigneeNames(rows.getContent());
+        // Deputies take over open tasks only; for ended tasks a current deputy would wrongly appear involved.
+        var deputies = this.deputies.findActiveDeputies(rows.getContent().stream()
+                .filter(row -> OPEN_TASK_STATUSES.contains(row.get("status", ProcessTaskStatus.class)))
+                .map(row -> row.get("assignedUserId", String.class)).filter(Objects::nonNull).collect(Collectors.toSet()));
         return rows.map(row -> {
             var definition = definitions.getProcessNodeDefinition(row.get("definitionKey", String.class), row.get("definitionVersion", Integer.class));
             var type = definition.map(value -> value.getName()).orElse(null);
@@ -79,6 +84,8 @@ public class ProcessListService {
                     row.get("caseNumber", String.class), fileNumbers(row), row.get("processId", Integer.class),
                     row.get("processVersion", Integer.class), row.get("processName", String.class), name, type, description,
                     row.get("assignedUserId", String.class), row.get("assignedUserId") == null ? null : names.get(row.get("assignedUserId")),
+                    OPEN_TASK_STATUSES.contains(row.get("status", ProcessTaskStatus.class))
+                            ? ProcessDeputyDTO.of(deputies, row.get("assignedUserId", String.class)) : List.of(),
                     assignedCustomerIdentityLabel(row),
                     row.get("status", ProcessTaskStatus.class), row.get("statusOverride", String.class),
                     row.get("started", Instant.class), row.get("deadline", Instant.class), row.get("finished", Instant.class),

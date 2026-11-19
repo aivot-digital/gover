@@ -188,6 +188,20 @@ public class ProcessListServiceTest {
     }
 
     @Test
+    void namesTheCurrentDeputiesOfTheAssigneeOnlyForOpenTasks() throws Exception {
+        sql("update process_instance_tasks set assigned_user_id = 'someone' where id = 13");
+        when(deputies.findActiveDeputies(Set.of("someone")))
+                .thenReturn(Map.of("someone", List.of(new UserEntity().setId("deputy").setFullName("Daniel Müller"))));
+
+        var rows = service.tasks("me", PageRequest.of(0, 12), filter("all", "someone", null)).getContent();
+
+        var open = rows.stream().filter(row -> row.id() == 12L).findFirst().orElseThrow();
+        assertEquals(List.of("Daniel Müller"), open.assignedUserDeputies().stream().map(deputy -> deputy.name()).toList());
+        var completed = rows.stream().filter(row -> row.id() == 13L).findFirst().orElseThrow();
+        assertTrue(completed.assignedUserDeputies().isEmpty());
+    }
+
+    @Test
     void runningInstancesAndStaffTasksRemainInActiveAndOpenViews() throws Exception {
         sql("update process_instance_tasks set status = 8 where id = 11");
         sql("update process_instance_tasks set status = 9 where id = 15");

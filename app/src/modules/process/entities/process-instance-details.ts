@@ -1,5 +1,6 @@
 import {type ProcessInstanceEntity} from './process-instance-entity';
 import {type ProcessTaskStatus} from '../enums/process-task-status';
+import {type ProcessDeputy} from './process-deputy';
 
 export interface ProcessInstanceDetails {
     instance: ProcessInstanceEntity;
@@ -14,6 +15,7 @@ export interface ProcessInstanceDetails {
         status: ProcessTaskStatus;
         statusOverride?: string | null;
         assignedUserId: string | null;
+        assignedUserDeputies: ProcessDeputy[];
         assignedCustomerIdentityId: string | null;
         deadline?: string | null;
     }[];
