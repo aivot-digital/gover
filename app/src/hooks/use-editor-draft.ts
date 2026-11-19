@@ -1,6 +1,7 @@
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useLayoutEffect, useMemo} from 'react';
 import {useAppSelector} from './use-app-selector';
 import {selectUser} from '../slices/user-slice';
+import {getEditorDraftReturnId, registerEditorDraftLoginHandler} from '../services/editor-draft-login';
 import {type EditorDraft, EditorDraftStorage} from '../services/editor-draft-storage';
 
 // Short enough that hardly any work is lost, long enough not to write on every keystroke.
@@ -21,6 +22,111 @@ interface EditorDraftProps<T> {
     enabled: boolean;
 }
 
+type DraftSnapshot<T> = Pick<EditorDraft<T>, 'base' | 'baseLockVersion' | 'mine'>;
+
+function createDraftSession<T>(userId: string, key: string) {
+    let pending: DraftSnapshot<T> | undefined;
+    let timer: number | undefined;
+    let lastOperation: Promise<unknown> | undefined;
+    let stored = false;
+    let leaving = false;
+
+    // Opening the database, taking ownership of a draft, and committing writes are asynchronous. Keep them in
+    // editor order even when a discard or a login redirect starts while a previous operation is still waiting.
+    function inOrder<R>(operation: () => Promise<R>): Promise<R> {
+        const current = lastOperation == null ? operation() : lastOperation.then(operation, operation);
+        lastOperation = current;
+        const finished = () => {
+            if (lastOperation === current) {
+                lastOperation = undefined;
+            }
+        };
+        current.then(finished, finished);
+        return current;
+    }
+
+    function cancelPending() {
+        window.clearTimeout(timer);
+        pending = undefined;
+    }
+
+    function flush() {
+        const snapshot = pending;
+        cancelPending();
+        if (snapshot != null) {
+            return inOrder(async () => {
+                await EditorDraftStorage.save({...snapshot, userId, key, savedAt: Date.now()});
+                stored = true;
+            });
+        }
+    }
+
+    function schedule(snapshot: DraftSnapshot<T>) {
+        if (leaving) {
+            return;
+        }
+        cancelPending();
+        pending = snapshot;
+        timer = window.setTimeout(() => flush()?.catch(console.error), DRAFT_SAVE_DELAY);
+    }
+
+    function remove() {
+        return inOrder(async () => {
+            try {
+                await EditorDraftStorage.remove(userId, key);
+                stored = false;
+            } catch (error) {
+                // A browser without working draft storage can still discard changes kept only in memory.
+                if (stored) {
+                    throw error;
+                }
+            }
+        });
+    }
+
+    return {
+        schedule,
+        cancelPending,
+        async clearDraft() {
+            if (!leaving) {
+                cancelPending();
+                await remove();
+            }
+        },
+        async discardForNavigation() {
+            const snapshot = pending;
+            leaving = true;
+            cancelPending();
+            try {
+                await remove();
+            } catch (error) {
+                leaving = false;
+                if (snapshot != null) {
+                    schedule(snapshot);
+                }
+                throw error;
+            }
+        },
+        load: () => inOrder(async () => {
+            if (leaving) {
+                return null;
+            }
+            const draft = await EditorDraftStorage.load<T>(userId, key, getEditorDraftReturnId());
+            stored = draft != null;
+            return draft;
+        }),
+        async reserve(returnId: string) {
+            await flush();
+            return inOrder(async () => !leaving && await EditorDraftStorage.reserve(userId, key, returnId));
+        },
+        async stopForLogout() {
+            leaving = true;
+            cancelPending();
+            await lastOperation?.catch(console.error);
+        },
+    };
+}
+
 /**
  * Keeps the unsaved changes of an editor in the browser while they exist and removes them once they are saved or
  * reverted, so they can be offered again after an expired session or a reload.
@@ -28,55 +134,49 @@ interface EditorDraftProps<T> {
 export function useEditorDraft<T>(props: EditorDraftProps<T>) {
     const {draftKey, base, baseLockVersion, edited, hasChanged, enabled} = props;
     const userId = useAppSelector(selectUser)?.id;
-    const timeoutRef = useRef<number | undefined>(undefined);
+    const session = useMemo(() => userId == null || draftKey == null ? null : createDraftSession<T>(userId, draftKey), [userId, draftKey]);
 
-    useEffect(() => {
-        if (!enabled || draftKey == null || userId == null || edited == null) {
+    useLayoutEffect(() => {
+        if (!enabled || session == null || edited == null) {
             return;
         }
 
         if (!hasChanged) {
-            EditorDraftStorage.remove(userId, draftKey).catch(console.error);
-            return;
+            session.clearDraft().catch(console.error);
+        } else {
+            // A null base represents the empty stored state of an object that has never been saved.
+            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited});
         }
+        return session.cancelPending;
+    }, [enabled, session, base, baseLockVersion, edited, hasChanged]);
 
-        timeoutRef.current = window.setTimeout(() => {
-            EditorDraftStorage
-                // `base` is only null for objects whose stored state is empty, which is then the state to merge with.
-                .save<T>({userId, key: draftKey, base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, savedAt: Date.now()})
-                .catch(console.error);
-        }, DRAFT_SAVE_DELAY);
-
-        return () => {
-            window.clearTimeout(timeoutRef.current);
-        };
-    }, [enabled, draftKey, userId, base, baseLockVersion, edited, hasChanged]);
+    useLayoutEffect(() => {
+        if (session != null) {
+            return registerEditorDraftLoginHandler(session.reserve, session.stopForLogout);
+        }
+    }, [session]);
 
     const loadDraft = useCallback(async (): Promise<EditorDraft<T> | null> => {
-        if (draftKey == null || userId == null) {
-            return null;
-        }
         try {
-            return await EditorDraftStorage.load<T>(userId, draftKey);
+            return await session?.load() ?? null;
         } catch (error) {
-            // Without the storage, e.g. in a private window, the editor works as before, just without drafts.
             console.error(error);
             return null;
         }
-    }, [draftKey, userId]);
+    }, [session]);
 
-    /** Removes the draft when the person discards the changes on purpose. */
-    const clearDraft = useCallback(async (): Promise<void> => {
-        window.clearTimeout(timeoutRef.current);
-        if (draftKey == null || userId == null) {
-            return;
-        }
-        await EditorDraftStorage.remove(userId, draftKey).catch(console.error);
-    }, [draftKey, userId]);
+    const clearDraft = useCallback(async () => {
+        await session?.clearDraft();
+    }, [session]);
+
+    const discardForNavigation = useCallback(async () => {
+        await session?.discardForNavigation();
+    }, [session]);
 
     return {
         loadDraft,
         clearDraft,
+        discardForNavigation,
         isReady: userId != null,
     };
 }

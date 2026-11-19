@@ -250,15 +250,12 @@ export function FormNodeEditorPage() {
     } = useChangeBlocker({
         original: normalizeUiDefinitionForStorage(storedFormLayout),
         edited: normalizeUiDefinitionForStorage(formLayout),
-        onConfirmNavigation: () => {
-            void clearDraft();
-        },
+        onConfirmNavigation: (): Promise<void> => discardForNavigation(),
     });
 
     const isSavingRef = useRef(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isDraftChecked, setIsDraftChecked] = useState(false);
-    const draftCheckedForNodeIdRef = useRef<number | null>(null);
     const {
         resolve: resolveMerge,
         dialog: mergeConflictDialog,
@@ -351,11 +348,15 @@ export function FormNodeEditorPage() {
     }, [dispatch, node, process, showIdentityDialog, testClaim]);
 
     useEffect(() => {
+        let cancelled = false;
         const nodeIdInt = parseInt(nodeId);
         dispatch(setCurrentStep(0));
         new ProcessNodeApiService()
             .retrieve(nodeIdInt)
             .then((node) => {
+                if (cancelled) {
+                    return;
+                }
                 let uiElement = getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey);
                 if (uiElement == null) {
                     uiElement = generateElementWithDefaultValues(ElementType.FormLayout);
@@ -368,8 +369,13 @@ export function FormNodeEditorPage() {
                 setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
             })
             .catch((err) => {
-                dispatch(setErrorMessage(createEditorLoadError(err)));
+                if (!cancelled) {
+                    dispatch(setErrorMessage(createEditorLoadError(err)));
+                }
             });
+        return () => {
+            cancelled = true;
+        };
     }, [dispatch, nodeId]);
 
     useEffect(() => {
@@ -381,6 +387,7 @@ export function FormNodeEditorPage() {
             return;
         }
 
+        let cancelled = false;
         Promise.all([
             new ProcessDefinitionApiService()
                 .retrieve(node.processId),
@@ -396,6 +403,9 @@ export function FormNodeEditorPage() {
                 }),
         ])
             .then(([process, version, testClaims]) => {
+                if (cancelled) {
+                    return;
+                }
                 setProcess(process);
                 setProcessVersion(version);
                 if (testClaims.content.length > 0) {
@@ -407,8 +417,13 @@ export function FormNodeEditorPage() {
                 }
             })
             .catch((err) => {
-                dispatch(setErrorMessage(createEditorLoadError(err)));
+                if (!cancelled) {
+                    dispatch(setErrorMessage(createEditorLoadError(err)));
+                }
             });
+        return () => {
+            cancelled = true;
+        };
     }, [node]);
 
     useEffect(() => {
@@ -562,9 +577,10 @@ export function FormNodeEditorPage() {
     const {
         loadDraft,
         clearDraft,
+        discardForNavigation,
         isReady: isDraftStorageReady,
     } = useEditorDraft<FormLayoutElement | null>({
-        draftKey: node == null ? null : `process-node/${node.id}/form-layout`,
+        draftKey: node?.id === Number(nodeId) ? `process-node/${node.id}/form-layout` : null,
         base: storedFormLayout,
         baseLockVersion: node?.lockVersion,
         edited: formLayout,
@@ -572,16 +588,18 @@ export function FormNodeEditorPage() {
         enabled: isDraftChecked && isEditable,
     });
 
-    // Offers the unsaved changes of an earlier visit once per node, e.g. after the session expired.
+    const draftNodeReady = node?.id === Number(nodeId) && processVersion != null &&
+        processVersion.processId === node.processId && processVersion.processVersion === node.processVersion;
+    // Revisit recovery only on a different editor load, not on a save that updates the same node.
     useEffect(() => {
-        if (node == null || processVersion == null || !isDraftStorageReady || draftCheckedForNodeIdRef.current === node.id) {
+        if (node == null || !draftNodeReady || !isDraftStorageReady) {
             return;
         }
-        draftCheckedForNodeIdRef.current = node.id;
+        const controller = new AbortController();
 
         (async () => {
             const draft = isEditable ? await loadDraft() : null;
-            if (draft == null) {
+            if (draft == null || controller.signal.aborted) {
                 return;
             }
 
@@ -591,18 +609,29 @@ export function FormNodeEditorPage() {
                 theirs: storedFormLayout,
                 spec: formLayoutMergeSpec,
                 mode: 'restore',
+                signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (node.lockVersion ?? null),
             });
+            if (controller.signal.aborted) {
+                return;
+            }
             if (outcome.status === 'apply') {
                 handlePatch(toEditableFormLayout(outcome.value));
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
-                await clearDraft();
+                await clearDraft().catch(() => {
+                    dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                });
             }
         })()
             .catch(console.error)
-            .finally(() => setIsDraftChecked(true));
-    }, [node, processVersion, isDraftStorageReady]);
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setIsDraftChecked(true);
+                }
+            });
+        return () => controller.abort();
+    }, [draftNodeReady, nodeId, isDraftStorageReady, isEditable, loadDraft]);
     const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (

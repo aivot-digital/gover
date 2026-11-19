@@ -1,105 +1,206 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-/** An in-memory IndexedDB with the few operations the storage uses, shared by all simulated tabs. */
+// This double is for sequential eligibility decisions. Transaction ordering and rollback are tested in Chrome.
 function createIndexedDb() {
-    const records = new Map<string, unknown>();
-    let keyPath: string[] = [];
-    const request = <R>(result: () => R) => {
-        const pending = {result: undefined as R | undefined, error: null, onsuccess: null as (() => void) | null, onerror: null};
-        setTimeout(() => {
-            pending.result = result();
-            pending.onsuccess?.();
-        });
-        return pending;
-    };
-    const keyOf = (value: unknown) => JSON.stringify(Array.isArray(value) ? value : keyPath.map((field) => (value as Record<string, unknown>)[field]));
-    const store = {
-        getAll: () => request(() => [...records.values()]),
-        put: (value: unknown) => request(() => void records.set(keyOf(value), structuredClone(value))),
-        delete: (key: unknown) => request(() => void records.delete(keyOf(key))),
-        clear: () => request(() => records.clear()),
-    };
+    const records = new Map<string, Record<string, unknown>>();
     const db = {
-        objectStoreNames: {contains: () => keyPath.length > 0},
-        deleteObjectStore: () => records.clear(),
-        createObjectStore: (_name: string, options: {keyPath: string[]}) => {
-            keyPath = options.keyPath;
+        objectStoreNames: {contains: () => true},
+        transaction: () => {
+            const transaction = {
+                oncomplete: null as (() => void) | null,
+                objectStore: () => store,
+            };
+            let pendingRequests = 0;
+            const request = <R>(read: () => R) => {
+                const result = {result: undefined as R | undefined, onsuccess: null as (() => void) | null};
+                pendingRequests++;
+                queueMicrotask(() => {
+                    result.result = read();
+                    result.onsuccess?.();
+                    if (--pendingRequests === 0) transaction.oncomplete?.();
+                });
+                return result;
+            };
+            const store = {
+                getAll: (range?: {lower: string[]}) => request(() => [...records.values()].filter((row) =>
+                    range == null || (row.userId === range.lower[0] && row.key === range.lower[1]))),
+                get: (key: string[]) => request(() => structuredClone(records.get(JSON.stringify(key)))),
+                put: (row: Record<string, unknown>) => request(() => {
+                    records.set(JSON.stringify([row.userId, row.key, row.tabId]), structuredClone(row));
+                }),
+                delete: (key: string[]) => request(() => records.delete(JSON.stringify(key))),
+                clear: () => request(() => records.clear()),
+            };
+            return transaction;
         },
-        transaction: () => ({objectStore: () => store}),
     };
-
     return {
         open: () => {
-            const opening = {result: db, error: null, onupgradeneeded: null as (() => void) | null, onsuccess: null as (() => void) | null, onerror: null};
-            setTimeout(() => {
-                // Like on the first open in a browser, the store is created before the database is handed out.
-                if (keyPath.length === 0) {
-                    opening.onupgradeneeded?.();
-                }
-                opening.onsuccess?.();
-            });
-            return opening;
+            const request = {result: db, onsuccess: null as (() => void) | null};
+            queueMicrotask(() => request.onsuccess?.());
+            return request;
         },
     };
 }
 
-/** Holds a lock per open tab like navigator.locks; a tab is closed by releasing its lock. */
-function createLockManager() {
-    const held: string[] = [];
+function createLocks() {
+    const held = new Set<string>();
     return {
         held,
-        request: (name: string) => {
-            held.push(name);
-            return new Promise(() => undefined);
+        request: async (name: string, options: LockOptions, run: (lock: {name: string} | null) => unknown) => {
+            expect(options.ifAvailable).toBe(true);
+            if (held.has(name)) return run(null);
+            held.add(name);
+            try {
+                return await run({name});
+            } finally {
+                held.delete(name);
+            }
         },
-        query: async () => ({held: held.map((name) => ({name}))}),
     };
 }
 
-/** Each import is a new page with its own tab ID, like a second tab. */
 async function openTab() {
     vi.resetModules();
     return (await import('./editor-draft-storage')).EditorDraftStorage;
 }
 
-const draft = (mine: string) => ({userId: 'user-1', key: 'process-node/1/configuration', base: 'Alt', baseLockVersion: 1, mine, savedAt: Date.now()});
+const user = 'user-1';
+const key = 'process-node/1/configuration';
+const draft = (mine: string) => ({userId: user, key, base: 'Alt', baseLockVersion: 1, mine, savedAt: Date.now()});
 
 describe('EditorDraftStorage', () => {
-    let locks: ReturnType<typeof createLockManager>;
-
+    let locks: ReturnType<typeof createLocks>;
     beforeEach(() => {
-        locks = createLockManager();
+        locks = createLocks();
         vi.stubGlobal('indexedDB', createIndexedDb());
+        vi.stubGlobal('IDBKeyRange', {bound: (lower: string[], upper: unknown[]) => ({lower, upper})});
         vi.stubGlobal('navigator', {locks});
     });
+    afterEach(() => vi.unstubAllGlobals());
 
-    afterEach(() => {
-        vi.unstubAllGlobals();
-    });
-
-    it('keeps the drafts of two open tabs editing the same object apart', async () => {
+    it('keeps open tabs independent when either one discards its own changes', async () => {
         const first = await openTab();
         const second = await openTab();
-
         await first.save(draft('Erster Tab'));
+        expect(await second.load(user, key)).toBeNull();
         await second.save(draft('Zweiter Tab'));
-        await second.remove('user-1', 'process-node/1/configuration');
-
-        expect((await first.load<string>('user-1', 'process-node/1/configuration'))?.mine).toEqual('Erster Tab');
-        expect(await second.load('user-1', 'process-node/1/configuration')).toBeNull();
+        await second.remove(user, key);
+        expect((await first.load(user, key))?.mine).toBe('Erster Tab');
+        expect(await second.load(user, key)).toBeNull();
     });
 
-    it('takes over the draft of a closed tab, e.g. after the session expired and the page was reloaded', async () => {
-        const closed = await openTab();
-        await closed.save(draft('Ungespeichert'));
-        locks.held.splice(0, 1);
+    it('recovers a closed tab only once and only for the matching account and object', async () => {
+        const old = await openTab();
+        await old.save(draft('Ungespeichert'));
+        locks.held.clear(); // The old document was unloaded.
+        const first = await openTab();
+        expect(await first.load('someone-else', key)).toBeNull();
+        expect(await first.load(user, 'different-object')).toBeNull();
+        expect((await first.load(user, key))?.mine).toBe('Ungespeichert');
+        await first.remove(user, key);
+        expect(await (await openTab()).load(user, key)).toBeNull();
+    });
 
-        const reloaded = await openTab();
-        const recovered = await reloaded.load<string>('user-1', 'process-node/1/configuration');
+    it('protects a writer whose browser did not grant a lock, even from a healthy reader', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.stubGlobal('navigator', {locks: {request: () => Promise.reject(new Error('Lock denied'))}});
+        const unprotected = await openTab();
+        await unprotected.save(draft('Nur lokal'));
+        expect((await unprotected.load(user, key))?.mine).toBe('Nur lokal');
+        expect(await unprotected.reserve(user, key, 'return')).toBe(false);
+        vi.stubGlobal('navigator', {locks});
+        expect(await (await openTab()).load(user, key)).toBeNull();
+    });
 
-        expect(recovered?.mine).toEqual('Ungespeichert');
-        // The draft now belongs to the new tab, so saving there removes it and it is not offered again.
-        await reloaded.remove('user-1', 'process-node/1/configuration');
-        expect(await (await openTab()).load('user-1', 'process-node/1/configuration')).toBeNull();
+    it('only reads its own edits when Web Locks are unavailable', async () => {
+        const other = await openTab();
+        await other.save(draft('Anderer Tab'));
+        locks.held.clear();
+        vi.stubGlobal('navigator', {});
+        const local = await openTab();
+        expect(await local.load(user, key)).toBeNull();
+        await local.save(draft('Eigene Änderung'));
+        expect((await local.load(user, key))?.mine).toBe('Eigene Änderung');
+        await local.remove(user, key);
+        expect(await local.load(user, key)).toBeNull();
+    });
+
+    it('gives two overlapping loads in the same document the same adopted draft', async () => {
+        const old = await openTab();
+        await old.save(draft('Ungespeichert'));
+        locks.held.clear();
+        const fresh = await openTab();
+        const [first, second] = await Promise.all([fresh.load(user, key), fresh.load(user, key)]);
+        expect(first?.mine).toBe('Ungespeichert');
+        expect(second).toEqual(first);
+    });
+
+    it('checks each return ID when two loads overlap in the same document', async () => {
+        const old = await openTab();
+        await old.save(draft('Zur Anmeldung'));
+        await old.reserve(user, key, 'return');
+        locks.held.clear();
+        const fresh = await openTab();
+        const [ordinary, returning] = await Promise.all([fresh.load(user, key), fresh.load(user, key, 'return')]);
+        expect(ordinary).toBeNull();
+        expect(returning?.mine).toBe('Zur Anmeldung');
+    });
+
+    it('clears reserved drafts of all accounts on explicit logout', async () => {
+        const old = await openTab();
+        await old.save(draft('Vor der Abmeldung'));
+        await old.save({...draft('Weiteres Konto'), userId: 'other'});
+        expect(await old.reserve(user, key, 'return')).toBe(true);
+        await old.clear();
+        locks.held.clear();
+        const fresh = await openTab();
+        expect(await fresh.load(user, key, 'return')).toBeNull();
+        expect(await fresh.load('other', key)).toBeNull();
+    });
+
+    it('prioritizes the matching return over a newer abandoned draft', async () => {
+        const old = await openTab();
+        await old.save({...draft('Zur Anmeldung'), savedAt: Date.now() - 60_000});
+        await old.reserve(user, key, 'return');
+        const later = await openTab();
+        await later.save(draft('Neuer, aber anderer Tab'));
+        locks.held.clear();
+        const returning = await openTab();
+        expect((await returning.load(user, key, 'return'))?.mine).toBe('Zur Anmeldung');
+        expect((await (await openTab()).load(user, key))?.mine).toBe('Neuer, aber anderer Tab');
+    });
+
+    it('returns the reserved draft to the matching login and keeps another tab independent', async () => {
+        const old = await openTab();
+        await old.save(draft('Vor der Anmeldung'));
+        expect(await old.reserve(user, key, 'return')).toBe(true);
+        locks.held.clear();
+        const fresh = await openTab();
+        expect(await fresh.load(user, key)).toBeNull();
+        expect(await fresh.load(user, key, 'other-login')).toBeNull();
+        expect(await fresh.load('other-user', key, 'return')).toBeNull();
+        expect(await fresh.load(user, 'other-object', 'return')).toBeNull();
+        await fresh.save(draft('Zweiter Tab'));
+        const returning = await openTab();
+        expect((await returning.load(user, key, 'return'))?.mine).toBe('Vor der Anmeldung');
+        expect((await fresh.load(user, key))?.mine).toBe('Zweiter Tab');
+        expect(await (await openTab()).load(user, key, 'return')).toBeNull();
+    });
+
+    it('makes an abandoned reservation available after ten minutes and expires old backups', async () => {
+        const now = Date.now();
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+        const old = await openTab();
+        await old.save(draft('Reserviert'));
+        await old.reserve(user, key, 'abandoned');
+        await old.save({...draft('Abgelaufen'), key: 'expired', savedAt: now - 15 * 86_400_000});
+        locks.held.clear();
+        const next = await openTab();
+        clock.mockReturnValue(now + 599_999);
+        expect(await next.load(user, key)).toBeNull();
+        clock.mockReturnValue(now + 600_001);
+        expect((await next.load(user, key))?.mine).toBe('Reserviert');
+        expect(await next.load(user, 'expired')).toBeNull();
     });
 });

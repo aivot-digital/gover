@@ -1,5 +1,6 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
-import {Blocker, useBeforeUnload, useBlocker} from 'react-router-dom';
+import {useCallback, useMemo, useRef, useState} from 'react';
+import Alert from '@mui/material/Alert';
+import {useBeforeUnload, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
 import {AuthService} from '../services/auth-service';
@@ -12,7 +13,7 @@ interface ChangeBlockerProps<T> {
     customConfirmButtonText?: string;
     useDeepEquals?: boolean;
     isActive?: boolean;
-    onConfirmNavigation?: () => void;
+    onConfirmNavigation?: () => void | Promise<void>;
     shouldAllowNavigation?: (navigation: {
         currentLocation: {
             pathname: string;
@@ -65,10 +66,9 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         event.returnValue = '';
     }, [hasChanged]));
 
-    const [pendingBlocker, setPendingBlocker] = useState<Blocker | null>(null);
-
-    const [showDialog, setShowDialog] = useState(false);
-
+    const confirmationPending = useRef(false);
+    const [confirming, setConfirming] = useState(false);
+    const [confirmationFailed, setConfirmationFailed] = useState(false);
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
         if (!AuthService.isAuthenticated()) {
             return false;
@@ -86,49 +86,52 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         return hasChanged;
     });
 
-    useEffect(() => {
-        if (blocker.state === 'blocked') {
-            setShowDialog(true);
-            setPendingBlocker(blocker);
-        }
-    }, [blocker]);
-
-    const handleConfirm = useCallback(() => {
-        onConfirmNavigation?.();
-
-        if (pendingBlocker && pendingBlocker.proceed) {
-            pendingBlocker.proceed();
-        }
-        setShowDialog(false);
-        setPendingBlocker(null);
-    }, [pendingBlocker, onConfirmNavigation]);
-
-    const handleCancel = useCallback(() => {
-        if (pendingBlocker != null && pendingBlocker.reset != null) {
-            pendingBlocker.reset();
+    const handleConfirm = async () => {
+        if (blocker.state !== 'blocked' || confirmationPending.current) {
+            return;
         }
 
-        setShowDialog(false);
-        setPendingBlocker(null);
-    }, [pendingBlocker]);
-
-    const dialog = useMemo(() => {
-        if (!showDialog) {
-            return null;
+        confirmationPending.current = true;
+        setConfirming(true);
+        setConfirmationFailed(false);
+        try {
+            if (onConfirmNavigation != null) {
+                await onConfirmNavigation();
+            }
+            blocker.proceed();
+        } catch (error) {
+            console.error(error);
+            setConfirmationFailed(true);
+        } finally {
+            confirmationPending.current = false;
+            setConfirming(false);
         }
+    };
 
-        return (
-            <ConfirmDialog
-                title={customTitle}
-                onConfirm={handleConfirm}
-                onCancel={handleCancel}
-                confirmButtonText={customConfirmButtonText}
-                confirmButtonColor="error"
-            >
-                {customMessage}
-            </ConfirmDialog>
-        );
-    }, [showDialog, customTitle, customMessage, handleConfirm, handleCancel]);
+    const handleCancel = () => {
+        if (blocker.state === 'blocked' && !confirmationPending.current) {
+            setConfirmationFailed(false);
+            blocker.reset();
+        }
+    };
+
+    const dialog = blocker.state === 'blocked' ? (
+        <ConfirmDialog
+            title={customTitle}
+            onConfirm={handleConfirm}
+            onCancel={handleCancel}
+            busy={confirming}
+            confirmButtonText={customConfirmButtonText}
+            confirmButtonColor="error"
+        >
+            {customMessage}
+            {confirmationFailed && (
+                <Alert severity="error" sx={{mt: 2}}>
+                    Die Änderungen konnten nicht verworfen werden. Versuchen Sie es erneut.
+                </Alert>
+            )}
+        </ConfirmDialog>
+    ) : null;
 
     return {
         hasChanged,

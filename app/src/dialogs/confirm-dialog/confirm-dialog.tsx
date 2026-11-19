@@ -10,6 +10,7 @@ interface ConfirmDialogProps {
     onCancel: () => void;
     onConfirm?: () => void;
     confirmDisabled?: boolean;
+    busy?: boolean;
     confirmationText?: string;
     inputLabel?: string;
     inputPlaceholder?: string;
@@ -26,6 +27,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
 
     const requiresInput = !!props.confirmationText;
     const isConfirmDisabled = (requiresInput ? inputValue !== props.confirmationText : false) || props.confirmDisabled === true;
+    const onClose = props.busy ? undefined : props.onCancel;
 
     const mismatch = useMemo(() => {
         if (!requiresInput) {
@@ -40,11 +42,11 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
     return (
         <Dialog
             open={props.onConfirm != null}
-            onClose={props.onCancel}
+            onClose={onClose}
             fullWidth={true}
             maxWidth={props.width || 'sm'}
         >
-            <DialogTitleWithClose onClose={props.onCancel}>
+            <DialogTitleWithClose onClose={onClose}>
                 {props.title}
             </DialogTitleWithClose>
 
@@ -115,6 +117,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                     variant="contained"
                     color={props.isDestructive ? 'error' : (props.confirmButtonColor ?? 'primary')}
                     disabled={isConfirmDisabled}
+                    loading={props.busy}
                     startIcon={props.isDestructive ? <Delete/> : undefined}
                 >
                     {props.confirmButtonText || (props.isDestructive ? 'Löschen' : 'Bestätigen')}
@@ -124,6 +127,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                     !props.hideCancelButton &&
                     <Button
                         onClick={props.onCancel}
+                        disabled={props.busy}
                         variant="outlined"
                     >
                         {props.cancelButtonText ?? 'Abbrechen'}

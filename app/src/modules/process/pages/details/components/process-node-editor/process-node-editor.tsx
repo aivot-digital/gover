@@ -110,7 +110,6 @@ export function ProcessNodeEditor(): ReactNode {
     const isSavingRef = useRef(false);
     // Raised with every load, so the draft is checked again for the freshly loaded node.
     const [nodeLoadCount, setNodeLoadCount] = useState(0);
-    const draftCheckedForLoadRef = useRef(0);
     const [isDraftChecked, setIsDraftChecked] = useState(false);
     const {
         resolve: resolveMerge,
@@ -142,9 +141,9 @@ export function ProcessNodeEditor(): ReactNode {
         //customMessage: 'Die geöffnete Prozesselementkonfiguration (links) hat ungespeicherte Änderungen',
         original: originalNode,
         edited: editedNode,
-        onConfirmNavigation: () => {
+        onConfirmNavigation: async () => {
+            await discardForNavigation();
             setEditedNode(originalNode);
-            void clearDraft();
         },
         // Tab changes keep the same editing session. Do not persist a bypass in history state: revisiting that
         // entry from a different node would otherwise discard its unsaved changes without confirmation.
@@ -273,9 +272,10 @@ export function ProcessNodeEditor(): ReactNode {
     const {
         loadDraft,
         clearDraft,
+        discardForNavigation,
         isReady: isDraftStorageReady,
     } = useEditorDraft<ProcessNodeEntity>({
-        draftKey: originalNode == null ? null : `process-node/${originalNode.id}/configuration`,
+        draftKey: originalNode?.id === nodeId ? `process-node/${nodeId}/configuration` : null,
         base: originalNode,
         baseLockVersion: originalNode?.lockVersion,
         edited: editedNode,
@@ -283,16 +283,17 @@ export function ProcessNodeEditor(): ReactNode {
         enabled: isDraftChecked && editable,
     });
 
+    const draftNodeReady = originalNode?.id === nodeId && layout != null;
     // Offers the unsaved changes of an earlier visit after each load, e.g. after the session expired.
     useEffect(() => {
-        if (originalNode == null || layout == null || !isDraftStorageReady || nodeLoadCount === 0 || draftCheckedForLoadRef.current === nodeLoadCount) {
+        if (originalNode == null || !draftNodeReady || !isDraftStorageReady || nodeLoadCount === 0) {
             return;
         }
-        draftCheckedForLoadRef.current = nodeLoadCount;
+        const controller = new AbortController();
 
         (async () => {
             const draft = editable ? await loadDraft() : null;
-            if (draft == null) {
+            if (draft == null || controller.signal.aborted) {
                 return;
             }
 
@@ -302,18 +303,29 @@ export function ProcessNodeEditor(): ReactNode {
                 theirs: originalNode,
                 spec: mergeSpec,
                 mode: 'restore',
+                signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (originalNode.lockVersion ?? null),
             });
+            if (controller.signal.aborted) {
+                return;
+            }
             if (outcome.status === 'apply') {
                 setEditedNode(outcome.value);
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
-                await clearDraft();
+                await clearDraft().catch(() => {
+                    dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                });
             }
         })()
             .catch(console.error)
-            .finally(() => setIsDraftChecked(true));
-    }, [originalNode, layout, isDraftStorageReady, nodeLoadCount, editable]);
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setIsDraftChecked(true);
+                }
+            });
+        return () => controller.abort();
+    }, [draftNodeReady, isDraftStorageReady, nodeLoadCount, editable, loadDraft]);
 
     const {
         Icon: TypeIcon,

@@ -1,7 +1,11 @@
 import {createTheme as createMuiTheme, ThemeProvider} from '@mui/material';
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {createMemoryRouter, Link, RouterProvider} from 'react-router-dom';
+import {AuthService} from '../../../services/auth-service';
+import {type EditorDraft, EditorDraftStorage} from '../../../services/editor-draft-storage';
+import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {FormNodeEditorPage} from './form-node-editor-page';
 import {ProcessNodeApiService} from '../../process/services/process-node-api-service';
 import {ProcessDefinitionApiService} from '../../process/services/process-definition-api-service';
@@ -22,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
     downloadBlobFile: vi.fn(),
     hasChanged: false,
+    withRouter: false,
     replaceAuthoredElementValues: vi.fn(),
     observeScrollContainer: vi.fn(),
     submitValues: {} as Record<string, unknown>,
@@ -35,12 +40,15 @@ vi.mock('../../permissions/hooks/use-permissions', async (importOriginal) => ({
     useHasProcessPermission: () => mocks.canUpdateProcess,
 }));
 
-vi.mock('react-router-dom', async (importOriginal) => ({
-    ...await importOriginal<typeof import('react-router-dom')>(),
-    useNavigate: () => vi.fn(),
-    useParams: () => ({nodeId: '1'}),
-    useSearchParams: () => [new URLSearchParams()],
-}));
+vi.mock('react-router-dom', async (importOriginal) => {
+    const router = await importOriginal<typeof import('react-router-dom')>();
+    return {
+        ...router,
+        useNavigate: () => mocks.withRouter ? router.useNavigate() : vi.fn(),
+        useParams: () => ({nodeId: '1'}),
+        useSearchParams: () => [new URLSearchParams()],
+    };
+});
 
 vi.mock('../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => mocks.dispatch,
@@ -52,13 +60,13 @@ vi.mock('../../../hooks/use-app-selector', () => ({
             devToolsTab: mocks.devToolsTab,
             disableAutoScrollForSteps: false,
             disableElementContextMenu: false,
-            hideComponentTree: true,
+            hideComponentTree: !mocks.withRouter,
         },
         app: {
             showDialog: undefined,
         },
         user: {
-            user: undefined,
+            user: mocks.withRouter ? {id: 'staff-user'} : undefined,
         },
     }),
 }));
@@ -72,12 +80,14 @@ vi.mock('../../../hooks/use-api', () => ({
     useApi: () => mocks.api,
 }));
 
-vi.mock('../../../hooks/use-change-blocker-2', () => ({
-    useChangeBlocker: () => ({
-        dialog: null,
-        hasChanged: mocks.hasChanged,
-    }),
-}));
+vi.mock('../../../hooks/use-change-blocker-2', async (importOriginal) => {
+    const {useChangeBlocker} = await importOriginal<typeof import('../../../hooks/use-change-blocker-2')>();
+    return {
+        useChangeBlocker: (props: Parameters<typeof useChangeBlocker>[0]) => mocks.withRouter
+            ? useChangeBlocker(props)
+            : {dialog: null, hasChanged: mocks.hasChanged},
+    };
+});
 
 vi.mock('../../../hooks/use-element-editor-navigation', () => ({
     useElementEditorNavigation: () => ({
@@ -186,7 +196,12 @@ vi.mock('../../../components/submitted/submitted', () => ({
     ),
 }));
 
-vi.mock('../../../components/element-tree-2/element-tree', () => ({ElementTree: () => null}));
+vi.mock('../../../components/element-tree-2/element-tree', () => ({
+    ElementTree: ({value, onChange}: {value: FormLayoutElement; onChange: (next: FormLayoutElement) => void}) => (
+        <input aria-label="Formulartitel" value={value.publicTitle ?? ''}
+               onChange={(event) => onChange({...value, publicTitle: event.target.value})}/>
+    ),
+}));
 vi.mock('../../../components/developer-tools/developer-tools', () => ({
     DeveloperTools: ({onElementDataChange}: {
         onElementDataChange: (elementData: Record<string, unknown>) => void;
@@ -228,6 +243,7 @@ describe('FormNodeEditorPage error handling', () => {
         mocks.dispatch.mockReset();
         mocks.downloadBlobFile.mockReset();
         mocks.hasChanged = false;
+        mocks.withRouter = false;
         mocks.replaceAuthoredElementValues.mockReset().mockResolvedValue(undefined);
         mocks.submitValues = {};
         mocks.uploadTextFile.mockReset().mockResolvedValue('<xdf/>');
@@ -266,6 +282,58 @@ describe('FormNodeEditorPage error handling', () => {
             startedProcessAccessKey: 'started-process',
         });
         vi.spyOn(XdfApiService.prototype, 'xdfTransform').mockResolvedValue(createFormLayout());
+    });
+
+    it.each([false, true])('discards the edited form before returning to the process (debounce elapsed: %s)', async (saved) => {
+        const {load, remove, save} = await renderDraftEditor();
+        const marker = `Discarded form title ${crypto.randomUUID()}`;
+        fireEvent.change(screen.getByRole('textbox', {name: 'Formulartitel'}), {target: {value: marker}});
+        if (saved) {
+            await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({
+                mine: expect.objectContaining({publicTitle: marker}),
+            })), {timeout: 3000});
+        } else {
+            expect(save).not.toHaveBeenCalled();
+        }
+
+        fireEvent.click(screen.getByRole('button', {name: 'Zurück zum Prozess'}));
+        const commit = Promise.withResolvers<void>();
+        const deleteRecord = remove.getMockImplementation()!;
+        remove.mockImplementationOnce(async (...args) => {
+            await commit.promise;
+            await deleteRecord(...args);
+        });
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        expect(screen.getByRole('button', {name: 'Änderungen verwerfen'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Abbrechen'})).toBeDisabled();
+        expect(screen.queryByRole('link', {name: 'Formular öffnen'})).not.toBeInTheDocument();
+
+        await act(async () => commit.resolve());
+        fireEvent.click(await screen.findByRole('link', {name: 'Formular öffnen'}));
+        await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+        expect(await load.mock.results[1].value).toBeNull();
+        expect(await screen.findByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Testformular');
+        expect(screen.queryByRole('button', {name: 'Änderungen wiederherstellen'})).not.toBeInTheDocument();
+        if (!saved) {
+            expect(save).not.toHaveBeenCalled();
+        }
+    });
+
+    it('keeps the edited form open after a failed discard and lets the user retry', async () => {
+        const {remove, save} = await renderDraftEditor();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        fireEvent.change(screen.getByRole('textbox', {name: 'Formulartitel'}), {target: {value: 'Lokale Änderung'}});
+        await waitFor(() => expect(save).toHaveBeenCalled(), {timeout: 3000});
+        remove.mockRejectedValueOnce(new DOMException('Transaction aborted', 'AbortError'));
+
+        fireEvent.click(screen.getByRole('button', {name: 'Zurück zum Prozess'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('Die Änderungen konnten nicht verworfen werden.');
+        fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Lokale Änderung');
+        fireEvent.click(screen.getByRole('button', {name: 'Zurück zum Prozess'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        expect(await screen.findByRole('link', {name: 'Formular öffnen'})).toBeInTheDocument();
     });
 
     it.each(['light', 'dark'] as const)('uses a neutral content surface in %s mode even with tinted surrounding surfaces', async mode => {
@@ -525,6 +593,26 @@ function expectDispatchedAction(type: string, payload: unknown): void {
         payload,
         type,
     }));
+}
+
+async function renderDraftEditor() {
+    mocks.withRouter = true;
+    vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
+    let stored: EditorDraft<unknown> | null = null;
+    const load = vi.spyOn(EditorDraftStorage, 'load').mockImplementation(async <T,>() => stored as EditorDraft<T> | null);
+    const save = vi.spyOn(EditorDraftStorage, 'save').mockImplementation(async (draft) => {
+        stored = {...draft, tabId: 'editor-tab'};
+    });
+    const remove = vi.spyOn(EditorDraftStorage, 'remove').mockImplementation(async () => {
+        stored = null;
+    });
+    const router = createMemoryRouter([
+        {path: '/form', element: <FormNodeEditorPage/>},
+        {path: '/processes/10/versions/1/nodes/1', element: <Link to="/form">Formular öffnen</Link>},
+    ], {initialEntries: ['/form']});
+    render(<RouterProvider router={router}/>);
+    await waitFor(() => expect(remove).toHaveBeenCalled());
+    return {load, save, remove};
 }
 
 function createFormLayout(children: any[] = []): any {

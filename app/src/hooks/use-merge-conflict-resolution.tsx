@@ -22,6 +22,8 @@ interface MergeRequest<T> {
     theirs: T;
     spec: MergeSpec<T>;
     mode: MergeConflictDialogMode;
+    /** A recovery decision expires when the editor loads a different snapshot. */
+    signal?: AbortSignal;
     /** Whether a newer state was stored since the changes were started, known from the lock version. */
     storedStateChanged: boolean;
 }
@@ -48,7 +50,7 @@ export function useMergeConflictResolution() {
     const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
     const resolve = useCallback(async <T, >(request: MergeRequest<T>): Promise<MergeOutcome<T>> => {
-        const {base, mine, theirs, spec, mode, storedStateChanged} = request;
+        const {base, mine, theirs, spec, mode, storedStateChanged, signal} = request;
         let choices: MergeChoices = {};
         let asked = false;
 
@@ -63,7 +65,18 @@ export function useMergeConflictResolution() {
                 return {status: 'apply', value: result.merged};
             }
 
-            const answer = await new Promise<DialogAnswer>((answer) => {
+            const answer = await new Promise<DialogAnswer>((finish) => {
+                const cancel = () => answerDialog({status: 'cancel'});
+                const answerDialog = (value: DialogAnswer) => {
+                    signal?.removeEventListener('abort', cancel);
+                    setDialogState((current) => current?.answer === answerDialog ? null : current);
+                    finish(value);
+                };
+                if (signal?.aborted) {
+                    cancel();
+                    return;
+                }
+                signal?.addEventListener('abort', cancel);
                 setDialogState({
                     mode,
                     storedStateChanged,
@@ -78,10 +91,9 @@ export function useMergeConflictResolution() {
                             theirs: conflict.theirs,
                         };
                     }),
-                    answer,
+                    answer: answerDialog,
                 });
             });
-            setDialogState(null);
 
             if (answer.status !== 'apply') {
                 return answer;

@@ -6,6 +6,7 @@
   "scripts": {
     "generate:permissions": "node scripts/generate-permission-enum.mjs",
     "test": "vitest run",
+    "test:editor-drafts:browser": "node --test scripts/editor-draft-storage.browser.spec.mjs",
     "test:assets": "node --test scripts/compress-assets.spec.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

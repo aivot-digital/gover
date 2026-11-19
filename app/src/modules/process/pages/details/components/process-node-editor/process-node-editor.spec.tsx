@@ -27,7 +27,7 @@ vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () =
 vi.mock('../../../../../../providers/confirm-provider', () => ({useConfirm: () => testState.confirm}));
 vi.mock('./components/process-node-editor-menu', () => ({ProcessNodeEditorMenu: () => null}));
 vi.mock('../../../../../../hooks/use-editor-draft', () => ({
-    useEditorDraft: () => ({loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, isReady: true}),
+    useEditorDraft: () => ({loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, discardForNavigation: testState.clearDraft, isReady: true}),
 }));
 vi.mock('../../../../components/process-node-provider-details', () => ({
     getProcessNodeProviderIcon: () => () => null,
@@ -435,6 +435,29 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
 
         await waitFor(() => expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Entwurf'));
         expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeEnabled();
+        expect(testState.clearDraft).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])('expires recovery when the route changes (dialog already open: %s)', async (shown) => {
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockImplementation(async (id) => createNode(id));
+        const node = createNode(1);
+        const oldDraft = {base: node, baseLockVersion: null, mine: {...node, name: 'Entwurf aus Element 1'}};
+        const read = Promise.withResolvers<typeof oldDraft>();
+        testState.loadDraft.mockReturnValueOnce(read.promise);
+        const router = renderEditor();
+        await waitFor(() => expect(testState.loadDraft).toHaveBeenCalledTimes(1));
+        if (shown) {
+            await act(async () => read.resolve(oldDraft));
+            expect(await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'})).toBeInTheDocument();
+        }
+
+        await act(async () => { await router.navigate('/processes/10/versions/1/nodes/2/tabs/configuration'); });
+        await waitFor(() => expect(testState.loadDraft).toHaveBeenCalledTimes(2));
+        if (!shown) {
+            await act(async () => read.resolve(oldDraft));
+        }
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 2');
         expect(testState.clearDraft).not.toHaveBeenCalled();
     });
 
