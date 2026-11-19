@@ -33,6 +33,7 @@ import {
     pendingSaveCanChangeStored,
     prepareEditorDraftRecovery,
     persistEditorSave,
+    signInToSaveEditorMessage,
     rebaseAfterSave,
 } from '../../../../../../utils/editor-save-rebase';
 import {editorValuesEqual} from '../../../../../../utils/variable-reference-merge';
@@ -309,6 +310,7 @@ export function ProcessNodeEditor(): ReactNode {
         loadDraft,
         clearDraft,
         discardForNavigation,
+        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave,
         isReady: isDraftStorageReady,
     } = useEditorDraft<ProcessNodeEntity>({
         draftKey: visitKey != null ? `process-node/${nodeId}/configuration` : null,
@@ -326,10 +328,15 @@ export function ProcessNodeEditor(): ReactNode {
             return;
         }
         const controller = new AbortController();
-
+        const signal = draftLogoutSignal ? AbortSignal.any([controller.signal, draftLogoutSignal]) : controller.signal;
+        if (signal.aborted) {
+            finish();
+            return;
+        }
+        draftLogoutSignal?.addEventListener('abort', finish);
         (async () => {
             const draft = await loadDraft();
-            if (draft == null || controller.signal.aborted || !isCurrent()) {
+            if (draft == null || signal.aborted || !isCurrent()) {
                 return;
             }
 
@@ -343,10 +350,10 @@ export function ProcessNodeEditor(): ReactNode {
                     return putCanStillChangeNode ? {...merged, changed: true} : merged;
                 },
                 mode: 'restore',
-                signal: controller.signal,
+                signal,
                 storedStateChanged: draft.baseLockVersion !== (originalNode.lockVersion ?? null),
             });
-            if (controller.signal.aborted || !isCurrent()) {
+            if (!await isDraftRecoveryCurrent() || signal.aborted || !isCurrent()) {
                 return;
             }
             if (outcome.status === 'apply') {
@@ -355,7 +362,7 @@ export function ProcessNodeEditor(): ReactNode {
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
                 await clearDraft().catch(() => {
-                    if (!controller.signal.aborted && isCurrent()) {
+                    if (!signal.aborted && isCurrent()) {
                         dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
                     }
                 });
@@ -367,8 +374,11 @@ export function ProcessNodeEditor(): ReactNode {
                     finish();
                 }
             });
-        return () => controller.abort();
-    }, [isCurrent, finish, isDraftStorageReady, loadDraft]);
+        return () => {
+            controller.abort();
+            draftLogoutSignal?.removeEventListener('abort', finish);
+        };
+    }, [isCurrent, finish, isDraftStorageReady, loadDraft, draftLogoutSignal, isDraftRecoveryCurrent]);
 
     const {
         Icon: TypeIcon,
@@ -465,8 +475,16 @@ export function ProcessNodeEditor(): ReactNode {
 
         // Only show backend field errors for the PUT that produced them.
         let attemptedNode: ProcessNodeEntity | undefined;
+        let signal = controller.signal;
         setIsSaving(true);
         try {
+            const token = await beginManualSave();
+            if (signal.aborted) return;
+            if (!token) {
+                dispatch(showErrorSnackbar(signInToSaveEditorMessage));
+                return;
+            }
+            signal = AbortSignal.any([signal, token.signal]);
             const fieldsToOmit = getExternallyEditedFields(layout);
             const result = await persistEditorSave<ProcessNodeEntity, ProcessNodeEntity>({
                 original: originalNode,
@@ -478,16 +496,17 @@ export function ProcessNodeEditor(): ReactNode {
                 },
                 write: (base, value, reserveVersion) => {
                     attemptedNode = reserveVersion ? base : value;
-                    return onSave(attemptedNode, {query: {omitConfigSave: fieldsToOmit}, abortBeforeSend: controller.signal});
+                    return onSave(attemptedNode, {query: {omitConfigSave: fieldsToOmit}, abortBeforeSend: signal});
                 },
                 valueOf: (stored) => stored,
                 specFor: (stored) => createProcessNodeMergeSpec(layout, stored),
                 setPending: setSaveCheckpoint,
                 resolvePrepared,
                 onRead: onStoredNode,
-                signal: controller.signal,
+                signal,
+                requireServerConfirmation: token.resumesDrafts,
             });
-            controller.signal.throwIfAborted();
+            signal.throwIfAborted();
             if (result.status === 'cancel') {
                 setSaveCheckpoint(saveCheckpoint);
                 return;
@@ -498,9 +517,11 @@ export function ProcessNodeEditor(): ReactNode {
             }
             applyConfirmed(result.stored);
             if (result.status === 'discarded') return;
+            await confirmManualSave(token);
+            if (signal.aborted) return;
             dispatch(showSuccessSnackbar(result.merged ? MERGED_SAVE_MESSAGE : 'Das Element wurde erfolgreich gespeichert.'));
         } catch (err) {
-            if (controller.signal.aborted) {
+            if (signal.aborted) {
                 return;
             }
             setSaveCheckpoint(saveCheckpoint);

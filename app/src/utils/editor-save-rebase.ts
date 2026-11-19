@@ -113,7 +113,11 @@ interface EditorSaveOptions<T, S> {
     resolvePrepared: (request: PreparedMergeRequest<T>) => Promise<MergeOutcome<T>>;
     onRead?: (stored: S) => void;
     signal: AbortSignal;
+    /** A resumed editor needs confirmation from the current server session before it may back up new edits. */
+    requireServerConfirmation?: boolean;
 }
+
+export const signInToSaveEditorMessage = 'Melden Sie sich zum Speichern wieder mit dem Konto an, mit dem Sie diesen Editor geöffnet haben.';
 
 type EditorSaveResult<S> =
     | {status: 'saved'; stored: S; merged: boolean}
@@ -125,7 +129,7 @@ const MAX_SAVE_ATTEMPTS = 3;
 
 /** Persist one click's snapshot, keeping later edits out of every retry. */
 export async function persistEditorSave<T, S extends {lockVersion?: number | null}>({
-    original, submitted, checkpoint, read, write, valueOf, specFor, setPending, resolvePrepared, onRead, signal,
+    original, submitted, checkpoint, read, write, valueOf, specFor, setPending, resolvePrepared, onRead, signal, requireServerConfirmation,
 }: EditorSaveOptions<T, S>): Promise<EditorSaveResult<S>> {
     const readStored = async () => {
         const stored = await read();
@@ -163,7 +167,9 @@ export async function persistEditorSave<T, S extends {lockVersion?: number | nul
         if (outcome.status === 'discard') return {status: 'discarded', stored: base};
         if (outcome.status !== 'apply') return {status: 'cancel'};
         payload = outcome.value;
-        if (!previousPutMayCommit && matchesStored(payload, base)) return {status: 'saved', stored: base, merged};
+        if (!previousPutMayCommit && matchesStored(payload, base) && (checkpoint.phase === 'pending' || !requireServerConfirmation)) {
+            return {status: 'saved', stored: base, merged};
+        }
     }
 
     for (let attempt = 1; ; attempt++) {

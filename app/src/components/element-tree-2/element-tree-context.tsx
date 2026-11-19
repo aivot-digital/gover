@@ -42,7 +42,7 @@ export interface ElementTreeContextType {
     registerNewElement?: (id: string) => void;
     markElementApplied?: (id: string) => void;
     panelDraft?: ElementPanelDraft | null;
-    onPanelDraftChange?: (draft: ElementPanelDraft | null) => void;
+    onPanelDraftChange?: (draft: ElementPanelDraft | null, reason?: 'normalize' | 'structure') => void;
     applyPanelDraft?: (draft: ElementPanelDraft, element: AnyElement) => boolean;
     identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
 }

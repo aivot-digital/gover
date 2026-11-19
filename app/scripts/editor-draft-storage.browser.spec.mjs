@@ -69,6 +69,39 @@ function pauseLock(name) {
     };
 }
 
+function readStoredDrafts() {
+    return new Promise((resolve, reject) => {
+        const opening = indexedDB.open('prosuna_editor_drafts');
+        opening.onerror = () => reject(opening.error);
+        opening.onsuccess = () => {
+            const db = opening.result;
+            const tx = db.transaction('drafts');
+            const rows = tx.objectStore('drafts').getAll();
+            tx.oncomplete = () => { db.close(); resolve(rows.result); };
+            tx.onabort = () => { db.close(); reject(tx.error); };
+        };
+    });
+}
+
+function seedV2Drafts(rows, keepConnectionOpen = false) {
+    return new Promise((resolve, reject) => {
+        const opening = indexedDB.open('prosuna_editor_drafts', 2);
+        opening.onupgradeneeded = () => opening.result.createObjectStore('drafts', {keyPath: ['userId', 'key', 'tabId']});
+        opening.onerror = () => reject(opening.error);
+        opening.onsuccess = () => {
+            const db = opening.result;
+            const tx = db.transaction('drafts', 'readwrite');
+            for (const row of rows) tx.objectStore('drafts').put(row);
+            tx.oncomplete = () => {
+                if (keepConnectionOpen) window.legacyConnection = db;
+                else db.close();
+                resolve();
+            };
+            tx.onabort = () => reject(tx.error);
+        };
+    });
+}
+
 const chromeExecutable = process.env.CHROME_BIN ?? ({
     darwin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     win32: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -77,7 +110,11 @@ const chromeExecutable = process.env.CHROME_BIN ?? ({
 test('editor drafts in independent Chrome documents', async (t) => {
     const bundle = await build({
         stdin: {
-            contents: `export * from './editor-draft-storage'; export * from './editor-draft-login'; export {AuthService} from './auth-service';`,
+            contents: `
+                export * from './editor-draft-storage';
+                export * from './editor-draft-login';
+                export {broadcastCommittedEditorDraftLogout} from './editor-draft-logout';
+                export {AuthService} from './auth-service';`,
             resolveDir: fileURLToPath(new URL('../src/services/', import.meta.url)),
         },
         format: 'iife', globalName: 'draftModule', bundle: true, write: false,
@@ -86,9 +123,12 @@ test('editor drafts in independent Chrome documents', async (t) => {
     const fixture = path.join(profile, 'editor.html');
     const loginPage = path.join(profile, 'login.html');
     await writeFile(loginPage, '<title>Login</title>');
-    await writeFile(fixture, `<script>if (location.search === '?pause') (${pauseLock})();</script>
-        <script>${bundle.outputFiles[0].text}
-draftModule.initializeEditorDraftLoginReturn();</script>`);
+    await writeFile(fixture, `<script>if (location.search === '?pause') {
+        (${pauseLock})();
+        window.addEventListener('storage', event => event.stopImmediatePropagation());
+    }</script>
+        <script>if (location.search !== '?legacy') { ${bundle.outputFiles[0].text}
+draftModule.initializeEditorDraftLoginReturn(); }</script>`);
     const chrome = spawn(chromeExecutable, [
         '--headless', '--disable-background-networking', '--no-first-run', '--no-default-browser-check',
         '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank',
@@ -103,10 +143,11 @@ draftModule.initializeEditorDraftLoginReturn();</script>`);
         await rm(profile, {recursive: true, force: true, maxRetries: 3});
     });
     const send = connect(chrome);
-    async function openTab(pauseRegistration = false) {
+    async function openTab({pauseRegistration = false, browserContextId, withoutEditor = false} = {}) {
         const url = pathToFileURL(fixture);
+        if (withoutEditor) url.search = 'legacy';
         if (pauseRegistration) url.search = 'pause';
-        const {targetId} = await send('Target.createTarget', {url: url.href});
+        const {targetId} = await send('Target.createTarget', {url: url.href, browserContextId});
         const {sessionId} = await send('Target.attachToTarget', {targetId, flatten: true});
         const evaluate = async (fn, ...args) => {
             const expression = `(${fn})(...${JSON.stringify(args)})`;
@@ -114,7 +155,10 @@ draftModule.initializeEditorDraftLoginReturn();</script>`);
             if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
             return result.value;
         };
-        await until(() => evaluate(() => typeof draftModule !== 'undefined'));
+        const ready = withoutEditor
+            ? () => location.search === '?legacy' && document.readyState === 'complete'
+            : () => typeof draftModule !== 'undefined';
+        await until(() => evaluate(ready));
         return {
             evaluate,
             call: (method, ...args) => evaluate((method, args) => draftModule.EditorDraftStorage[method](...args), method, args),
@@ -224,24 +268,33 @@ draftModule.initializeEditorDraftLoginReturn();</script>`);
         await Promise.all([owner.close(), fresh.close()]);
     });
 
-    await t.test('a legacy v2 row without ownership metadata stays recoverable', async () => {
-        const row = {...draft('legacy', 'retained'), tabId: 'older-client'};
-        await first.evaluate(row => new Promise((resolve, reject) => {
-            const opening = indexedDB.open('prosuna_editor_drafts', 2);
-            opening.onerror = () => reject(opening.error);
-            opening.onsuccess = () => {
-                const tx = opening.result.transaction('drafts', 'readwrite');
-                tx.objectStore('drafts').put(row);
-                tx.oncomplete = () => { opening.result.close(); resolve(); };
-                tx.onabort = () => reject(tx.error);
-            };
-        }), row);
-        assert.equal((await first.call('load', user, row.key)).mine, row.mine);
-        assert.equal(await second.call('load', user, row.key), null);
+    await t.test('the v2 upgrade preserves existing drafts and login reservations until explicit logout', async () => {
+        const {browserContextId} = await send('Target.createBrowserContext', {disposeOnDetach: true});
+        const legacy = await openTab({withoutEditor: true, browserContextId});
+        const row = {
+            ...draft('legacy', 'retained'), tabId: 'older-client',
+            context: {base: {id: 'field', label: 'Title'}, mine: {id: 'field', label: 'Open edit'}},
+            saveCheckpoint: {phase: 'pending', submitted: 'submitted'},
+        };
+        const reserved = {...row, key: 'reserved-legacy', reservation: {id: 'old-return', expiresAt: Date.now() + 60_000}};
+        await legacy.evaluate(seedV2Drafts, [row, reserved]);
+        await legacy.close();
+        const existing = await openTab({browserContextId});
+        const returning = await openTab({browserContextId});
+        const recovered = await existing.call('load', user, row.key);
+        assert.equal(recovered.mine, row.mine);
+        assert.deepEqual(recovered.context, row.context);
+        assert.deepEqual(recovered.saveCheckpoint, row.saveCheckpoint);
+        assert.equal(await returning.call('load', user, row.key), null);
+        assert.equal(await existing.call('load', user, reserved.key), null);
+        assert.equal((await returning.call('load', user, reserved.key, 'old-return')).mine, reserved.mine);
+        await returning.evaluate(() => draftModule.beginExplicitEditorDraftLogout());
+        assert.deepEqual(await existing.evaluate(readStoredDrafts), []);
+        await send('Target.disposeBrowserContext', {browserContextId});
     });
 
     await t.test('persistent writes wait for owner registration', async () => {
-        const owner = await openTab(true);
+        const owner = await openTab({pauseRegistration: true});
         const write = owner.call('save', draft('delayed', 'live draft'));
         await until(() => owner.evaluate(() => window.waitingForLock));
         assert.equal(await first.call('load', user, 'delayed'), null);
@@ -314,5 +367,159 @@ draftModule.initializeEditorDraftLoginReturn();</script>`);
         assert.equal((await first.call('load', user, 'aborted')).mine, 'survives abort');
         assert.equal(await reader.call('load', user, 'aborted'), null);
         await reader.close();
+    });
+
+    await t.test('a write waiting for its owner lock cannot recreate a draft after logout in another tab', async () => {
+        const key = 'logout-delayed';
+        const delayed = await openTab({pauseRegistration: true});
+        const generation = await delayed.call('openGeneration');
+        await first.call('save', draft(key, 'before logout'), generation);
+        await first.call('save', {...draft(key, 'other account'), userId: 'other'}, generation);
+        assert.equal(await first.call('reserve', user, key, 'before-logout', generation), true);
+        await first.evaluate(() => {
+            window.stopListening = draftModule.registerEditorDraftLoginHandler(async () => false, async id => { window.explicitLogout = id; });
+        });
+        await delayed.evaluate(() => {
+            // This background document starts with storage event delivery paused.
+            draftModule.registerEditorDraftLoginHandler(async () => false, async () => { window.stoppedOldSession = true; });
+        });
+
+        const lateSave = delayed.call('save', draft(key, 'delayed write'), generation);
+        await until(() => delayed.evaluate(() => window.waitingForLock));
+        await second.evaluate(() => draftModule.beginExplicitEditorDraftLogout());
+        await until(() => first.evaluate(() => typeof window.explicitLogout === 'string'));
+        const logoutId = await first.evaluate(() => { window.stopListening(); return window.explicitLogout; });
+        await delayed.evaluate(() => window.allowLock());
+        await lateSave;
+        assert.deepEqual(await first.evaluate(readStoredDrafts), []);
+        assert.notEqual(await delayed.evaluate(() => window.stoppedOldSession), true);
+        await delayed.close();
+
+        const fresh = await openTab();
+        const current = await fresh.call('openGeneration');
+        assert.notEqual(current, generation);
+        assert.equal(await fresh.call('load', user, key), null);
+        assert.equal(await fresh.call('load', user, key, 'before-logout'), null);
+        await fresh.call('save', draft(key, 'new edit after signing in'), current);
+        await second.call('clear', logoutId, true);
+        // Use the same tab and key here so its tab ID alone cannot protect this new edit.
+        await fresh.call('save', draft(key, 'obsolete update'), generation);
+        await fresh.call('remove', user, key, generation);
+        assert.equal(await fresh.call('reserve', user, key, 'late-reservation', generation), false);
+        assert.equal(await fresh.call('load', user, key, null, generation), null);
+        assert.equal((await fresh.call('load', user, key, null, current)).mine, 'new edit after signing in');
+        await fresh.close();
+    });
+
+    await t.test('logout clears a write whose IDB transaction began before the logout transaction', async () => {
+        const writer = await openTab();
+        const loggingOut = await openTab();
+        const generation = await writer.call('openGeneration');
+        await writer.evaluate(() => {
+            const put = IDBObjectStore.prototype.put;
+            IDBObjectStore.prototype.put = function (row, ...args) {
+                const request = put.call(this, row, ...args);
+                if (this.name === 'drafts' && row.key === 'logout-in-flight') {
+                    window.writing = true;
+                    // Keep this real write transaction active until the other tab requests its transaction.
+                    const keepActive = () => {
+                        if (!window.finishWrite) this.count().onsuccess = keepActive;
+                    };
+                    keepActive();
+                }
+                return request;
+            };
+        });
+        await loggingOut.call('openGeneration');
+        await loggingOut.evaluate(() => {
+            const transaction = IDBDatabase.prototype.transaction;
+            IDBDatabase.prototype.transaction = function (stores, mode, ...args) {
+                const tx = transaction.call(this, stores, mode, ...args);
+                if (mode === 'readwrite' && tx.objectStoreNames.contains('drafts')) window.requestedCleanup = true;
+                return tx;
+            };
+        });
+        const writing = writer.call('save', draft('logout-in-flight', 'in progress'), generation);
+        await until(() => writer.evaluate(() => window.writing));
+        const clearing = loggingOut.evaluate(() => draftModule.beginExplicitEditorDraftLogout());
+        try {
+            await until(() => loggingOut.evaluate(() => window.requestedCleanup));
+        } finally {
+            await writer.evaluate(() => { window.finishWrite = true; });
+        }
+        await Promise.all([writing, clearing]);
+        assert.deepEqual(await writer.evaluate(readStoredDrafts), []);
+        await Promise.all([writer.close(), loggingOut.close()]);
+    });
+
+    await t.test('a committed logout crosses tabs without localStorage and a delayed older broadcast is ignored', async () => {
+        const {browserContextId} = await send('Target.createBrowserContext', {disposeOnDetach: true});
+        const editor = await openTab({browserContextId});
+        const sender = await openTab({browserContextId});
+        await sender.evaluate(() => {
+            const setItem = Storage.prototype.setItem;
+            Storage.prototype.setItem = function (...args) {
+                if (this === localStorage) throw new DOMException('Storage full', 'QuotaExceededError');
+                return setItem.apply(this, args);
+            };
+        });
+        await editor.evaluate(() => {
+            window.logouts = [];
+            window.rejectedBroadcasts = [];
+            const storage = draftModule.EditorDraftStorage;
+            const check = storage.isCurrentGeneration.bind(storage);
+            storage.isCurrentGeneration = async id => {
+                const current = await check(id);
+                if (!current) window.rejectedBroadcasts.push(id);
+                return current;
+            };
+            draftModule.registerEditorDraftLoginHandler(async () => false, async id => { window.logouts.push(id); });
+        });
+        const key = 'broadcast-logout';
+        await editor.call('save', draft(key, 'old edit'));
+        await sender.evaluate(() => draftModule.beginExplicitEditorDraftLogout());
+        await until(() => editor.evaluate(() => window.logouts.length === 1));
+        const firstLogout = await editor.call('openGeneration');
+        assert.deepEqual(await editor.evaluate(readStoredDrafts), []);
+        await sender.evaluate(() => draftModule.beginExplicitEditorDraftLogout());
+        await until(() => editor.evaluate(() => window.logouts.length === 2));
+        const secondLogout = await editor.call('openGeneration');
+        assert.notEqual(firstLogout, secondLogout);
+        await editor.call('save', draft(key, 'edit after sign-in'), secondLogout);
+        await sender.evaluate(id => draftModule.broadcastCommittedEditorDraftLogout(id), firstLogout);
+        await until(() => editor.evaluate(id => window.rejectedBroadcasts.includes(id), firstLogout));
+        assert.deepEqual(await editor.evaluate(() => window.logouts), [firstLogout, secondLogout]);
+        assert.equal((await editor.call('load', user, key, null, secondLogout)).mine, 'edit after sign-in');
+        await send('Target.disposeBrowserContext', {browserContextId});
+    });
+
+    await t.test('the next document completes a logout when IndexedDB was blocked until the logging-out tab closed', async () => {
+        const {browserContextId} = await send('Target.createBrowserContext', {disposeOnDetach: true});
+        const legacy = await openTab({withoutEditor: true, browserContextId});
+        const key = 'missed-cleanup';
+        await legacy.evaluate(seedV2Drafts, [{
+            ...draft(key, 'old edit'), tabId: 'older-client', reservation: {id: 'old-return', expiresAt: Date.now() + 60_000},
+        }], true);
+        const interrupted = await openTab({browserContextId});
+        await interrupted.evaluate(() => {
+            const open = indexedDB.open.bind(indexedDB);
+            indexedDB.open = (...args) => {
+                const request = open(...args);
+                request.addEventListener('blocked', () => { window.blockedCleanup = true; });
+                return request;
+            };
+            // The user closes the tab once the real clear is blocked by the old connection.
+            draftModule.beginExplicitEditorDraftLogout().catch(() => {});
+        });
+        await until(() => interrupted.evaluate(() => window.blockedCleanup));
+        await interrupted.close();
+        await legacy.close();
+        const fresh = await openTab({browserContextId});
+        assert.equal(await fresh.call('load', user, key, 'old-return'), null);
+        assert.deepEqual(await fresh.evaluate(readStoredDrafts), []);
+        const current = await fresh.call('openGeneration');
+        await fresh.call('save', draft(key, 'newly signed in'), current);
+        assert.equal((await fresh.call('load', user, key)).mine, 'newly signed in');
+        await send('Target.disposeBrowserContext', {browserContextId});
     });
 });

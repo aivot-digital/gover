@@ -5,7 +5,9 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createMemoryRouter, Link, RouterProvider} from 'react-router-dom';
 import {AuthService} from '../../../services/auth-service';
 import {type EditorDraft, EditorDraftStorage} from '../../../services/editor-draft-storage';
-import {initializeEditorDraftLoginReturn, prepareEditorDraftLogin, EDITOR_DRAFT_RETURN_PARAM} from '../../../services/editor-draft-login';
+import {initializeEditorDraftLoginReturn, prepareEditorDraftLogin, EDITOR_DRAFT_RETURN_PARAM, stopEditorDraftForLogout} from '../../../services/editor-draft-login';
+import {UsersApiService} from '../../users/users-api-service';
+import {type User} from '../../users/models/user';
 import {DragAndDropProvider} from '../../../providers/drag-and-drop-provider';
 import {useElementTreeInlineEditorContext} from '../../../components/element-tree-2/components/element-tree-inline-editor-context';
 import {ElementsApiService} from '../elements-api-service';
@@ -256,6 +258,8 @@ describe('FormNodeEditorPage', () => {
         });
 
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockResolvedValue(createNode());
+        vi.spyOn(EditorDraftStorage, 'openGeneration').mockResolvedValue('initial');
+        vi.spyOn(EditorDraftStorage, 'isCurrentGeneration').mockResolvedValue(true);
         vi.spyOn(EditorDraftStorage, 'load').mockResolvedValue(null);
         vi.spyOn(EditorDraftStorage, 'remove').mockResolvedValue(undefined);
         vi.spyOn(ProcessNodeApiService.prototype, 'update').mockResolvedValue(createNode());
@@ -310,7 +314,7 @@ describe('FormNodeEditorPage', () => {
         expect(save).toHaveBeenLastCalledWith(expect.objectContaining({
             mine: expect.objectContaining({children: [expect.objectContaining({children: [expect.objectContaining({label: priorTitle})]})]}),
             context: expect.objectContaining({mine: expect.objectContaining({label: 'Noch offen'})}),
-        }));
+        }), 'initial');
         fireEvent.click(await screen.findByRole('button', {name: 'Änderungen wiederherstellen'}));
         if (action === 'Abbrechen') {
             expect(await screen.findByRole('tab', {name: 'Elementstruktur', selected: true})).toBeVisible();
@@ -429,7 +433,7 @@ describe('FormNodeEditorPage', () => {
             } else {
                 remove.mockReturnValueOnce(deletion.promise);
                 fireEvent.click(screen.getByRole('button', {name: 'Änderungen verwerfen'}));
-                await waitFor(() => expect(remove).toHaveBeenCalledWith('staff-user', 'process-node/2/form-layout'));
+                await waitFor(() => expect(remove).toHaveBeenCalledWith('staff-user', 'process-node/2/form-layout', 'initial'));
                 expect(screen.queryByRole('textbox', {name: 'Formulartitel'})).not.toBeInTheDocument();
                 await act(async () => deletion.resolve());
             }
@@ -507,7 +511,7 @@ describe('FormNodeEditorPage', () => {
         expect(EditorDraftStorage.load).not.toHaveBeenCalled();
         expect(screen.queryByRole('button', {name: 'Speichern'})).not.toBeInTheDocument();
         view.rerender(<StaffAccount.Provider value="staff-user"><FormNodeEditorPage/></StaffAccount.Provider>);
-        await waitFor(() => expect(EditorDraftStorage.remove).toHaveBeenCalledWith('staff-user', 'process-node/1/form-layout'));
+        await waitFor(() => expect(EditorDraftStorage.remove).toHaveBeenCalledWith('staff-user', 'process-node/1/form-layout', 'initial'));
         expect(await screen.findByRole('button', {name: 'Testformular absenden'})).toBeEnabled();
     });
 
@@ -533,7 +537,7 @@ describe('FormNodeEditorPage', () => {
         if (saved) {
             await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({
                 mine: expect.objectContaining({publicTitle: marker}),
-            })), {timeout: 3000});
+            }), 'initial'), {timeout: 3000});
         } else {
             expect(save).not.toHaveBeenCalled();
         }
@@ -752,6 +756,53 @@ describe('FormNodeEditorPage', () => {
         });
     });
 
+    it('flushes only the current edit if login starts before a manual save has passed its generation check', async () => {
+        const {save} = await renderDraftEditor();
+        const check = Promise.withResolvers<boolean>();
+        const verify = vi.mocked(EditorDraftStorage.isCurrentGeneration).mockReturnValueOnce(check.promise);
+        editFormTitle('Beim Speicherklick');
+        fireEvent.click(formSaveButton());
+        await waitFor(() => expect(verify).toHaveBeenCalled());
+        editFormTitle('Beim Anmelden');
+        expect(await prepareEditorDraftLogin()).toBeTruthy();
+        await act(async () => check.resolve(true));
+        expect(ProcessNodeApiService.prototype.update).not.toHaveBeenCalled();
+        expect(save.mock.lastCall?.[0]).toMatchObject({mine: {publicTitle: 'Beim Anmelden'}});
+        expect(save.mock.lastCall?.[0].saveCheckpoint).toBeUndefined();
+    });
+
+    it('keeps the open form in memory across logout and enables backups only after this account confirms a new save', async () => {
+        const {save} = await renderDraftEditor();
+        const update = vi.mocked(ProcessNodeApiService.prototype.update);
+        const first = pendingFormSave();
+        editFormTitle('Vor der Abmeldung');
+        fireEvent.click(formSaveButton());
+        await waitFor(() => expect(update).toHaveBeenCalledOnce());
+        editFormTitle('Noch im Editor');
+        await act(async () => { await stopEditorDraftForLogout(); });
+        vi.mocked(EditorDraftStorage.openGeneration).mockResolvedValue('new');
+        vi.mocked(EditorDraftStorage.isCurrentGeneration).mockImplementation(async (id) => id === 'new');
+        await act(async () => first.resolve(createNode({...createFormLayout(), publicTitle: 'Vor der Abmeldung'})));
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Noch im Editor');
+        expect(await prepareEditorDraftLogin()).toBeUndefined();
+        const self = vi.spyOn(UsersApiService.prototype, 'retrieveSelf').mockResolvedValue({id: 'other'} as User);
+        fireEvent.click(formSaveButton());
+        await waitFor(() => expect(self).toHaveBeenCalledOnce());
+        expect(update).toHaveBeenCalledOnce();
+        self.mockResolvedValue({id: 'staff-user'} as User);
+        const next = pendingFormSave();
+        fireEvent.click(formSaveButton());
+        await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+        editFormTitle('Spätere Eingabe');
+        expect(await prepareEditorDraftLogin()).toBeUndefined();
+        await act(async () => next.resolve({...createNode({...createFormLayout(), publicTitle: 'Noch im Editor'}), lockVersion: 3}));
+        expect(await prepareEditorDraftLogin()).toBeTruthy();
+        expect(save.mock.lastCall).toEqual([expect.objectContaining({
+            base: expect.objectContaining({publicTitle: 'Noch im Editor'}),
+            mine: expect.objectContaining({publicTitle: 'Spätere Eingabe'}),
+        }), 'new']);
+    });
+
     it.each(['Nächste Fassung', 'Testformular'])('keeps a later title (%s) as an unsaved change on top of the confirmed version', async (later) => {
         const {save} = await renderDraftEditor();
         const put = pendingFormSave();
@@ -766,7 +817,7 @@ describe('FormNodeEditorPage', () => {
         await prepareEditorDraftLogin();
         expect(save.mock.lastCall?.[0]).toMatchObject({base: confirmed, baseLockVersion: 2, mine: {publicTitle: later}});
         fireEvent.click(formSaveButton());
-        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2);
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2));
         expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.lastCall?.[1]).toMatchObject({
             lockVersion: 2, configuration: {formLayout: {value: {publicTitle: later}}},
         });
@@ -816,6 +867,7 @@ describe('FormNodeEditorPage', () => {
         const put = pendingFormSave();
         editFormTitle('Abgesendet');
         fireEvent.click(formSaveButton());
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce());
         editFormTitle('Testformular');
         await returnFromLogin();
         fireEvent.click(await screen.findByRole('button', {name: 'Änderungen wiederherstellen'}));
@@ -936,6 +988,7 @@ describe('FormNodeEditorPage', () => {
         const put = pendingFormSave();
         editFormTitle('Abgesendet');
         fireEvent.click(formSaveButton());
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce());
         if (result === 'committed') {
             editFormTitle('Testformular');
             vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({

@@ -1,14 +1,31 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
+const logout = vi.hoisted(() => ({marker: null as string | null | undefined}));
+vi.mock('./editor-draft-logout', () => ({
+    readEditorDraftLogoutId: () => logout.marker,
+    signalEditorDraftLogout: (id: string) => { logout.marker = id; return true; },
+}));
+
 // This double is for sequential eligibility decisions. Transaction ordering and rollback are tested in Chrome.
-function createIndexedDb() {
-    const records = new Map<string, Record<string, unknown>>();
+function createIndexedDb(initialDrafts: Record<string, unknown>[] = []) {
+    const draftKey = (row: Record<string, unknown>) => JSON.stringify([row.userId, row.key, row.tabId]);
+    const records = new Map(initialDrafts.map((row) => [draftKey(row), row]));
+    const metadata = new Map<string, unknown>();
+    let version = 2;
     const db = {
-        objectStoreNames: {contains: () => true},
+        objectStoreNames: {contains: (name: string) => name === 'drafts' || version >= 3},
+        deleteObjectStore: () => records.clear(),
+        createObjectStore: (name: string) => {
+            expect(name).toBe('metadata');
+            return {put: (value: unknown, key: IDBValidKey) => metadata.set(JSON.stringify(key), value)};
+        },
         transaction: () => {
             const transaction = {
                 oncomplete: null as (() => void) | null,
-                objectStore: () => store,
+                objectStore: (name: string) => name === 'drafts' ? store : {
+                    get: (key: IDBValidKey) => request(() => metadata.get(JSON.stringify(key))),
+                    put: (value: unknown, key: IDBValidKey) => request(() => metadata.set(JSON.stringify(key), structuredClone(value))),
+                },
             };
             let pendingRequests = 0;
             const request = <R>(read: () => R) => {
@@ -26,7 +43,7 @@ function createIndexedDb() {
                     range == null || (row.userId === range.lower[0] && row.key === range.lower[1]))),
                 get: (key: string[]) => request(() => structuredClone(records.get(JSON.stringify(key)))),
                 put: (row: Record<string, unknown>) => request(() => {
-                    records.set(JSON.stringify([row.userId, row.key, row.tabId]), structuredClone(row));
+                    records.set(draftKey(row), structuredClone(row));
                 }),
                 delete: (key: string[]) => request(() => records.delete(JSON.stringify(key))),
                 clear: () => request(() => records.clear()),
@@ -35,9 +52,15 @@ function createIndexedDb() {
         },
     };
     return {
-        open: () => {
-            const request = {result: db, onsuccess: null as (() => void) | null};
-            queueMicrotask(() => request.onsuccess?.());
+        open: (_name: string, requestedVersion: number) => {
+            const request = {result: db, onsuccess: null as (() => void) | null, onupgradeneeded: null as ((e: {oldVersion: number}) => void) | null};
+            queueMicrotask(() => {
+                if (version < requestedVersion) {
+                    request.onupgradeneeded?.({oldVersion: version});
+                    version = requestedVersion;
+                }
+                request.onsuccess?.();
+            });
             return request;
         },
     };
@@ -72,6 +95,7 @@ const draft = (mine: string) => ({userId: user, key, base: 'Alt', baseLockVersio
 describe('EditorDraftStorage', () => {
     let locks: ReturnType<typeof createLocks>;
     beforeEach(() => {
+        logout.marker = null;
         locks = createLocks();
         vi.stubGlobal('indexedDB', createIndexedDb());
         vi.stubGlobal('IDBKeyRange', {bound: (lower: string[], upper: unknown[]) => ({lower, upper})});
@@ -157,6 +181,88 @@ describe('EditorDraftStorage', () => {
         const fresh = await openTab();
         expect(await fresh.load(user, key, 'return')).toBeNull();
         expect(await fresh.load('other', key)).toBeNull();
+    });
+
+    it('preserves an existing v2 draft with a reservation, pending save and open element', async () => {
+        const row = {
+            ...draft('Vor dem Update'), tabId: 'older-client', shareable: true,
+            reservation: {id: 'return', expiresAt: Date.now() + 60_000},
+            context: {base: 'Titel', mine: 'Neuer Titel'}, saveCheckpoint: {phase: 'pending', submitted: 'Gesendet'},
+        };
+        vi.stubGlobal('indexedDB', createIndexedDb([row]));
+        const fresh = await openTab();
+        expect(await fresh.load(user, key)).toBeNull();
+        expect(await fresh.load(user, key, 'return')).toMatchObject({
+            mine: row.mine, context: row.context, saveCheckpoint: row.saveCheckpoint,
+        });
+    });
+
+    it('stops an old visit from writing, reading, reserving or deleting the next visit’s draft in the same document', async () => {
+        const tab = await openTab();
+        const old = await tab.openGeneration();
+        await tab.save(draft('Vor der Abmeldung'), old);
+        logout.marker = 'logout';
+        await tab.clear('logout', true);
+        const fresh = await tab.openGeneration();
+        expect(fresh).not.toBe(old);
+        expect(await tab.isCurrentGeneration(old)).toBe(false);
+        expect(await tab.isCurrentGeneration(fresh)).toBe(true);
+        await tab.save(draft('Nach der Anmeldung'), fresh);
+        await tab.save(draft('Verspätete Sicherung'), old);
+        expect(await tab.reserve(user, key, 'stale-return', old)).toBe(false);
+        expect(await tab.load(user, key, undefined, old)).toBeNull();
+        await tab.remove(user, key, old);
+        expect((await tab.load(user, key, undefined, fresh))?.mine).toBe('Nach der Anmeldung');
+    });
+
+    it('finishes a missed cleanup from the persistent marker before returning or adopting any entries', async () => {
+        const previous = await openTab();
+        await previous.save(draft('Alter Entwurf'));
+        await previous.reserve(user, key, 'return');
+        await previous.save({...draft('Anderes Konto'), userId: 'other'});
+        locks.held.clear();
+        // The logout tab recorded its intent, but could not open the database.
+        logout.marker = 'logout-1';
+        const fresh = await openTab();
+        expect(await fresh.load(user, key, 'return')).toBeNull();
+        expect(await fresh.load('other', key)).toBeNull();
+        await fresh.save(draft('Neue Sitzung'));
+        await previous.clear('logout-1', true);
+        expect((await fresh.load(user, key))?.mine).toBe('Neue Sitzung');
+
+        logout.marker = 'logout-2';
+        const latest = await openTab();
+        await latest.save(draft('Weitere Sitzung'));
+        await previous.clear('logout-1');
+        expect((await latest.load(user, key))?.mine).toBe('Weitere Sitzung');
+    });
+
+    it('refuses to attach an editor to a logout observed while its initial database open was pending', async () => {
+        const tab = await openTab();
+        const opening = tab.openGeneration();
+        logout.marker = 'logout';
+        await expect(opening).rejects.toMatchObject({name: 'AbortError'});
+        expect(await tab.openGeneration()).toBe('logout');
+    });
+
+    it.each([undefined, 'previous-logout'])('fences writes using IndexedDB even if publishing the next marker failed (%s)', async (marker) => {
+        logout.marker = marker;
+        const oldTab = await openTab();
+        const old = await oldTab.openGeneration();
+        await oldTab.save(draft('Alter Entwurf'), old);
+        const other = await openTab();
+        await other.clear('unpublished-logout', false);
+        await oldTab.save(draft('Verspätete Sicherung'), old);
+        locks.held.clear();
+        const fresh = await openTab();
+        expect(await fresh.openGeneration()).toBe('unpublished-logout');
+        expect(await fresh.load(user, key)).toBeNull();
+        await fresh.clear('second-unpublished-logout', false);
+        const latest = await fresh.openGeneration();
+        await fresh.save(draft('Neue Sitzung'), latest);
+        await other.clear('unpublished-logout', false);
+        if (marker != null) await other.clear(marker, true);
+        expect((await fresh.load(user, key, undefined, latest))?.mine).toBe('Neue Sitzung');
     });
 
     it('prioritizes the matching return over a newer abandoned draft', async () => {

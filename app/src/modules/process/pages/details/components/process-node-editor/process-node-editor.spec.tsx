@@ -1,4 +1,8 @@
 import {AuthService} from '../../../../../../services/auth-service';
+import {EditorDraftStorage} from '../../../../../../services/editor-draft-storage';
+import {getObservedEditorDraftLogoutId, signalEditorDraftLogout} from '../../../../../../services/editor-draft-logout';
+import {prepareEditorDraftLogin, stopEditorDraftForLogout} from '../../../../../../services/editor-draft-login';
+import {UsersApiService} from '../../../../../users/users-api-service';
 import {ProcessNodeEditorOutputsTab} from './tabs/process-node-editor-outputs-tab';
 import {ProcessNodeEditorConfigurationTab} from './tabs/process-node-editor-configuration-tab';
 import userEvent from '@testing-library/user-event';
@@ -26,19 +30,29 @@ import {type DerivedRuntimeElementData} from '../../../../../../models/element-d
 
 const testState = vi.hoisted(() => ({
     userId: 'user', dispatch: vi.fn(), save: vi.fn(), stored: vi.fn(), confirm: vi.fn(),
-    remove: vi.fn(), replace: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn(), trackDraft: vi.fn(),
+    remove: vi.fn(), replace: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn(), trackDraft: vi.fn(), realDraft: false,
+    beginManualSave: vi.fn(async () => ({signal: new AbortController().signal, generation: 'current', resumesDrafts: false})),
+    confirmManualSave: vi.fn(), isDraftRecoveryCurrent: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => testState.dispatch}));
 vi.mock('../../../../../../hooks/use-app-selector', () => ({useAppSelector: () => ({id: testState.userId})}));
 vi.mock('../../../../../../providers/confirm-provider', () => ({useConfirm: () => testState.confirm}));
 vi.mock('../../../../../../components/view-dispatcher/view-dispatcher.component', () => ({ViewDispatcherComponent: () => null}));
-vi.mock('../../../../../../hooks/use-editor-draft', () => ({
-    useEditorDraft: (props: unknown) => {
-        testState.trackDraft(props);
-        return {loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, discardForNavigation: testState.clearDraft, isReady: true};
-    },
-}));
+vi.mock('../../../../../../hooks/use-editor-draft', async (importOriginal) => {
+    const original = await importOriginal<typeof import('../../../../../../hooks/use-editor-draft')>();
+    return {
+        useEditorDraft: (props: Parameters<typeof original.useEditorDraft>[0]) => {
+            testState.trackDraft(props);
+            if (testState.realDraft) return original.useEditorDraft(props);
+            return {
+                loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, discardForNavigation: testState.clearDraft, isReady: true,
+                draftLogoutSignal: undefined, isDraftRecoveryCurrent: testState.isDraftRecoveryCurrent,
+                beginManualSave: testState.beginManualSave, confirmManualSave: testState.confirmManualSave,
+            };
+        },
+    };
+});
 vi.mock('../../../../components/process-node-provider-details', () => ({
     getProcessNodeProviderIcon: () => () => null,
     ProcessNodeProviderDetailsDialog: () => null,
@@ -409,6 +423,112 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         await screen.findByDisplayValue('Element 2');
     }
 
+    describe('an editor left open across an explicit logout', () => {
+        const marker = () => getObservedEditorDraftLogoutId() ?? 'initial';
+        let account: string;
+        let authenticated: boolean;
+
+        beforeEach(() => {
+            testState.realDraft = true;
+            account = 'user';
+            authenticated = true;
+            vi.spyOn(AuthService, 'isAuthenticated').mockImplementation(() => authenticated);
+            vi.spyOn(EditorDraftStorage, 'openGeneration').mockImplementation(async () => marker());
+            vi.spyOn(EditorDraftStorage, 'isCurrentGeneration').mockImplementation(async (value) => value === marker());
+            vi.spyOn(EditorDraftStorage, 'load').mockResolvedValue(null);
+            vi.spyOn(EditorDraftStorage, 'remove').mockResolvedValue();
+            vi.spyOn(EditorDraftStorage, 'reserve').mockResolvedValue(true);
+            vi.spyOn(EditorDraftStorage, 'save').mockResolvedValue();
+            vi.spyOn(UsersApiService.prototype, 'retrieveSelf').mockImplementation(async () => ({
+                ...new UsersApiService().initialize(), id: account,
+            }));
+        });
+        afterEach(() => {
+            testState.realDraft = false;
+        });
+
+        async function logoutInOtherTab() {
+            authenticated = false;
+            const id = crypto.randomUUID();
+            signalEditorDraftLogout(id);
+            await act(() => stopEditorDraftForLogout(id));
+            vi.mocked(EditorDraftStorage.save).mockClear();
+            return id;
+        }
+
+        it('resumes backups only for the same account after confirmation, keeping input typed during that save', async () => {
+            const pending = Promise.withResolvers<ProcessNodeEntity>();
+            testState.save.mockReturnValue(pending.promise);
+            renderEditor();
+            await editName('Im Editor behalten');
+            const generation = await logoutInOtherTab();
+            account = 'another-account';
+            authenticated = true;
+            fireEvent.click(saveButton());
+            await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({message: expect.stringContaining('Melden Sie sich zum Speichern')}),
+            })));
+            expect(testState.save).not.toHaveBeenCalled();
+            expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Im Editor behalten');
+
+            account = 'user';
+            fireEvent.click(saveButton());
+            await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+            await editName('Während des Speicherns eingegeben');
+            expect(await prepareEditorDraftLogin()).toBeUndefined();
+            expect(EditorDraftStorage.save).not.toHaveBeenCalled();
+
+            const confirmed = {...createNode(1), name: 'Im Editor behalten', notes: 'Vom Server', lockVersion: 2};
+            await act(async () => pending.resolve(confirmed));
+            expect(saveButton()).toBeEnabled();
+            await prepareEditorDraftLogin();
+            expect(EditorDraftStorage.save).toHaveBeenCalledWith(expect.objectContaining({
+                userId: 'user', key: 'process-node/1/configuration', base: confirmed, baseLockVersion: 2,
+                mine: {...confirmed, name: 'Während des Speicherns eingegeben'},
+            }), generation);
+        });
+
+        it.each(['late response', 'failed save'] as const)('keeps local drafts suspended after a %s', async (outcome) => {
+            const pending = Promise.withResolvers<ProcessNodeEntity>();
+            testState.save.mockReturnValue(pending.promise);
+            renderEditor();
+            await editName('Beim Klick');
+            if (outcome === 'failed save') {
+                await logoutInOtherTab();
+                authenticated = true;
+            }
+            fireEvent.click(saveButton());
+            await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+            if (outcome === 'late response') await logoutInOtherTab();
+            await editName('Im Arbeitsspeicher');
+            if (outcome === 'late response') {
+                await act(async () => pending.resolve({...createNode(1), name: 'Verspätet', notes: 'Anderer Stand', lockVersion: 99}));
+            } else {
+                await act(async () => pending.reject(new Error('Speichern fehlgeschlagen')));
+            }
+            expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({baseLockVersion: 1, edited: {name: 'Im Arbeitsspeicher'}});
+            expect(await prepareEditorDraftLogin()).toBeUndefined();
+            expect(EditorDraftStorage.save).not.toHaveBeenCalled();
+        });
+
+        it('closes the recovery dialog and releases the server preview when another tab logs out', async () => {
+            const base = {...createNode(1), lockVersion: 1};
+            vi.mocked(EditorDraftStorage.load).mockResolvedValue({
+                base, baseLockVersion: 1, mine: {...base, name: 'Alter Entwurf'}, key: 'process-node/1/configuration',
+                userId: account, tabId: 'this-tab', savedAt: Date.now(),
+            });
+            renderEditor();
+            await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'});
+            await logoutInOtherTab();
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+            const name = await findReadyTextbox('Name bearbeiten');
+            expect(name).toHaveValue(base.name);
+            fireEvent.change(name, {target: {value: 'Im Editor erlaubt'}});
+            expect(await prepareEditorDraftLogin()).toBeUndefined();
+            expect(EditorDraftStorage.save).not.toHaveBeenCalled();
+        });
+    });
+
     it.each(['Späterer Name', 'Element 1'])('keeps "%s" edited after the saved name and uses the confirmed version on the next save', async (later) => {
         const first = Promise.withResolvers<ProcessNodeEntity>();
         testState.save.mockReturnValueOnce(first.promise).mockImplementation(async (node: ProcessNodeEntity) => node);
@@ -428,6 +548,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         });
         expect(testState.save).toHaveBeenCalledTimes(1);
         fireEvent.click(saveButton());
+        await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
         expect(testState.save.mock.calls[1][0]).toEqual({...saved, name: later});
     });
 
@@ -675,7 +796,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
 
         await editName('Verworfene Änderung');
         fireEvent.click(saveButton());
-        expect(refreshAuth).toHaveBeenCalledOnce();
+        await waitFor(() => expect(refreshAuth).toHaveBeenCalledOnce());
         await discardAndOpenSecondNode(router);
         await act(async () => refresh.resolve());
 
@@ -702,7 +823,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         }
         await editName('Zweiter Besuch');
         fireEvent.click(saveButton());
-        expect(testState.save).toHaveBeenCalledTimes(2);
+        await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
         testState.dispatch.mockClear();
 
         await act(async () => {

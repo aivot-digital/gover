@@ -40,7 +40,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     openRootAddElementSignal?: number;
     identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
     panelDraft?: ElementPanelDraft | null;
-    onPanelDraftChange?: (draft: ElementPanelDraft | null) => void;
+    onPanelDraftChange?: (draft: ElementPanelDraft | null, reason?: 'normalize' | 'structure') => void;
 }
 
 interface ElementTreeSearchResult {

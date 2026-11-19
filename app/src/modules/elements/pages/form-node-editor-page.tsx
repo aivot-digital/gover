@@ -145,7 +145,7 @@ import {useMergeConflictResolution} from '../../../hooks/use-merge-conflict-reso
 import {formLayoutMergeSpec} from '../utils/form-layout-merge-spec';
 import {mergeFormDraft, rebaseOpenElementDraft} from '../utils/merge-form-draft';
 import {
-    canPendingSaveStillCommit, type EditorSaveCheckpoint, pendingSaveCanChangeStored, persistEditorSave, rebaseAfterSave,
+    canPendingSaveStillCommit, type EditorSaveCheckpoint, pendingSaveCanChangeStored, persistEditorSave, rebaseAfterSave, signInToSaveEditorMessage,
 } from '../../../utils/editor-save-rebase';
 import {editorValuesEqual} from '../../../utils/variable-reference-merge';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
@@ -211,6 +211,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
     const [node, setNode, currentNode] = useCurrentState<ProcessNodeEntity | null>(null);
     const [formLayout, setFormLayout, currentLayout] = useCurrentState<FormLayoutElement | null>(null);
     const [panelDraft, setPanelDraft, currentPanel] = useCurrentState<ElementPanelDraft | null>(null);
+    const panelEditRevision = useRef(0);
     const [saveCheckpoint, setSaveCheckpoint, currentCheckpoint] = useCurrentState<EditorSaveCheckpoint<FormLayoutElement | null> | undefined>(undefined);
     const activeSave = useRef<AbortController | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -624,12 +625,15 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
         loadDraft,
         clearDraft,
         discardForNavigation,
+        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave,
     } = useEditorDraft<FormLayoutElement | null, ElementPanelDraft>({
         draftKey: visitKey == null ? null : `process-node/${nodeId}/form-layout`,
         base: storedFormLayout,
         baseLockVersion: node?.lockVersion,
         edited: formLayout,
         context: panelDraft ?? undefined,
+        contextRevision: panelEditRevision.current,
+        hasChangesWithoutContext: hasLayoutChanges,
         saveCheckpoint,
         hasChanged,
         enabled: checked,
@@ -641,10 +645,15 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
             return;
         }
         const controller = new AbortController();
-
+        const signal = draftLogoutSignal ? AbortSignal.any([controller.signal, draftLogoutSignal]) : controller.signal;
+        if (signal.aborted) {
+            finish();
+            return;
+        }
+        draftLogoutSignal?.addEventListener('abort', finish);
         (async () => {
             const draft = await loadDraft();
-            if (draft == null || controller.signal.aborted || !isCurrent()) {
+            if (draft == null || signal.aborted || !isCurrent()) {
                 return;
             }
 
@@ -662,10 +671,10 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                     return stillPending ? {...merged, changed: true} : merged;
                 },
                 mode: 'restore',
-                signal: controller.signal,
+                signal,
                 storedStateChanged: draft.baseLockVersion !== (node.lockVersion ?? null),
             });
-            if (controller.signal.aborted || !isCurrent()) {
+            if (!await isDraftRecoveryCurrent() || signal.aborted || !isCurrent()) {
                 return;
             }
             const recoveredPanel = outcome.status === 'apply' ? outcome.value.panel : undefined;
@@ -684,7 +693,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
                 await clearDraft().catch(() => {
-                    if (isCurrent() && !controller.signal.aborted) {
+                    if (isCurrent() && !signal.aborted) {
                         dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
                     }
                 });
@@ -696,8 +705,11 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                     finish();
                 }
             });
-        return () => controller.abort();
-    }, [isCurrent, finish, loadDraft]);
+        return () => {
+            controller.abort();
+            draftLogoutSignal?.removeEventListener('abort', finish);
+        };
+    }, [isCurrent, finish, loadDraft, draftLogoutSignal, isDraftRecoveryCurrent]);
     const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
@@ -787,15 +799,23 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
         }
 
         const controller = new AbortController();
-        const {signal} = controller;
+        let signal = controller.signal;
         activeSave.current = controller;
         setIsSaving(true);
         const priorCheckpoint = currentCheckpoint.current;
         let resetCheckpoint = true;
         try {
+            const token = await beginManualSave();
+            if (signal.aborted) return null;
+            if (!token) {
+                dispatch(showErrorSnackbar(signInToSaveEditorMessage));
+                return null;
+            }
+            signal = AbortSignal.any([signal, token.signal]);
             const api = new ProcessNodeApiService();
             const result = await persistEditorSave<FormLayoutElement | null, ProcessNodeEntity>({
                 original, submitted, checkpoint: priorCheckpoint, signal, resolvePrepared,
+                requireServerConfirmation: token.resumesDrafts,
                 valueOf: getStoredFormLayout,
                 specFor: () => formLayoutMergeSpec,
                 read: () => api.retrieve(original.id),
@@ -818,6 +838,8 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
             if (result.status === 'unknown') throw result.error;
             acceptStoredForm(result.stored, submitted);
             if (result.status === 'discarded') return null;
+            await confirmManualSave(token);
+            if (signal.aborted) return null;
             if (result.merged) dispatch(showSuccessSnackbar(MergedSaveMessage));
             return result.stored;
         } catch (error) {
@@ -1694,8 +1716,12 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                                             <ElementTree
                                                 value={formLayout}
                                                 panelDraft={panelDraft}
-                                                onPanelDraftChange={(draft) => {
-                                                    if (canEdit()) setPanelDraft(draft);
+                                                onPanelDraftChange={(draft, reason) => {
+                                                    if (!canEdit()) return;
+                                                    if (reason !== 'normalize' && !editorValuesEqual(draft?.mine, currentPanel.current?.mine)) {
+                                                        panelEditRevision.current++;
+                                                    }
+                                                    setPanelDraft(draft);
                                                 }}
                                                 onChange={handlePatch}
                                                 editable={checked}

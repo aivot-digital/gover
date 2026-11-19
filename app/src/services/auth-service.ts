@@ -1,9 +1,9 @@
 import {Location} from 'react-router-dom';
 import {ApiError} from '../models/api-error';
-import {EDITOR_DRAFT_RETURN_PARAM} from './editor-draft-login';
 
 const APP_URI_QUERY_PARAM = 'app_uri';
 const APP_STATE_QUERY_PARAM = 'app_state';
+export const EDITOR_DRAFT_RETURN_PARAM = 'editor_draft_return';
 export const AUTH_EXPIRATION_LOCAL_STORAGE_KEY = 'auth_expiration';
 const CSRF_HEADER_NAME = 'X-CSRF-TOKEN';
 // The reverse proxy answers with these while it cannot reach the backend, e.g. during a restart.

@@ -32,7 +32,9 @@ import {codeListsRoutes} from '../../modules/code-lists/code-lists-routes';
 import {isFormModuleEnabled} from '../../utils/module-flags';
 import {communicationRoutes} from '../../modules/communication/communication-routes';
 import {initializeEditorDraftLoginReturn} from '../../services/editor-draft-login';
+import {initializeEditorDraftDocumentGeneration} from '../../hooks/editor-draft-access';
 
+initializeEditorDraftDocumentGeneration();
 initializeEditorDraftLoginReturn();
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,

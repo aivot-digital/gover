@@ -46,6 +46,7 @@ describe('useEditorDraftVisit', () => {
     });
 
     it('keeps the new account’s existing draft intact until that account finishes its own check', async () => {
+        vi.spyOn(EditorDraftStorage, 'openGeneration').mockResolvedValue('first-generation');
         const oldRead = Promise.withResolvers<null>();
         vi.spyOn(EditorDraftStorage, 'load').mockReturnValueOnce(oldRead.promise).mockResolvedValue(null);
         const remove = vi.spyOn(EditorDraftStorage, 'remove').mockResolvedValue(undefined);
@@ -74,6 +75,7 @@ describe('useEditorDraftVisit', () => {
             second.visit.finish();
         });
         expect(result.current.visit.canEdit()).toBe(true);
-        expect(remove.mock.calls).toEqual([['second', 'node/1']]);
+        await act(async () => {});
+        expect(remove.mock.calls).toEqual([['second', 'node/1', 'first-generation']]);
     });
 });

@@ -1,8 +1,11 @@
-import {useCallback, useLayoutEffect, useMemo} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useReducer} from 'react';
 import {useAppSelector} from './use-app-selector';
 import {selectUser} from '../slices/user-slice';
 import {getEditorDraftReturnId, registerEditorDraftLoginHandler} from '../services/editor-draft-login';
 import {type EditorDraft, EditorDraftStorage} from '../services/editor-draft-storage';
+import {createEditorDraftAccess, type EditorDraftManualSave} from './editor-draft-access';
+
+export type {EditorDraftManualSave} from './editor-draft-access';
 
 // Short enough that hardly any work is lost, long enough not to write on every keystroke.
 const DRAFT_SAVE_DELAY = 1000;
@@ -15,6 +18,9 @@ interface EditorDraftProps<T, Context> {
     baseLockVersion: number | null | undefined;
     edited: T | null;
     context?: Context;
+    /** Advances only when the user edits the nested working copy, including an edit made during a save. */
+    contextRevision?: number;
+    hasChangesWithoutContext?: boolean;
     saveCheckpoint?: EditorDraft<T>['saveCheckpoint'];
     hasChanged: boolean;
     /**
@@ -34,7 +40,17 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     let readFailed = false;
     let hadContext = false;
     let leaving = false;
+    let mounted = false;
     let revision = 0;
+    let preparingSave: AbortController | undefined;
+    let contextRevision: number | undefined;
+    let revokedContextRevision: number | undefined;
+    const access = createEditorDraftAccess(userId, () => {
+        cancelPending();
+        stored = false;
+        hadContext = false;
+        revokedContextRevision = contextRevision;
+    });
 
     // Opening the database, taking ownership of a draft, and committing writes are asynchronous. Keep them in
     // editor order even when a discard or a login redirect starts while a previous operation is still waiting.
@@ -56,19 +72,21 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     }
 
     function flush() {
+        const signal = access.signal();
         const snapshot = pending;
         cancelPending();
         if (snapshot != null) {
             return inOrder(async () => {
-                if (readFailed) return;
-                await EditorDraftStorage.save({...snapshot, userId, key, savedAt: Date.now()});
-                stored = true;
+                const generation = await access.current(signal);
+                if (readFailed || generation == null) return;
+                await EditorDraftStorage.save({...snapshot, userId, key, savedAt: Date.now()}, generation);
+                if (access.active(signal)) stored = true;
             });
         }
     }
 
     function schedule(snapshot: DraftSnapshot<T, Context>) {
-        if (leaving || readFailed) {
+        if (leaving || readFailed || !access.active(access.signal())) {
             return;
         }
         revision++;
@@ -85,13 +103,19 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     }
 
     function remove(automatic = false) {
+        const signal = access.signal();
+        if (!access.active(signal)) return Promise.resolve();
         return inOrder(async () => {
             // A failed lookup can hide an existing draft. Only an explicit discard may remove it.
             if (automatic && readFailed) return;
+            const generation = await access.current(signal);
+            if (generation == null) return;
             try {
-                await EditorDraftStorage.remove(userId, key);
-                stored = false;
-                readFailed = false;
+                await EditorDraftStorage.remove(userId, key, generation);
+                if (access.active(signal)) {
+                    stored = false;
+                    readFailed = false;
+                }
             } catch (error) {
                 // A browser without working draft storage can still discard changes kept only in memory.
                 if (stored) {
@@ -101,9 +125,67 @@ function createDraftSession<T, Context>(userId: string, key: string) {
         });
     }
 
+    function cancelSavePreparation() {
+        preparingSave?.abort();
+        preparingSave = undefined;
+    }
+
+    async function isRecoveryCurrent(signal = access.signal()) {
+        if (!mounted || leaving || access.recoverySignal.aborted) return false;
+        const generation = await access.current(signal);
+        if (generation == null) return false;
+        try {
+            if (await EditorDraftStorage.isCurrentGeneration(generation)) return mounted && !leaving && access.active(signal);
+            if (access.active(signal)) access.revoke();
+        } catch (error) {
+            // Leave the existing row alone if we cannot verify it before publishing or applying a restore decision.
+            if (access.active(signal)) {
+                readFailed = true;
+                cancelPending();
+            }
+            console.error(error);
+        }
+        return false;
+    }
+
     return {
         schedule,
         cancelPending,
+        observeContext(revision?: number) {
+            contextRevision = revision;
+            return revision !== undefined && revision === revokedContextRevision;
+        },
+        draftLogoutSignal: access.recoverySignal,
+        register() {
+            mounted = true;
+            void access.current(access.signal());
+            return () => {
+                mounted = false;
+                cancelSavePreparation();
+            };
+        },
+        isRecoveryCurrent,
+        async beginManualSave(): Promise<EditorDraftManualSave | null> {
+            if (!mounted || leaving) return null;
+            cancelSavePreparation();
+            const preparation = new AbortController();
+            preparingSave = preparation;
+            try {
+                const cancelled = new Promise<EditorDraftManualSave>((resolve) => {
+                    preparation.signal.addEventListener('abort', () => resolve({
+                        signal: preparation.signal, generation: null, resumesDrafts: false,
+                    }), {once: true});
+                });
+                return await Promise.race([cancelled, access.beginManualSave(preparation.signal)]);
+            } finally {
+                if (preparingSave === preparation) preparingSave = undefined;
+            }
+        },
+        async confirmManualSave(token: EditorDraftManualSave) {
+            if (!mounted || leaving || !await access.confirmManualSave(token)) return false;
+            readFailed = false;
+            return mounted && !leaving;
+        },
         async clearDraft(automatic = false) {
             if (!leaving) {
                 revision++;
@@ -113,6 +195,7 @@ function createDraftSession<T, Context>(userId: string, key: string) {
             }
         },
         async discardForNavigation() {
+            cancelSavePreparation();
             const snapshot = pending;
             leaving = true;
             cancelPending();
@@ -126,38 +209,50 @@ function createDraftSession<T, Context>(userId: string, key: string) {
                 throw error;
             }
         },
-        load: () => inOrder(async () => {
-            if (leaving) {
-                return null;
-            }
-            try {
-                const draft = await EditorDraftStorage.load<T, Context>(userId, key, getEditorDraftReturnId());
-                readFailed = false;
-                stored = draft != null;
-                hadContext = draft?.context !== undefined;
-                return draft;
-            } catch (error) {
-                readFailed = true;
-                cancelPending();
-                throw error;
-            }
-        }),
+        load() {
+            const signal = access.signal();
+            if (!access.active(signal)) return Promise.resolve(null);
+            return inOrder(async () => {
+                const generation = await access.current(signal);
+                if (leaving || generation == null) return null;
+                try {
+                    const draft = await EditorDraftStorage.load<T, Context>(userId, key, getEditorDraftReturnId(), generation);
+                    if (!access.active(signal)) return null;
+                    if (draft && !await isRecoveryCurrent(signal)) return null;
+                    readFailed = false;
+                    stored = draft != null;
+                    hadContext = draft?.context !== undefined;
+                    return draft;
+                } catch (error) {
+                    if (access.active(signal)) {
+                        readFailed = true;
+                        cancelPending();
+                    }
+                    throw error;
+                }
+            });
+        },
         async reserve(returnId: string) {
+            // A PUT still verifying its account has no submitted checkpoint to reserve for the redirect.
+            cancelSavePreparation();
             // An edit or a completed nested apply can arrive while a preceding transaction is committing.
             // In that case flush and reserve the newer snapshot before letting the document navigate away.
+            const signal = access.signal();
+            if (!access.active(signal)) return false;
             for (;;) {
                 const reservingRevision = revision;
                 await flush();
-                const reserved = await inOrder(async () =>
-                    !leaving && !readFailed && await EditorDraftStorage.reserve(userId, key, returnId));
-                if (leaving || revision === reservingRevision) {
-                    return !leaving && reserved;
+                const reserved = await inOrder(async () => {
+                    const generation = await access.current(signal);
+                    return !leaving && !readFailed && generation != null && await EditorDraftStorage.reserve(userId, key, returnId, generation);
+                });
+                if (leaving || !access.active(signal) || revision === reservingRevision) {
+                    return !leaving && access.active(signal) && reserved;
                 }
             }
         },
-        async stopForLogout() {
-            leaving = true;
-            cancelPending();
+        async stopForLogout(id?: string) {
+            if (access.revoke(id)) cancelSavePreparation();
             await lastOperation?.catch(console.error);
         },
     };
@@ -168,29 +263,40 @@ function createDraftSession<T, Context>(userId: string, key: string) {
  * reverted, so they can be offered again after an expired session or a reload.
  */
 export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, Context>) {
-    const {draftKey, base, baseLockVersion, edited, context, saveCheckpoint, hasChanged, enabled} = props;
+    const {draftKey, base, baseLockVersion, edited, context, contextRevision, hasChangesWithoutContext,
+        saveCheckpoint, hasChanged, enabled} = props;
     const userId = useAppSelector(selectUser)?.id;
     const session = useMemo(() => userId == null || draftKey == null ? null : createDraftSession<T, Context>(userId, draftKey), [userId, draftKey]);
+    const [resumed, onResume] = useReducer((value: number) => value + 1, 0);
 
     useLayoutEffect(() => {
+        if (session != null) {
+            const leave = session.register();
+            const unregister = registerEditorDraftLoginHandler(session.reserve, session.stopForLogout);
+            return () => {
+                leave();
+                unregister();
+            };
+        }
+    }, [session]);
+
+    useLayoutEffect(() => {
+        const suppressContext = session?.observeContext(contextRevision);
         if (!enabled || session == null || edited == null) {
             return;
         }
 
-        if (!hasChanged && saveCheckpoint?.phase !== 'pending') {
+        const changed = suppressContext ? hasChangesWithoutContext ?? hasChanged : hasChanged;
+        if (!changed && saveCheckpoint?.phase !== 'pending') {
             session.clearDraft(true).catch(console.error);
         } else {
             // A null base represents the empty stored state of an object that has never been saved.
-            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, context, saveCheckpoint});
+            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited,
+                context: suppressContext ? undefined : context, saveCheckpoint});
         }
         return session.cancelPending;
-    }, [enabled, session, base, baseLockVersion, edited, context, saveCheckpoint, hasChanged]);
-
-    useLayoutEffect(() => {
-        if (session != null) {
-            return registerEditorDraftLoginHandler(session.reserve, session.stopForLogout);
-        }
-    }, [session]);
+    }, [enabled, session, base, baseLockVersion, edited, context, contextRevision, hasChangesWithoutContext,
+        saveCheckpoint, hasChanged, resumed]);
 
     const loadDraft = useCallback(async (): Promise<EditorDraft<T, Context> | null> => {
         try {
@@ -209,10 +315,20 @@ export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, 
         await session?.discardForNavigation();
     }, [session]);
 
+    const beginManualSave = useCallback(() => session?.beginManualSave() ?? Promise.resolve(null), [session]);
+    const isDraftRecoveryCurrent = useCallback(() => session?.isRecoveryCurrent() ?? Promise.resolve(false), [session]);
+    const confirmManualSave = useCallback(async (token: EditorDraftManualSave) => {
+        if (await session?.confirmManualSave(token)) onResume();
+    }, [session]);
+
     return {
         loadDraft,
         clearDraft,
         discardForNavigation,
+        draftLogoutSignal: session?.draftLogoutSignal,
+        isDraftRecoveryCurrent,
+        beginManualSave,
+        confirmManualSave,
         isReady: userId != null,
     };
 }

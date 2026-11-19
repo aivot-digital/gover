@@ -143,7 +143,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             tab: currentEditorTab ?? DefaultTabs.properties,
             automaticDataKey: trackTitle,
             dataKeyUnlocked,
-        });
+        }, reason);
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
