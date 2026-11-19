@@ -21,6 +21,8 @@ const firstEvent: ProcessInstanceEventLogEntry = {
     timestamp: '2026-08-14T08:05:00Z',
     triggeringUserId: null,
     triggeringUserName: null,
+    representedUserId: null,
+    representedUserName: null,
     concernedUserId: null,
     concernedUserName: null,
     concernedIdentityId: null,
@@ -272,6 +274,17 @@ describe('ProcessInstanceEventDialog', () => {
 
         expect(await screen.findByText('Keine passenden Ereignisse')).toBeInTheDocument();
         expect(getEventLog).toHaveBeenLastCalledWith(expect.objectContaining({historyRelevant: true, page: 0}));
+    });
+
+    it('names the represented person when a deputy triggered the event', async () => {
+        vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog').mockResolvedValue(createEventLog([{
+            ...secondEvent,
+            representedUserId: '00000000-0000-0000-0000-000000000003',
+            representedUserName: 'Philipp Schröder',
+        }]));
+        render(<ProcessInstanceEventDialog open onClose={vi.fn()} instanceId={12} taskId={null}/>);
+
+        expect((await screen.findAllByText(/Alex Beispiel in Vertretung für Philipp Schröder/)).length).toBeGreaterThan(0);
     });
 
     it('shows the concerned user ID when the user cannot be resolved', async () => {

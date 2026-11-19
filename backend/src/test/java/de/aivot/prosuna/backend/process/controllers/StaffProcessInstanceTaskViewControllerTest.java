@@ -481,7 +481,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         doThrow(failure).when(handler).handleResult(any(), any(), any(), any(), any(), any(), any(), any(), any());
         var logger = mock(ProcessNodeExecutionLogger.class);
         var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
-        when(loggerFactory.create(any(), any(), any(), any())).thenReturn(logger);
+        when(loggerFactory.createForStaffTask(any(), any(), any())).thenReturn(logger);
         var loggedInsideTransaction = new AtomicBoolean();
         var execution = mock(ProcessTaskExecutionService.class, invocation -> {
             ((ProcessTaskExecutionService.Authorization) invocation.getArgument(2)).run();
@@ -753,7 +753,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class TestProcessNodeExecutionLoggerFactory extends ProcessNodeExecutionLoggerFactory {
         private TestProcessNodeExecutionLoggerFactory() {
-            super(null);
+            super(null, null);
         }
 
         @Override
@@ -762,6 +762,13 @@ class StaffProcessInstanceTaskViewControllerTest {
                                                  String userId,
                                                  String identityId) {
             return new NoOpProcessNodeExecutionLogger(processInstanceId, processInstanceTaskId, userId, identityId);
+        }
+
+        @Override
+        public ProcessNodeExecutionLogger createForStaffTask(Long processInstanceId,
+                                                             ProcessInstanceTaskEntity task,
+                                                             String userId) {
+            return create(processInstanceId, task.getId(), userId, null);
         }
     }
 

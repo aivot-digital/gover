@@ -1893,7 +1893,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
 
     private static final class TestProcessNodeExecutionLoggerFactory extends ProcessNodeExecutionLoggerFactory {
         private TestProcessNodeExecutionLoggerFactory() {
-            super(null);
+            super(null, null);
         }
 
         @Override

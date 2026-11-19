@@ -286,7 +286,7 @@ class ProcessWorkerTest {
                         processInstanceAttachmentSetRepository,
                         JsonMapperTestUtils.createMapper()
                 ),
-                new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository),
+                new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository, null),
                 new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION),
                 passthrough()
         );
@@ -439,7 +439,7 @@ class ProcessWorkerTest {
                         processInstanceAttachmentSetRepository,
                         JsonMapperTestUtils.createMapper()
                 ),
-                new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository),
+                new ProcessNodeExecutionLoggerFactory(processInstanceHistoryEventRepository, null),
                 new TestProcessNodeService(executionFailure == ExecutionFailure.RUNTIME_CONFIGURATION),
                 passthrough()
         );

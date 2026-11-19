@@ -57,7 +57,7 @@ class ProcessAssignmentServiceTest {
         when(auditService.createScopedAuditService(any(), anyString())).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
         service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService,
-                new ProcessNodeExecutionLoggerFactory(events), userService, mock(AbstractConfigurableTemplateResolver.class));
+                new ProcessNodeExecutionLoggerFactory(events, null), userService, mock(AbstractConfigurableTemplateResolver.class));
         when(userService.retrieve("previous")).thenReturn(Optional.of(user("previous")));
         when(userService.retrieve("recipient")).thenReturn(Optional.of(recipient));
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));

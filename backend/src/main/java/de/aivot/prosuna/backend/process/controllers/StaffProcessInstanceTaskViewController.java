@@ -115,7 +115,7 @@ public class StaffProcessInstanceTaskViewController {
         );
 
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
+                .createForStaffTask(taskViewData.instance().getId(), taskViewData.task(), user.getId());
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
@@ -192,7 +192,7 @@ public class StaffProcessInstanceTaskViewController {
 
         // The history names the staff member; the identity session ID of the browser is a secret and is not logged.
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
+                .createForStaffTask(taskViewData.instance().getId(), taskViewData.task(), user.getId());
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
@@ -388,7 +388,7 @@ public class StaffProcessInstanceTaskViewController {
         );
 
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), taskViewData.user.getId(), null);
+                .createForStaffTask(taskViewData.instance().getId(), taskViewData.task(), taskViewData.user.getId());
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
