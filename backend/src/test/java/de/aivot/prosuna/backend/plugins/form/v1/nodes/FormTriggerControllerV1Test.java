@@ -2,7 +2,7 @@ package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
 import de.aivot.prosuna.backend.av.services.AVService;
-import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
+import de.aivot.prosuna.backend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -734,7 +734,7 @@ class FormTriggerControllerV1Test {
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
-                mock(CaptchaReplayGuard.class),
+                mock(RedisCaptchaReplayGuard.class),
                 processInstanceService,
                 processInstanceTaskService,
                 attachmentSetService,
@@ -931,7 +931,7 @@ class FormTriggerControllerV1Test {
                 processNodeDefinitionService,
                 mock(SystemConfigService.class),
                 mock(StorageProviderService.class),
-                mock(CaptchaReplayGuard.class),
+                mock(RedisCaptchaReplayGuard.class),
                 processInstanceService,
                 mock(ProcessInstanceTaskService.class),
                 mock(ProcessInstanceAttachmentSetService.class),

@@ -215,6 +215,10 @@ class InstanceAssignmentActionNodeV1Test {
                 descriptionVisibilityOperands.get(1)).getValue());
         assertTrue(automaticField.getDisableProcessInstanceAssigneeOption());
         assertTrue(automaticField.getDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions());
+        assertTrue(manualField.getDisableProcessInstanceAssigneeOption());
+        assertTrue(manualField.getDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions());
+        assertEquals(List.of("orgUnit", "team", "user"), automaticField.getAllowedTypes());
+        assertEquals(List.of("orgUnit", "team", "user"), manualField.getAllowedTypes());
         assertEquals(List.of("process_instance.read"),
                 automaticField.getProcessAccessConstraint().getRequiredPermissions());
         assertEquals(List.of("process_instance.read", "process_instance.edit_task", "process_instance.reassign"),
@@ -266,6 +270,26 @@ class InstanceAssignmentActionNodeV1Test {
         automatic.manualAssignmentContext = new AssignmentContextInputElementValue()
                 .setDomainAndUserSelection(List.of(new DomainAndUserSelectInputElementValue("user", "dispatcher")));
         assertNull(node.validateConfiguration(validationContext(automatic)));
+    }
+
+    @Test
+    void teamsAndOrgUnitsAreAcceptedInBothModes() throws Exception {
+        var circle = new AssignmentContextInputElementValue().setDomainAndUserSelection(List.of(
+                new DomainAndUserSelectInputElementValue("team", "5"),
+                new DomainAndUserSelectInputElementValue("orgUnit", "7")));
+
+        var automatic = config("automatic");
+        automatic.automaticAssignmentContext = circle;
+        assertNull(node.validateConfiguration(validationContext(automatic)));
+        assertInstanceOf(ProcessNodeExecutionResultInstanceAssigned.class, node.init(initContext(automatic)));
+
+        var manual = config("manual");
+        manual.manualAssignmentContext = circle;
+        assertNull(node.validateConfiguration(validationContext(manual)));
+        assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, node.init(initContext(manual)));
+
+        verify(resolver, times(2)).resolveAssignee(anyInt(), anyInt(), anyLong(), anyInt(), anyLong(),
+                nullable(Integer.class), nullable(String.class), eq(circle), anyList(), anySet());
     }
 
     private static ProcessNodeConfigurationValidationContext<InstanceAssignmentActionNodeV1.Config> validationContext(

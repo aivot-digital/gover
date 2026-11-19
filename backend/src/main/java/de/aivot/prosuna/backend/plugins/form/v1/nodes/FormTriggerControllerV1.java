@@ -1,7 +1,7 @@
 package de.aivot.prosuna.backend.plugins.form.v1.nodes;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
-import de.aivot.prosuna.backend.captcha.services.CaptchaReplayGuard;
+import de.aivot.prosuna.backend.captcha.services.RedisCaptchaReplayGuard;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
@@ -104,7 +104,7 @@ public class FormTriggerControllerV1 {
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final SystemConfigService systemConfigService;
     private final StorageProviderService storageProviderService;
-    private final CaptchaReplayGuard captchaReplayGuard;
+    private final RedisCaptchaReplayGuard captchaReplayGuard;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceTaskService processInstanceTaskService;
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
@@ -137,7 +137,7 @@ public class FormTriggerControllerV1 {
                                    ProcessNodeDefinitionService processNodeDefinitionService,
                                    SystemConfigService systemConfigService,
                                    StorageProviderService storageProviderService,
-                                   CaptchaReplayGuard captchaReplayGuard,
+                                   RedisCaptchaReplayGuard captchaReplayGuard,
                                    ProcessInstanceService processInstanceService,
                                    ProcessInstanceTaskService processInstanceTaskService,
                                    ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,

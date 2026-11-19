@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.payment;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nimbusds.common.contenttype.ContentType;
+import de.aivot.prosuna.backend.core.properties.HttpServiceProperties;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
@@ -24,6 +25,7 @@ import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
+import de.aivot.prosuna.backend.utils.HttpClientUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.*;
 
 @Component
@@ -48,10 +51,12 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
     private final SecretService secretService;
+    private final HttpServiceProperties httpServiceProperties;
 
     @Autowired
-    public epay21PaymentProviderDefinitionV1(SecretService secretService) {
+    public epay21PaymentProviderDefinitionV1(SecretService secretService, HttpServiceProperties httpServiceProperties) {
         this.secretService = secretService;
+        this.httpServiceProperties = httpServiceProperties;
     }
 
     @Nonnull
@@ -215,6 +220,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var request = HttpRequest
                 .newBuilder(URI.create(paymentPath))
+                .timeout(Duration.ofSeconds(httpServiceProperties.getReadTimeoutSeconds()))
                 .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
                 .headers("Accept", ContentType.APPLICATION_JSON.getType())
                 .headers("Authorization", "Basic " + auth)
@@ -222,12 +228,13 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
                 .build();
 
         var client = HttpClient
-                .newHttpClient();
+                .newBuilder()
+                .connectTimeout(Duration.ofSeconds(httpServiceProperties.getConnectionTimeoutSeconds()))
+                .build();
 
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            response = HttpClientUtils.sendWithDeadline(client, request);
         } catch (IOException | InterruptedException e) {
             throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s nicht abgerufen werden.", getProviderName());
         }
@@ -292,6 +299,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var client = HttpClient
                 .newBuilder()
+                .connectTimeout(Duration.ofSeconds(httpServiceProperties.getConnectionTimeoutSeconds()))
                 .build();
 
         var paymentPath = String
@@ -299,6 +307,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         var request = HttpRequest
                 .newBuilder(URI.create(paymentPath))
+                .timeout(Duration.ofSeconds(httpServiceProperties.getReadTimeoutSeconds()))
                 .headers("Content-Type", ContentType.APPLICATION_JSON.getType())
                 .headers("Accept", ContentType.APPLICATION_JSON.getType())
                 .headers("Authorization", "Basic " + auth)
@@ -307,8 +316,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
         HttpResponse<String> response;
         try {
-            response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+            response = HttpClientUtils.sendWithDeadline(client, request);
         } catch (IOException | InterruptedException e) {
             throw new PaymentException(e, "Der Zahlungsstatus konnte beim Zahlungsanbieter %s (%s) nicht abgerufen werden.", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
