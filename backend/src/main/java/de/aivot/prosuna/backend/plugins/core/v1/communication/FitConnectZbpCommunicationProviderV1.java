@@ -164,16 +164,16 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         config
                 .findChild(Config.ENVIRONMENT_FIELD_ID, SelectInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
-                        SelectInputElementOption.of(Config.ENVIRONMENT_TEST, Config.ENVIRONMENT_TEST),
-                        SelectInputElementOption.of(Config.ENVIRONMENT_STAGE, Config.ENVIRONMENT_STAGE),
-                        SelectInputElementOption.of(Config.ENVIRONMENT_PROD, Config.ENVIRONMENT_PROD)
+                        SelectInputElementOption.of(Config.ENVIRONMENT_TEST, "Test-Umgebung (TEST)"),
+                        SelectInputElementOption.of(Config.ENVIRONMENT_STAGE, "Stage-Umgebung (STAGE)"),
+                        SelectInputElementOption.of(Config.ENVIRONMENT_PROD, "Produktiv-Umgebung (PROD)")
                 )));
 
         config
                 .findChild(Config.SENDER_DESTINATION_TYPE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
                         SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ADMINISTRATION, "Verwaltung (Typ A)"),
-                        SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE, "Online-Dienst (Typ C)")
+                        SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE, "Onlinedienst (Typ C)")
                 )));
 
         return config;
@@ -727,10 +727,10 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         })
         public String zbpCertificatePrivateKeyAssetKey;
 
-        // Optional so that existing configurations stay valid; an empty value keeps the former test environment.
         @InputElementPOJOBinding(id = ENVIRONMENT_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "FIT-Connect-Umgebung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Die Umgebung, über die Nachrichten an das zentrale Bürgerpostfach versendet werden. Ohne Auswahl wird „TEST“ verwendet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Für FIT-Connect stehen derzeit mehrere Betriebsumgebungen bereit, die unterschiedliche Zwecke erfüllen. Wählen Sie die Umgebung aus, über die Nachrichten an das zentrale Bürgerpostfach versendet werden."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String environment;
@@ -751,10 +751,10 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         })
         public String senderDestinationId;
 
-        // Optional so that existing configurations stay valid; an empty value keeps the former online-service behavior.
         @InputElementPOJOBinding(id = SENDER_DESTINATION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Typ des Zustellpunktes (Sender)"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Typ, mit dem der Zustellpunkt (Sender) in FIT-Connect angelegt wurde. Ohne Auswahl wird „Online-Dienst (Typ C)“ verwendet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den Typ aus, mit dem der Zustellpunkt (Sender) in FIT-Connect angelegt wurde."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String senderDestinationType;

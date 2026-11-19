@@ -6,29 +6,41 @@ import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEnti
 import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
 import de.aivot.prosuna.backend.communication.models.CommunicationMessageCallToAction;
 import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
+import de.aivot.prosuna.backend.communication.services.CommunicationProviderConfigurationService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
+import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ElementDerivationRequest;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.services.AssetSelectionValidationService;
+import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
+import de.aivot.prosuna.backend.elements.services.CodeListElementOptionsService;
+import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
+import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.enums.AlertType;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
+import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
@@ -84,7 +96,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -288,19 +299,27 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void configLayoutOffersOptionalSenderDestinationType() throws Exception {
+    void configLayoutRequiresSenderDestinationTypeWithReadableOptions() throws Exception {
         var field = definition.getConfigLayout().findChild(
                 FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_FIELD_ID,
                 SelectInputElement.class
         ).orElseThrow();
 
-        assertNotEquals(Boolean.TRUE, field.getRequired());
+        assertTrue(field.getRequired());
         assertEquals(
                 List.of(
                         FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ADMINISTRATION,
                         FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE
                 ),
                 field.getOptions().stream().map(SelectInputElementOption::getValue).toList()
+        );
+        assertEquals(
+                List.of("Verwaltung (Typ A)", "Onlinedienst (Typ C)"),
+                field.getOptions().stream().map(SelectInputElementOption::getLabel).toList()
+        );
+        assertEquals(
+                "Wählen Sie den Typ aus, mit dem der Zustellpunkt (Sender) in FIT-Connect angelegt wurde.",
+                field.getHint()
         );
     }
 
@@ -362,17 +381,80 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void configLayoutOffersOptionalEnvironment() throws Exception {
+    void configLayoutRequiresEnvironmentWithReadableOptions() throws Exception {
         var field = definition.getConfigLayout().findChild(
                 FitConnectZbpCommunicationProviderV1.Config.ENVIRONMENT_FIELD_ID,
                 SelectInputElement.class
         ).orElseThrow();
 
-        assertNotEquals(Boolean.TRUE, field.getRequired());
+        assertTrue(field.getRequired());
         assertEquals(
                 List.of("TEST", "STAGE", "PROD"),
                 field.getOptions().stream().map(SelectInputElementOption::getValue).toList()
         );
+        assertEquals(
+                List.of("Test-Umgebung (TEST)", "Stage-Umgebung (STAGE)", "Produktiv-Umgebung (PROD)"),
+                field.getOptions().stream().map(SelectInputElementOption::getLabel).toList()
+        );
+        assertEquals(
+                "Für FIT-Connect stehen derzeit mehrere Betriebsumgebungen bereit, die unterschiedliche Zwecke erfüllen. " +
+                        "Wählen Sie die Umgebung aus, über die Nachrichten an das zentrale Bürgerpostfach versendet werden.",
+                field.getHint()
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            FitConnectZbpCommunicationProviderV1.Config.ENVIRONMENT_FIELD_ID,
+            FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_FIELD_ID
+    })
+    void configurationMappingRejectsMissingRequiredSelection(String fieldId) throws Exception {
+        var values = configurationValues();
+        values.remove(fieldId);
+
+        assertInvalidConfiguration(values, fieldId, "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.");
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "environment,NULL",
+            "environment,''",
+            "environment,unsupported",
+            "senderDestinationType,NULL",
+            "senderDestinationType,''",
+            "senderDestinationType,unsupported"
+    }, nullValues = "NULL")
+    void configurationMappingRejectsEmptyAndUnsupportedSelections(String fieldId, String value) throws Exception {
+        var values = configurationValues().putLiteral(fieldId, value);
+        var expectedError = value == null || value.isEmpty()
+                ? "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein."
+                : "Ungültige Auswahl: " + value;
+
+        assertInvalidConfiguration(values, fieldId, expectedError);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "TEST,ADMINISTRATION",
+            "TEST,ONLINE_SERVICE",
+            "STAGE,ADMINISTRATION",
+            "STAGE,ONLINE_SERVICE",
+            "PROD,ADMINISTRATION",
+            "PROD,ONLINE_SERVICE"
+    })
+    void configurationMappingAcceptsSupportedSelections(String environment, String senderDestinationType) throws Exception {
+        var values = configurationValues()
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.ENVIRONMENT_FIELD_ID, environment)
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_FIELD_ID, senderDestinationType);
+        var provider = new CommunicationProviderEntity();
+        provider.setName("FIT-Connect");
+        provider.setConfiguration(values);
+
+        var configuration = new CommunicationProviderConfigurationService(configurationDerivationService())
+                .mapProviderConfiguration(provider, definition);
+
+        assertEquals(environment, configuration.environment);
+        assertEquals(senderDestinationType, configuration.senderDestinationType);
     }
 
     @Test
@@ -643,6 +725,50 @@ class FitConnectZbpCommunicationProviderV1Test {
     @Test
     void authenticationLevelFallsBackWhenIdentityAttributeIsMissing() {
         assertEquals(AuthenticationLevel.ONE, mapAuthenticationLevel("qaa", Map.of()));
+    }
+
+    private void assertInvalidConfiguration(AuthoredElementValues values,
+                                            String fieldId,
+                                            String expectedError) throws Exception {
+        var derivationService = configurationDerivationService();
+        var derived = derivationService.derive(new ElementDerivationRequest(definition.getConfigLayout(), values));
+
+        assertEquals(expectedError, derived.getElementStates().get(fieldId).getError());
+        var provider = new CommunicationProviderEntity();
+        provider.setName("FIT-Connect");
+        provider.setConfiguration(values);
+
+        var exception = assertThrows(
+                CommunicationException.class,
+                () -> new CommunicationProviderConfigurationService(derivationService)
+                        .mapProviderConfiguration(provider, definition)
+        );
+        assertEquals("Die Konfiguration des Kommunikationsanbieters FIT-Connect ist ungültig.", exception.getMessage());
+        verifyNoInteractions(secretService, assetContentResolverService);
+    }
+
+    private static AuthoredElementValues configurationValues() {
+        return new AuthoredElementValues()
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, UUID.randomUUID().toString())
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, UUID.randomUUID().toString())
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.ENVIRONMENT_FIELD_ID, FitConnectZbpCommunicationProviderV1.Config.ENVIRONMENT_TEST)
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.DESTINATION_ID_FIELD_ID, DESTINATION_ID.toString())
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_ID_FIELD_ID, SENDER_DESTINATION_ID.toString())
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_FIELD_ID, FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE)
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.SENDER_CLIENT_ID_FIELD_ID, "sender-client")
+                .putLiteral(FitConnectZbpCommunicationProviderV1.Config.SENDER_CLIENT_SECRET_KEY_FIELD_ID, UUID.randomUUID().toString());
+    }
+
+    private static ElementDerivationService configurationDerivationService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null, null),
+                new AuthoredInputValueService(JsonMapperTestUtils.createMapper()),
+                new InputVariableResolver(),
+                new AssetSelectionValidationService(mock(AssetRepository.class))
+        );
     }
 
     private String resolveSenderClientSecret(FitConnectZbpCommunicationProviderV1.Config config) throws CommunicationException {

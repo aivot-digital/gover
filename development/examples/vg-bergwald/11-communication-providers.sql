@@ -27,7 +27,16 @@ values (1,
         1,
         'Zentrales Bürgerpostfach (Vorproduktion)',
         'Versand von Nachrichten an das BundID-Postfach über FIT-Connect',
-        '{}'::jsonb,
+        '{
+          "environment": {
+            "type": "Literal",
+            "value": "TEST"
+          },
+          "senderDestinationType": {
+            "type": "Literal",
+            "value": "ONLINE_SERVICE"
+          }
+        }'::jsonb,
         false,
         true)
 on conflict (id) do update
