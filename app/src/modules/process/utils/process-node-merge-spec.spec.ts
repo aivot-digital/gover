@@ -5,7 +5,7 @@ import {literalAuthoredValue} from '../../../models/element-data';
 import {InputMode} from '../../../models/input-mode';
 import {threeWayMerge} from '../../../utils/three-way-merge';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
-import {createProcessNodeMergeSpec} from './process-node-merge-spec';
+import {createProcessNodeMergeSpec, getExternallyEditedFields} from './process-node-merge-spec';
 
 const layout = {
     id: 'layout',
@@ -44,6 +44,18 @@ function node(overrides: Partial<ProcessNodeEntity>): ProcessNodeEntity {
 
 describe('createProcessNodeMergeSpec', () => {
     const spec = createProcessNodeMergeSpec(layout);
+
+    it('adopts externally edited configuration keys from the stored node, including removed keys', () => {
+        const externalLayout = {...layout, children: ['form', 'removed'].map((id) => ({
+            id, type: ElementType.UiDefinitionInput, openExternalEditor: true,
+        }))} as GroupLayout;
+        const base = node({configuration: {form: literalAuthoredValue('Old'), removed: literalAuthoredValue('Old')}});
+        const mine = {...base, name: 'Lokale Änderung', configuration: {form: literalAuthoredValue('Stale'), removed: literalAuthoredValue('Stale')}};
+        const theirs = {...base, lockVersion: 2, configuration: {form: literalAuthoredValue('Current')}};
+        expect(getExternallyEditedFields(externalLayout)).toEqual(['form', 'removed']);
+        expect(threeWayMerge(base, mine, theirs, createProcessNodeMergeSpec(externalLayout, theirs)))
+            .toEqual({merged: {...theirs, name: mine.name}, conflicts: []});
+    });
 
     it('keeps the own changes on top of a newer save and takes its lock version', () => {
         const base = node({});

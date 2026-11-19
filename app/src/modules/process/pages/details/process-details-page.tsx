@@ -1545,6 +1545,10 @@ export function ProcessDetailsPage(): ReactNode {
         }
     };
 
+    const handleStoredNode = (stored: ProcessNodeEntity) => {
+        setProcessFlow((current) => applySavedProcessNode(current, stored));
+    };
+
     const handleSaveNode = async (node: ProcessNodeEntity, options?: RequestOptions): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
             throw new Error('Process flow is not loaded');
@@ -1553,7 +1557,7 @@ export function ProcessDetailsPage(): ReactNode {
         const updated = await new ProcessNodeApiService()
             .update(node.id, node, options);
 
-        setProcessFlow((current) => applySavedProcessNode(current, updated));
+        handleStoredNode(updated);
 
         setShowProcessNodeProblemsForNodes((prev) => ({
             ...prev,
@@ -2569,6 +2573,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     editable: isProcessEditable,
                                     structureEditable: isProcessStructureEditable,
                                     onSave: handleSaveNode,
+                                    onStoredNode: handleStoredNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,

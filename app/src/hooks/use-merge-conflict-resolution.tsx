@@ -37,6 +37,18 @@ export interface PreparedMerge<T> {
     dependentConflicts?: DependentMergeConflicts;
 }
 
+/** Namespace decisions within a composite merge. Its outer prepareDependentMerge previews all layers. */
+export function prepareScopedMerge<T>(
+    layer: string, choices: MergeChoices, prepare: (choices: MergeChoices) => PreparedMerge<T>,
+): PreparedMerge<T> {
+    const prefix = layer + '/';
+    const local = Object.fromEntries(Object.entries(choices)
+        .filter(([id]) => id.startsWith(prefix))
+        .map(([id, choice]) => [id.slice(prefix.length), choice]));
+    const {value, changed, conflicts} = prepare(local);
+    return {value, changed, conflicts: conflicts.map((conflict) => ({...conflict, id: prefix + conflict.id}))};
+}
+
 /** Preview every decision reachable through the current selection before the dialog is confirmed. */
 export function prepareDependentMerge<T>(merge: (choices: MergeChoices) => PreparedMerge<T>, choices: MergeChoices): PreparedMerge<T> {
     const result = merge(choices);
@@ -61,8 +73,9 @@ export function prepareDependentMerge<T>(merge: (choices: MergeChoices) => Prepa
 export function prepareMerge<T>(
     {base, mine, theirs, spec}: Pick<MergeRequest<T>, 'base' | 'mine' | 'theirs' | 'spec'>,
     choices: MergeChoices,
+    interruptedWrite?: {value: T},
 ): PreparedMerge<T> {
-    const {merged, conflicts} = threeWayMerge(base, mine, theirs, spec, choices);
+    const {merged, conflicts} = threeWayMerge(base, mine, theirs, spec, choices, interruptedWrite);
     return {
         value: merged,
         changed: !deepEquals(merged, spec.normalize ? spec.normalize(theirs) : theirs),
@@ -80,7 +93,7 @@ export function prepareMerge<T>(
     };
 }
 
-interface PreparedMergeRequest<T> {
+export interface PreparedMergeRequest<T> {
     mode: MergeConflictDialogMode;
     storedStateChanged: boolean;
     signal?: AbortSignal;

@@ -50,6 +50,8 @@ export interface MergeSpec<T> {
     label?: (path: string[], states: {base: T; mine: T; theirs: T}) => string;
     /** Stable grouping and a separate property name for the conflict dialog. */
     describeConflict?: (path: string[], states: {base: T; mine: T; theirs: T}) => MergeConflictPresentation;
+    /** A domain decision that can be made without asking the person. Explicit choices take precedence. */
+    defaultChoice?: (conflict: MergeConflict) => MergeChoice | undefined;
 }
 
 export const ORDER_SEGMENT = '#order';
@@ -58,8 +60,12 @@ export const ORDER_SEGMENT = '#order';
  * Merges the changes of the person (`mine`) and of another save (`theirs`) that both started from `base`.
  * A value changed on one side only takes that change; a value changed differently on both sides is a conflict and
  * keeps the stored state (`theirs`) until a choice for it is passed.
+ * If an interrupted write has an unknown outcome, its submitted values are also possible server baselines.
  */
-export function threeWayMerge<T>(base: T, mine: T, theirs: T, spec: MergeSpec<T> = {}, choices: MergeChoices = {}): MergeResult<T> {
+export function threeWayMerge<T>(
+    base: T, mine: T, theirs: T, spec: MergeSpec<T> = {}, choices: MergeChoices = {},
+    interruptedWrite?: {value: T},
+): MergeResult<T> {
     const normalize = spec.normalize ?? ((value: T) => value);
     const normalizedBase = normalize(base);
     const normalizedMine = normalize(mine);
@@ -78,7 +84,9 @@ export function threeWayMerge<T>(base: T, mine: T, theirs: T, spec: MergeSpec<T>
         arrayKey: spec.arrayKey ?? (() => undefined),
         choices,
         conflicts,
-    }) as T;
+        interrupted: interruptedWrite != null,
+        defaultChoice: spec.defaultChoice,
+    }, interruptedWrite == null ? undefined : normalize(interruptedWrite.value)) as T;
 
     if (spec.validate != null && !spec.validate(merged)) {
         // Merging parts would break the object, e.g. an element that one side moved and the other changed would
@@ -109,42 +117,51 @@ interface MergeContext {
     arrayKey: (path: string[]) => string | undefined;
     choices: MergeChoices;
     conflicts: MergeConflict[];
+    interrupted: boolean;
+    defaultChoice?: MergeSpec<unknown>['defaultChoice'];
 }
 
-function mergeValue(base: unknown, mine: unknown, theirs: unknown, path: string[], context: MergeContext): unknown {
+function mergeValue(
+    base: unknown, mine: unknown, theirs: unknown, path: string[], context: MergeContext, submitted?: unknown,
+): unknown {
     if (deepEquals(mine, theirs)) {
         return theirs;
     }
-    if (deepEquals(mine, base)) {
+    // After an interrupted PUT, both the original and the submitted value are known server
+    // candidates. An edit back to the original value is still deliberate if the PUT committed.
+    if (deepEquals(mine, base) && (!context.interrupted || deepEquals(submitted, base))) {
         return theirs;
     }
-    if (deepEquals(theirs, base)) {
+    if (deepEquals(theirs, base) || (context.interrupted && deepEquals(theirs, submitted))) {
         return mine;
     }
 
     // A different `type`, such as the input mode of an authored value, gives the other fields their meaning, so the
     // object is decided as a whole and keeps a type that matches its content.
     if (isPlainObject(mine) && isPlainObject(theirs) && mine.type === theirs.type) {
-        return mergeObject(isPlainObject(base) ? base : {}, mine, theirs, path, context);
+        return mergeObject(isPlainObject(base) ? base : {}, mine, theirs, path, context, isPlainObject(submitted) ? submitted : {});
     }
 
     if (Array.isArray(mine) && Array.isArray(theirs)) {
         const key = context.arrayKey(path);
         const baseItems = Array.isArray(base) ? base : [];
         if (key != null && [baseItems, mine, theirs].every((items) => hasUniqueKeys(items, key))) {
-            return mergeKeyedArray(baseItems, mine, theirs, key, path, context);
+            return mergeKeyedArray(baseItems, mine, theirs, key, path, context, Array.isArray(submitted) ? submitted : []);
         }
     }
 
     return conflict(base, mine, theirs, path, context);
 }
 
-function mergeObject(base: Record<string, unknown>, mine: Record<string, unknown>, theirs: Record<string, unknown>, path: string[], context: MergeContext): Record<string, unknown> {
+function mergeObject(
+    base: Record<string, unknown>, mine: Record<string, unknown>, theirs: Record<string, unknown>,
+    path: string[], context: MergeContext, submitted: Record<string, unknown>,
+): Record<string, unknown> {
     const result: Record<string, unknown> = {};
     const keys = new Set([...Object.keys(theirs), ...Object.keys(mine)]);
 
     for (const key of keys) {
-        const merged = mergeValue(base[key], mine[key], theirs[key], [...path, key], context);
+        const merged = mergeValue(base[key], mine[key], theirs[key], [...path, key], context, submitted[key]);
         // Preserve explicit undefined fields common to both editor models. Dropping them would
         // mark an unchanged model dirty, while reintroducing a missing key would undo a removal.
         if (merged !== undefined || (Object.hasOwn(mine, key) && Object.hasOwn(theirs, key))) {
@@ -155,15 +172,21 @@ function mergeObject(base: Record<string, unknown>, mine: Record<string, unknown
     return result;
 }
 
-function mergeKeyedArray(base: unknown[], mine: unknown[], theirs: unknown[], key: string, path: string[], context: MergeContext): unknown[] {
+function mergeKeyedArray(
+    base: unknown[], mine: unknown[], theirs: unknown[], key: string, path: string[], context: MergeContext, submitted: unknown[],
+): unknown[] {
     const byKey = (items: unknown[]) => new Map(items.map((item) => [itemKey(item, key), item]));
     const baseItems = byKey(base);
     const mineItems = byKey(mine);
     const theirItems = byKey(theirs);
+    const sentItems = context.interrupted && hasUniqueKeys(submitted, key) ? byKey(submitted) : undefined;
 
     const mergedItems = new Map<string, unknown>();
     for (const itemId of new Set([...theirItems.keys(), ...mineItems.keys()])) {
-        const merged = mergeValue(baseItems.get(itemId), mineItems.get(itemId), theirItems.get(itemId), [...path, `[${itemId}]`], context);
+        const merged = mergeValue(
+            baseItems.get(itemId), mineItems.get(itemId), theirItems.get(itemId),
+            [...path, `[${itemId}]`], context, sentItems?.get(itemId),
+        );
         if (merged !== undefined) {
             mergedItems.set(itemId, merged);
         }
@@ -175,6 +198,7 @@ function mergeKeyedArray(base: unknown[], mine: unknown[], theirs: unknown[], ke
         theirs.map((item) => itemKey(item, key)),
         [...path, ORDER_SEGMENT],
         context,
+        sentItems == null ? [] : Array.from(sentItems.keys()),
     );
 
     return placeItems(order.primary, order.secondary, mergedItems);
@@ -184,7 +208,9 @@ function mergeKeyedArray(base: unknown[], mine: unknown[], theirs: unknown[], ke
  * Takes the order of the side that reordered the items. If both sides reordered them differently, the order is a
  * conflict of its own, so that the content of the items can still be merged.
  */
-function mergeOrder(base: string[], mine: string[], theirs: string[], path: string[], context: MergeContext): {primary: string[]; secondary: string[]} {
+function mergeOrder(
+    base: string[], mine: string[], theirs: string[], path: string[], context: MergeContext, submitted: string[],
+): {primary: string[]; secondary: string[]} {
     const common = new Set(base.filter((itemId) => mine.includes(itemId) && theirs.includes(itemId)));
     const relative = (order: string[]) => order.filter((itemId) => common.has(itemId));
 
@@ -192,10 +218,11 @@ function mergeOrder(base: string[], mine: string[], theirs: string[], path: stri
     const mineOrder = relative(mine);
     const theirOrder = relative(theirs);
 
-    if (deepEquals(mineOrder, baseOrder) || deepEquals(mineOrder, theirOrder)) {
+    const sentOrder = context.interrupted ? relative(submitted) : baseOrder;
+    if (deepEquals(mineOrder, theirOrder) || (deepEquals(mineOrder, baseOrder) && deepEquals(sentOrder, baseOrder))) {
         return {primary: theirs, secondary: mine};
     }
-    if (deepEquals(theirOrder, baseOrder)) {
+    if (deepEquals(theirOrder, baseOrder) || deepEquals(theirOrder, sentOrder)) {
         return {primary: mine, secondary: theirs};
     }
 
@@ -228,9 +255,10 @@ function conflict(base: unknown, mine: unknown, theirs: unknown, path: string[],
 
 function conflictChoice(base: unknown, mine: unknown, theirs: unknown, path: string[], context: MergeContext): MergeChoice | undefined {
     const id = pathToId(path);
-    const choice = context.choices[id];
+    const conflict = {id, path, base, mine, theirs};
+    const choice = context.choices[id] ?? context.defaultChoice?.(conflict);
     if (choice == null) {
-        context.conflicts.push({id, path, base, mine, theirs});
+        context.conflicts.push(conflict);
     }
     return choice;
 }

@@ -80,8 +80,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const automaticDataKey = panel?.automaticDataKey ?? localAutomaticKey;
     const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
     const editGeneration = useRef(0);
-    const applyToCurrentTree = useRef(applyPanelDraft);
-    useLayoutEffect(() => { applyToCurrentTree.current = applyPanelDraft; }, [applyPanelDraft]);
+    const currentTree = useRef({panel, applyPanelDraft});
+    useLayoutEffect(() => { currentTree.current = {panel, applyPanelDraft}; }, [panel, applyPanelDraft]);
 
     const hasSummaryAsParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
@@ -150,7 +150,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         navigateToEditorTab(newTab);
     };
 
-    const handleSave = (): void => {
+    const handleSave = async (): Promise<void> => {
         const current = updatedElement ?? value;
         setDataKeyValidationRequested(true);
         if (displayContext !== ElementDisplayContext.DataObjectSchema && isAnyInputElement(current) &&
@@ -166,28 +166,36 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
         setIsBusy(true);
         const generation = editGeneration.current;
-        new ElementsApiService()
-            .recalculateReferencedIds(updatedElement)
-            .catch(() => {
-                // If the recalculation fails, we can still try to save the element with the risk of broken references.
-                return updatedElement;
-            })
-            .then((recalculatedElement) => {
-                if (generation !== editGeneration.current) return;
-                setIsBusy(false);
-                if (panel != null && applyToCurrentTree.current != null) {
-                    // The backend may serialize additional default/null properties. Only reference IDs come from it.
-                    const applied = mergeRecalculatedReferencedIds(updatedElement, recalculatedElement);
-                    if (!applyToCurrentTree.current(panel, applied)) return;
-                    onPanelDraftChange?.(null);
-                    onCancel();
-                } else {
-                    onChange(recalculatedElement);
-                    if (panel != null) onPanelDraftChange?.(null);
-                }
-                setDataKeyUnlocked(false);
-                markElementApplied?.(value.id);
-            });
+        const api = new ElementsApiService();
+        let candidate = updatedElement;
+        for (;;) {
+            // If the calculation fails, keep the references already present on this element.
+            const recalculated = await api.recalculateReferencedIds(candidate).catch(() => candidate);
+            if (generation !== editGeneration.current) return;
+            const latest = currentTree.current;
+            if (panel != null && latest.panel != null && !deepEquals(candidate, latest.panel.mine)) {
+                // A form save rebased the open edit while its references were being calculated.
+                candidate = latest.panel.mine as T;
+                continue;
+            }
+            setIsBusy(false);
+            if (panel != null && latest.panel == null) {
+                // The confirmed layout already contains this edit.
+                onCancel();
+            } else if (panel != null && latest.panel != null && latest.applyPanelDraft != null) {
+                // The backend may serialize additional default/null properties. Only reference IDs come from it.
+                const applied = mergeRecalculatedReferencedIds(candidate, recalculated);
+                if (!latest.applyPanelDraft(latest.panel, applied)) return;
+                onPanelDraftChange?.(null);
+                onCancel();
+            } else {
+                onChange(recalculated);
+                if (panel != null) onPanelDraftChange?.(null);
+            }
+            setDataKeyUnlocked(false);
+            markElementApplied?.(value.id);
+            return;
+        }
     };
 
     const confirmDiscard = async (): Promise<boolean> => {

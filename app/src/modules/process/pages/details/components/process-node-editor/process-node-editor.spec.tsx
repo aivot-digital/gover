@@ -1,5 +1,6 @@
 import {AuthService} from '../../../../../../services/auth-service';
 import {ProcessNodeEditorOutputsTab} from './tabs/process-node-editor-outputs-tab';
+import {ProcessNodeEditorConfigurationTab} from './tabs/process-node-editor-configuration-tab';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
@@ -21,14 +22,19 @@ import {ProcessDataKeyInputComponent} from '../../../../../../views/process-data
 import {generateElementWithDefaultValues} from '../../../../../../utils/generate-element-with-default-values';
 import {ElementType} from '../../../../../../data/element-type/element-type';
 import {InputMode, InputVariableSource} from '../../../../../../models/input-mode';
+import {type DerivedRuntimeElementData} from '../../../../../../models/element-data';
 
-const testState = vi.hoisted(() => ({dispatch: vi.fn(), save: vi.fn(), confirm: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn()}));
+const testState = vi.hoisted(() => ({dispatch: vi.fn(), save: vi.fn(), stored: vi.fn(), confirm: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn(), trackDraft: vi.fn()}));
 
 vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => testState.dispatch}));
 vi.mock('../../../../../../providers/confirm-provider', () => ({useConfirm: () => testState.confirm}));
 vi.mock('./components/process-node-editor-menu', () => ({ProcessNodeEditorMenu: () => null}));
+vi.mock('../../../../../../components/view-dispatcher/view-dispatcher.component', () => ({ViewDispatcherComponent: () => null}));
 vi.mock('../../../../../../hooks/use-editor-draft', () => ({
-    useEditorDraft: () => ({loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, discardForNavigation: testState.clearDraft, isReady: true}),
+    useEditorDraft: (props: unknown) => {
+        testState.trackDraft(props);
+        return {loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, discardForNavigation: testState.clearDraft, isReady: true};
+    },
 }));
 vi.mock('../../../../components/process-node-provider-details', () => ({
     getProcessNodeProviderIcon: () => () => null,
@@ -64,11 +70,18 @@ function createMetadata(): ProcessNodeDefinitionMetadata {
 
 function EditorFields() {
     const {node, setNode} = useProcessNodeEditorContext();
+    const mapping = node.configuration.reference;
     return <>
         <label>
             Name bearbeiten
             <input value={node.name ?? ''} onChange={(event) => setNode({...node, name: event.target.value}, false)}/>
         </label>
+        {mapping?.type === InputMode.Variable && <label>
+            Variablenpfad
+            <input value={mapping.reference.path} onChange={(event) => setNode({
+                ...node, configuration: {...node.configuration, reference: {...mapping, reference: {...mapping.reference, path: event.target.value}}},
+            }, false)}/>
+        </label>}
         <ProcessDataKeyInputComponent
             label="Gespeicherter Pfad"
             scopeProcessDataKey="people"
@@ -81,7 +94,7 @@ function EditorFields() {
 function EditorPage({editable}: {editable: boolean}) {
     const [version, setVersion] = useState(0);
     return <ProcessDetailsPageProvider value={{
-        editable, structureEditable: editable, onSave: testState.save,
+        editable, structureEditable: editable, onSave: testState.save, onStoredNode: testState.stored,
         onDelete: async () => {}, onStartReplaceNode: () => {}, testClaim: null,
         nodeRefreshSignal: {nodeId: 1, version}, nodeProblems: [], showNodeProblemsForNodes: {},
     }}>
@@ -90,12 +103,12 @@ function EditorPage({editable}: {editable: boolean}) {
     </ProcessDetailsPageProvider>;
 }
 
-function renderEditor({editable = true, tab = 'configuration'}: {editable?: boolean; tab?: string} = {}) {
+function renderEditor({editable = true, tab = 'configuration', realConfiguration = false}: {editable?: boolean; tab?: string; realConfiguration?: boolean} = {}) {
     const router = createMemoryRouter([{
         path: '/processes/:processId/versions/:processVersion/nodes/:nodeId',
         element: <EditorPage editable={editable}/>,
         children: [
-            {path: 'tabs/configuration', element: <EditorFields/>},
+            {path: 'tabs/configuration', element: realConfiguration ? <ProcessNodeEditorConfigurationTab/> : <EditorFields/>},
             {path: 'tabs/more', element: <EditorFields/>},
             {path: 'tabs/outputs', element: <ProcessNodeEditorOutputsTab/>},
         ],
@@ -325,6 +338,7 @@ describe('ProcessNodeEditor metadata loading', () => {
 });
 
 describe('ProcessNodeEditor drafts and save conflicts', () => {
+    const timeout = {status: 504, message: 'Timeout', details: {reason: 'timeout'}, displayableToUser: true};
     const lockConflict = {
         status: 409,
         message: 'Der Datensatz wurde zwischenzeitlich geändert.',
@@ -337,6 +351,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         Object.defineProperty(HTMLElement.prototype, 'scrollTo', {value: vi.fn(), configurable: true, writable: true});
         testState.dispatch.mockReset();
         testState.save.mockReset();
+        testState.confirm.mockReset().mockResolvedValue(true);
         testState.loadDraft.mockReset().mockResolvedValue(null);
         testState.clearDraft.mockReset().mockResolvedValue(undefined);
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockImplementation(async (id) => ({...createNode(id), lockVersion: 1}));
@@ -369,6 +384,240 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen verwerfen'}));
         await screen.findByDisplayValue('Element 2');
     }
+
+    it.each(['Späterer Name', 'Element 1'])('keeps "%s" edited after the saved name and uses the confirmed version on the next save', async (later) => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise).mockImplementation(async (node: ProcessNodeEntity) => node);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        await editName(later);
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: true, edited: {name: later}, saveCheckpoint: {phase: 'pending', submitted: {name: 'Gesendet'}},
+        });
+        const saved = {...createNode(1), name: 'Gesendet', notes: 'Vom Server', lockVersion: 2};
+        await act(async () => first.resolve(saved));
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue(later);
+        expect(saveButton()).toBeEnabled();
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: true, base: saved, baseLockVersion: 2, edited: {...saved, name: later}, saveCheckpoint: undefined,
+        });
+        expect(testState.save).toHaveBeenCalledTimes(1);
+        fireEvent.click(saveButton());
+        expect(testState.save.mock.calls[1][0]).toEqual({...saved, name: later});
+    });
+
+    it.each(['retry', 'discard'])('preserves later edits when resolving a save conflict by %s', async (decision) => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        const second = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        await editName('Später bearbeitet');
+        const stored = {...createNode(1), name: 'Anderer Name', notes: 'Notiz vom Server', lockVersion: 2};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(stored);
+        await act(async () => first.reject(lockConflict));
+        const dialog = await screen.findByRole('dialog', {name: 'Neuerer Stand gespeichert'});
+        if (decision === 'retry') {
+            fireEvent.click(within(dialog).getByRole('button', {name: 'Übernehmen und speichern'}));
+            await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
+            expect(testState.save.mock.calls[1][0]).toMatchObject({...stored, name: 'Gesendet'});
+            await act(async () => second.resolve({...stored, name: 'Gesendet', lockVersion: 3}));
+        } else {
+            fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen verwerfen'}));
+        }
+        await waitFor(() => expect(saveButton()).toBeEnabled());
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Später bearbeitet');
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: true, baseLockVersion: decision === 'retry' ? 3 : 2,
+            edited: {name: 'Später bearbeitet', notes: 'Notiz vom Server'},
+        });
+        expect(testState.save).toHaveBeenCalledTimes(decision === 'retry' ? 2 : 1);
+    });
+
+    it('keeps all edits after a failed PUT and drops the in-flight checkpoint', async () => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        await editName('Noch offen');
+        await act(async () => first.reject(new Error('Failed to save')));
+        expect(saveButton()).toBeEnabled();
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: true, baseLockVersion: 1, edited: {name: 'Noch offen'}, saveCheckpoint: undefined,
+        });
+    });
+
+    it('shows a rejected save without applying its field errors to newer edits', async () => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        await editName('Neu eingegeben');
+        await act(async () => first.reject({
+            status: 400, message: 'Konfiguration ungültig', displayableToUser: true,
+            details: {effectiveValues: {}, elementStates: {}},
+        }));
+        expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: 'Konfiguration ungültig'}),
+        }));
+        expect(saveButton()).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Neu eingegeben');
+    });
+
+    it.each([
+        {later: 'Element 1', committed: true, count: 2},
+        {later: 'Gesendet', committed: true, count: 1},
+        {later: 'Element 1', committed: false, count: 2},
+    ])('reconciles a timed-out PUT with the stored version on the next explicit save ($later, committed: $committed)', async ({later, committed, count}) => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise).mockImplementation(async (node: ProcessNodeEntity) => node);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        await editName(later);
+        await act(async () => first.reject(timeout));
+        expect(saveButton()).toBeEnabled();
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: true, edited: {name: later}, saveCheckpoint: {phase: 'pending', submitted: {name: 'Gesendet'}},
+        });
+
+        const stored = {...createNode(1), ...(committed ? {name: 'Gesendet', lockVersion: 2} : {lockVersion: 1})};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(stored);
+        fireEvent.click(saveButton());
+        await waitFor(() => expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: false, edited: {...stored, name: later}, saveCheckpoint: undefined,
+        }));
+        expect(testState.stored).toHaveBeenCalledWith(stored);
+        expect(testState.save).toHaveBeenCalledTimes(count);
+        if (count === 2) expect(testState.save.mock.calls[1][0]).toEqual({...stored, name: later});
+    });
+
+    it('keeps a reversion if a timed-out PUT commits after the reconciliation read', async () => {
+        const base = {...createNode(1), lockVersion: 1};
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise).mockRejectedValueOnce(lockConflict)
+            .mockImplementation(async (node: ProcessNodeEntity) => node);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        await editName('Element 1');
+        await act(async () => first.reject({status: 503, message: 'Verbindung unterbrochen', details: {reason: 'network_unreachable'}, displayableToUser: false}));
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValueOnce(base)
+            .mockResolvedValueOnce({...base, name: 'Gesendet', lockVersion: 2});
+        fireEvent.click(saveButton());
+        await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(3));
+        expect(testState.save.mock.calls[2][0]).toEqual({...base, name: 'Element 1', lockVersion: 2});
+    });
+
+    it('protects an interrupted edit until a third possible value can be saved against its own version', async () => {
+        const base = {...createNode(1), lockVersion: 1};
+        const guard = Promise.withResolvers<ProcessNodeEntity>();
+        const actualSave = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockRejectedValueOnce(timeout)
+            .mockReturnValueOnce(guard.promise).mockReturnValueOnce(actualSave.promise);
+        renderEditor();
+        await editName('Erster Versuch');
+        fireEvent.click(saveButton());
+        await waitFor(() => expect(saveButton()).toBeEnabled());
+        await editName('Element 1');
+        fireEvent.change(screen.getByRole('textbox', {name: 'Variablenpfad'}), {target: {value: 'person.titel'}});
+        fireEvent.click(saveButton());
+        await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
+        expect(testState.save.mock.calls[1][0]).toEqual(base);
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            saveCheckpoint: {phase: 'pending', submitted: {name: 'Erster Versuch'}},
+            edited: {name: 'Element 1', configuration: {reference: {reference: {path: 'person.titel'}}}},
+        });
+        await editName('Noch später');
+        await act(async () => guard.resolve({...base, lockVersion: 2}));
+        expect(testState.save.mock.calls[2][0]).toMatchObject({
+            lockVersion: 2, name: 'Element 1', configuration: {reference: {reference: {path: 'person.titel'}}},
+        });
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            saveCheckpoint: {phase: 'pending', baseLockVersion: 2, attempt: {base: {lockVersion: 2}}},
+            edited: {name: 'Noch später'},
+        });
+        await act(async () => actualSave.resolve({...testState.save.mock.calls[2][0], lockVersion: 3}));
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            base: {lockVersion: 3}, edited: {name: 'Noch später', lockVersion: 3}, saveCheckpoint: undefined,
+        });
+        expect(testState.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: expect.stringContaining('zusammengeführt')}),
+        }));
+    });
+
+    it('drops the rejected PUT checkpoint when the 409 lookup times out', async () => {
+        testState.save.mockRejectedValueOnce(lockConflict);
+        renderEditor();
+        await editName('Meine Änderung');
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockRejectedValueOnce(timeout);
+        fireEvent.click(saveButton());
+        await waitFor(() => expect(saveButton()).toBeEnabled());
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            hasChanged: true, edited: {name: 'Meine Änderung'}, saveCheckpoint: undefined,
+        });
+    });
+
+    it('defers a structural decision for edits made after Save until the next explicit save', async () => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(first.promise).mockImplementation(async (node: ProcessNodeEntity) => node);
+        renderEditor();
+        await editName('Gesendet');
+        fireEvent.click(saveButton());
+        fireEvent.change(screen.getByRole('textbox', {name: 'Variablenpfad'}), {target: {value: 'person.titel'}});
+        const stored = {...createNode(1), name: 'Gesendet', lockVersion: 2, configuration: {reference: {type: InputMode.Literal as const, value: 'Fest'}}};
+        await act(async () => first.resolve(stored));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: 'Variablenpfad'})).toHaveValue('person.titel');
+        expect(testState.trackDraft.mock.lastCall?.[0].saveCheckpoint).toMatchObject({phase: 'confirmed'});
+
+        fireEvent.click(saveButton());
+        const dialog = await screen.findByRole('dialog', {name: 'Neuerer Stand gespeichert'});
+        expect(testState.save).toHaveBeenCalledTimes(1);
+        fireEvent.click(within(dialog).getByRole('radio', {name: 'Gespeicherter Stand soll übernommen werden'}));
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Übernehmen und speichern'}));
+        await waitFor(() => expect(screen.queryByRole('textbox', {name: 'Variablenpfad'})).not.toBeInTheDocument());
+        expect(testState.save).toHaveBeenCalledTimes(1);
+        expect(saveButton()).toBeDisabled();
+    });
+
+    it('keeps the latest name and confirmed lock version when the initial derivation finishes after saving', async () => {
+        const first = Promise.withResolvers<ProcessNodeEntity>();
+        const derivation = Promise.withResolvers<DerivedRuntimeElementData>();
+        vi.spyOn(ProcessNodeApiService.prototype, 'deriveConfiguration').mockReturnValue(derivation.promise);
+        testState.save.mockReturnValueOnce(first.promise);
+        renderEditor({realConfiguration: true});
+        const input = await screen.findByRole('textbox', {name: /^Name des Elementes/});
+        fireEvent.change(input, {target: {value: 'Gesendet'}});
+        fireEvent.click(saveButton());
+        fireEvent.change(input, {target: {value: 'Spätere Eingabe'}});
+        await act(async () => first.resolve({...createNode(1), name: 'Gesendet', lockVersion: 2}));
+        await act(async () => derivation.resolve({effectiveValues: {}, elementStates: {}}));
+        expect(input).toHaveValue('Spätere Eingabe');
+        expect(saveButton()).toBeEnabled();
+        expect(testState.trackDraft.mock.lastCall?.[0]).toMatchObject({
+            base: {name: 'Gesendet', lockVersion: 2}, edited: {name: 'Spätere Eingabe', lockVersion: 2},
+        });
+    });
+
+    it.each([false, true])('recovers after login before the PUT response (committed: %s)', async (committed) => {
+        const base = {...createNode(1), lockVersion: 1};
+        const submitted = {...base, name: 'Gesendet'};
+        const stored = committed ? {...submitted, lockVersion: 2} : base;
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(stored);
+        testState.loadDraft.mockResolvedValue({base, baseLockVersion: 1, mine: base, saveCheckpoint: {phase: 'pending', submitted}});
+        renderEditor();
+        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'});
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen wiederherstellen'}));
+        await waitFor(() => expect(saveButton()).toBeEnabled());
+        expect(testState.trackDraft.mock.lastCall?.[0].saveCheckpoint).toEqual(committed ? undefined : {phase: 'pending', submitted});
+        expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 1');
+        expect(testState.save).not.toHaveBeenCalled();
+    });
 
     it('never retries a discarded save after opening another node and saves the new node by its own ID', async () => {
         vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
@@ -524,6 +773,27 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
 
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).not.toHaveAttribute('aria-invalid', 'true');
         expect(screen.queryByText('Fehler in Element 1')).not.toBeInTheDocument();
+    });
+
+    it('allows editing and ignores validation that describes an earlier save of the same node', async () => {
+        const validation = Promise.withResolvers<ProcessNodeProblems>();
+        testState.save.mockImplementation(async (node: ProcessNodeEntity) => ({...node, lockVersion: 2}));
+        renderEditor({tab: 'outputs'});
+        const input = await screen.findByRole('textbox', {name: /^Datenschlüssel/});
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(input, {target: {value: 'gesendet'}});
+        vi.mocked(ProcessNodeApiService.prototype.validate).mockReturnValueOnce(validation.promise);
+        fireEvent.click(saveButton());
+        await waitFor(() => expect(input).toHaveAttribute('readonly'));
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(input, {target: {value: 'neu'}});
+        expect(saveButton()).toBeEnabled();
+        await act(async () => validation.resolve({
+            node: {...createNode(1), dataKey: 'gesendet'}, commonErrors: {dataKey: ['Fehler im alten Stand']},
+            derivedRuntimeElementData: {effectiveValues: {}, elementStates: {}}, problems: [],
+        }));
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveValue('neu');
     });
 
     it('merges a save rejected by a newer stored state and saves again without asking', async () => {

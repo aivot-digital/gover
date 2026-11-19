@@ -2,7 +2,7 @@ import {Box} from '@mui/material';
 import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
-import {useCallback, useRef} from 'react';
+import {useCallback} from 'react';
 import {useProcessDetailsPageContext} from '../../../process-details-page-context';
 import {AuthoredElementValues} from '../../../../../../../models/element-data';
 import {ProcessNodeApiService} from '../../../../../services/process-node-api-service';
@@ -21,15 +21,6 @@ export function ProcessNodeEditorConfigurationTab() {
     const {
         showNodeProblemsForNodes,
     } = useProcessDetailsPageContext();
-
-    const initialDerivationNodeIdRef = useRef<number | null>(null);
-
-    const handleDerivationFinished = useCallback(() => {
-        if (initialDerivationNodeIdRef.current !== localNode.id) {
-            initialDerivationNodeIdRef.current = localNode.id;
-            setLocalNode(localNode, true);
-        }
-    }, [localNode]);
 
     const handleAuthoredElementValuesChange = useCallback((authoredElementValues: AuthoredElementValues) => {
         setLocalNode({
@@ -85,7 +76,6 @@ export function ProcessNodeEditorConfigurationTab() {
                 element={layout}
                 authoredElementValues={localNode.configuration}
                 onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
-                onDerivationFinished={handleDerivationFinished}
                 computedErrors={problems?.derivedRuntimeElementData.elementStates}
                 suppressErrors={!localNode.savedWithErrors && !showNodeProblemsForNodes[localNode.id]}
                 disabled={!isEditable}

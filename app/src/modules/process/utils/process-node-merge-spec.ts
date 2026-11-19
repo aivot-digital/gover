@@ -10,6 +10,7 @@ import {
     isElementTree,
 } from '../../elements/utils/form-layout-merge-spec';
 import {describeConfigurationProperty} from '../../elements/utils/element-conflict-labels';
+import {isUiDefinitionInputFieldElement} from '../../../models/elements/form/input/ui-definition-input-field-element';
 
 const FieldLabels: Record<string, string> = {
     name: 'Name des Elementes',
@@ -22,12 +23,19 @@ const FieldLabels: Record<string, string> = {
     configuration: 'Konfiguration',
 };
 
+export function getExternallyEditedFields(layout: GroupLayout | null): string[] {
+    return (layout == null ? [] : flattenElements(layout))
+        .filter((element) => isUiDefinitionInputFieldElement(element) && element.openExternalEditor)
+        .map((element) => element.id);
+}
+
 /**
  * Merges a process node edited in the node editor with a newer stored state.
  * The configuration layout resolves configuration keys, which are element IDs, to their field labels.
  */
-export function createProcessNodeMergeSpec(layout: GroupLayout | null): MergeSpec<ProcessNodeEntity> {
+export function createProcessNodeMergeSpec(layout: GroupLayout | null, stored?: ProcessNodeEntity): MergeSpec<ProcessNodeEntity> {
     const layoutElements = layout == null ? [] : flattenElements(layout);
+    const externalFields = getExternallyEditedFields(layout);
     const describeConflict: NonNullable<MergeSpec<ProcessNodeEntity>['describeConflict']> = (path, {base, mine, theirs}) => {
         const [field, configurationKey, ...rest] = path;
         const nodePrefix = ['process-node', mine.id];
@@ -73,6 +81,18 @@ export function createProcessNodeMergeSpec(layout: GroupLayout | null): MergeSpe
             'portResolutionProblems',
             'deadlineDefinitions',
         ],
+        // These keys are written by a separate editor and omitted by the node editor's PUT.
+        normalize: stored == null || externalFields.length === 0 ? undefined : (node) => {
+            const configuration = {...node.configuration};
+            for (const key of externalFields) {
+                if (Object.hasOwn(stored.configuration, key)) {
+                    configuration[key] = stored.configuration[key];
+                } else {
+                    delete configuration[key];
+                }
+            }
+            return {...node, configuration};
+        },
         arrayKey: keyById,
         validate: (node) => Object.values(node.configuration ?? {})
             .map((value) => getLiteralAuthoredValue(value))

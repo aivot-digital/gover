@@ -1,7 +1,7 @@
 import {normalizeElementDefinition} from '../../../utils/normalize-element-definition';
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
 import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {
@@ -12,6 +12,7 @@ import {
     toggleElementContextMenu,
 } from '../../../slices/admin-settings-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
+import {useCurrentState} from '../../../hooks/use-current-state';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementTree} from '../../../components/element-tree-2/element-tree';
 import type {ElementPanelDraft} from '../../../components/element-tree-2/element-panel-draft';
@@ -136,11 +137,14 @@ import {VDepartmentShadowedApiService} from '../../departments/services/v-depart
 import {Chip} from '../../../components/chip/chip';
 import {quoteString} from '../../../utils/string-utils';
 import {PaymentRequestOverview} from '../../payment/components/payment-request-overview';
-import {isApiError, isLockVersionConflictError} from '../../../models/api-error';
+import {isApiError} from '../../../models/api-error';
 import {useEditorDraft} from '../../../hooks/use-editor-draft';
 import {useMergeConflictResolution} from '../../../hooks/use-merge-conflict-resolution';
 import {formLayoutMergeSpec} from '../utils/form-layout-merge-spec';
-import {mergeFormDraft} from '../utils/merge-form-draft';
+import {mergeFormDraft, rebaseOpenElementDraft} from '../utils/merge-form-draft';
+import {
+    canPendingSaveStillCommit, type EditorSaveCheckpoint, pendingSaveCanChangeStored, persistEditorSave, rebaseAfterSave,
+} from '../../../utils/editor-save-rebase';
 import {deepEquals} from '../../../utils/equality-utils';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
@@ -152,8 +156,6 @@ const FormLayoutFieldKey = 'formLayout';
 const IdentitiesFieldKey = 'identities';
 const EditorLoadErrorMessage = 'Der Formulareditor konnte nicht geladen werden.';
 const MergedSaveMessage = 'Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.';
-// Each attempt merges with the latest stored state; a conflict that persists beyond that is reported instead of retried.
-const MaxSaveAttempts = 3;
 
 function createEditorLoadError(error: unknown) {
     return {
@@ -176,8 +178,14 @@ function getStoredFormLayout(node: ProcessNodeEntity): FormLayoutElement | null 
     return normalizeElementDefinition(getLiteralElementValue<FormLayoutElement>(node.configuration, FormLayoutFieldKey)) ?? null;
 }
 
-function toEditableFormLayout(layout: FormLayoutElement | null): FormLayoutElement {
-    return layout ?? generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement;
+function sameFormLayout(left: FormLayoutElement | null, right: FormLayoutElement | null): boolean {
+    return deepEquals(normalizeUiDefinitionForStorage(left), normalizeUiDefinitionForStorage(right));
+}
+
+function toEditableFormLayout(layout: FormLayoutElement | null, rootId?: string): FormLayoutElement {
+    if (layout != null) return layout;
+    const empty = generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement;
+    return rootId == null ? empty : {...empty, id: rootId};
 }
 
 export function FormNodeEditorPage() {
@@ -198,9 +206,22 @@ export function FormNodeEditorPage() {
 
     const [showRootAddElementDialog, setShowRootAddElementDialog] = useState(false);
 
-    const [node, setNode] = useState<ProcessNodeEntity | null>(null);
-    const [formLayout, setFormLayout] = useState<FormLayoutElement | null>(null);
-    const [panelDraft, setPanelDraft] = useState<ElementPanelDraft | null>(null);
+    const [node, setNode, currentNode] = useCurrentState<ProcessNodeEntity | null>(null);
+    const [formLayout, setFormLayout, currentLayout] = useCurrentState<FormLayoutElement | null>(null);
+    const [panelDraft, setPanelDraft, currentPanel] = useCurrentState<ElementPanelDraft | null>(null);
+    const [saveCheckpoint, setSaveCheckpoint, currentCheckpoint] = useCurrentState<EditorSaveCheckpoint<FormLayoutElement | null> | undefined>(undefined);
+    const activeSave = useRef<AbortController | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const visit = useRef<AbortSignal | null>(null);
+    useLayoutEffect(() => {
+        const controller = new AbortController();
+        visit.current = controller.signal;
+        return () => {
+            controller.abort();
+            activeSave.current?.abort();
+            activeSave.current = null;
+        };
+    }, [nodeId]);
     const configuredFormSlug = node == null ? undefined : getLiteralElementValue<string>(node.configuration, 'formSlug');
 
     const [process, setProcess] = useState<ProcessEntity | null>(null);
@@ -247,25 +268,30 @@ export function FormNodeEditorPage() {
     } | null>(null);
 
     const storedFormLayout = useMemo(() => node == null ? null : getStoredFormLayout(node), [node]);
-    const hasLayoutChanges = useMemo(() => !deepEquals(
-        normalizeUiDefinitionForStorage(storedFormLayout),
-        normalizeUiDefinitionForStorage(formLayout),
-    ), [storedFormLayout, formLayout]);
+    const hasLayoutChanges = useMemo(() => !sameFormLayout(storedFormLayout, formLayout), [storedFormLayout, formLayout]);
+    useLayoutEffect(() => {
+        if (saveCheckpoint?.phase === 'confirmed' && !hasLayoutChanges && panelDraft == null) {
+            setSaveCheckpoint(undefined);
+        }
+    }, [saveCheckpoint, hasLayoutChanges, panelDraft, setSaveCheckpoint]);
+    const hasLayoutToSave = hasLayoutChanges || saveCheckpoint?.phase === 'pending';
 
     const {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
         original: false,
-        edited: hasLayoutChanges || panelDraft != null,
-        onConfirmNavigation: (): Promise<void> => discardForNavigation(),
+        edited: hasLayoutToSave || panelDraft != null,
+        onConfirmNavigation: async () => {
+            activeSave.current?.abort();
+            activeSave.current = null;
+            setIsSaving(false);
+            await discardForNavigation();
+        },
     });
 
-    const isSavingRef = useRef(false);
-    const [isSaving, setIsSaving] = useState(false);
     const [isDraftChecked, setIsDraftChecked] = useState(false);
     const {
-        resolve: resolveMerge,
         resolvePrepared,
         dialog: mergeConflictDialog,
     } = useMergeConflictResolution();
@@ -374,6 +400,8 @@ export function FormNodeEditorPage() {
                 setPastLoadedForm([]);
                 setFutureLoadedForm([]);
                 setIsDraftChecked(false);
+                setIsSaving(false);
+                setSaveCheckpoint(undefined);
                 setPanelDraft(null);
                 setNode(node);
                 setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
@@ -597,6 +625,7 @@ export function FormNodeEditorPage() {
         baseLockVersion: node?.lockVersion,
         edited: formLayout,
         context: panelDraft ?? undefined,
+        saveCheckpoint,
         hasChanged,
         enabled: isDraftChecked && isEditable,
     });
@@ -616,14 +645,19 @@ export function FormNodeEditorPage() {
                 return;
             }
 
+            const checkpoint = draft.saveCheckpoint;
+            // The GET may precede the outstanding PUT. Even a reversion to the value we just
+            // read needs an explicit decision until a later write rules out that PUT.
+            const stillPending = canPendingSaveStillCommit(checkpoint, draft.baseLockVersion, node.lockVersion) &&
+                pendingSaveCanChangeStored(checkpoint, storedFormLayout, formLayoutMergeSpec);
             const outcome = await resolvePrepared({
-                merge: (choices) => mergeFormDraft({
-                    base: draft.base,
-                    mine: draft.mine,
-                    theirs: storedFormLayout,
-                    editableRoot: formLayout,
-                    panel: draft.context,
-                }, choices),
+                merge: (choices) => {
+                    const merged = mergeFormDraft({
+                        base: draft.base, mine: draft.mine, theirs: storedFormLayout,
+                        editableRoot: formLayout, panel: draft.context, saveCheckpoint: checkpoint,
+                    }, choices);
+                    return stillPending ? {...merged, changed: true} : merged;
+                },
                 mode: 'restore',
                 signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (node.lockVersion ?? null),
@@ -639,9 +673,10 @@ export function FormNodeEditorPage() {
             }
             if (outcome.status === 'apply') {
                 const {layout} = outcome.value;
-                if (!deepEquals(normalizeUiDefinitionForStorage(layout), normalizeUiDefinitionForStorage(formLayout))) {
+                if (!sameFormLayout(layout, formLayout)) {
                     handlePatch(toEditableFormLayout(layout));
                 }
+                if (stillPending) setSaveCheckpoint(checkpoint);
                 setPanelDraft(recoveredPanel ?? null);
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
@@ -712,76 +747,85 @@ export function FormNodeEditorPage() {
         setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
-    const applyStoredNode = (storedNode: ProcessNodeEntity) => {
-        setNode(storedNode);
-        setFormLayout(toEditableFormLayout(getStoredFormLayout(storedNode)));
+    const acceptStoredForm = (stored: ProcessNodeEntity, submitted: FormLayoutElement) => {
+        const latest = currentLayout.current;
+        if (latest == null) return;
+
+        const confirmed = getStoredFormLayout(stored);
+        const rebased = rebaseAfterSave(submitted, latest, confirmed, formLayoutMergeSpec);
+        const layout = toEditableFormLayout(rebased.value, latest.id);
+        const panel = rebaseOpenElementDraft(currentPanel.current, latest, layout);
+
+        setNode(stored);
+        setFormLayout(layout);
+        setPanelDraft(panel.draft);
+        setSaveCheckpoint(rebased.checkpoint ?? (panel.needsDecision
+            ? {phase: 'confirmed', submitted} : undefined));
+
+        // Undo and redo snapshots predate the acknowledgement as well. Preserve independent
+        // server changes when undoing a later edit; never replay an ambiguous structural change.
+        if (!sameFormLayout(submitted, confirmed)) {
+            const rebaseHistory = (history: FormLayoutElement[]) => history.flatMap((entry) => {
+                const next = rebaseAfterSave(submitted, entry, confirmed, formLayoutMergeSpec);
+                return next.checkpoint ? [] : [toEditableFormLayout(next.value, layout.id)];
+            });
+            setPastLoadedForm(rebaseHistory);
+            setFutureLoadedForm(rebaseHistory);
+        }
     };
 
-    /**
-     * Saves the layout on top of the given node. A save rejected because a newer state was stored in the meantime
-     * is merged with that state and saved again, asking only where both changed the same value.
-     * Resolves to false if nothing was saved because the person cancelled or discarded the changes.
-     */
-    const saveFormLayout = async (baseNode: ProcessNodeEntity, layout: FormLayoutElement, attempt = 1): Promise<boolean> => {
-        try {
-            const updated = await new ProcessNodeApiService()
-                .update(baseNode.id, {
-                    ...baseNode,
-                    configuration: {
-                        ...baseNode.configuration,
-                        [FormLayoutFieldKey]: literalAuthoredValue(normalizeUiDefinitionForStorage(layout)),
-                    },
-                }, {
-                    query: {
-                        onlyConfigSave: FormLayoutFieldKey,
-                    },
-                });
-            applyStoredNode(updated);
-            return true;
-        } catch (error) {
-            if (!isLockVersionConflictError(error) || attempt >= MaxSaveAttempts) {
-                throw error;
-            }
+    /** The return value is the confirmed server version used by export and test submission. */
+    const saveForm = async (): Promise<ProcessNodeEntity | null> => {
+        const submitted = currentLayout.current;
+        const original = currentNode.current;
+        if (original == null || original.id !== Number(nodeId) || submitted == null || !isEditable ||
+            !draftNodeReady || activeSave.current != null) {
+            return null;
         }
 
-        const storedNode = await new ProcessNodeApiService().retrieve(baseNode.id);
-        const outcome = await resolveMerge({
-            base: getStoredFormLayout(baseNode),
-            mine: layout,
-            theirs: getStoredFormLayout(storedNode),
-            spec: formLayoutMergeSpec,
-            mode: 'save',
-            storedStateChanged: true,
-        });
-
-        if (outcome.status === 'discard') {
-            applyStoredNode(storedNode);
-        }
-        if (outcome.status !== 'apply') {
-            return false;
-        }
-
-        // Based on the newer node, so the save passes the lock version check unless yet another save came first.
-        const saved = await saveFormLayout(storedNode, toEditableFormLayout(outcome.value), attempt + 1);
-        if (saved) {
-            dispatch(showSuccessSnackbar(MergedSaveMessage));
-        }
-        return saved;
-    };
-
-    const saveForm = async (): Promise<boolean> => {
-        // Guards against a second click while the first save is still running, which would end in a needless conflict.
-        if (node == null || formLayout == null || !isEditable || isSavingRef.current) {
-            return false;
-        }
-
-        isSavingRef.current = true;
+        const controller = new AbortController();
+        const {signal} = controller;
+        activeSave.current = controller;
         setIsSaving(true);
+        const priorCheckpoint = currentCheckpoint.current;
+        let resetCheckpoint = true;
         try {
-            return await saveFormLayout(node, formLayout);
+            const api = new ProcessNodeApiService();
+            const result = await persistEditorSave<FormLayoutElement | null, ProcessNodeEntity>({
+                original, submitted, checkpoint: priorCheckpoint, signal, resolvePrepared,
+                valueOf: getStoredFormLayout,
+                specFor: () => formLayoutMergeSpec,
+                read: () => api.retrieve(original.id),
+                write: (base, layout, reserveVersion) => {
+                    const update = reserveVersion ? base : {
+                        ...base,
+                        configuration: {
+                            ...base.configuration,
+                            [FormLayoutFieldKey]: literalAuthoredValue(normalizeUiDefinitionForStorage(layout)),
+                        },
+                    };
+                    return api.update(base.id, update, {query: {onlyConfigSave: FormLayoutFieldKey}, abortBeforeSend: signal});
+                },
+                setPending: setSaveCheckpoint,
+            });
+            signal.throwIfAborted();
+            if (result.status === 'cancel') return null;
+            // If a dispatched write lost its response, keep its checkpoint for recovery.
+            resetCheckpoint = false;
+            if (result.status === 'unknown') throw result.error;
+            acceptStoredForm(result.stored, submitted);
+            if (result.status === 'discarded') return null;
+            if (result.merged) dispatch(showSuccessSnackbar(MergedSaveMessage));
+            return result.stored;
+        } catch (error) {
+            if (!signal.aborted) throw error;
+            return null;
         } finally {
-            isSavingRef.current = false;
-            setIsSaving(false);
+            if (activeSave.current === controller) {
+                if (resetCheckpoint) setSaveCheckpoint(priorCheckpoint);
+                activeSave.current = null;
+                setIsSaving(false);
+            }
         }
     };
 
@@ -883,12 +927,8 @@ export function FormNodeEditorPage() {
         }
     };
 
-    const downloadPersistedPdfFile = async (filenameLayout: FormLayoutElement | null): Promise<void> => {
-        if (node == null) {
-            return;
-        }
-
-        const filename = resolvePrintablePdfFilename(filenameLayout?.publicTitle, node.name);
+    const downloadPersistedPdfFile = async (stored: ProcessNodeEntity, signal: AbortSignal): Promise<void> => {
+        const filename = resolvePrintablePdfFilename(getStoredFormLayout(stored)?.publicTitle, stored.name);
 
         dispatch(setLoadingMessage({
             blocking: false,
@@ -898,11 +938,13 @@ export function FormNodeEditorPage() {
 
         try {
             const blob = await new FormTriggerApiService()
-                .downloadPrintablePdf(node.id);
+                .downloadPrintablePdf(stored.id);
 
+            if (signal.aborted) return;
             downloadBlobFile(filename, blob);
             dispatch(showSuccessSnackbar('Der Vordruck wurde erfolgreich erstellt und der Download gestartet.'));
         } catch (err) {
+            if (signal.aborted) return;
             console.error(err);
             dispatch(showApiErrorSnackbar(err, 'Fehler beim Generieren des Vordrucks'));
         } finally {
@@ -911,13 +953,14 @@ export function FormNodeEditorPage() {
     };
 
     const handleDownloadPdfFile = async (): Promise<void> => {
-        if (node == null) {
+        const signal = visit.current;
+        if (node?.id !== Number(nodeId) || signal == null || signal.aborted) {
             return;
         }
 
-        let filenameLayout = formLayout;
+        let confirmed = node;
 
-        if (hasLayoutChanges) {
+        if (hasLayoutToSave) {
             const saveNow = await confirm({
                 title: 'Ungespeicherte Änderungen',
                 children: (
@@ -930,11 +973,11 @@ export function FormNodeEditorPage() {
                 confirmButtonText: 'Speichern und Vordruck exportieren',
             });
 
-            if (saveNow) {
+            if (saveNow && !signal.aborted) {
                 try {
-                    if (!await saveForm()) {
-                        return;
-                    }
+                    const saved = await saveForm();
+                    if (saved == null || signal.aborted) return;
+                    confirmed = saved;
                 } catch (err) {
                     console.error(err);
                     dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
@@ -945,7 +988,7 @@ export function FormNodeEditorPage() {
             }
         }
 
-        await downloadPersistedPdfFile(filenameLayout);
+        await downloadPersistedPdfFile(confirmed, signal);
     };
 
     const handlePatch = (element: FormLayoutElement) => {
@@ -1213,7 +1256,7 @@ export function FormNodeEditorPage() {
             iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            disabled: !hasLayoutChanges || !isEditable || isSaving,
+            disabled: !hasLayoutToSave || !isEditable || isSaving,
         },
     ];
 
@@ -1244,12 +1287,26 @@ export function FormNodeEditorPage() {
     const formLogoUrlDark = resolveDraftLogoUrl('dark');
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
-        if (event != SUBMIT_EVENT) {
+        const signal = visit.current;
+        if (event != SUBMIT_EVENT || node.id !== Number(nodeId) || signal == null || signal.aborted) {
             return;
         }
 
         let errorMessage = 'Das Absenden des Formulars konnte nicht vorbereitet werden.';
         let loadingStarted = false;
+        let confirmedLayout = formLayout;
+        let formSlug = configuredFormSlug;
+        const showMissingSlug = () => confirm({
+            title: 'URL-Segment fehlt',
+            children: (
+                <Typography>
+                    Für dieses Formular fehlt ein URL-Segment.
+                    Öffnen Sie die Eigenschaften des Formulareingangs und konfigurieren Sie das URL-Segment des Formulars.
+                </Typography>
+            ),
+            confirmButtonText: 'Ok',
+            hideCancelButton: true,
+        });
         try {
             if (disableValidation) {
                 const confirmProcess = await confirm({
@@ -1274,30 +1331,19 @@ export function FormNodeEditorPage() {
                     ),
                     confirmButtonText: 'Ja, fortfahren',
                 });
-
+                signal.throwIfAborted();
                 if (!confirmProcess) {
                     return;
                 }
             }
 
-            // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
-            if (configuredFormSlug == null || configuredFormSlug === '') {
-                await confirm({
-                    title: 'URL-Segment fehlt',
-                    children: (
-                        <Typography>
-                            Für dieses Formular fehlt ein URL-Segment.
-                            Öffnen Sie die Eigenschaften des Formulareingangs und konfigurieren Sie das URL-Segment des Formulars.
-                        </Typography>
-                    ),
-                    confirmButtonText: 'Ok',
-                    hideCancelButton: true,
-                });
+            if (!formSlug) {
+                await showMissingSlug();
                 return;
             }
 
             // Check if changes exist. If so, ask for saving them.
-            if (hasLayoutChanges) {
+            if (hasLayoutToSave) {
                 const saveNow = await confirm({
                     title: 'Ungespeicherte Änderungen',
                     children: (
@@ -1310,14 +1356,19 @@ export function FormNodeEditorPage() {
                     ),
                     confirmButtonText: 'Jetzt speichern',
                 });
-
+                signal.throwIfAborted();
                 if (!saveNow) {
                     dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
                     return;
                 }
 
                 errorMessage = 'Fehler beim Speichern der Änderungen';
-                if (!await saveForm()) {
+                const saved = await saveForm();
+                if (saved == null || signal.aborted) return;
+                confirmedLayout = toEditableFormLayout(getStoredFormLayout(saved), formLayout.id);
+                formSlug = getLiteralElementValue<string>(saved.configuration, 'formSlug');
+                if (!formSlug) {
+                    await showMissingSlug();
                     return;
                 }
             }
@@ -1332,6 +1383,7 @@ export function FormNodeEditorPage() {
                 .then(response => {
                     return response.content.length > 0 ? response.content[0] : null;
                 });
+            signal.throwIfAborted();
 
             if (testClaim == null) {
                 const createTestClaim = await confirm({
@@ -1345,7 +1397,7 @@ export function FormNodeEditorPage() {
                     ),
                     confirmButtonText: 'Testmodus starten',
                 });
-
+                signal.throwIfAborted();
                 if (!createTestClaim) {
                     dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
                     return;
@@ -1357,15 +1409,17 @@ export function FormNodeEditorPage() {
                         processId: node.processId,
                         processVersion: node.processVersion,
                     });
+                signal.throwIfAborted();
                 setTestClaim(testClaim);
                 testClaimRef.current = testClaim;
             }
 
             errorMessage = 'Beim Berechnen der Kosten ist ein unbekannter Fehler aufgetreten.';
             const costs = await new FormTriggerApiService()
-                .calculateCosts(process.slug, configuredFormSlug, values, {
+                .calculateCosts(process.slug, formSlug, values, {
                     testClaim: testClaim.accessKey,
                 });
+            signal.throwIfAborted();
             const paymentRequired = costs.totalCost > 0;
 
             if (paymentRequired) {
@@ -1378,7 +1432,7 @@ export function FormNodeEditorPage() {
                     ),
                     confirmButtonText: 'Fortfahren',
                 });
-
+                signal.throwIfAborted();
                 if (!proceedWithPaymentRequirements) {
                     dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen.'));
                     return;
@@ -1390,14 +1444,14 @@ export function FormNodeEditorPage() {
             formData.append('inputs', JSON.stringify(values));
 
             const files: FileUploadElementItem[] = [];
-            walkAuthoredElementValues(formLayout, values, (element, value) => {
+            walkAuthoredElementValues(confirmedLayout, values, (element, value) => {
                 if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
                     files.push(...value);
                 }
             });
 
             for (const file of files) {
-                const response = await fetch(file.uri);
+                const response = await fetch(file.uri, {signal});
                 if (!response.ok) {
                     throw new Error(`Failed to load attachment ${file.name}`);
                 }
@@ -1406,6 +1460,7 @@ export function FormNodeEditorPage() {
                 formData.append('fileUris', file.uri);
             }
 
+            signal.throwIfAborted();
             dispatch(setLoadingMessage({
                 blocking: true,
                 estimatedTime: 1000,
@@ -1415,16 +1470,16 @@ export function FormNodeEditorPage() {
             errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten';
 
             const startRes = await new FormTriggerApiService()
-                .submitForm(process.slug, configuredFormSlug, formData, {
+                .submitForm(process.slug, formSlug, formData, {
                     testClaim: testClaim.accessKey,
                 });
-
+            signal.throwIfAborted();
             setStartedProcessAccessInfo({
                 processInstanceAccessKey: startRes.startedProcessAccessKey,
                 paymentRequired: paymentRequired,
             });
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, errorMessage));
+            if (!signal.aborted) dispatch(showApiErrorSnackbar(err, errorMessage));
         } finally {
             if (loadingStarted) {
                 dispatch(clearLoadingMessage());

@@ -9,6 +9,7 @@ export interface ProcessDetailsPageContextType {
     editable: boolean;
     structureEditable: boolean;
     onSave: (node: ProcessNodeEntity, options?: RequestOptions) => Promise<ProcessNodeEntity>;
+    onStoredNode: (node: ProcessNodeEntity) => void;
     onDelete: (node: ProcessNodeEntity) => Promise<void>;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;
     nodeRefreshSignal: {

@@ -11,6 +11,7 @@ import {ElementsApiService} from '../elements-api-service';
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {FormNodeEditorPage} from './form-node-editor-page';
 import {ProcessNodeApiService} from '../../process/services/process-node-api-service';
+import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import {ProcessDefinitionApiService} from '../../process/services/process-definition-api-service';
 import {ProcessDefinitionVersionApiService} from '../../process/services/process-definition-version-api-service';
 import {ProcessTestClaimApiService} from '../../process/services/process-test-claim-api-service';
@@ -48,7 +49,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
     return {
         ...router,
         useNavigate: () => mocks.withRouter ? router.useNavigate() : vi.fn(),
-        useParams: () => ({nodeId: '1'}),
+        useParams: () => ({nodeId: (mocks.withRouter ? router.useParams().nodeId : undefined) ?? '1'}),
         useSearchParams: () => [new URLSearchParams()],
     };
 });
@@ -199,8 +200,12 @@ vi.mock('../../../components/element-tree-2/element-tree', async (importOriginal
     return {
         ElementTree: (props: React.ComponentProps<typeof ElementTree<FormLayoutElement>>) =>
             mocks.withRealTree ? <ElementTree {...props}/> : (
-                <input aria-label="Formulartitel" value={props.value.publicTitle ?? ''}
-                    onChange={(event) => props.onChange({...props.value, publicTitle: event.target.value})}/>
+                <>
+                    <input aria-label="Formulartitel" value={props.value.publicTitle ?? ''}
+                        onChange={(event) => props.onChange({...props.value, publicTitle: event.target.value})}/>
+                    <input aria-label="Reitertitel" value={props.value.tabTitle ?? ''}
+                        onChange={(event) => props.onChange({...props.value, tabTitle: event.target.value})}/>
+                </>
             ),
     };
 });
@@ -516,6 +521,324 @@ describe('FormNodeEditorPage', () => {
         }));
     });
 
+    it.each(['Nächste Fassung', 'Testformular'])('keeps a later title (%s) as an unsaved change on top of the confirmed version', async (later) => {
+        const {save} = await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        editFormTitle(later);
+        const confirmed = {...createFormLayout(), publicTitle: 'Abgesendet'};
+        await act(async () => put.resolve({...createNode(confirmed), lockVersion: 2}));
+
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue(later);
+        expect(formSaveButton()).toBeEnabled();
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({base: confirmed, baseLockVersion: 2, mine: {publicTitle: later}});
+        fireEvent.click(formSaveButton());
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2);
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.lastCall?.[1]).toMatchObject({
+            lockVersion: 2, configuration: {formLayout: {value: {publicTitle: later}}},
+        });
+    });
+
+    it('keeps submitted and subsequent edits after an ordinary write failure', async () => {
+        const {save} = await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        fireEvent.change(screen.getByRole('textbox', {name: 'Reitertitel'}), {target: {value: 'Spätere Eingabe'}});
+        await act(async () => put.reject(new Error('write failed')));
+        expect(formSaveButton()).toBeEnabled();
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({
+            base: {publicTitle: 'Testformular'},
+            mine: {publicTitle: 'Abgesendet', tabTitle: 'Spätere Eingabe'},
+        });
+    });
+
+    it('writes a later reversion on the confirmed version after losing the first response', async () => {
+        const initial = {...createNode(), lockVersion: 1};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(initial);
+        await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        editFormTitle('Testformular');
+        await act(async () => put.reject({status: 504, message: 'Timeout', details: {reason: 'timeout'}, displayableToUser: false}));
+        const committed = {...createNode({...createFormLayout(), publicTitle: 'Abgesendet'}), lockVersion: 2};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(committed);
+        vi.mocked(ProcessNodeApiService.prototype.update).mockResolvedValue({...initial, lockVersion: 3});
+
+        fireEvent.click(formSaveButton());
+
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2));
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.calls[1][1]).toMatchObject({
+            lockVersion: 2, configuration: {formLayout: {value: {publicTitle: 'Testformular'}}},
+        });
+        await waitFor(() => expect(formSaveButton()).toBeDisabled());
+    });
+
+    it('keeps a reversion after login if the interrupted PUT commits after the recovery read', async () => {
+        const initial = {...createNode(), lockVersion: 1};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(initial);
+        const {returnFromLogin} = await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        editFormTitle('Testformular');
+        await returnFromLogin();
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen wiederherstellen'}));
+        const committed = {...createNode({...createFormLayout(), publicTitle: 'Abgesendet'}), lockVersion: 2};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValueOnce(initial).mockResolvedValue(committed);
+        vi.mocked(ProcessNodeApiService.prototype.update).mockRejectedValueOnce(lockConflict).mockResolvedValue({...initial, lockVersion: 3});
+        await act(async () => put.resolve(committed));
+
+        fireEvent.click(formSaveButton());
+
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(3));
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.lastCall?.[1]).toMatchObject({
+            lockVersion: 2, configuration: {formLayout: {value: {publicTitle: 'Testformular'}}},
+        });
+        expect(formSaveButton()).toBeDisabled();
+    });
+
+    it('retains an open element edit separately from the layout confirmed by the PUT', async () => {
+        const {save} = await renderOpenTextElement();
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Abgesendetes Feld'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        const put = pendingFormSave();
+        fireEvent.click(await screen.findByRole('button', {name: 'Speichern'}));
+        fireEvent.click(screen.getByText('Abgesendetes Feld'));
+        fireEvent.change(await screen.findByRole('textbox', {name: /^Titel/}), {target: {value: 'Offener Titel'}});
+        const submitted = vi.mocked(ProcessNodeApiService.prototype.update).mock.calls[0][1];
+        await act(async () => put.resolve({...createNode(), ...submitted, lockVersion: 2}));
+
+        expect(screen.getByRole('textbox', {name: /^Titel/})).toHaveValue('Offener Titel');
+        await prepareEditorDraftLogin();
+        const draft = save.mock.lastCall?.[0];
+        expect(draft).toMatchObject({
+            baseLockVersion: 2,
+            mine: {children: [{children: [{label: 'Abgesendetes Feld'}]}]},
+            context: {base: {label: 'Abgesendetes Feld'}, mine: {label: 'Offener Titel'}},
+        });
+        fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        expect(await screen.findByRole('button', {name: 'Speichern'})).toBeDisabled();
+    });
+
+    it.each([false, true])('applies an open element whose reference calculation overlaps a form save (edit already stored: %s)', async (alreadyStored) => {
+        const {save} = await renderOpenTextElement();
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Abgesendetes Feld'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        const put = pendingFormSave();
+        fireEvent.click(await screen.findByRole('button', {name: 'Speichern'}));
+        fireEvent.click(screen.getByText('Abgesendetes Feld'));
+        fireEvent.change(await screen.findByRole('textbox', {name: /^Titel/}), {target: {value: 'Spätere Eingabe'}});
+
+        const calculation = Promise.withResolvers<void>();
+        const recalculate = vi.mocked(ElementsApiService.prototype.recalculateReferencedIds);
+        recalculate.mockImplementationOnce(async (element) => {
+            await calculation.promise;
+            return element;
+        });
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        const confirmed = createFormLayout([{id: 'section', type: ElementType.Step, title: 'Abschnitt', children: [
+            {id: 'first-name', type: ElementType.Text, label: alreadyStored ? 'Spätere Eingabe' : 'Abgesendetes Feld', placeholder: 'Serverhinweis'},
+        ]}]);
+        await act(async () => put.resolve({...createNode(confirmed), lockVersion: 2}));
+        await act(async () => calculation.resolve());
+        const saveForm = await screen.findByRole('button', {name: 'Speichern'});
+        if (alreadyStored) {
+            expect(saveForm).toBeDisabled();
+            expect(await prepareEditorDraftLogin()).toBeUndefined();
+            return;
+        }
+        expect(recalculate.mock.lastCall?.[0]).toMatchObject({label: 'Spätere Eingabe', placeholder: 'Serverhinweis'});
+        expect(saveForm).toBeEnabled();
+        await prepareEditorDraftLogin();
+        expect(save.mock.lastCall?.[0]).toMatchObject({
+            base: confirmed, mine: {children: [{children: [{label: 'Spätere Eingabe', placeholder: 'Serverhinweis'}]}]},
+        });
+        expect(save.mock.lastCall?.[0].context).toBeUndefined();
+    });
+
+    it('retries only the submitted changes and can undo a later edit without undoing a remote change', async () => {
+        await renderDraftEditor();
+        const put = pendingFormSave();
+        const retry = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        editFormTitle('Neuere Eingabe');
+        const newer = {...createFormLayout(), tabTitle: 'Anderer Tab'};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(newer), lockVersion: 2});
+        await act(async () => put.reject(lockConflict));
+        const saved = {...newer, publicTitle: 'Abgesendet'};
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.calls[1][1]).toMatchObject({
+            lockVersion: 2, configuration: {formLayout: {value: saved}},
+        });
+        await act(async () => retry.resolve({...createNode(saved), lockVersion: 3}));
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Neuere Eingabe');
+        fireEvent.click(screen.getByRole('button', {name: 'Änderung rückgängig machen'}));
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Abgesendet');
+        expect(screen.getByRole('textbox', {name: 'Reitertitel'})).toHaveValue('Anderer Tab');
+        expect(formSaveButton()).toBeDisabled();
+    });
+
+    it('discards only the submission in a lock conflict and retains edits to another field', async () => {
+        await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        fireEvent.change(screen.getByRole('textbox', {name: 'Reitertitel'}), {target: {value: 'Späterer Reitertitel'}});
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({
+            ...createNode({...createFormLayout(), publicTitle: 'Server'}), lockVersion: 2,
+        });
+        await act(async () => put.reject(lockConflict));
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Server'));
+        expect(screen.getByRole('textbox', {name: 'Reitertitel'})).toHaveValue('Späterer Reitertitel');
+        expect(formSaveButton()).toBeEnabled();
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(['committed', 'failed'])('recovers edits made during a PUT after sign-in when the server write %s', async (result) => {
+        const {returnFromLogin} = await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        if (result === 'committed') {
+            editFormTitle('Testformular');
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({
+                ...createNode({...createFormLayout(), publicTitle: 'Abgesendet'}), lockVersion: 2,
+            });
+        } else {
+            fireEvent.change(screen.getByRole('textbox', {name: 'Reitertitel'}), {target: {value: 'Spätere Eingabe'}});
+        }
+        await returnFromLogin();
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen wiederherstellen'}));
+        const expectedTitle = result === 'committed' ? 'Testformular' : 'Abgesendet';
+        await waitFor(() => expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue(expectedTitle));
+        if (result === 'failed') {
+            expect(screen.getByRole('textbox', {name: 'Reitertitel'})).toHaveValue('Spätere Eingabe');
+        }
+        expect(formSaveButton()).toBeEnabled();
+        await act(async () => result === 'committed' ? put.resolve(createNode()) : put.reject(new Error('late failure')));
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue(expectedTitle);
+    });
+
+    it('asks on the next save before reinserting a field edited after the previous save click', async () => {
+        await renderOpenTextElement();
+        const editAndApply = async (title: string) => {
+            fireEvent.change(await screen.findByRole('textbox', {name: /^Titel/}), {target: {value: title}});
+            fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+            await screen.findByRole('button', {name: 'Speichern'});
+        };
+        await editAndApply('Abgesendetes Feld');
+        const put = pendingFormSave();
+        fireEvent.click(formSaveButton());
+        fireEvent.click(screen.getByText('Abgesendetes Feld'));
+        await editAndApply('Später bearbeitetes Feld');
+        const remote = {...createNode(createFormLayout([
+            {id: 'section', type: ElementType.Step, title: 'Abschnitt', children: []},
+        ])), lockVersion: 2};
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(remote);
+        await act(async () => put.reject(lockConflict));
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        await waitFor(() => expect(formSaveButton()).toBeEnabled());
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(1);
+        fireEvent.click(formSaveButton());
+        const confirm = await screen.findByRole('button', {name: 'Übernehmen und speichern'});
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(1);
+        fireEvent.click(confirm);
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2));
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.lastCall?.[1]).toMatchObject({
+            lockVersion: 2,
+            configuration: {formLayout: {value: {children: [{children: [{id: 'first-name', label: 'Später bearbeitetes Feld'}]}]}}},
+        });
+    });
+
+    it('asks about the deletion of an open field on sign-in and keeps the explicit choice for its next save', async () => {
+        const {returnFromLogin} = await renderOpenTextElement();
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Abgesendetes Feld'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        const put = pendingFormSave();
+        fireEvent.click(await screen.findByRole('button', {name: 'Speichern'}));
+        fireEvent.click(screen.getByText('Abgesendetes Feld'));
+        fireEvent.change(await screen.findByRole('textbox', {name: /^Titel/}), {target: {value: 'Offener Titel'}});
+        const remote = createFormLayout([{id: 'section', type: ElementType.Step, title: 'Abschnitt', children: []}]);
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(remote), lockVersion: 2});
+        await act(async () => put.reject(lockConflict));
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        await waitFor(() => expect(screen.queryByRole('button', {name: 'Übernehmen und speichern'})).not.toBeInTheDocument());
+        await returnFromLogin();
+        expect(await screen.findByRole('group', {name: 'Abweichende Einstellung: Gesamtes Element'})).toBeVisible();
+        fireEvent.click(screen.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+        expect(await screen.findByRole('textbox', {name: /^Titel/})).toHaveValue('Offener Titel');
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Speichern'}));
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(2));
+        expect(vi.mocked(ProcessNodeApiService.prototype.update).mock.lastCall?.[1]).toMatchObject({
+            lockVersion: 2, configuration: {formLayout: {value: {children: [{children: [{id: 'first-name', label: 'Offener Titel'}]}]}}},
+        });
+    });
+
+    it.each(['resolve', 'conflict'])('ignores a late PUT %s after switching to another form', async (outcome) => {
+        const {router} = await renderDraftEditor();
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(formSaveButton());
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({
+            ...createNode({...createFormLayout(), publicTitle: 'Zweites Formular'}), id: 2,
+        });
+        await act(async () => { await router.navigate('/form/2'); });
+        fireEvent.click(await screen.findByRole('button', {name: 'Änderungen verwerfen'}));
+        await screen.findByDisplayValue('Zweites Formular');
+        const loads = vi.mocked(ProcessNodeApiService.prototype.retrieve).mock.calls.length;
+        await act(async () => outcome === 'resolve' ? put.resolve(createNode()) : put.reject(lockConflict));
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Zweites Formular');
+        expect(ProcessNodeApiService.prototype.retrieve).toHaveBeenCalledTimes(loads);
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('exports the confirmed version once and keeps the next unsaved title', async () => {
+        await renderDraftEditor();
+        const pdf = new Blob(['PDF']);
+        const download = vi.spyOn(FormTriggerApiService.prototype, 'downloadPrintablePdf').mockResolvedValue(pdf);
+        const put = pendingFormSave();
+        editFormTitle('Abgesendet');
+        fireEvent.click(screen.getByRole('button', {name: 'Vordruck exportieren (.pdf)'}));
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce());
+        editFormTitle('Spätere Eingabe');
+        await act(async () => put.resolve(createNode({...createFormLayout(), publicTitle: 'Bestätigter Titel'})));
+        expect(download).toHaveBeenCalledExactlyOnceWith(1);
+        expect(mocks.downloadBlobFile).toHaveBeenCalledExactlyOnceWith('Bestätigter Titel.pdf', pdf);
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Spätere Eingabe');
+        expect(formSaveButton()).toBeEnabled();
+    });
+
+    it('prepares test attachments using the confirmed layout while leaving later edits available', async () => {
+        const fileLayout = createFormLayout([{id: 'upload', type: ElementType.FileUpload}]);
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(createNode(fileLayout));
+        await renderDraftEditor();
+        const put = pendingFormSave();
+        mocks.submitValues = {upload: literalAuthoredValue([{name: 'test.pdf', size: 10, uri: 'blob:removed-field'}])};
+        const fetchFile = vi.fn().mockRejectedValue(new Error('Field was removed'));
+        vi.stubGlobal('fetch', fetchFile);
+        editFormTitle('Abgesendet');
+        fireEvent.click(screen.getByRole('button', {name: 'Testformular absenden'}));
+        await waitFor(() => expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce());
+        editFormTitle('Spätere Eingabe');
+        const saved = createNode({...createFormLayout(), publicTitle: 'Abgesendet'});
+        saved.configuration.formSlug = literalAuthoredValue('confirmed-slug');
+        await act(async () => put.resolve(saved));
+        expect(fetchFile).not.toHaveBeenCalled();
+        expect(await screen.findByText('Übermittelt: started-process')).toBeVisible();
+        expect(FormTriggerApiService.prototype.submitForm).toHaveBeenCalledOnce();
+        expect(vi.mocked(FormTriggerApiService.prototype.submitForm).mock.lastCall?.[1]).toBe('confirmed-slug');
+        expect(vi.mocked(FormTriggerApiService.prototype.calculateCosts).mock.lastCall?.[1]).toBe('confirmed-slug');
+        expect(screen.getByRole('textbox', {name: 'Formulartitel'})).toHaveValue('Spätere Eingabe');
+        expect(formSaveButton()).toBeEnabled();
+    });
+
     it('aborts submission when saving pending editor changes fails', async () => {
         vi.mocked(ProcessNodeApiService.prototype.update).mockRejectedValue(new Error('save failed'));
         await renderModifiedEditor();
@@ -678,6 +1001,27 @@ async function renderModifiedEditor(): Promise<void> {
     fireEvent.change(screen.getByRole('textbox', {name: 'Formulartitel'}), {target: {value: 'Bearbeitet'}});
 }
 
+const lockConflict = {
+    status: 409,
+    message: 'Der Datensatz wurde zwischenzeitlich geändert.',
+    details: {reason: 'lock_version_conflict'},
+    displayableToUser: true,
+};
+
+function pendingFormSave() {
+    const pending = Promise.withResolvers<ProcessNodeEntity>();
+    vi.mocked(ProcessNodeApiService.prototype.update).mockReturnValueOnce(pending.promise);
+    return pending;
+}
+
+function editFormTitle(title: string) {
+    fireEvent.change(screen.getByRole('textbox', {name: 'Formulartitel'}), {target: {value: title}});
+}
+
+function formSaveButton() {
+    return screen.getByRole('button', {name: 'Speichern'});
+}
+
 async function renderOpenTextElement() {
     mocks.withRealTree = true;
     const form = createFormLayout([{id: 'section', type: ElementType.Step, title: 'Abschnitt', children: [
@@ -722,7 +1066,7 @@ async function renderDraftEditor() {
     vi.spyOn(EditorDraftStorage, 'reserve').mockImplementation(async () => stored != null);
     const mount = () => {
         const router = createMemoryRouter([
-            {path: '/form', element: <FormNodeEditorPage/>},
+            {path: '/form/:nodeId?', element: <FormNodeEditorPage/>},
             {path: '/processes/10/versions/1/nodes/1', element: <Link to="/form">Formular öffnen</Link>},
         ], {initialEntries: ['/form']});
         const view = render(<DragAndDropProvider><RouterProvider router={router}/></DragAndDropProvider>);

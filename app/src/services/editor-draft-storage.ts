@@ -1,3 +1,5 @@
+import type {EditorSaveCheckpoint} from '../utils/editor-save-rebase';
+
 /**
  * Unsaved editor changes kept in the browser, so that they survive an expired session, a reload or a closed tab.
  * `base` is the stored state the changes started from; it is needed to merge them with a newer stored state.
@@ -11,6 +13,8 @@ export interface EditorDraft<T, Context = unknown> {
     /** The lock version of the stored object that `base` belongs to. */
     baseLockVersion: number | null;
     mine: T;
+    /** The submitted snapshot may already be stored by the time this document returns. */
+    saveCheckpoint?: EditorSaveCheckpoint<T>;
     /** Work still open in a nested editor, saved together with its enclosing draft. */
     context?: Context;
     savedAt: number;

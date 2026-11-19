@@ -55,6 +55,26 @@ describe('useEditorDraft', () => {
         expect(EditorDraftStorage.save).not.toHaveBeenCalled();
     });
 
+    it('removes a deferred conflict once the working copy is reverted to the confirmed state', () => {
+        const saveCheckpoint = {phase: 'confirmed' as const, submitted: props.edited};
+        renderHook(() => useEditorDraft({...props, edited: props.base, hasChanged: false, saveCheckpoint}));
+        expect(EditorDraftStorage.remove).toHaveBeenCalledWith('user-1', props.draftKey);
+        vi.advanceTimersByTime(1000);
+        expect(EditorDraftStorage.save).not.toHaveBeenCalled();
+    });
+
+    it('flushes the submitted snapshot and the active working copy when a value is reverted during the PUT', async () => {
+        const reserve = vi.spyOn(EditorDraftStorage, 'reserve').mockResolvedValue(true);
+        const saveCheckpoint = {phase: 'pending' as const, submitted: props.edited};
+        renderHook(() => useEditorDraft({...props, edited: props.base, hasChanged: false, saveCheckpoint}));
+        await prepareEditorDraftLogin();
+        expect(EditorDraftStorage.remove).not.toHaveBeenCalled();
+        expect(EditorDraftStorage.save).toHaveBeenCalledWith(expect.objectContaining({
+            base: props.base, mine: props.base, saveCheckpoint,
+        }));
+        expect(reserve).toHaveBeenCalledOnce();
+    });
+
     it('leaves an existing draft alone until the editor has decided about it', () => {
         renderHook(() => useEditorDraft({...props, hasChanged: false, enabled: false}));
         vi.advanceTimersByTime(1000);

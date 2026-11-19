@@ -17,6 +17,8 @@ export interface ElementPanelDraft {
     /** Current bases for edits to descendants which have since moved to another branch of the form. */
     movedDescendantBases?: AnyElement[];
     parents: {element: AnyElement; childIndex: number}[];
+    /** The comparison base of a structural save conflict shown provisionally in the open editor. */
+    unconfirmedSaveBase?: Pick<ElementPanelDraft, 'base' | 'parents' | 'detached' | 'movedDescendantBases'>;
 }
 
 type PanelPlacement<T> = {tree: T; affectedId: string} | {error: string};

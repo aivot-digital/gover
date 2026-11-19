@@ -15,6 +15,7 @@ interface EditorDraftProps<T, Context> {
     baseLockVersion: number | null | undefined;
     edited: T | null;
     context?: Context;
+    saveCheckpoint?: EditorDraft<T>['saveCheckpoint'];
     hasChanged: boolean;
     /**
      * Must stay false until the editor has decided about an existing draft. Otherwise the freshly loaded, unchanged
@@ -23,7 +24,7 @@ interface EditorDraftProps<T, Context> {
     enabled: boolean;
 }
 
-type DraftSnapshot<T, Context> = Pick<EditorDraft<T, Context>, 'base' | 'baseLockVersion' | 'mine' | 'context'>;
+type DraftSnapshot<T, Context> = Pick<EditorDraft<T, Context>, 'base' | 'baseLockVersion' | 'mine' | 'context' | 'saveCheckpoint'>;
 
 function createDraftSession<T, Context>(userId: string, key: string) {
     let pending: DraftSnapshot<T, Context> | undefined;
@@ -154,7 +155,7 @@ function createDraftSession<T, Context>(userId: string, key: string) {
  * reverted, so they can be offered again after an expired session or a reload.
  */
 export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, Context>) {
-    const {draftKey, base, baseLockVersion, edited, context, hasChanged, enabled} = props;
+    const {draftKey, base, baseLockVersion, edited, context, saveCheckpoint, hasChanged, enabled} = props;
     const userId = useAppSelector(selectUser)?.id;
     const session = useMemo(() => userId == null || draftKey == null ? null : createDraftSession<T, Context>(userId, draftKey), [userId, draftKey]);
 
@@ -163,14 +164,14 @@ export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, 
             return;
         }
 
-        if (!hasChanged) {
+        if (!hasChanged && saveCheckpoint?.phase !== 'pending') {
             session.clearDraft().catch(console.error);
         } else {
             // A null base represents the empty stored state of an object that has never been saved.
-            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, context});
+            session.schedule({base: base as T, baseLockVersion: baseLockVersion ?? null, mine: edited, context, saveCheckpoint});
         }
         return session.cancelPending;
-    }, [enabled, session, base, baseLockVersion, edited, context, hasChanged]);
+    }, [enabled, session, base, baseLockVersion, edited, context, saveCheckpoint, hasChanged]);
 
     useLayoutEffect(() => {
         if (session != null) {

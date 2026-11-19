@@ -20,10 +20,20 @@ import {useChangeBlocker} from '../../../../../../hooks/use-change-blocker-2';
 import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {getNodeName} from '../process-flow-editor/utils/node-utils';
-import {isApiError, isLockVersionConflictError} from '../../../../../../models/api-error';
+import {isApiError} from '../../../../../../models/api-error';
 import {useEditorDraft} from '../../../../../../hooks/use-editor-draft';
 import {useMergeConflictResolution} from '../../../../../../hooks/use-merge-conflict-resolution';
-import {createProcessNodeMergeSpec} from '../../../../utils/process-node-merge-spec';
+import {createProcessNodeMergeSpec, getExternallyEditedFields} from '../../../../utils/process-node-merge-spec';
+import {
+    type EditorSaveCheckpoint,
+    canPendingSaveStillCommit,
+    pendingSaveCanChangeStored,
+    prepareEditorDraftRecovery,
+    persistEditorSave,
+    rebaseAfterSave,
+} from '../../../../../../utils/editor-save-rebase';
+import {deepEquals} from '../../../../../../utils/equality-utils';
+import {useCurrentState} from '../../../../../../hooks/use-current-state';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
@@ -33,10 +43,6 @@ import {downloadObjectFile} from '../../../../../../utils/download-utils';
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
 import {isProcessNodeEditorTabNavigation, shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
-import {flattenElements} from '../../../../../../utils/flatten-elements';
-import {
-    isUiDefinitionInputFieldElement,
-} from '../../../../../../models/elements/form/input/ui-definition-input-field-element';
 import {type ProcessNodeDefinitionMetadata} from '../../../../entities/process-node-definition-metadata';
 import {
     getProcessNodeProviderIcon,
@@ -51,8 +57,6 @@ type IncomingMetadataState =
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const MERGED_SAVE_MESSAGE = 'Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.';
-// Each attempt merges with the latest stored state; a conflict that persists beyond that is reported instead of retried.
-const MAX_SAVE_ATTEMPTS = 3;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
 const processNodeEditorLoadedSidebarFlashLight = keyframes`
     0% {
@@ -80,7 +84,7 @@ export function ProcessNodeEditor(): ReactNode {
     const dispatch = useAppDispatch();
     const theme = useTheme();
 
-    const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
+    const [originalNode, setOriginalNode, currentOriginal] = useCurrentState<ProcessNodeEntity | null>(null);
     // Replaced together with the node so the suggestions always belong to the configuration on screen.
     const [incomingMetadataState, setIncomingMetadataState] = useState<IncomingMetadataState>({status: 'loading'});
 
@@ -88,6 +92,7 @@ export function ProcessNodeEditor(): ReactNode {
         editable,
         structureEditable,
         onSave,
+        onStoredNode,
         onDelete,
         onStartReplaceNode,
         nodeRefreshSignal,
@@ -98,7 +103,7 @@ export function ProcessNodeEditor(): ReactNode {
     const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
     const [outputMappingErrors, setOutputMappingErrors] = useState<Record<string, string>>({});
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
-    const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
+    const [editedNode, setEditedNode, currentEdit] = useCurrentState<ProcessNodeEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [isProviderDetailsDialogOpen, setIsProviderDetailsDialogOpen] = useState(false);
@@ -107,11 +112,14 @@ export function ProcessNodeEditor(): ReactNode {
     const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const activeSave = useRef<AbortController | null>(null);
+    const [saveCheckpoint, setSaveCheckpoint, currentCheckpoint] = useCurrentState<EditorSaveCheckpoint<ProcessNodeEntity> | undefined>(undefined);
+    const validatingNode = useRef<ProcessNodeEntity | null>(null);
+    const keyLockRevision = useRef(0);
     // Raised with every load, so the draft is checked again for the freshly loaded node.
     const [nodeLoadCount, setNodeLoadCount] = useState(0);
     const [isDraftChecked, setIsDraftChecked] = useState(false);
     const {
-        resolve: resolveMerge,
+        resolvePrepared,
         dialog: mergeConflictDialog,
     } = useMergeConflictResolution();
 
@@ -133,6 +141,7 @@ export function ProcessNodeEditor(): ReactNode {
     const nodeRefreshVersion = nodeRefreshSignal.nodeId === nodeId ? nodeRefreshSignal.version : 0;
 
     const cancelActiveSave = useCallback(() => {
+        validatingNode.current = null;
         if (activeSave.current != null) {
             activeSave.current.abort();
             activeSave.current = null;
@@ -143,18 +152,21 @@ export function ProcessNodeEditor(): ReactNode {
     // A new load owns its editor even when revisiting the same node. Its internal tabs share the current save.
     useLayoutEffect(() => cancelActiveSave, [cancelActiveSave, params.processId, params.processVersion, nodeId, nodeRefreshVersion]);
 
+    const hasNodeChanges = useMemo(() => !deepEquals(originalNode, editedNode), [originalNode, editedNode]);
     const {
         hasChanged,
         dialog: changeBlockerDialog,
     } = useChangeBlocker({
-        //customTitle: 'Ungespeicherte Konfiguration',
-        //customMessage: 'Die geöffnete Prozesselementkonfiguration (links) hat ungespeicherte Änderungen',
-        original: originalNode,
-        edited: editedNode,
+        original: false,
+        // Even a return to the old stored value needs protecting until the PUT's result is known.
+        edited: saveCheckpoint?.phase === 'pending' || hasNodeChanges,
         onConfirmNavigation: async () => {
             cancelActiveSave();
             await discardForNavigation();
-            setEditedNode((current) => current === editedNode ? originalNode : current);
+            if (currentEdit.current === editedNode) {
+                setEditedNode(originalNode);
+                setSaveCheckpoint(undefined);
+            }
         },
         // Tab changes keep the same editing session. Do not persist a bypass in history state: revisiting that
         // entry from a different node would otherwise discard its unsaved changes without confirmation.
@@ -211,6 +223,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setOutputMappingErrors({});
                 setOriginalNode(node);
                 setEditedNode(node);
+                setSaveCheckpoint(undefined);
                 setIsDraftChecked(false);
                 setNodeLoadCount((count) => count + 1);
                 setLayout(configurationLayout);
@@ -278,8 +291,6 @@ export function ProcessNodeEditor(): ReactNode {
         };
     }, [showNodeLoadedFeedback]);
 
-    const mergeSpec = useMemo(() => createProcessNodeMergeSpec(layout), [layout]);
-
     const {
         loadDraft,
         clearDraft,
@@ -290,6 +301,7 @@ export function ProcessNodeEditor(): ReactNode {
         base: originalNode,
         baseLockVersion: originalNode?.lockVersion,
         edited: editedNode,
+        saveCheckpoint,
         hasChanged,
         enabled: isDraftChecked && editable,
     });
@@ -308,11 +320,15 @@ export function ProcessNodeEditor(): ReactNode {
                 return;
             }
 
-            const outcome = await resolveMerge({
-                base: draft.base,
-                mine: draft.mine,
-                theirs: originalNode,
-                spec: mergeSpec,
+            const spec = createProcessNodeMergeSpec(layout, originalNode);
+            const pending = draft.saveCheckpoint;
+            const putCanStillChangeNode = canPendingSaveStillCommit(pending, draft.baseLockVersion, originalNode.lockVersion) &&
+                pendingSaveCanChangeStored(pending, originalNode, spec);
+            const outcome = await resolvePrepared({
+                merge: (choices) => {
+                    const merged = prepareEditorDraftRecovery(draft, originalNode, spec, choices);
+                    return putCanStillChangeNode ? {...merged, changed: true} : merged;
+                },
                 mode: 'restore',
                 signal: controller.signal,
                 storedStateChanged: draft.baseLockVersion !== (originalNode.lockVersion ?? null),
@@ -322,6 +338,7 @@ export function ProcessNodeEditor(): ReactNode {
             }
             if (outcome.status === 'apply') {
                 setEditedNode(outcome.value);
+                if (putCanStillChangeNode) setSaveCheckpoint(pending);
             } else {
                 // Discarded, or nothing left to restore because the changes were saved elsewhere.
                 await clearDraft().catch(() => {
@@ -385,113 +402,100 @@ export function ProcessNodeEditor(): ReactNode {
         });
     }, [location]);
 
-    /**
-     * Saves the node on top of the given stored state. A save rejected because a newer state was stored in the
-     * meantime is merged with that state and saved again, asking only where both changed the same value.
-     * Resolves to null if nothing was saved because the person cancelled or discarded the changes.
-     */
-    const saveNode = async (
-        baseNode: ProcessNodeEntity,
-        node: ProcessNodeEntity,
-        fieldsToOmit: string[],
-        signal: AbortSignal,
-        attempt = 1,
-    ): Promise<ProcessNodeEntity | null> => {
-        try {
-            return await onSave(node, {query: {omitConfigSave: fieldsToOmit}, abortBeforeSend: signal});
-        } catch (error) {
-            signal.throwIfAborted();
-            if (!isLockVersionConflictError(error) || attempt >= MAX_SAVE_ATTEMPTS) {
-                throw error;
-            }
-        }
-
-        const storedNode = await new ProcessNodeApiService().retrieve(baseNode.id);
-        signal.throwIfAborted();
-        const outcome = await resolveMerge({
-            base: baseNode,
-            mine: node,
-            theirs: storedNode,
-            spec: mergeSpec,
-            mode: 'save',
-            signal,
-            storedStateChanged: true,
-        });
-        signal.throwIfAborted();
-
-        if (outcome.status === 'apply') {
-            // Based on the newer node, so the save passes the lock version check unless yet another save came first.
-            const savedNode = await saveNode(storedNode, outcome.value, fieldsToOmit, signal, attempt + 1);
-            signal.throwIfAborted();
-            if (savedNode != null) {
-                dispatch(showSuccessSnackbar(MERGED_SAVE_MESSAGE));
-            }
-            return savedNode;
-        }
-        if (outcome.status === 'discard') {
-            setOriginalNode(storedNode);
-            setEditedNode(storedNode);
-        }
-        return null;
-    };
-
     const canSave = editable && hasChanged && !isNodeLoading &&
         originalNode?.id === nodeId && editedNode?.id === nodeId &&
         originalNode.processId === Number(params.processId) && originalNode.processVersion === Number(params.processVersion);
     const handleSaveSelected = async (): Promise<void> => {
         // Guards against a second click while the first save is still running, which would end in a needless conflict.
-        if (!canSave || activeSave.current != null) {
+        const submitted = currentEdit.current;
+        if (!canSave || submitted?.id !== nodeId || activeSave.current != null) {
             return;
         }
 
         setDataKeyValidationRequested(true);
-        const invalidMappings = Object.fromEntries(Object.entries(editedNode.outputMappings ?? {})
+        const invalidMappings = Object.fromEntries(Object.entries(submitted.outputMappings ?? {})
             .filter(([key]) => provider?.outputs.some((output) => output.key === key))
             .map(([key, path]) => [key, validateDataKeyPath(path)])
             .filter((entry): entry is [string, string] => entry[1] != null));
         setOutputMappingErrors(invalidMappings);
-        if (validateNodeDataKey(editedNode.dataKey) != null || Object.keys(invalidMappings).length > 0) {
-            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${editedNode.id}/tabs/outputs?${searchParams.toString()}`);
+        if (validateNodeDataKey(submitted.dataKey) != null || Object.keys(invalidMappings).length > 0) {
+            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${submitted.id}/tabs/outputs?${searchParams.toString()}`);
             return;
         }
-
-        const fieldsToOmit = flattenElements(layout!, false)
-            .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
-            .map((e) => e.id);
 
         // Once sent, a PUT can still commit. Its response updates the graph even if this editor has moved on.
         const controller = new AbortController();
         activeSave.current = controller;
-        setIsSaving(true);
-        try {
-            const savedNode = await saveNode(originalNode, editedNode, fieldsToOmit, controller.signal);
-            controller.signal.throwIfAborted();
-            if (savedNode == null) {
-                return;
-            }
-
-            setDataKeyUnlocked(false);
+        validatingNode.current = null;
+        const lockRevisionAtClick = keyLockRevision.current;
+        const applyConfirmed = (stored: ProcessNodeEntity) => {
+            const working = currentEdit.current!;
+            const rebased = rebaseAfterSave(submitted, working, stored, createProcessNodeMergeSpec(layout, stored));
+            setOriginalNode(stored);
+            setEditedNode(rebased.value);
+            setSaveCheckpoint(rebased.checkpoint);
+            setProblems(null);
+            if (rebased.checkpoint || !deepEquals(rebased.value, stored)) return;
+            if (keyLockRevision.current === lockRevisionAtClick) setDataKeyUnlocked(false);
             setDataKeyValidationRequested(false);
             setOutputMappingErrors({});
-            setOriginalNode(savedNode);
-            setEditedNode(savedNode);
 
-            dispatch(showSuccessSnackbar('Das Element wurde erfolgreich gespeichert.'));
+            // Validation describes the confirmed node. A subsequent save may start while it runs.
+            const checked = rebased.value;
+            validatingNode.current = checked;
+            void new ProcessNodeApiService().validate(stored.id).then((updatedProblems) => {
+                if (validatingNode.current === checked && currentEdit.current === checked) setProblems(updatedProblems);
+            }).catch((error) => {
+                if (validatingNode.current === checked && currentEdit.current === checked) console.error(error);
+            });
+        };
 
-            const updatedProblems = await new ProcessNodeApiService().validate(savedNode.id);
+        // Only show backend field errors for the PUT that produced them.
+        let attemptedNode: ProcessNodeEntity | undefined;
+        setIsSaving(true);
+        try {
+            const fieldsToOmit = getExternallyEditedFields(layout);
+            const result = await persistEditorSave<ProcessNodeEntity, ProcessNodeEntity>({
+                original: originalNode,
+                submitted,
+                checkpoint: saveCheckpoint,
+                read: () => {
+                    attemptedNode = undefined;
+                    return new ProcessNodeApiService().retrieve(nodeId);
+                },
+                write: (base, value, reserveVersion) => {
+                    attemptedNode = reserveVersion ? base : value;
+                    return onSave(attemptedNode, {query: {omitConfigSave: fieldsToOmit}, abortBeforeSend: controller.signal});
+                },
+                valueOf: (stored) => stored,
+                specFor: (stored) => createProcessNodeMergeSpec(layout, stored),
+                setPending: setSaveCheckpoint,
+                resolvePrepared,
+                onRead: onStoredNode,
+                signal: controller.signal,
+            });
             controller.signal.throwIfAborted();
-            setProblems(updatedProblems);
-        } catch (err: any) {
+            if (result.status === 'cancel') {
+                setSaveCheckpoint(saveCheckpoint);
+                return;
+            }
+            if (result.status === 'unknown') {
+                dispatch(showApiErrorSnackbar(result.error, 'Das Prozesselement konnte nicht gespeichert werden.'));
+                return;
+            }
+            applyConfirmed(result.stored);
+            if (result.status === 'discarded') return;
+            dispatch(showSuccessSnackbar(result.merged ? MERGED_SAVE_MESSAGE : 'Das Element wurde erfolgreich gespeichert.'));
+        } catch (err) {
             if (controller.signal.aborted) {
                 return;
             }
-            if (isApiError(err) && err.status === 400) {
-                if (isDerivedRuntimeElementData(err.details)) {
+            setSaveCheckpoint(saveCheckpoint);
+            if (attemptedNode && isApiError(err) && err.status === 400) {
+                if (currentEdit.current === submitted && deepEquals(attemptedNode.configuration, submitted.configuration) &&
+                    isDerivedRuntimeElementData(err.details)) {
                     setProblems({
-                        node: editedNode,
-                        derivedRuntimeElementData: err.details,
-                        commonErrors: {},
-                        problems: [],
+                        node: attemptedNode, derivedRuntimeElementData: err.details, commonErrors: {}, problems: [],
                     });
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
@@ -742,8 +746,14 @@ export function ProcessNodeEditor(): ReactNode {
                                 node: editedNode ?? originalNode,
                                 originalNode,
                                 dataKeyUnlocked,
-                                onUnlockDataKey: () => setDataKeyUnlocked(true),
-                                onLockDataKey: () => setDataKeyUnlocked(false),
+                                onUnlockDataKey: () => {
+                                    keyLockRevision.current++;
+                                    setDataKeyUnlocked(true);
+                                },
+                                onLockDataKey: () => {
+                                    keyLockRevision.current++;
+                                    setDataKeyUnlocked(false);
+                                },
                                 dataKeyValidationRequested,
                                 outputMappingErrors,
                                 setNode: (node, updateOriginal) => {
@@ -757,6 +767,9 @@ export function ProcessNodeEditor(): ReactNode {
                                         });
                                     }
                                     setOutputMappingErrors({});
+                                    if (currentCheckpoint.current?.phase === 'confirmed' && deepEquals(node, currentOriginal.current)) {
+                                        setSaveCheckpoint(undefined);
+                                    }
                                     setEditedNode(node);
                                 },
                                 isEditable: editable,

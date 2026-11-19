@@ -6,7 +6,7 @@ import {type AnyFormElement} from '../../../models/elements/form/any-form-elemen
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {flattenElements} from '../../../utils/flatten-elements';
-import {mergeFormDraft} from './merge-form-draft';
+import {mergeFormDraft, rebaseOpenElementDraft} from './merge-form-draft';
 
 const text = {...generateElementWithDefaultValues(ElementType.Text), id: 'name', label: 'Vorname'};
 const edited = {...text, label: 'Rufname'};
@@ -116,6 +116,29 @@ describe('mergeFormDraft', () => {
         const again = mergeFormDraft({...request, base: request.theirs, mine: request.theirs, panel: result.value.panel}, {});
         expect(again).toEqual(result);
         expect(mergeFormDraft(request, {[conflicts[0].id]: 'theirs'}).value).toEqual({layout: request.theirs});
+    });
+
+    it.each(['deleted', 'retyped'])('asks about a %s field on recovery after showing its unconfirmed preview during a save', (change) => {
+        const replacement = change === 'retyped' ? {...generateElementWithDefaultValues(ElementType.Number), id: text.id} : undefined;
+        const {theirs} = mergeAgainst(replacement);
+        const preview = rebaseOpenElementDraft(panel, base, theirs);
+        expect(preview.needsDecision).toBe(true);
+        expect(preview.draft?.mine).toEqual(edited);
+        const request = {base: theirs, mine: theirs, theirs, editableRoot: theirs, panel: preview.draft!};
+        const {conflicts} = mergeFormDraft(request, {});
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0]).toMatchObject({mine: edited, theirs: replacement});
+        expect(mergeFormDraft(request, {[conflicts[0].id]: 'theirs'}).value.panel).toBeUndefined();
+        const accepted = mergeFormDraft(request, {[conflicts[0].id]: 'mine'});
+        expect(accepted.value.panel?.mine).toEqual(edited);
+        expect(mergeFormDraft({...request, panel: accepted.value.panel}, {})).toEqual(accepted);
+    });
+
+    it('keeps the most recent field text without requiring a structural choice', () => {
+        const {theirs} = mergeAgainst({...text, label: 'Gespeicherter Titel'});
+        const preview = rebaseOpenElementDraft(panel, base, theirs);
+        expect(preview).toMatchObject({needsDecision: false, draft: {mine: edited}});
+        expect(mergeFormDraft({base: theirs, mine: theirs, theirs, editableRoot: theirs, panel: preview.draft!}, {}).conflicts).toEqual([]);
     });
 
     it('keeps an incompatible replacement in the layout while the original type is being edited', () => {
