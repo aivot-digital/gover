@@ -40,6 +40,10 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
                                                                                                                Integer processDefinitionNodeId,
                                                                                                                Long excludedTaskId);
 
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdAndStatusOrderByStartedDescIdDesc(Long processInstanceId,
+                                                                                                                      Integer processDefinitionNodeId,
+                                                                                                                      ProcessTaskStatus status);
+
     @Query("select task.processInstanceId from ProcessInstanceTaskEntity task where task.id = :id")
     Optional<Long> findInstanceIdById(@Param("id") Long id);
 
