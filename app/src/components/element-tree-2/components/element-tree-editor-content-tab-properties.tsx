@@ -184,6 +184,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 }}
                                 hint="Dieser Titel wird als Beschriftung des Feldes angezeigt. Nutzen Sie eine kurze, aussagekräftige Bezeichnung."
                                 error={configurationErrors?.properties.label?.join(' ')}
+                                required
                                 disabled={!editable}
                             />
                         </Grid>

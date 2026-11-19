@@ -9,10 +9,12 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.function.Function;
 
 @Service
 public class CodeListElementOptionsService {
@@ -43,7 +45,7 @@ public class CodeListElementOptionsService {
     private SelectInputElement resolveSelect(@Nonnull SelectInputElement element) throws ResponseException {
         var copy = copy(element, SelectInputElement.class);
         copy
-                .setOptions(listAsSelectItems(requireConfiguredCodeListId(element.getCodeListKey())))
+                .setOptions(listConfigured(element.getCodeListKey(), this::listAsSelectItems))
                 .setDependsOnSelectFieldId(null);
         return copy;
     }
@@ -51,21 +53,21 @@ public class CodeListElementOptionsService {
     @Nonnull
     private TextInputElement resolveText(@Nonnull TextInputElement element) throws ResponseException {
         var copy = copy(element, TextInputElement.class);
-        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
+        copy.setSuggestions(listConfigured(element.getCodeListKey(), this::listAsChipInputSuggestionsItems));
         return copy;
     }
 
     @Nonnull
     private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
         var copy = copy(element, ChipInputElement.class);
-        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
+        copy.setSuggestions(listConfigured(element.getCodeListKey(), this::listAsChipInputSuggestionsItems));
         return copy;
     }
 
     @Nonnull
     private MultiCheckboxInputElement resolveMultiCheckbox(@Nonnull MultiCheckboxInputElement element) throws ResponseException {
         var copy = copy(element, MultiCheckboxInputElement.class);
-        copy.setOptions(listAsMultiCheckboxItems(requireConfiguredCodeListId(element.getCodeListKey())));
+        copy.setOptions(listConfigured(element.getCodeListKey(), this::listAsMultiCheckboxItems));
         return copy;
     }
 
@@ -130,11 +132,17 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    private Integer requireConfiguredCodeListId(String codeListKey) throws ResponseException {
+    private <T> List<T> listConfigured(@Nullable String codeListKey, @Nonnull Function<Integer, List<T>> list) throws ResponseException {
+        // The configuration validation reports a missing selection at the element, so it is derived without options
+        // instead of showing the error at the field and in the error summary of the form.
         if (codeListKey == null || codeListKey.isBlank()) {
-            throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
+            return List.of();
         }
+        return list.apply(requireConfiguredCodeListId(codeListKey));
+    }
 
+    @Nonnull
+    private Integer requireConfiguredCodeListId(@Nonnull String codeListKey) throws ResponseException {
         var codeList = codeListRepository
                 .findById(codeListKey)
                 .orElseThrow(() -> ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE));

@@ -20,6 +20,7 @@ export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>)
                         value={props.element.content ?? ''}
                         label="Überschrift"
                         error={props.configurationErrors?.content?.join(' ')}
+                        required
                         onChange={(val) => {
                             props.onPatch({
                                 content: val,

@@ -33,6 +33,7 @@ export const AlertEditor: BaseEditor<AlertElement> = ({
                     <TextFieldComponent
                         value={element.title}
                         label="Titel"
+                        error={configurationErrors?.title?.join(' ')}
                         onChange={(val) => {
                             onPatch({
                                 title: val,

@@ -78,6 +78,7 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
                 <MultiCheckboxComponent
                     label="Auswählbare Speicheranbieter-Typen"
                     error={configurationErrors?.allowedStorageProviderTypes?.join(' ')}
+                    required
                     value={allowedTypes}
                     onChange={(value) => {
                         onPatch({

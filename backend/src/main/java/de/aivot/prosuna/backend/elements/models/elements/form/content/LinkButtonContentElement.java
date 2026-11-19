@@ -40,12 +40,23 @@ public class LinkButtonContentElement extends BaseFormElement {
     @Override
     public Map<String, List<String>> validateConfiguration() {
         var errors = super.validateConfiguration();
-        // The editor derives the target from the filled property, so a button without any target is shown as a link.
+        if (hasOverride()) {
+            return errors;
+        }
+        if (StringUtils.isNullOrEmpty(label)) {
+            addConfigurationError(errors, "label", "Geben Sie eine Beschriftung für die Schaltfläche an.");
+        }
         if (StringUtils.isNullOrEmpty(href)
                 && StringUtils.isNullOrEmpty(staffTaskEvent)
-                && StringUtils.isNullOrEmpty(customerTaskEvent)
-                && !hasOverride()) {
-            addConfigurationError(errors, "href", "Geben Sie den Link an, den die Schaltfläche öffnen soll.");
+                && StringUtils.isNullOrEmpty(customerTaskEvent)) {
+            // Like the editor, an empty event name keeps a selected task action; without one, the button opens a link.
+            if (staffTaskEvent != null) {
+                addConfigurationError(errors, "staffTaskEvent", "Geben Sie die Ereigniskennung an, die die Schaltfläche auslösen soll.");
+            } else if (customerTaskEvent != null) {
+                addConfigurationError(errors, "customerTaskEvent", "Geben Sie die Ereigniskennung an, die die Schaltfläche auslösen soll.");
+            } else {
+                addConfigurationError(errors, "href", "Geben Sie den Link an, den die Schaltfläche öffnen soll.");
+            }
         }
         return errors;
     }

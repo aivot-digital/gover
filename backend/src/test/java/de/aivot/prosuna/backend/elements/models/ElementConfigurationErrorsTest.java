@@ -65,12 +65,15 @@ class ElementConfigurationErrorsTest {
     void shouldDescribeEachErrorOnceWithItsElement() {
         var labelled = text("labelled", 6, 5);
         labelled.setLabel("Vorname");
-        var root = group("root", labelled, text("unlabelled", 6, 5));
+        var unlabelled = text("unlabelled", 6, 5);
+        unlabelled.setLabel(null);
+        var root = group("root", labelled, unlabelled);
 
         var messages = ElementConfigurationErrors.of(root).describe(root);
 
         assertEquals(List.of(
                 "Element „Vorname“: " + TEXT_ERROR,
+                "Element „unlabelled“: Geben Sie einen Titel für das Feld an.",
                 "Element „unlabelled“: " + TEXT_ERROR
         ), messages);
     }
@@ -124,8 +127,8 @@ class ElementConfigurationErrorsTest {
                 .setMinCharacters(minCharacters)
                 .setMaxCharacters(maxCharacters);
         text.setId(id);
-        // Hidden fields need no label, which keeps the label rule out of these tree tests.
-        text.setTechnical(true);
+        // A title keeps the label rule out of these tree tests.
+        text.setLabel("Feld " + id);
         return text;
     }
 

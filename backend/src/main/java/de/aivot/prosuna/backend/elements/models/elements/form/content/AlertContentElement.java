@@ -29,8 +29,9 @@ public class AlertContentElement extends BaseFormElement {
     @Override
     public Map<String, List<String>> validateConfiguration() {
         var errors = super.validateConfiguration();
-        // An alert without title and text renders as an empty box.
+        // An alert without title and text renders as an empty box. Either field fixes it, so both show the error.
         if (StringUtils.isNullOrEmpty(title) && isRichTextEmpty(text) && !hasOverride()) {
+            addConfigurationError(errors, "title", "Geben Sie einen Titel oder einen Text für den Hinweis an.");
             addConfigurationError(errors, "text", "Geben Sie einen Titel oder einen Text für den Hinweis an.");
         }
         return errors;

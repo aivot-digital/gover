@@ -76,8 +76,9 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
     @Override
     public Map<String, List<String>> validateConfiguration() {
         var errors = super.validateConfiguration();
-        // Hidden fields are never shown. Every other field needs a visible label, which screen readers announce as well.
-        if (!Boolean.TRUE.equals(technical) && StringUtils.isNullOrEmpty(label) && !hasOverride()) {
+        // The title labels the field, is announced by screen readers and is the source of the generated data key, so
+        // technical fields and fields with an override need one as well.
+        if (StringUtils.isNullOrEmpty(label)) {
             addConfigurationError(errors, "label", "Geben Sie einen Titel für das Feld an.");
         }
         return errors;

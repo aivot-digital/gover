@@ -152,7 +152,7 @@ class ElementConfigurationRulesTest {
     }
 
     @Test
-    void shouldRequireALabelForVisibleInputs() {
+    void shouldRequireALabelForEveryInput() {
         var expected = Map.of("label", List.of("Geben Sie einen Titel für das Feld an."));
         var hidden = new TextInputElement();
         hidden.setTechnical(true);
@@ -161,8 +161,8 @@ class ElementConfigurationRulesTest {
 
         assertEquals(expected, new TextInputElement().validateConfiguration());
         assertEquals(expected, labelled(new CheckboxInputElement()).setLabel(" ").validateConfiguration());
-        assertEquals(Map.of(), hidden.validateConfiguration());
-        assertEquals(Map.of(), overridden.validateConfiguration());
+        assertEquals(expected, hidden.validateConfiguration());
+        assertEquals(expected, overridden.validateConfiguration());
         assertEquals(Map.of(), labelled(new TextInputElement()).validateConfiguration());
     }
 
@@ -212,6 +212,9 @@ class ElementConfigurationRulesTest {
         assertEquals(expected, labelled(new SelectInputElement()).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
         assertEquals(expected, multiCheckbox(null).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
         assertEquals(expected, labelled(new ChipInputElement()).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
+        assertEquals(expected, labelled(new TextInputElement()).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
+        // Multiline fields offer no suggestions, so the editor hides their source.
+        assertEquals(Map.of(), labelled(new TextInputElement()).setIsMultiline(true).setOptionsSource(OptionsSourceType.CodeList).validateConfiguration());
         assertEquals(Map.of(), labelled(new SelectInputElement()).setOptionsSource(OptionsSourceType.CodeList).setCodeListKey("staaten").validateConfiguration());
         // Chip suggestions are optional.
         assertEquals(Map.of(), labelled(new ChipInputElement()).validateConfiguration());
@@ -219,7 +222,10 @@ class ElementConfigurationRulesTest {
 
     @Test
     void shouldRequireTheContentOfContentElements() {
-        assertEquals(Map.of("text", List.of("Geben Sie einen Titel oder einen Text für den Hinweis an.")),
+        assertEquals(Map.of(
+                        "title", List.of("Geben Sie einen Titel oder einen Text für den Hinweis an."),
+                        "text", List.of("Geben Sie einen Titel oder einen Text für den Hinweis an.")
+                ),
                 new AlertContentElement().setText("<p></p>").validateConfiguration());
         assertEquals(Map.of(), new AlertContentElement().setTitle("Hinweis").validateConfiguration());
         assertEquals(Map.of("content", List.of("Geben Sie eine Überschrift ein.")),
@@ -242,12 +248,22 @@ class ElementConfigurationRulesTest {
     }
 
     @Test
-    void shouldRequireATargetForLinkButtons() {
-        assertEquals(Map.of("href", List.of("Geben Sie den Link an, den die Schaltfläche öffnen soll.")),
-                new LinkButtonContentElement().validateConfiguration());
-        assertEquals(Map.of(), new LinkButtonContentElement().setHref("https://example.org").validateConfiguration());
-        assertEquals(Map.of(), new LinkButtonContentElement().setStaffTaskEvent("approve").validateConfiguration());
-        assertEquals(Map.of(), new LinkButtonContentElement().setCustomerTaskEvent("upload").validateConfiguration());
+    void shouldRequireALabelAndTheTargetOfTheSelectedActionForLinkButtons() {
+        var eventError = List.of("Geben Sie die Ereigniskennung an, die die Schaltfläche auslösen soll.");
+        var overridden = new LinkButtonContentElement();
+        overridden.setOverride(new ElementOverrideFunctions().setType(OverrideFunctionType.Javascript));
+
+        assertEquals(Map.of(
+                "label", List.of("Geben Sie eine Beschriftung für die Schaltfläche an."),
+                "href", List.of("Geben Sie den Link an, den die Schaltfläche öffnen soll.")
+        ), new LinkButtonContentElement().validateConfiguration());
+        // The editor keeps a selected task action as an empty event name.
+        assertEquals(Map.of("staffTaskEvent", eventError), button().setStaffTaskEvent("").validateConfiguration());
+        assertEquals(Map.of("customerTaskEvent", eventError), button().setCustomerTaskEvent(" ").validateConfiguration());
+        assertEquals(Map.of(), button().setHref("https://example.org").validateConfiguration());
+        assertEquals(Map.of(), button().setStaffTaskEvent("approve").validateConfiguration());
+        assertEquals(Map.of(), button().setCustomerTaskEvent("upload").validateConfiguration());
+        assertEquals(Map.of(), overridden.validateConfiguration());
     }
 
     @Test
@@ -309,12 +325,15 @@ class ElementConfigurationRulesTest {
     }
 
     @Test
-    void shouldRequireAnAlternativeTextForTheIntroductionLogo() {
+    void shouldNotRequireAnAlternativeTextForTheIntroductionLogo() {
         var withLogo = new IntroductionStepElement();
         withLogo.setInitiativeLogoLink("https://example.org/logo.png");
 
-        assertEquals(Map.of("initiativeName", List.of("Geben Sie einen Alternativtext für das ausgewählte Logo an.")), withLogo.validateConfiguration());
-        assertEquals(Map.of(), new IntroductionStepElement().validateConfiguration());
+        assertEquals(Map.of(), withLogo.validateConfiguration());
+    }
+
+    private static LinkButtonContentElement button() {
+        return new LinkButtonContentElement().setLabel("Antrag stellen");
     }
 
     private static TableInputElementColumn column(String key) {

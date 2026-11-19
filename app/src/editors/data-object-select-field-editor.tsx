@@ -22,6 +22,7 @@ export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSel
                 <DataModelSelectFieldComponent
                     label="Datenmodell"
                     error={configurationErrors?.dataModelKey?.join(' ')}
+                    required
                     value={element.dataModelKey ?? undefined}
                     onChange={(value) => {
                         onPatch({

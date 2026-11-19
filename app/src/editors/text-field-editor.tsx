@@ -178,6 +178,7 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                         <CodeListSelectField
                             value={element.codeListKey}
                             onChange={(codeListKey) => onPatch({codeListKey})}
+                            error={configurationErrors?.codeListKey?.join(' ')}
                             hint="Die Beschriftungen werden als Text vorgeschlagen. Eigene Eingaben bleiben möglich."
                             disabled={!editable}
                             required

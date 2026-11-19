@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -102,6 +103,11 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         var errors = super.validateConfiguration();
         addMinimumExceedsMaximumError(errors, "minCharacters", minCharacters, "maxCharacters", maxCharacters,
                 "Sie fordern mehr Zeichen, als Sie maximal zulassen.");
+        // Like the editor, suggestions only apply to single-line fields without a dynamic text policy.
+        if (!Boolean.TRUE.equals(isMultiline) && dynamicTextPolicy == null
+                && optionsSource == OptionsSourceType.CodeList && StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
         return errors;
     }
 

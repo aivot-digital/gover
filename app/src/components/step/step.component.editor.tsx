@@ -34,6 +34,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
                         value={props.element.title ?? ''}
                         label="Titel des Abschnitts"
                         error={props.configurationErrors?.title?.join(' ')}
+                        required
                         onChange={(val) => {
                             props.onPatch({
                                 title: val,
