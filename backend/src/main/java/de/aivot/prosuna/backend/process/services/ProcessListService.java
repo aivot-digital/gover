@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityManager;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
 
@@ -39,13 +41,15 @@ public class ProcessListService {
     private final PermissionService permissions;
     private final UserRepository users;
     private final ProcessNodeDefinitionService definitions;
+    private final UserDeputyService deputies;
 
     public ProcessListService(@Nonnull EntityManager em, @Nonnull PermissionService permissions, @Nonnull UserRepository users,
-                              @Nonnull ProcessNodeDefinitionService definitions) {
+                              @Nonnull ProcessNodeDefinitionService definitions, @Nonnull UserDeputyService deputies) {
         this.em = em;
         this.permissions = permissions;
         this.users = users;
         this.definitions = definitions;
+        this.deputies = deputies;
     }
 
     @Nonnull
@@ -234,6 +238,10 @@ public class ProcessListService {
         if (Boolean.FALSE.equals(filter.includeTests())) result.add(cb.isNull(r.instance.get("createdForTestClaimId")));
         var assignee = nonBlank(filter.assignee(), "all");
         if (assignee.equals("unassigned")) result.add(cb.isNull(r.owner().get("assignedUserId")));
+        // Deputies take over the tasks of the people they represent, while the assignment stays unchanged. Cases are
+        // not taken over, so their filter keeps showing only the user's own assignments.
+        else if (assignee.equals("mine") && r.task != null) result.add(r.task.get("assignedUserId").in(
+                Stream.concat(Stream.of(userId), deputies.findActivelyRepresentedUserIds(userId).stream()).toList()));
         else if (!assignee.equals("all")) result.add(cb.equal(r.owner().get("assignedUserId"), assignee.equals("mine") ? userId : assignee));
         if (filter.search() != null && !filter.search().isBlank()) {
             var pattern = "%" + escapeLike(filter.search().trim().toLowerCase(Locale.ROOT)) + "%";

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -84,10 +85,18 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     }
 
     /**
+     * Users the deputy currently represents, directly or through further deputies.
+     */
+    @Nonnull
+    public List<String> findActivelyRepresentedUserIds(@Nonnull String deputyUserId) {
+        return repository.findActivelyRepresentedUserIds(deputyUserId);
+    }
+
+    /**
      * Whether the deputy currently represents the original user, directly or through further deputies.
      */
     public boolean isActiveDeputyFor(@Nonnull String deputyUserId, @Nonnull String originalUserId) {
-        return repository.isActiveDeputyFor(deputyUserId, originalUserId);
+        return findActivelyRepresentedUserIds(deputyUserId).contains(originalUserId);
     }
 
     private void validateDateRange(@Nonnull UserDeputyEntity entity) throws ResponseException {

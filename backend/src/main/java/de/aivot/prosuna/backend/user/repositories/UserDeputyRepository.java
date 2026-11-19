@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface UserDeputyRepository extends JpaRepository<UserDeputyEntity, Integer>, JpaSpecificationExecutor<UserDeputyEntity> {
     // Runs the same check as the database trigger, so a rejected relation gets a readable error.
@@ -29,13 +30,9 @@ public interface UserDeputyRepository extends JpaRepository<UserDeputyEntity, In
 
     // The view contains only relations valid today and resolves chains to the represented user.
     @Query(value = """
-            SELECT EXISTS(
-                SELECT 1
-                FROM v_user_is_recursively_deputy_for
-                WHERE deputy_user_id = :deputyUserId
-                  AND original_user_id = :originalUserId
-            )
+            SELECT DISTINCT original_user_id
+            FROM v_user_is_recursively_deputy_for
+            WHERE deputy_user_id = :deputyUserId
             """, nativeQuery = true)
-    boolean isActiveDeputyFor(@Nonnull @Param("deputyUserId") String deputyUserId,
-                              @Nonnull @Param("originalUserId") String originalUserId);
+    List<String> findActivelyRepresentedUserIds(@Nonnull @Param("deputyUserId") String deputyUserId);
 }
