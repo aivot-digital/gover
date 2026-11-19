@@ -1,6 +1,5 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
-import {type GridColDef} from '@mui/x-data-grid';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -34,6 +33,8 @@ import {formatMissingPermissionTooltip} from '../../../../permissions/utils/perm
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
+import {createDeputyColumns} from '../../../components/deputy-columns';
+import {RepresentedUsersList} from '../../../components/represented-users-list';
 import {Page} from '../../../../../models/dtos/page';
 import {useRetainedDialogValue} from '../../../../../hooks/use-retained-dialog-value';
 import {
@@ -42,43 +43,10 @@ import {
     parseLocalDateIso,
 } from '../../../../../utils/temporal-utils';
 
+const deputyColumns = createDeputyColumns('deputyUserFullName', 'Stellvertreter:in');
+
 const deletedUserDeputyTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
-const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
-    {
-        field: 'deputyUserFullName',
-        headerName: 'Stellvertreter:in',
-        flex: 1,
-    },
-    {
-        field: 'fromDate',
-        headerName: 'Ab',
-        flex: 1,
-        renderCell: (params) => (
-            <span>
-                {formatLocalDate(params.row.fromDate)}
-            </span>
-        ),
-    },
-    {
-        field: 'untilDate',
-        headerName: 'Bis',
-        flex: 1,
-        renderCell: (params) => params.row.untilDate != null ? (
-            <span>
-                {formatLocalDate(params.row.untilDate)}
-            </span>
-        ) : (
-            <em>Unbegrenzt</em>
-        )
-    },
-    {
-        field: 'active',
-        headerName: 'Derzeit aktiv',
-        flex: 1,
-        type: 'boolean',
-    },
-];
 
 function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
     const fromLabel = formatLocalDate(item.fromDate);
@@ -340,7 +308,7 @@ export function UserDetailsPageDeputies() {
                         mx: '-16px',
                         mb: '-16px',
                     }}
-                    columnDefinitions={columns}
+                    columnDefinitions={deputyColumns}
                     controlRef={listControlRef}
                     fetch={fetchDeputies}
                     getRowIdentifier={(item) => item.id.toString()}
@@ -398,6 +366,25 @@ export function UserDetailsPageDeputies() {
                         ];
                     }}
                     preSearchElements={preSearchElements}
+                />
+            </Box>
+
+            <Box sx={{pt: 5}}>
+                <Typography
+                    variant="h5"
+                    sx={{mb: 1}}
+                >
+                    Vertretene Mitarbeiter:innen
+                </Typography>
+
+                <Typography sx={{mb: 3, maxWidth: 900}}>
+                    Eine Übersicht der Mitarbeiter:innen, für die diese Mitarbeiter:in als Stellvertreter:in eingetragen
+                    ist. Sie können diese Vertretungen in den Details der jeweiligen Mitarbeiter:in bearbeiten.
+                </Typography>
+
+                <RepresentedUsersList
+                    deputyUserId={user.id}
+                    emptyDescription="Diese Mitarbeiter:in ist für niemanden als Stellvertreter:in eingetragen."
                 />
             </Box>
 
