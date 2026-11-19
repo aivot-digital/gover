@@ -2,8 +2,8 @@ import {type AnyElement} from '../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {ElementChildOptions, type ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {flattenElements, flattenElementsWithParents, type ElementWithParents} from '../../utils/flatten-elements';
-import {deepEquals} from '../../utils/equality-utils';
 import {keyById, threeWayMerge} from '../../utils/three-way-merge';
+import {editorValuesEqual, variableReferenceMergeRules} from '../../utils/variable-reference-merge';
 
 /** An edit becomes part of the form layout only when the element editor applies it. */
 export interface ElementPanelDraft {
@@ -54,11 +54,11 @@ export function applyPanelDraftToTree<T extends AnyElement>(
             const base = bases.get(child.id);
             if (stored == null || base == null) {
                 children.push(atOriginalLocation(child));
-            } else if (!deepEquals(base, child)) {
+            } else if (!editorValuesEqual(base, child)) {
                 // An applied structure can edit the moved child itself. Keep those property edits at its new position.
-                const merged = threeWayMerge(base, child, stored, {arrayKey: keyById});
+                const merged = threeWayMerge(base, child, stored, {...variableReferenceMergeRules, arrayKey: keyById});
                 if (merged.conflicts.length > 0) movedConflict = true;
-                else if (!deepEquals(merged.merged, stored)) movedUpdates.push(merged.merged);
+                else if (!editorValuesEqual(merged.merged, stored)) movedUpdates.push(merged.merged);
             }
         }
         return {...element, children} as AnyElement;

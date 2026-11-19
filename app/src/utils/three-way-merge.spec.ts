@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
+import {InputMode, InputVariableSource} from '../models/input-mode';
 import {keyById, ORDER_SEGMENT, pathToId, threeWayMerge} from './three-way-merge';
+import {variableReferenceMergeRules} from './variable-reference-merge';
 
 describe('threeWayMerge', () => {
     it('takes changes that only one side made', () => {
@@ -72,6 +74,77 @@ describe('threeWayMerge', () => {
         const result = threeWayMerge({tags: ['a']}, {tags: ['a', 'b']}, {tags: ['c']});
 
         expect(result.conflicts.map((conflict) => conflict.id)).toEqual(['tags']);
+    });
+
+    describe('variable references', () => {
+        const variable = (nodeDataKey: string, path: string) => ({
+            type: InputMode.Variable, reference: {source: InputVariableSource.ElementData, nodeDataKey, path},
+        });
+        const noCode = (nodeDataKey: string, path: string) => ({type: 'NoCodeNodeDataReference', nodeDataKey, path});
+        const rules = variableReferenceMergeRules;
+
+        it.each([
+            {mode: 'Variable', reference: variable},
+            {mode: 'NoCodeNodeDataReference', reference: noCode},
+        ])('decides between complete $mode selections and still merges independent edits', ({reference}) => {
+            const base = {selection: reference('review', 'email'), notes: '', name: ''};
+            const mine = {...base, selection: reference('manager', 'email'), name: 'Local'};
+            const theirs = {...base, selection: reference('review', 'name'), notes: 'Remote'};
+            const result = threeWayMerge(base, mine, theirs, rules);
+            expect(result.conflicts).toEqual([{
+                id: 'selection', path: ['selection'], base: base.selection, mine: mine.selection, theirs: theirs.selection,
+            }]);
+            expect(result.merged).toStrictEqual({...theirs, name: 'Local'});
+            for (const choice of ['mine', 'theirs'] as const) {
+                const resolved = threeWayMerge(base, mine, theirs, rules, {selection: choice});
+                expect(resolved.conflicts).toEqual([]);
+                expect(resolved.merged).toStrictEqual({...theirs, name: 'Local', selection: choice === 'mine' ? mine.selection : theirs.selection});
+            }
+        });
+
+        it('treats a missing optional key and Markdown flag as their server defaults inside an unkeyed array', () => {
+            const selection = {type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'email'}};
+            const stored = {...selection, reference: {...selection.reference, nodeDataKey: null, markdown: false}};
+            const noCodeDraft = {type: 'NoCodeNodeDataReference', path: ''};
+            const noCodeStored = {...noCodeDraft, nodeDataKey: null};
+            const mine = {options: [selection, noCodeDraft]};
+            const theirs = {options: [stored, noCodeStored]};
+            const result = threeWayMerge({options: []}, mine, theirs, rules);
+            expect(result.conflicts).toEqual([]);
+            expect(result.merged).toBe(theirs);
+        });
+
+        it('recognizes the full submitted selection as a possible server baseline after an interrupted write', () => {
+            const base = {selection: variable('review', 'email')};
+            const submitted = {selection: variable('manager', 'email')};
+            const theirs = {selection: {...submitted.selection, reference: {...submitted.selection.reference, markdown: false}}};
+            const mine = {selection: variable('review', 'name')};
+            expect(threeWayMerge(base, mine, theirs, rules, {}, {value: submitted})).toEqual({merged: mine, conflicts: []});
+
+            const thirdChoice = {selection: variable('review', 'phone')};
+            expect(threeWayMerge(base, mine, thirdChoice, rules, {}, {value: submitted}).conflicts)
+                .toEqual([{id: 'selection', path: ['selection'], base: base.selection, mine: mine.selection, theirs: thirdChoice.selection}]);
+        });
+
+        it('retains the Markdown property of the chosen side even when the reference paths match', () => {
+            const base = variable('review', 'email');
+            const mine = variable('manager', 'email');
+            const theirs = {...mine, reference: {...mine.reference, markdown: true}};
+            const result = threeWayMerge(base, mine, theirs, rules);
+            expect(result.conflicts).toEqual([{id: '', path: [], base, mine, theirs}]);
+            expect(threeWayMerge(base, mine, theirs, rules, {'': 'mine'}).merged).toStrictEqual(mine);
+            expect(threeWayMerge(base, mine, theirs, rules, {'': 'theirs'}).merged).toStrictEqual(theirs);
+        });
+
+        it('merges ordinary literal objects containing a key, reference and path field by field', () => {
+            const value = {nodeDataKey: 'review', path: 'email', reference: 'local label'};
+            const base = {type: InputMode.Literal, value};
+            const mine = {...base, value: {...value, nodeDataKey: 'manager'}};
+            const theirs = {...base, value: {...value, path: 'name'}};
+            expect(threeWayMerge(base, mine, theirs, rules)).toEqual({
+                merged: {...base, value: {...value, nodeDataKey: 'manager', path: 'name'}}, conflicts: [],
+            });
+        });
     });
 
     describe('keyed arrays', () => {

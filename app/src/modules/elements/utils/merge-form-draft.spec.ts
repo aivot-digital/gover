@@ -29,7 +29,42 @@ function mergeAgainst(target: AnyFormElement | undefined, draft = panel) {
     return {base, mine: base, theirs, editableRoot: theirs, panel: draft};
 }
 
+function fieldReading(nodeDataKey: string, path: string) {
+    return {
+        ...text,
+        value: {
+            type: 'NoCode' as const, noCode: {type: 'NoCodeNodeDataReference' as const, nodeDataKey, path},
+            requirements: null, javascriptCode: null, referencedIds: null,
+        },
+    };
+}
+
 describe('mergeFormDraft', () => {
+    it.each(['layout', 'panel'])('offers both complete element data references when restoring the %s', (layer) => {
+        const layoutWith = (field: typeof text) => ({...base, children: [{...step, children: [field]}]});
+        const original = fieldReading('review', 'email');
+        const local = {...fieldReading('manager', 'email'), label: 'Rufname'};
+        const saved = {...fieldReading('review', 'name'), placeholder: 'Gespeichert'};
+        const theirs = layoutWith(saved);
+        const request = {
+            base: layoutWith(original), mine: layoutWith(layer === 'panel' ? original : local), theirs, editableRoot: theirs,
+            panel: layer === 'panel' ? {...panel, base: original, mine: local} : undefined,
+        };
+        const {conflicts} = mergeFormDraft(request, {});
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0]).toMatchObject({mine: local.value.noCode, theirs: saved.value.noCode});
+        for (const choice of ['mine', 'theirs'] as const) {
+            const restored = mergeFormDraft(request, {[conflicts[0].id]: choice});
+            expect(restored.conflicts).toEqual([]);
+            const expected = {...saved, label: local.label, value: choice === 'mine' ? local.value : saved.value};
+            if (layer === 'panel') {
+                expect(restored.value).toMatchObject({layout: theirs, panel: {base: saved, mine: expected}});
+            } else {
+                expect(restored.value.layout).toEqual(layoutWith(expected));
+            }
+        }
+    });
+
     it('keeps the pending edit outside the layout and rebases it onto the new stored properties', () => {
         const target = {...text, placeholder: 'Ihr Vorname'};
         const request = mergeAgainst(target);
@@ -196,6 +231,26 @@ describe('mergeFormDraft', () => {
         const applied = applyPanelDraftToTree(theirs, restored, restored.mine, ElementDisplayContext.CustomerFacing);
         expect(applied).toMatchObject({tree: {...theirs, children: [{...newStep, children: [{...group, children: []}, {...saved, label: edited.label}]}]}});
         expect('tree' in applied && flattenElements(applied.tree).filter((item) => item.id === saved.id)).toHaveLength(1);
+    });
+
+    it('protects a moved child reference both during recovery and when applying an outdated panel', () => {
+        const original = fieldReading('review', 'email');
+        const local = fieldReading('manager', 'email');
+        const saved = fieldReading('review', 'name');
+        const group = {...generateElementWithDefaultValues(ElementType.GroupLayout), id: 'group', children: [original]};
+        const oldStep = {...step, children: [group]};
+        const oldLayout = {...base, children: [oldStep]};
+        const emptyGroup = {...group, children: []};
+        const theirs = {...base, children: [{...step, children: [emptyGroup, saved]}]};
+        const draft = {...panel, base: group, mine: {...group, children: [local]}, parents: getPanelDraftParents([oldLayout, oldStep], group.id)};
+        expect(applyPanelDraftToTree(theirs, draft, draft.mine, ElementDisplayContext.CustomerFacing)).toHaveProperty('error');
+        const request = {base: oldLayout, mine: oldLayout, theirs, editableRoot: theirs, panel: draft};
+        const {conflicts} = mergeFormDraft(request, {});
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0]).toMatchObject({mine: local.value.noCode, theirs: saved.value.noCode});
+        const resolved = mergeFormDraft(request, {[conflicts[0].id]: 'mine'}).value.panel!;
+        const applied = applyPanelDraftToTree(theirs, resolved, resolved.mine, ElementDisplayContext.CustomerFacing);
+        expect(applied).toMatchObject({tree: {children: [{children: [emptyGroup, local]}]}});
     });
 
     it('previews layout, moved child and deleted group choices together before applying', () => {

@@ -78,7 +78,7 @@ export function prepareMerge<T>(
     const {merged, conflicts} = threeWayMerge(base, mine, theirs, spec, choices, interruptedWrite);
     return {
         value: merged,
-        changed: !deepEquals(merged, spec.normalize ? spec.normalize(theirs) : theirs),
+        changed: !deepEquals(merged, spec.normalize ? spec.normalize(theirs) : theirs, spec.atomicValue),
         conflicts: conflicts.map((conflict) => {
             const presentation = spec.describeConflict?.(conflict.path, {base, mine, theirs});
             return {

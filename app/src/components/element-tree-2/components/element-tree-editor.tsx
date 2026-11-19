@@ -24,7 +24,7 @@ import {isAnyInputElement} from '../../../models/elements/form/input/any-input-e
 import {validateDataKeyPath} from '../../../utils/data-key-input';
 import {suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
 import {getPanelDraftParents} from '../element-panel-draft';
-import {deepEquals} from '../../../utils/equality-utils';
+import {editorValuesEqual} from '../../../utils/variable-reference-merge';
 import {mergeRecalculatedReferencedIds} from '../../../utils/ui-definition-utils';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
@@ -125,12 +125,12 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             return;
         }
         const base = panel?.base ?? value;
-        if (!panel?.detached && deepEquals(updated, base)) {
+        if (!panel?.detached && editorValuesEqual(updated, base)) {
             setLocalElement(undefined);
             onPanelDraftChange(null);
             return;
         }
-        if (!panel?.detached && localElement != null && deepEquals(updated, localElement)) {
+        if (!panel?.detached && localElement != null && editorValuesEqual(updated, localElement)) {
             onPanelDraftChange(null);
             return;
         }
@@ -173,7 +173,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             const recalculated = await api.recalculateReferencedIds(candidate).catch(() => candidate);
             if (generation !== editGeneration.current) return;
             const latest = currentTree.current;
-            if (panel != null && latest.panel != null && !deepEquals(candidate, latest.panel.mine)) {
+            if (panel != null && latest.panel != null && !editorValuesEqual(candidate, latest.panel.mine)) {
                 // A form save rebased the open edit while its references were being calculated.
                 candidate = latest.panel.mine as T;
                 continue;

@@ -20,7 +20,8 @@ import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dia
 import {FormFieldGroup, mergeAriaIds} from '../../components/form-field';
 import {SearchInput} from '../../components/search-input/search-input';
 import {type MergeChoice, type MergeChoices, type MergeConflictPresentation} from '../../utils/three-way-merge';
-import {getInputVariableReference, InputMode, isAuthoredInputValue} from '../../models/input-mode';
+import {getInputVariableReference, InputMode, type InputVariableReference, InputVariableSource, isAuthoredInputValue} from '../../models/input-mode';
+import {isNoCodeNodeDataReference} from '../../models/functions/no-code-expression';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
 
 export interface MergeConflictDialogConflict {
@@ -54,8 +55,7 @@ interface MergeConflictDialogProps {
 }
 
 interface ConflictPreview extends MergeConflictDialogConflict {
-    mineText: string;
-    theirsText: string;
+    previews: Record<MergeChoice, {text: string; isReference: boolean}>;
 }
 
 interface ConflictGroup {
@@ -85,7 +85,12 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
         for (const conflict of conflicts) {
             const id = conflict.group?.id ?? JSON.stringify(['conflict', conflict.id]);
             const group = grouped.get(id) ?? {id, label: conflict.group?.label ?? conflict.label, conflicts: []};
-            group.conflicts.push({...conflict, mineText: formatValue(conflict.mine), theirsText: formatValue(conflict.theirs)});
+            const mine = getReferencePreview(conflict.mine);
+            const theirs = getReferencePreview(conflict.theirs);
+            group.conflicts.push({...conflict, previews: {
+                mine: {text: mine ? describeReference(mine, theirs) : formatValue(conflict.mine), isReference: mine != null},
+                theirs: {text: theirs ? describeReference(theirs, mine) : formatValue(conflict.theirs), isReference: theirs != null},
+            }});
             grouped.set(id, group);
         }
         return [...grouped.values()];
@@ -103,7 +108,7 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
     const query = search.trim().toLocaleLowerCase('de');
     const visibleGroups = groups.map((group) => ({
         ...group,
-        conflicts: group.conflicts.filter((conflict) => [group.label, conflict.propertyLabel ?? conflict.label, conflict.mineText, conflict.theirsText]
+        conflicts: group.conflicts.filter((conflict) => [group.label, conflict.propertyLabel ?? conflict.label, conflict.previews.mine.text, conflict.previews.theirs.text]
             .some((text) => text.toLocaleLowerCase('de').includes(query))),
     })).filter((group) => group.conflicts.length > 0);
     const visibleCount = visibleGroups.reduce((count, group) => count + group.conflicts.length, 0);
@@ -261,7 +266,7 @@ function ConflictGroupComparison(props: {
                                         <ConflictValueOption
                                             key={choice}
                                             choice={choice}
-                                            text={choice === 'mine' ? conflict.mineText : conflict.theirsText}
+                                            {...conflict.previews[choice]}
                                             selected={(props.choices[conflict.id] ?? 'mine') === choice}
                                             describedBy={context.describedBy}
                                         />
@@ -276,10 +281,11 @@ function ConflictGroupComparison(props: {
     );
 }
 
-function ConflictValueOption(props: {choice: MergeChoice; text: string; selected: boolean; describedBy?: string}) {
+function ConflictValueOption(props: {choice: MergeChoice; text: string; isReference: boolean; selected: boolean; describedBy?: string}) {
     const id = useNormalizedReactId();
     const [expanded, setExpanded] = useState(false);
-    const isLong = props.text.length > PREVIEW_MAX_LENGTH;
+    // References can differ only at the very end of a path.
+    const isLong = !props.isReference && props.text.length > PREVIEW_MAX_LENGTH;
     const labelId = `${id}-label`;
     const valueId = `${id}-value`;
     return (
@@ -318,6 +324,67 @@ function ConflictValueOption(props: {choice: MergeChoice; text: string; selected
     );
 }
 
+interface ReferencePreview {
+    text: string;
+    dataLayer: string;
+    markdown: boolean;
+}
+
+const dataLayerLabels: Record<InputVariableSource, string> = {
+    ProcessData: 'Vorgangsdatenebene',
+    ElementData: 'Elementdatenebene',
+    ElementMetadata: 'Elementmetadatenebene',
+    ProtectedProcessData: 'Geschützte Vorgangsdatenebene',
+};
+
+function getReferencePreview(value: unknown): ReferencePreview | undefined {
+    const authored = isAuthoredInputValue(value);
+    if (authored && value.type === InputMode.Literal && isAuthoredInputValue(value.value)) {
+        return getReferencePreview(value.value);
+    }
+    const operand = authored && value.type === InputMode.NoCode ? value.operand : value;
+    let reference: InputVariableReference;
+    let label: string;
+    if (authored && value.type === InputMode.Variable && value.reference != null) {
+        reference = value.reference;
+        label = 'Variable';
+    } else if (isNoCodeNodeDataReference(operand)) {
+        reference = {source: InputVariableSource.ElementData, nodeDataKey: operand.nodeDataKey, path: operand.path ?? ''};
+        label = 'No-Code-Verweis';
+    } else {
+        return undefined;
+    }
+
+    const hasSource = Object.hasOwn(dataLayerLabels, reference.source);
+    const dataLayer = hasSource ? dataLayerLabels[reference.source] :
+        typeof reference.source === 'string' ? `Unbekannte Datenebene (${reference.source})` : 'Datenebene fehlt';
+    const needsKey = reference.source === InputVariableSource.ElementData || reference.source === InputVariableSource.ElementMetadata;
+    const path = typeof reference.path === 'string' ? reference.path.trim() : '';
+    const key = typeof reference.nodeDataKey === 'string' ? reference.nodeDataKey.trim() : '';
+    let text: string;
+    if (hasSource && path && (!needsKey || key)) {
+        text = `${label}: ${getInputVariableReference(reference)}`;
+    } else {
+        const fields = [];
+        if (!hasSource) fields.push(dataLayer);
+        if (needsKey || key) fields.push(`Datenschlüssel: ${key || 'fehlt'}`);
+        fields.push(`Pfad: ${path || 'fehlt'}`);
+        text = [`${label} (unvollständig)`, ...fields].join('\n');
+    }
+    return {text, dataLayer, markdown: reference.markdown === true};
+}
+
+function describeReference(preview: ReferencePreview, other?: ReferencePreview): string {
+    const lines = [preview.text];
+    if (other?.text === preview.text) {
+        if (preview.dataLayer !== other.dataLayer) lines.push(preview.dataLayer);
+        if (preview.markdown !== other.markdown) {
+            lines.push(`Markdown-Quelle: ${preview.markdown ? 'Ja' : 'Nein'}`);
+        }
+    }
+    return lines.join('\n');
+}
+
 function formatValue(value: unknown): string {
     if (value === undefined) {
         return 'Entfernt';
@@ -336,7 +403,7 @@ function formatValue(value: unknown): string {
             case InputMode.Literal:
                 return formatValue(value.value);
             case InputMode.Variable:
-                return `Variable: ${getInputVariableReference(value.reference)}`;
+                return 'Keine Variable referenziert';
             case InputMode.LowCode:
                 return `Low-Code-Skript:\n${value.code}`;
             case InputMode.NoCode:

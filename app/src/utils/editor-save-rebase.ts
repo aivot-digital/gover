@@ -142,8 +142,8 @@ export async function persistEditorSave<T, S extends {lockVersion?: number | nul
         base: valueOf(original), mine: submitted, saveCheckpoint: checkpoint,
     }, valueOf(stored), specFor(stored), choices);
     const matchesStored = (value: T, stored: S) => {
-        const normalize = specFor(stored).normalize;
-        return normalize ? deepEquals(normalize(value), normalize(valueOf(stored))) : deepEquals(value, valueOf(stored));
+        const {normalize = (input: T) => input, atomicValue} = specFor(stored);
+        return deepEquals(normalize(value), normalize(valueOf(stored)), atomicValue);
     };
 
     signal.throwIfAborted();

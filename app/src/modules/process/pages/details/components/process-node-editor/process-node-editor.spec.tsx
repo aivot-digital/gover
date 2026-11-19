@@ -74,16 +74,22 @@ function createMetadata(): ProcessNodeDefinitionMetadata {
 function EditorFields() {
     const {node, setNode, isEditable} = useProcessNodeEditorContext();
     const mapping = node.configuration.reference;
+    const reference = mapping?.type === InputMode.Variable ? mapping.reference :
+        mapping?.type === InputMode.NoCode && mapping.operand.type === 'NoCodeNodeDataReference' ? mapping.operand : undefined;
     return <>
         <label>
             Name bearbeiten
             <input disabled={!isEditable} value={node.name ?? ''} onChange={(event) => setNode({...node, name: event.target.value}, false)}/>
         </label>
-        {mapping?.type === InputMode.Variable && <label>
+        {reference != null && <label>
             Variablenpfad
-            <input disabled={!isEditable} value={mapping.reference.path} onChange={(event) => setNode({
-                ...node, configuration: {...node.configuration, reference: {...mapping, reference: {...mapping.reference, path: event.target.value}}},
-            }, false)}/>
+            <input disabled={!isEditable} value={reference.path ?? ''} onChange={(event) => {
+                const path = event.target.value;
+                setNode({...node, configuration: {...node.configuration, reference: 'source' in reference
+                    ? {type: InputMode.Variable, reference: {...reference, path}}
+                    : {type: InputMode.NoCode, operand: {...reference, path}},
+                }}, false);
+            }}/>
         </label>}
         <ProcessDataKeyInputComponent
             label="Gespeicherter Pfad"
@@ -853,6 +859,88 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
 
         await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
         expect(testState.save.mock.calls[1][0]).toEqual(storedNode);
+    });
+
+    describe.each([InputMode.Variable, InputMode.NoCode] as const)('%s element data references', (mode) => {
+        function configuration(nodeDataKey: string, path: string): ProcessNodeEntity['configuration'] {
+            return {reference: mode === InputMode.Variable
+                ? {type: mode, reference: {source: InputVariableSource.ElementData, nodeDataKey, path}}
+                : {type: mode, operand: {type: 'NoCodeNodeDataReference', nodeDataKey, path}}};
+        }
+
+        const base = {...createNode(1), configuration: configuration('review', 'email'), lockVersion: 1};
+        const mine = {...base, configuration: configuration('review', 'name'), name: 'Mein Name'};
+        const stored = {...base, configuration: configuration('manager', 'email'), notes: 'Notiz vom Server', lockVersion: 2};
+
+        async function referenceChoices(dialogName: string) {
+            const dialog = within(await screen.findByRole('dialog', {name: dialogName}));
+            expect(dialog.getByRole('status')).toHaveTextContent('1 abweichende Angabe');
+            expect(dialog.getAllByRole('radio')).toHaveLength(2);
+            return {
+                dialog,
+                mine: dialog.getByRole('radio', {name: 'Meine Änderung soll behalten werden', description: /_\.review\.name/}),
+                theirs: dialog.getByRole('radio', {name: 'Gespeicherter Stand soll übernommen werden', description: /_\.manager\.email/}),
+            };
+        }
+
+        it.each(['mine', 'theirs'] as const)('waits for the full reference decision before retrying a 409 (%s)', async (choice) => {
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValueOnce(base).mockResolvedValue(stored);
+            testState.save.mockRejectedValueOnce(lockConflict).mockImplementation(async (node: ProcessNodeEntity) => node);
+            renderEditor();
+            await editName(mine.name);
+            fireEvent.change(screen.getByRole('textbox', {name: 'Variablenpfad'}), {target: {value: 'name'}});
+            fireEvent.click(saveButton());
+
+            const options = await referenceChoices('Neuerer Stand gespeichert');
+            expect(testState.save.mock.calls.map(([node]) => node)).toEqual([mine]);
+            fireEvent.click(options[choice]);
+            fireEvent.click(options.dialog.getByRole('button', {name: 'Übernehmen und speichern'}));
+
+            await waitFor(() => expect(testState.save).toHaveBeenCalledTimes(2));
+            expect(testState.save.mock.calls[1][0]).toEqual({
+                ...stored, name: mine.name, configuration: choice === 'mine' ? mine.configuration : stored.configuration,
+            });
+        });
+
+        it.each(['draft', 'interrupted save'])('restores the chosen reference and independent changes after login (%s)', async (kind) => {
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(stored);
+            testState.loadDraft.mockResolvedValue({
+                base, mine, baseLockVersion: 1, saveCheckpoint: kind === 'draft' ? undefined :
+                    {phase: 'pending', submitted: {...base, configuration: configuration('intake', 'email')}},
+            });
+            testState.save.mockImplementation(async (node: ProcessNodeEntity) => node);
+            renderEditor();
+
+            const options = await referenceChoices('Ungespeicherte Änderungen wiederherstellen?');
+            fireEvent.click(options.mine);
+            fireEvent.click(options.dialog.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+            await waitFor(() => expect(saveButton()).toBeEnabled());
+            expect(testState.save).not.toHaveBeenCalled();
+            expect(screen.getByRole('textbox', {name: 'Variablenpfad'})).toHaveValue('name');
+            fireEvent.click(saveButton());
+
+            await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+            expect(testState.save.mock.calls[0][0]).toEqual({...stored, configuration: mine.configuration, name: mine.name});
+        });
+
+        it('recognizes the interrupted write on the server and restores the later selection without a conflict', async () => {
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(stored);
+            testState.loadDraft.mockResolvedValue({
+                base, mine, baseLockVersion: 1,
+                saveCheckpoint: {phase: 'pending', submitted: {...base, configuration: stored.configuration}},
+            });
+            testState.save.mockImplementation(async (node: ProcessNodeEntity) => node);
+            renderEditor();
+
+            const dialog = within(await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'}));
+            expect(dialog.queryByRole('radio')).not.toBeInTheDocument();
+            fireEvent.click(dialog.getByRole('button', {name: 'Änderungen wiederherstellen'}));
+            await waitFor(() => expect(saveButton()).toBeEnabled());
+            expect(testState.save).not.toHaveBeenCalled();
+            fireEvent.click(saveButton());
+            await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+            expect(testState.save.mock.calls[0][0]).toEqual({...stored, configuration: mine.configuration, name: mine.name});
+        });
     });
 
     it('keeps the changes unsaved when the conflict dialog is cancelled', async () => {

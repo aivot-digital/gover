@@ -147,7 +147,7 @@ import {mergeFormDraft, rebaseOpenElementDraft} from '../utils/merge-form-draft'
 import {
     canPendingSaveStillCommit, type EditorSaveCheckpoint, pendingSaveCanChangeStored, persistEditorSave, rebaseAfterSave,
 } from '../../../utils/editor-save-rebase';
-import {deepEquals} from '../../../utils/equality-utils';
+import {editorValuesEqual} from '../../../utils/variable-reference-merge';
 import {resolveThemeLogoKey} from '../../../theming/resolve-theme-logo';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {resolvePrintablePdfFilename} from '../../forms/utils/printable-pdf-filename';
@@ -181,7 +181,7 @@ function getStoredFormLayout(node: ProcessNodeEntity): FormLayoutElement | null 
 }
 
 function sameFormLayout(left: FormLayoutElement | null, right: FormLayoutElement | null): boolean {
-    return deepEquals(normalizeUiDefinitionForStorage(left), normalizeUiDefinitionForStorage(right));
+    return editorValuesEqual(normalizeUiDefinitionForStorage(left), normalizeUiDefinitionForStorage(right));
 }
 
 function toEditableFormLayout(layout: FormLayoutElement | null, rootId?: string): FormLayoutElement {

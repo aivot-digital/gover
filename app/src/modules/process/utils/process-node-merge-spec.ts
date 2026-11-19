@@ -1,6 +1,7 @@
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {keyById, type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
+import {variableReferenceMergeRules} from '../../../utils/variable-reference-merge';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {getLiteralAuthoredValue} from '../../../models/element-data';
 import {
@@ -71,6 +72,7 @@ export function createProcessNodeMergeSpec(layout: GroupLayout | null, stored?: 
     };
 
     return {
+        ...variableReferenceMergeRules,
         // The server derives these on every save; the lock version must be the stored one, so the save passes its check.
         serverManaged: [
             'lockVersion',

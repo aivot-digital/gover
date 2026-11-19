@@ -3,7 +3,9 @@ import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {type MergeSpec} from '../utils/three-way-merge';
 import {type MergeConflictDialogMode} from '../dialogs/merge-conflict-dialog/merge-conflict-dialog';
-import {useMergeConflictResolution} from './use-merge-conflict-resolution';
+import {InputMode, InputVariableSource} from '../models/input-mode';
+import {variableReferenceMergeRules} from '../utils/variable-reference-merge';
+import {prepareMerge, useMergeConflictResolution} from './use-merge-conflict-resolution';
 
 function setup<T>(request: {
     base: T;
@@ -31,6 +33,15 @@ function setup<T>(request: {
 }
 
 describe('useMergeConflictResolution', () => {
+    it('recognizes a chosen draft with equivalent legacy reference fields as already stored', () => {
+        const reference = {source: InputVariableSource.ProcessData, path: 'contact.email'};
+        const mine = {value: {type: InputMode.Variable, reference}};
+        const theirs = {value: {type: InputMode.Variable, reference: {...reference, nodeDataKey: null, markdown: false}}};
+        const merge = prepareMerge({base: mine, mine, theirs, spec: variableReferenceMergeRules}, {'': 'mine'});
+        expect(merge.value).toBe(mine);
+        expect(merge.changed).toBe(false);
+    });
+
     it('shows grouped property labels and applies mixed choices together with non-conflicting stored changes', async () => {
         const {user, onOutcome} = setup({
             base: {name: 'Alt', description: 'Alt', notes: 'Alt', lockVersion: 1},

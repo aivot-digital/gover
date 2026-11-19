@@ -1,12 +1,14 @@
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {type AnyElement} from '../../../models/elements/any-element';
 import {keyById, type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
+import {variableReferenceMergeRules} from '../../../utils/variable-reference-merge';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {getElementName} from '../../../data/element-type/element-names';
 import {describeElementProperty} from './element-conflict-labels';
 
 export const formLayoutMergeSpec: MergeSpec<FormLayoutElement | null> = {
+    ...variableReferenceMergeRules,
     // Elements are merged by their ID, so changes to different elements of the same form can be combined.
     arrayKey: keyById,
     normalize: normalizeUiDefinitionForStorage,

@@ -35,7 +35,7 @@ import {
     persistEditorSave,
     rebaseAfterSave,
 } from '../../../../../../utils/editor-save-rebase';
-import {deepEquals} from '../../../../../../utils/equality-utils';
+import {editorValuesEqual} from '../../../../../../utils/variable-reference-merge';
 import {useCurrentState} from '../../../../../../hooks/use-current-state';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
@@ -163,7 +163,7 @@ export function ProcessNodeEditor(): ReactNode {
     // A new load owns its editor even when revisiting the same node. Its internal tabs share the current save.
     useLayoutEffect(() => cancelActiveSave, [cancelActiveSave, request]);
 
-    const hasNodeChanges = useMemo(() => !deepEquals(originalNode, editedNode), [originalNode, editedNode]);
+    const hasNodeChanges = useMemo(() => !editorValuesEqual(originalNode, editedNode), [originalNode, editedNode]);
     const {
         hasChanged,
         dialog: changeBlockerDialog,
@@ -448,7 +448,7 @@ export function ProcessNodeEditor(): ReactNode {
             setEditedNode(rebased.value);
             setSaveCheckpoint(rebased.checkpoint);
             setProblems(null);
-            if (rebased.checkpoint || !deepEquals(rebased.value, stored)) return;
+            if (rebased.checkpoint || !editorValuesEqual(rebased.value, stored)) return;
             if (keyLockRevision.current === lockRevisionAtClick) setDataKeyUnlocked(false);
             setDataKeyValidationRequested(false);
             setOutputMappingErrors({});
@@ -505,7 +505,7 @@ export function ProcessNodeEditor(): ReactNode {
             }
             setSaveCheckpoint(saveCheckpoint);
             if (attemptedNode && isApiError(err) && err.status === 400) {
-                if (currentEdit.current === submitted && deepEquals(attemptedNode.configuration, submitted.configuration) &&
+                if (currentEdit.current === submitted && editorValuesEqual(attemptedNode.configuration, submitted.configuration) &&
                     isDerivedRuntimeElementData(err.details)) {
                     setProblems({
                         node: attemptedNode, derivedRuntimeElementData: err.details, commonErrors: {}, problems: [],
@@ -787,7 +787,7 @@ export function ProcessNodeEditor(): ReactNode {
                                         });
                                     }
                                     setOutputMappingErrors({});
-                                    if (currentCheckpoint.current?.phase === 'confirmed' && deepEquals(node, currentOriginal.current)) {
+                                    if (currentCheckpoint.current?.phase === 'confirmed' && editorValuesEqual(node, currentOriginal.current)) {
                                         setSaveCheckpoint(undefined);
                                     }
                                     setEditedNode(node);

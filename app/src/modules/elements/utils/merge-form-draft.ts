@@ -4,10 +4,10 @@ import {prepareDependentMerge, prepareMerge, prepareScopedMerge, type PreparedMe
 import {type AnyElement} from '../../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
-import {deepEquals} from '../../../utils/equality-utils';
 import {flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {normalizeElementDefinition} from '../../../utils/normalize-element-definition';
 import {keyById, type MergeChoices, type MergeSpec} from '../../../utils/three-way-merge';
+import {editorValuesEqual, variableReferenceMergeRules} from '../../../utils/variable-reference-merge';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {type EditorSaveCheckpoint, prepareEditorDraftRecovery, preparePostSaveMerge} from '../../../utils/editor-save-rebase';
 import {describeElementConflict, formatElementConflictLabel, formLayoutMergeSpec, hasUniqueElementIds} from './form-layout-merge-spec';
@@ -38,6 +38,7 @@ function findInLayout(layout: FormLayoutElement | null, id: string) {
 
 function elementMergeSpec(base: AnyElement, mine: AnyElement, theirs: AnyElement): MergeSpec<AnyElement | undefined> {
     return {
+        ...variableReferenceMergeRules,
         arrayKey: keyById,
         normalize: normalizeElementDefinition,
         validate: (value) => value == null || hasUniqueElementIds(value),
@@ -92,7 +93,7 @@ function restoreRemovedElement(
     panel: ElementPanelDraft,
     choices: MergeChoices,
 ): PreparedMerge<FormRecoveryState> {
-    if (!panel.detached && deepEquals(panel.mine, panel.base)) return form;
+    if (!panel.detached && editorValuesEqual(panel.mine, panel.base)) return form;
     const detached = {...panel, detached: true};
     // Reuse the exact Apply projection to present the full structural choice, e.g. when reinserting
     // the field would also replace an ancestor that now has an incompatible type.
@@ -101,7 +102,7 @@ function restoreRemovedElement(
     const mine = 'error' in projection ? panel.mine : findInLayout(projection.tree, id) ?? panel.mine;
     const theirs = findInLayout(form.value.layout, id);
     const choiceId = 'element/reinsert/' + id;
-    const previouslyConfirmed = panel.detached && !request.panel?.unconfirmedSaveBase && deepEquals(theirs, findInLayout(request.mine, id));
+    const previouslyConfirmed = panel.detached && !request.panel?.unconfirmedSaveBase && editorValuesEqual(theirs, findInLayout(request.mine, id));
     if (!previouslyConfirmed && choices[choiceId] == null) {
         const presentation = describeElementConflict(['children', '[' + id + ']'], [mine, theirs, panel.base], 'Offenes Formularelement', ['panel', panel.base.id]);
         return {
@@ -120,7 +121,7 @@ export function mergeFormDraft(request: FormDraftMergeRequest, choices: MergeCho
 
 /** An acknowledgement can change the layout behind a drawer opened after the save click. */
 export function rebaseOpenElementDraft(draft: ElementPanelDraft | null, previous: FormLayoutElement, current: FormLayoutElement) {
-    if (draft == null || deepEquals(previous, current)) return {draft, needsDecision: draft?.unconfirmedSaveBase != null};
+    if (draft == null || editorValuesEqual(previous, current)) return {draft, needsDecision: draft?.unconfirmedSaveBase != null};
     const request = {base: previous, mine: previous, theirs: current, editableRoot: current, panel: draft};
     const choices: MergeChoices = {};
     let result = mergeFormDraftLayers(request, choices, true);
@@ -162,7 +163,7 @@ function mergeFormDraftLayers(request: FormDraftMergeRequest, choices: MergeChoi
     ) ? editableRoot : null);
     const located = root == null ? undefined : isRoot ? {element: root, parents: []} :
         flattenElementsWithParents(root, []).find(({element}) => element.id === draft.base.id);
-    const usePostSaveMerge = afterSave || (unconfirmedSaveBase != null && deepEquals(request.theirs, request.base));
+    const usePostSaveMerge = afterSave || (unconfirmedSaveBase != null && editorValuesEqual(request.theirs, request.base));
     const moved = rebaseMovedChildren(draft, root, located?.element, choices, usePostSaveMerge);
     if (moved.conflicts.length > 0) return {...formResult, conflicts: moved.conflicts};
     const panel = moved.panel;

@@ -299,6 +299,71 @@ describe('MergeConflictDialog', () => {
         expect(screen.getByRole('dialog').querySelector('b')).toBeNull();
     });
 
+    it.each([
+        {
+            label: 'Variable',
+            reference: (nodeDataKey: string, path: string) => ({
+                type: InputMode.Variable, reference: {source: InputVariableSource.ElementData, nodeDataKey, path},
+            }),
+        },
+        {
+            label: 'No-Code-Verweis',
+            reference: (nodeDataKey: string, path: string) => ({type: 'NoCodeNodeDataReference', nodeDataKey, path}),
+        },
+    ])('shows both complete $label paths even when they exceed the normal preview length', ({label, reference}) => {
+        const key = 'verantwortlichePerson'.repeat(5);
+        setup({conflicts: [{id: 'selection', label: 'Auswahl', mine: reference(key, '[0].email'), theirs: reference(key, '[0].name')}]});
+        const mine = `${label}: _.${key}[0].email`;
+        const theirs = `${label}: _.${key}[0].name`;
+
+        expect(screen.getByText(mine)).toBeVisible();
+        expect(screen.getByText(theirs)).toBeVisible();
+        expect(screen.getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription(mine);
+        expect(screen.getByRole('radio', {name: theirsLabel})).toHaveAccessibleDescription(theirs);
+    });
+
+    it('distinguishes identical displayed paths by their data layer and Markdown flag', () => {
+        const group = {id: 'dynamic', label: 'Dynamische Angaben'};
+        const metadata = {type: InputMode.Variable, reference: {source: InputVariableSource.ElementMetadata, nodeDataKey: 'pruefen', path: 'finished'}};
+        const protectedData = {type: InputMode.Variable, reference: {source: InputVariableSource.ProtectedProcessData, path: 'taskMetadata.pruefen.finished'}};
+        const markdown = {...metadata, reference: {...metadata.reference, markdown: true}};
+        setup({conflicts: [
+            {id: 'source', label: 'Quelle', group, mine: metadata, theirs: protectedData},
+            {id: 'format', label: 'Format', group, mine: markdown, theirs: metadata},
+        ]});
+        const path = 'Variable: $$.taskMetadata.pruefen.finished';
+        const source = within(screen.getByRole('group', {name: /Einstellung: Quelle/}));
+        expect(source.getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription(`${path}\nElementmetadatenebene`);
+        expect(source.getByRole('radio', {name: theirsLabel})).toHaveAccessibleDescription(`${path}\nGeschützte Vorgangsdatenebene`);
+        const format = within(screen.getByRole('group', {name: /Einstellung: Format/}));
+        expect(format.getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription(`${path}\nMarkdown-Quelle: Ja`);
+        expect(format.getByRole('radio', {name: theirsLabel})).toHaveAccessibleDescription(`${path}\nMarkdown-Quelle: Nein`);
+    });
+
+    it.each([
+        {value: {type: 'NoCodeNodeDataReference', path: 'email'}, expected: 'No-Code-Verweis (unvollständig)\nDatenschlüssel: fehlt\nPfad: email'},
+        {
+            value: {type: InputMode.Variable, reference: {source: InputVariableSource.ElementData, nodeDataKey: 'pruefen', path: null}},
+            expected: 'Variable (unvollständig)\nDatenschlüssel: pruefen\nPfad: fehlt',
+        },
+        {
+            value: {type: InputMode.Variable, reference: {source: 'Unknown', path: 'name'}},
+            expected: 'Variable (unvollständig)\nUnbekannte Datenebene (Unknown)\nPfad: name',
+        },
+        {value: {type: InputMode.Variable, reference: null}, expected: 'Keine Variable referenziert'},
+        {
+            value: {type: InputMode.Literal, value: {type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'name'}}},
+            expected: 'Variable: $.name',
+        },
+        {
+            value: {type: InputMode.Literal, value: {path: 'email', nodeDataKey: 'pruefen'}},
+            expected: /\{\s*"path": "email",\s*"nodeDataKey": "pruefen"\s*\}/,
+        },
+    ])('safely describes an incomplete reference or literal as "$expected"', ({value, expected}) => {
+        setup({conflicts: [{id: 'selection', label: 'Auswahl', mine: value, theirs: null}]});
+        expect(screen.getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription(expected);
+    });
+
     it('changes choices with the keyboard and expands a value without changing the chosen side', async () => {
         const longValue = 'Vollständig lesbarer Inhalt '.repeat(8).trim();
         const props = setup({conflicts: [{id: 'value', label: 'Beschreibung', mine: longValue, theirs: 'Gespeichert'}]});

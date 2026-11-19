@@ -1,4 +1,4 @@
-import {deepEquals} from './equality-utils';
+import {type AtomicComparisonValue, deepEquals} from './equality-utils';
 
 /**
  * A change that the person and another save made differently to the same value.
@@ -42,6 +42,8 @@ export interface MergeSpec<T> {
      * Arrays without a key, or whose items lack a unique key, are merged as a whole.
      */
     arrayKey?: (path: string[]) => string | undefined;
+    /** Compare a domain choice by this value, but always resolve a conflict with the complete original selection. */
+    atomicValue?: AtomicComparisonValue;
     /** Applied to all three states first, so that equivalent representations are no conflict. */
     normalize?: (value: T) => T;
     /** Checks invariants of the merged object. A violation turns the whole object into a single conflict. */
@@ -82,6 +84,7 @@ export function threeWayMerge<T>(
     const conflicts: MergeConflict[] = [];
     const merged = mergeValue(normalizedBase, withServerManaged(normalizedMine, normalizedTheirs, spec), normalizedTheirs, [], {
         arrayKey: spec.arrayKey ?? (() => undefined),
+        atomicValue: spec.atomicValue,
         choices,
         conflicts,
         interrupted: interruptedWrite != null,
@@ -115,6 +118,7 @@ export const keyById = (): string => 'id';
 
 interface MergeContext {
     arrayKey: (path: string[]) => string | undefined;
+    atomicValue?: AtomicComparisonValue;
     choices: MergeChoices;
     conflicts: MergeConflict[];
     interrupted: boolean;
@@ -124,16 +128,21 @@ interface MergeContext {
 function mergeValue(
     base: unknown, mine: unknown, theirs: unknown, path: string[], context: MergeContext, submitted?: unknown,
 ): unknown {
-    if (deepEquals(mine, theirs)) {
+    const {atomicValue} = context;
+    if (deepEquals(mine, theirs, atomicValue)) {
         return theirs;
     }
     // After an interrupted PUT, both the original and the submitted value are known server
     // candidates. An edit back to the original value is still deliberate if the PUT committed.
-    if (deepEquals(mine, base) && (!context.interrupted || deepEquals(submitted, base))) {
+    if (deepEquals(mine, base, atomicValue) && (!context.interrupted || deepEquals(submitted, base, atomicValue))) {
         return theirs;
     }
-    if (deepEquals(theirs, base) || (context.interrupted && deepEquals(theirs, submitted))) {
+    if (deepEquals(theirs, base, atomicValue) || (context.interrupted && deepEquals(theirs, submitted, atomicValue))) {
         return mine;
+    }
+
+    if (atomicValue?.(mine) !== undefined || atomicValue?.(theirs) !== undefined) {
+        return conflict(base, mine, theirs, path, context);
     }
 
     // A different `type`, such as the input mode of an authored value, gives the other fields their meaning, so the

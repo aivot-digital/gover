@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {literalAuthoredValue} from '../../../models/element-data';
-import {InputMode} from '../../../models/input-mode';
+import {InputMode, InputVariableSource} from '../../../models/input-mode';
 import {threeWayMerge} from '../../../utils/three-way-merge';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {createProcessNodeMergeSpec, getExternallyEditedFields} from './process-node-merge-spec';
@@ -101,6 +101,24 @@ describe('createProcessNodeMergeSpec', () => {
             .toEqual({subject: literalAuthoredValue('Gespeichert')});
         expect(threeWayMerge(base, mine, theirs, spec, {'configuration/subject': 'mine'}).merged.configuration)
             .toEqual({subject: lowCode});
+    });
+
+    it('resolves a variable in a repeatable configuration row without losing its sibling fields', () => {
+        const row = (nodeDataKey: string, path: string, first: string, second: string) => literalAuthoredValue([{
+            id: 'row-1',
+            values: {
+                recipient: {type: InputMode.Variable, reference: {source: InputVariableSource.ElementData, nodeDataKey, path}},
+                first: literalAuthoredValue(first), second: literalAuthoredValue(second),
+            },
+        }]);
+        const fromRow = (rows: ReturnType<typeof row>) => node({configuration: {rows}});
+        const base = fromRow(row('review', 'email', 'A', 'B'));
+        const mine = fromRow(row('manager', 'email', 'A1', 'B'));
+        const theirs = fromRow(row('review', 'name', 'A', 'B2'));
+        const {conflicts} = threeWayMerge(base, mine, theirs, spec);
+        expect(conflicts.map(({id}) => id)).toEqual(['configuration/rows/value/[row-1]/values/recipient']);
+        expect(threeWayMerge(base, mine, theirs, spec, {[conflicts[0].id]: 'mine'}))
+            .toEqual({merged: fromRow(row('manager', 'email', 'A1', 'B2')), conflicts: []});
     });
 
     it('groups general properties separately from individual configuration fields', () => {
