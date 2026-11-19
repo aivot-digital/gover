@@ -33,6 +33,7 @@ import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
+import {AlertComponent} from '../../../../../components/alert/alert-component';
 import {Page} from '../../../../../models/dtos/page';
 import {useRetainedDialogValue} from '../../../../../hooks/use-retained-dialog-value';
 import {
@@ -434,6 +435,17 @@ export function UserDetailsPageDeputies() {
                 </DialogTitleWithClose>
 
                 <DialogContent>
+                    {/* The concept requires this warning: deputies inherit every permission of the represented person. */}
+                    <AlertComponent
+                        color="warning"
+                        title="Alle Berechtigungen werden übernommen"
+                        sx={{mt: 0, mb: 2}}
+                    >
+                        Während der Vertretung erhält die Stellvertreter:in alle Berechtigungen der vertretenen
+                        Mitarbeiter:in, auch die aus deren Systemrolle und Domänenrollen. Wählen Sie deshalb eine
+                        Person mit vergleichbaren Berechtigungen und passender Funktion.
+                    </AlertComponent>
+
                     {
                         isEditingDeputy && renderDeputyDraftDetails != null &&
                         <Box sx={{mb: 2}}>
