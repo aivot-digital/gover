@@ -38,6 +38,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchO
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.EventState;
+import dev.fitko.fitconnect.rest.model.event.problems.Problem;
 import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
 import dev.fitko.fitconnect.sdk.FitConnectSdk;
 import dev.fitko.fitconnect.sdk.api.*;
@@ -64,6 +65,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service.
@@ -460,7 +463,7 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
             throw new CommunicationException(
                     "FIT-Connect meldete für die Nachricht den Status „%s“. Probleme: %s"
-                            .formatted(status.state(), status.problems())
+                            .formatted(status.state(), describeProblems(status.problems()))
             );
         }
 
@@ -650,6 +653,19 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     @Nonnull
     private static String describe(@Nonnull Exception e) {
         return Objects.requireNonNullElse(e.getMessage(), e.getClass().getSimpleName());
+    }
+
+    // Problem does not override toString(), so its title and detail are joined explicitly for the event log.
+    @Nonnull
+    private static String describeProblems(@Nullable List<Problem> problems) {
+        if (problems == null || problems.isEmpty()) {
+            return "keine";
+        }
+        return problems.stream()
+                .map(problem -> Stream.of(problem.getTitle(), problem.getDetail())
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(": ")))
+                .collect(Collectors.joining("; "));
     }
 
     private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {

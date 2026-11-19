@@ -46,6 +46,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputE
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.Event;
+import dev.fitko.fitconnect.rest.model.event.problems.Problem;
 import dev.fitko.fitconnect.rest.model.submission.PublicService;
 import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
 import dev.fitko.fitconnect.sdk.FitConnectSdk;
@@ -487,6 +488,29 @@ class FitConnectZbpCommunicationProviderV1Test {
 
         assertEquals("Der Versand über FIT-Connect ist fehlgeschlagen: Submission rejected by destination", exception.getMessage());
         assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void rejectedStatusReportsProblemTitlesAndDetails() throws Exception {
+        var fixture = sendFixture(FitConnectZbpCommunicationProviderV1.Config.SENDER_DESTINATION_TYPE_ADMINISTRATION);
+        var organisation = mock(Organisation.class);
+        var cases = mock(OrganisationCases.class);
+        when(fixture.sdk().organisation(SENDER_DESTINATION_ID)).thenReturn(organisation);
+        when(organisation.send(any(OutgoingSubmission.class))).thenReturn(SENT_SUBMISSION);
+        when(organisation.cases()).thenReturn(cases);
+        when(cases.logOf(SENT_SUBMISSION)).thenReturn(transferLog(
+                Event.REJECT_SUBMISSION,
+                new Problem("urn:example:invalid-postfach", "Ungültiges Postfach", "Das Postfach ist unbekannt.", null),
+                new Problem("urn:example:untitled", "Fehlender Anhang", null, null)
+        ));
+
+        var exception = assertThrows(CommunicationException.class, fixture::send);
+
+        assertEquals(
+                "FIT-Connect meldete für die Nachricht den Status „REJECTED“. Probleme: "
+                        + "Ungültiges Postfach: Das Postfach ist unbekannt.; Fehlender Anhang",
+                exception.getMessage()
+        );
     }
 
     @Test
@@ -936,12 +960,12 @@ class FitConnectZbpCommunicationProviderV1Test {
         return "-----BEGIN %s-----\n%s\n-----END %s-----\n".formatted(type, body, type).getBytes(StandardCharsets.UTF_8);
     }
 
-    private static TransferLog transferLog(Event event) {
+    private static TransferLog transferLog(Event event, Problem... problems) {
         return new TransferLog(List.of(
                 CaseEvent.builder()
                         .event(event)
                         .issueTime(Instant.now())
-                        .problems(List.of())
+                        .problems(List.of(problems))
                         .build()
         ));
     }
