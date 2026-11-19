@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
@@ -72,6 +73,55 @@ class IdentityProviderServiceTest {
         assertEquals("https://example.com/userinfo", result.getUserinfoEndpoint());
         assertEquals("https://example.com/logout", result.getEndSessionEndpoint());
         assertEquals(List.of("openid", "profile", "email"), result.getDefaultScopes());
+    }
+
+    @Test
+    void fetchSamlMetadata_LoadsTheBrokerDescriptorOfTheProviderRealm() throws Exception {
+        var key = UUID.randomUUID();
+        when(identityProviderRepository.findById(key)).thenReturn(Optional.of(systemProvider(IdentityProviderType.BundId)));
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("<md:EntityDescriptor/>");
+        when(httpService.get(URI.create("https://keycloak.example.com/idp/realms/customer/broker/bundid-stage/endpoint/descriptor")))
+                .thenReturn(response);
+
+        assertEquals("<md:EntityDescriptor/>", identityProviderService.fetchSamlMetadata(key));
+    }
+
+    @Test
+    void fetchSamlMetadata_UsesTheBayernIdMetadataPath() {
+        assertEquals(
+                URI.create("https://keycloak.example.com/idp/realms/customer/bayernid/bundid-stage/metadata"),
+                IdentityProviderService.createSamlMetadataUri(systemProvider(IdentityProviderType.BayernId))
+        );
+    }
+
+    @Test
+    void fetchSamlMetadata_RejectsCustomProvidersWithoutRequestingTheirEndpoint() throws Exception {
+        var key = UUID.randomUUID();
+        when(identityProviderRepository.findById(key)).thenReturn(Optional.of(systemProvider(IdentityProviderType.Custom)));
+
+        assertThrows(ResponseException.class, () -> identityProviderService.fetchSamlMetadata(key));
+        verifyNoInteractions(httpService);
+    }
+
+    @Test
+    void fetchSamlMetadata_ReportsAnErrorStatus() throws Exception {
+        var key = UUID.randomUUID();
+        when(identityProviderRepository.findById(key)).thenReturn(Optional.of(systemProvider(IdentityProviderType.MUK)));
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(404);
+        when(httpService.get(any(URI.class))).thenReturn(response);
+
+        var exception = assertThrows(ResponseException.class, () -> identityProviderService.fetchSamlMetadata(key));
+        assertTrue(exception.getMessage().contains("Status 404"));
+    }
+
+    private static IdentityProviderEntity systemProvider(IdentityProviderType type) {
+        return new IdentityProviderEntity()
+                .setType(type)
+                .setAuthorizationEndpoint("https://keycloak.example.com/idp/realms/customer/protocol/openid-connect/auth")
+                .setAdditionalParams(List.of(new IdentityAdditionalParameter().setKey("kc_idp_hint").setValue("bundid-stage")));
     }
 
     @Test

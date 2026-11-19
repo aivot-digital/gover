@@ -7,6 +7,7 @@ import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link'
 import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import SettingsApplicationsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsApplications';
 import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
+import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 
 /**
  * System identity providers are brokered by a Keycloak realm that differs from the staff realm in the AppConfig.
@@ -46,14 +47,10 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
     const handleFetchMetadata = async () => {
         if (!identityProvider) return;
 
-        const metadataLink = links.find(l => l.label.includes('SAML-Metadaten'))?.url;
-        if (!metadataLink) return;
-
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(metadataLink);
-            const text = await response.text();
+            const text = await new IdentityProvidersApiService().getSamlMetadata(identityProvider.key);
             const parser = new DOMParser();
             const xml = parser.parseFromString(text, "application/xml");
 

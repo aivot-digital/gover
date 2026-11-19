@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.models.IdentityAdditionalParameter;
 import de.aivot.prosuna.backend.identity.models.OpenIdConfiguration;
 import de.aivot.prosuna.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -21,13 +22,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriUtils;
 import tools.jackson.core.JacksonException;
 
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Service for managing identity providers in the Prosuna system.
@@ -52,6 +56,9 @@ import java.util.UUID;
  */
 @Service
 public class IdentityProviderService implements EntityService<IdentityProviderEntity, UUID> {
+    private static final Pattern KEYCLOAK_REALM_URL = Pattern.compile("^(https?://.+/realms/[^/?#]+)/");
+    private static final String KEYCLOAK_IDP_HINT_PARAMETER = "kc_idp_hint";
+
     private final IdentityProviderRepository identityProviderRepository;
     private final SecretRepository secretRepository;
     private final AssetRepository assetRepository;
@@ -391,4 +398,74 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     }
 
     // endregion
+
+    /**
+     * Loads the SAML metadata that the Keycloak realm brokering a system identity provider publishes for its setup.
+     * The browser cannot load it directly, because Keycloak sends no CORS headers for it when it is served from
+     * another origin than Prosuna.
+     *
+     * @param key The key of the identity provider.
+     * @return The SAML metadata XML.
+     * @throws ResponseException If the provider does not exist, has no SAML metadata or the metadata cannot be loaded.
+     */
+    @Nonnull
+    public String fetchSamlMetadata(@Nonnull UUID key) throws ResponseException {
+        var provider = retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        var uri = createSamlMetadataUri(provider);
+        if (uri == null) {
+            throw ResponseException.badRequest("Für diesen Identitätsanbieter stehen keine SAML-Metadaten zur Verfügung.");
+        }
+
+        HttpResponse<String> response;
+        try {
+            response = httpService.get(uri);
+        } catch (HttpConnectionException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Die SAML-Metadaten konnten nicht von %s abgerufen werden.",
+                    uri.toString()
+            );
+        }
+
+        if (response.statusCode() != 200) {
+            throw ResponseException.conflict(
+                    "Der Endpunkt %s hat beim Abruf der SAML-Metadaten den Status %d zurückgegeben.",
+                    uri.toString(),
+                    response.statusCode()
+            );
+        }
+
+        return response.body();
+    }
+
+    /**
+     * Derives the metadata URL from the realm of the provider's authorization endpoint, like the setup page of the
+     * frontend. Only system providers are supported: administrators cannot change their endpoints, so the backend
+     * never requests an address chosen by a user.
+     */
+    @Nullable
+    static URI createSamlMetadataUri(@Nonnull IdentityProviderEntity provider) {
+        if (provider.getType() == IdentityProviderType.Custom || provider.getAuthorizationEndpoint() == null) {
+            return null;
+        }
+
+        var realmUrl = KEYCLOAK_REALM_URL.matcher(provider.getAuthorizationEndpoint());
+        var alias = provider.getAdditionalParams() == null ? Optional.<String>empty() : provider
+                .getAdditionalParams()
+                .stream()
+                .filter(param -> KEYCLOAK_IDP_HINT_PARAMETER.equals(param.getKey()))
+                .map(IdentityAdditionalParameter::getValue)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst();
+        if (!realmUrl.find() || alias.isEmpty()) {
+            return null;
+        }
+
+        var encodedAlias = UriUtils.encodePathSegment(alias.get(), StandardCharsets.UTF_8);
+        return URI.create(provider.getType() == IdentityProviderType.BayernId
+                ? realmUrl.group(1) + "/bayernid/" + encodedAlias + "/metadata"
+                : realmUrl.group(1) + "/broker/" + encodedAlias + "/endpoint/descriptor");
+    }
 }
