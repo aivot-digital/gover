@@ -6,7 +6,7 @@ import {Actions} from '../actions/actions';
 
 interface DialogTitleWithCloseProps extends DialogTitleProps {
     children?: React.ReactNode;
-    onClose: () => void;
+    onClose?: () => void;
     closeTooltip?: string;
     bordered?: boolean;
     actions?: Action[];

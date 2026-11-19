@@ -430,7 +430,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         });
         renderEditor();
 
-        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen'});
+        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'});
         fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen wiederherstellen'}));
 
         await waitFor(() => expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Entwurf'));
@@ -446,8 +446,8 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         });
         renderEditor();
 
-        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen'});
-        fireEvent.click(within(dialog).getByRole('button', {name: 'Meine Änderungen verwerfen'}));
+        const dialog = await screen.findByRole('dialog', {name: 'Ungespeicherte Änderungen wiederherstellen?'});
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Änderungen verwerfen'}));
 
         await waitFor(() => expect(testState.clearDraft).toHaveBeenCalled());
         expect(screen.getByRole('textbox', {name: 'Name bearbeiten'})).toHaveValue('Element 1');

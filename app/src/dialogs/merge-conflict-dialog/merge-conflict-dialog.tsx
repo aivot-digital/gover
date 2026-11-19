@@ -1,5 +1,5 @@
 import React, {type ReactNode, useEffect, useState} from 'react';
-import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography} from '@mui/material';
+import {Button, Dialog, DialogActions, DialogContent, Stack, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {RadioFieldComponent} from '../../components/radio-field/radio-field-component';
 import {type MergeChoice, type MergeChoices} from '../../utils/three-way-merge';
@@ -44,7 +44,7 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
     }, [open, conflicts]);
 
     const hasConflicts = conflicts.length > 0;
-    const title = mode === 'restore' ? 'Ungespeicherte Änderungen wiederherstellen' : 'Neuerer Stand gespeichert';
+    const title = mode === 'restore' ? 'Ungespeicherte Änderungen wiederherstellen?' : 'Neuerer Stand gespeichert';
 
     return (
         <Dialog
@@ -52,32 +52,26 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
             // Restoring needs a decision, otherwise the draft would be overwritten by the next edit unnoticed.
             onClose={mode === 'save' ? onCancel : undefined}
             fullWidth={true}
-            maxWidth="md"
+            maxWidth={hasConflicts ? 'md' : 'sm'}
         >
-            {
-                mode === 'save' && onCancel != null ?
-                    <DialogTitleWithClose onClose={onCancel}>{title}</DialogTitleWithClose> :
-                    <DialogTitle>{title}</DialogTitle>
-            }
+            <DialogTitleWithClose onClose={mode === 'save' ? onCancel : undefined}>
+                {title}
+            </DialogTitleWithClose>
 
             <DialogContent tabIndex={0}>
                 <Typography>
                     {
                         mode === 'restore' ?
-                            'Aus Ihrer letzten Bearbeitung liegen ungespeicherte Änderungen vor, zum Beispiel weil Ihre Sitzung abgelaufen ist.' :
+                            'Aus Ihrer letzten Bearbeitung liegen ungespeicherte Änderungen vor. Sie können diese wiederherstellen und die Bearbeitung fortsetzen.' :
                             'Während Sie Ihre Änderungen vorgenommen haben, wurde an anderer Stelle ein neuerer Stand gespeichert.'
                     }
-                    {mode === 'restore' && storedStateChanged && ' Seitdem wurde an anderer Stelle ein neuerer Stand gespeichert.'}
                 </Typography>
 
                 {
-                    !hasConflicts &&
+                    mode === 'restore' && storedStateChanged && !hasConflicts &&
                     <Typography sx={{mt: 2}}>
-                        {
-                            storedStateChanged ?
-                                'Ihre Änderungen lassen sich ohne Widersprüche mit dem gespeicherten Stand zusammenführen. Möchten Sie sie wiederherstellen?' :
-                                'Möchten Sie diese Änderungen wiederherstellen?'
-                        }
+                        Zwischenzeitlich wurde ein neuerer Stand gespeichert. Ihre Änderungen können mit diesem Stand
+                        zusammengeführt werden.
                     </Typography>
                 }
 
@@ -85,9 +79,11 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
                     hasConflicts &&
                     <>
                         <Typography sx={{mt: 2}}>
-                            Ihre übrigen Änderungen werden mit dem gespeicherten Stand zusammengeführt. Die folgenden
-                            Angaben wurden jedoch an beiden Stellen unterschiedlich geändert. Wählen Sie jeweils aus,
-                            welcher Stand gelten soll.
+                            {
+                                mode === 'restore' ?
+                                    'Zwischenzeitlich wurde ein neuerer Stand gespeichert. Einige Angaben wurden in beiden Fassungen unterschiedlich geändert. Wählen Sie für jede Angabe aus, welchen Stand Sie übernehmen möchten. Alle übrigen Änderungen werden zusammengeführt.' :
+                                    'Ihre übrigen Änderungen werden mit dem gespeicherten Stand zusammengeführt. Die folgenden Angaben wurden jedoch an beiden Stellen unterschiedlich geändert. Wählen Sie jeweils aus, welcher Stand gelten soll.'
+                            }
                         </Typography>
 
                         <Stack sx={{mt: 2}}>
@@ -112,28 +108,36 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
                         </Stack>
                     </>
                 }
+
+                {
+                    mode === 'restore' &&
+                    <Typography sx={{mt: 2}}>
+                        Speichern Sie Ihre Änderungen nach der Wiederherstellung. Beim Verwerfen wird die
+                        zwischengespeicherte Fassung gelöscht.
+                    </Typography>
+                }
             </DialogContent>
 
-            <DialogActions>
-                <Button
-                    color="error"
-                    onClick={onDiscard}
-                    sx={{mr: 'auto'}}
-                >
-                    Meine Änderungen verwerfen
-                </Button>
-                {
-                    mode === 'save' && onCancel != null &&
-                    <Button onClick={onCancel}>
-                        Abbrechen
-                    </Button>
-                }
+            <DialogActions sx={{justifyContent: 'flex-start'}}>
                 <Button
                     variant="contained"
                     onClick={() => onApply(choices)}
                 >
                     {mode === 'save' ? 'Übernehmen und speichern' : 'Änderungen wiederherstellen'}
                 </Button>
+                <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={onDiscard}
+                >
+                    Änderungen verwerfen
+                </Button>
+                {
+                    mode === 'save' && onCancel != null &&
+                    <Button variant="outlined" onClick={onCancel}>
+                        Abbrechen
+                    </Button>
+                }
             </DialogActions>
         </Dialog>
     );
