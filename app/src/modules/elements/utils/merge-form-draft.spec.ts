@@ -253,6 +253,94 @@ describe('mergeFormDraft', () => {
         expect(applied).toMatchObject({tree: {children: [{children: [emptyGroup, local]}]}});
     });
 
+    it('keeps removal of a child moved outside its group pending until Apply, including across another login', () => {
+        const group = {...generateElementWithDefaultValues(ElementType.GroupLayout), id: 'source', children: [text]};
+        const empty = {...group, children: []};
+        const other = {...empty, id: 'other', title: 'Ansprechperson'};
+        const oldStep = {...step, children: [group, other]};
+        const original = {...base, children: [oldStep]};
+        const sibling = {...text, id: 'sibling', label: 'Telefon'};
+        const savedGroup = {...other, children: [sibling, text]};
+        const withTarget = (children: AnyFormElement[]) => ({...base, children: [{...step, children: [empty, {...savedGroup, children}]}]});
+        const stored = withTarget([sibling, text]);
+        const draft = {...panel, base: group, mine: empty, parents: getPanelDraftParents([original, oldStep], group.id)};
+        const req = {base: original, mine: original, theirs: stored, editableRoot: stored, panel: draft};
+        const {conflicts} = mergeFormDraft(req, {});
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0]).toMatchObject({
+            propertyLabel: 'Position im Formular', mine: undefined, theirs: text,
+            elementPlacement: {elementId: text.id, theirs: expect.any(String)},
+        });
+        expect(mergeFormDraft(req, {[conflicts[0].id]: 'theirs'}).value).toEqual({layout: stored});
+        expect(applyPanelDraftToTree(stored, draft, empty, ElementDisplayContext.CustomerFacing)).toHaveProperty('error');
+        const chosen = mergeFormDraft(req, {[conflicts[0].id]: 'mine'});
+        const pending = chosen.value.panel!;
+        expect(chosen.value.layout).toEqual(stored);
+        expect(pending.pendingMovedRemovals).toEqual([{element: text, parentId: other.id}]);
+        const next = {base: stored, mine: stored, theirs: stored, editableRoot: stored, panel: structuredClone(pending)};
+        const restored = mergeFormDraft(next, {});
+        expect(restored.conflicts).toEqual([]);
+        expect(restored.value.layout).toEqual(stored);
+        expect(applyPanelDraftToTree(stored, restored.value.panel!, restored.value.panel!.mine, ElementDisplayContext.CustomerFacing))
+            .toEqual({affectedId: stored.id, tree: withTarget([sibling])});
+
+        const changed = withTarget([sibling, edited]);
+        const movedAgain = {...base, children: [{...step, children: [empty, {...savedGroup, children: [sibling]}, text]}]};
+        const backInPanel = {...base, children: [{...step, children: [group, {...savedGroup, children: [sibling]}]}]};
+        for (const later of [changed, movedAgain, backInPanel]) {
+            expect(applyPanelDraftToTree(later, pending, pending.mine, ElementDisplayContext.CustomerFacing)).toHaveProperty('error');
+            const request = {...next, theirs: later, editableRoot: later};
+            const again = mergeFormDraft(request, {}).conflicts;
+            expect(again).toHaveLength(1);
+            expect(mergeFormDraft(request, {[again[0].id]: 'theirs'}).value).toEqual({layout: later});
+            const renewed = mergeFormDraft(request, {[again[0].id]: 'mine'}).value.panel!;
+            expect(applyPanelDraftToTree(later, renewed, renewed.mine, ElementDisplayContext.CustomerFacing))
+                .toEqual({affectedId: stored.id, tree: withTarget([sibling])});
+        }
+        const alreadyRemoved = withTarget([sibling]);
+        expect(mergeFormDraft({...next, theirs: alreadyRemoved, editableRoot: alreadyRemoved}, {}))
+            .toEqual({changed: false, conflicts: [], value: {layout: alreadyRemoved}});
+    });
+
+    it('requires a real decision after previewing removal of a moved child during a form save', () => {
+        const group = {...generateElementWithDefaultValues(ElementType.GroupLayout), id: 'group', children: [text]};
+        const empty = {...group, children: []};
+        const before = {...base, children: [{...step, children: [group]}]};
+        const stored = {...base, children: [{...step, children: [empty, text]}]};
+        const draft = {...panel, base: group, mine: empty, parents: getPanelDraftParents([before, step], group.id)};
+        const preview = rebaseOpenElementDraft(draft, before, stored);
+        expect(preview.needsDecision).toBe(true);
+        expect(preview.draft?.pendingMovedRemovals).toEqual([{element: text, parentId: step.id}]);
+        const req = {base: stored, mine: stored, theirs: stored, editableRoot: stored, panel: preview.draft!};
+        const {conflicts} = mergeFormDraft(req, {});
+        expect(conflicts).toHaveLength(1);
+        expect(mergeFormDraft(req, {[conflicts[0].id]: 'theirs'}).value).toEqual({layout: stored});
+    });
+
+    it('resolves an internal move in an open step without applying the step or dropping its other edits', () => {
+        const a = {...generateElementWithDefaultValues(ElementType.GroupLayout), id: 'a', children: [text]};
+        const b = {...a, id: 'b', children: []};
+        const original = {...step, children: [a, b]};
+        const empty = {...a, children: []};
+        const moving = {...step, name: 'Mein Abschnitt', children: [empty, {...b, children: [text]}]};
+        const storedStep = {...step, children: [{...empty, name: 'Gespeicherte Gruppe'}, b]};
+        const before = {...base, children: [original]};
+        const stored = {...base, children: [storedStep]};
+        const draft = {...panel, base: original, mine: moving, parents: getPanelDraftParents([before], original.id)};
+        const request = {base: before, mine: before, theirs: stored, editableRoot: stored, panel: draft};
+        const {conflicts} = mergeFormDraft(request, {});
+        expect(conflicts).toHaveLength(1);
+        expect(conflicts[0]).toMatchObject({propertyLabel: 'Position im Formular', elementPlacement: {elementId: text.id}});
+        for (const choice of ['mine', 'theirs'] as const) {
+            const resolved = mergeFormDraft(request, {[conflicts[0].id]: choice}).value;
+            expect(resolved.layout).toEqual(stored);
+            const result = applyPanelDraftToTree(stored, resolved.panel!, resolved.panel!.mine, ElementDisplayContext.CustomerFacing);
+            expect(result).toMatchObject({tree: {children: [{
+                name: 'Mein Abschnitt', children: [{name: 'Gespeicherte Gruppe', children: []}, {children: choice === 'mine' ? [text] : []}],
+            }]}});
+        }
+    });
+
     it('previews layout, moved child and deleted group choices together before applying', () => {
         const group = {...generateElementWithDefaultValues(ElementType.GroupLayout), children: [text]};
         const oldStep = {...step, children: [group]};

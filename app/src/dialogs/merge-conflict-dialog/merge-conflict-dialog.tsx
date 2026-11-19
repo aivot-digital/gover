@@ -19,7 +19,7 @@ import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArr
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {FormFieldGroup, mergeAriaIds} from '../../components/form-field';
 import {SearchInput} from '../../components/search-input/search-input';
-import {type MergeChoice, type MergeChoices, type MergeConflictPresentation} from '../../utils/three-way-merge';
+import {type MergeChoice, type MergeChoices, type MergeConflict, type MergeConflictPresentation} from '../../utils/three-way-merge';
 import {getInputVariableReference, InputMode, type InputVariableReference, InputVariableSource, isAuthoredInputValue} from '../../models/input-mode';
 import {isNoCodeNodeDataReference} from '../../models/functions/no-code-expression';
 import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
@@ -29,6 +29,7 @@ export interface MergeConflictDialogConflict {
     label: string;
     group?: MergeConflictPresentation['group'];
     propertyLabel?: string;
+    elementPlacement?: MergeConflict['elementPlacement'];
     mine: unknown;
     theirs: unknown;
 }
@@ -55,7 +56,7 @@ interface MergeConflictDialogProps {
 }
 
 interface ConflictPreview extends MergeConflictDialogConflict {
-    previews: Record<MergeChoice, {text: string; isReference: boolean}>;
+    previews: Record<MergeChoice, {text: string; showFullValue: boolean}>;
 }
 
 interface ConflictGroup {
@@ -85,12 +86,7 @@ export function MergeConflictDialog(props: MergeConflictDialogProps): ReactNode 
         for (const conflict of conflicts) {
             const id = conflict.group?.id ?? JSON.stringify(['conflict', conflict.id]);
             const group = grouped.get(id) ?? {id, label: conflict.group?.label ?? conflict.label, conflicts: []};
-            const mine = getReferencePreview(conflict.mine);
-            const theirs = getReferencePreview(conflict.theirs);
-            group.conflicts.push({...conflict, previews: {
-                mine: {text: mine ? describeReference(mine, theirs) : formatValue(conflict.mine), isReference: mine != null},
-                theirs: {text: theirs ? describeReference(theirs, mine) : formatValue(conflict.theirs), isReference: theirs != null},
-            }});
+            group.conflicts.push({...conflict, previews: getConflictPreviews(conflict)});
             grouped.set(id, group);
         }
         return [...grouped.values()];
@@ -281,11 +277,11 @@ function ConflictGroupComparison(props: {
     );
 }
 
-function ConflictValueOption(props: {choice: MergeChoice; text: string; isReference: boolean; selected: boolean; describedBy?: string}) {
+function ConflictValueOption(props: {choice: MergeChoice; text: string; showFullValue: boolean; selected: boolean; describedBy?: string}) {
     const id = useNormalizedReactId();
     const [expanded, setExpanded] = useState(false);
-    // References can differ only at the very end of a path.
-    const isLong = !props.isReference && props.text.length > PREVIEW_MAX_LENGTH;
+    // Both variable and destination paths can differ only in the last segment.
+    const isLong = !props.showFullValue && props.text.length > PREVIEW_MAX_LENGTH;
     const labelId = `${id}-label`;
     const valueId = `${id}-value`;
     return (
@@ -328,6 +324,22 @@ interface ReferencePreview {
     text: string;
     dataLayer: string;
     markdown: boolean;
+}
+
+function getConflictPreviews(conflict: MergeConflictDialogConflict): ConflictPreview['previews'] {
+    if (conflict.elementPlacement) {
+        const describe = (destination?: string) => ({
+            text: destination == null ? 'Entfernt' : `Verschoben nach ${destination}`,
+            showFullValue: true,
+        });
+        return {mine: describe(conflict.elementPlacement.mine), theirs: describe(conflict.elementPlacement.theirs)};
+    }
+    const mine = getReferencePreview(conflict.mine);
+    const theirs = getReferencePreview(conflict.theirs);
+    return {
+        mine: {text: mine ? describeReference(mine, theirs) : formatValue(conflict.mine), showFullValue: mine != null},
+        theirs: {text: theirs ? describeReference(theirs, mine) : formatValue(conflict.theirs), showFullValue: theirs != null},
+    };
 }
 
 const dataLayerLabels: Record<InputVariableSource, string> = {

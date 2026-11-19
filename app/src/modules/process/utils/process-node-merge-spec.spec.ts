@@ -3,7 +3,7 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {literalAuthoredValue} from '../../../models/element-data';
 import {InputMode, InputVariableSource} from '../../../models/input-mode';
-import {threeWayMerge} from '../../../utils/three-way-merge';
+import {type MergeChoices, threeWayMerge} from '../../../utils/three-way-merge';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {createProcessNodeMergeSpec, getExternallyEditedFields} from './process-node-merge-spec';
 
@@ -45,6 +45,35 @@ function node(overrides: Partial<ProcessNodeEntity>): ProcessNodeEntity {
 describe('createProcessNodeMergeSpec', () => {
     const spec = createProcessNodeMergeSpec(layout);
 
+    it('resolves each inline UI definition independently and preserves other saved changes', () => {
+        const schema = {...layout, children: ['form', 'other', 'external'].map((id) => ({
+            id, type: ElementType.UiDefinitionInput, label: id, openExternalEditor: id === 'external',
+        }))} as GroupLayout;
+        const field = {id: 'mail', label: 'E-Mail', type: ElementType.Text};
+        const form = (parent?: string) => literalAuthoredValue({
+            id: 'root', type: ElementType.FormLayout, children: ['a', 'b'].map((id) => ({
+                id, label: id.toUpperCase(), type: ElementType.GroupLayout, children: parent === id ? [field] : [],
+            })),
+        });
+        const base = node({configuration: {form: form('a'), other: form('a'), external: form('a')}});
+        const mine = {...base, name: 'Eigener Name', configuration: {form: form('b'), other: form('b'), external: form('b')}};
+        const theirs = {...base, notes: 'Gespeicherte Notiz', lockVersion: 2, configuration: {form: form(), other: form(), external: form()}};
+        const inlineSpec = createProcessNodeMergeSpec(schema, theirs);
+        const {conflicts} = threeWayMerge(base, mine, theirs, inlineSpec);
+        expect(conflicts).toHaveLength(2);
+        const choices: MergeChoices = {};
+        for (const conflict of conflicts) {
+            expect(conflict.elementPlacement).toMatchObject({elementId: 'mail'});
+            expect(conflict.elementPlacement?.mine).toContain('B');
+            expect(conflict.elementPlacement?.theirs).toBeUndefined();
+            choices[conflict.id] = conflict.path[1] === 'form' ? 'mine' : 'theirs';
+        }
+        expect(threeWayMerge(base, mine, theirs, inlineSpec, choices)).toEqual({
+            merged: {...theirs, name: mine.name, configuration: {...theirs.configuration, form: mine.configuration.form}},
+            conflicts: [],
+        });
+    });
+
     it('adopts externally edited configuration keys from the stored node, including removed keys', () => {
         const externalLayout = {...layout, children: ['form', 'removed'].map((id) => ({
             id, type: ElementType.UiDefinitionInput, openExternalEditor: true,
@@ -55,6 +84,26 @@ describe('createProcessNodeMergeSpec', () => {
         expect(getExternallyEditedFields(externalLayout)).toEqual(['form', 'removed']);
         expect(threeWayMerge(base, mine, theirs, createProcessNodeMergeSpec(externalLayout, theirs)))
             .toEqual({merged: {...theirs, name: mine.name}, conflicts: []});
+    });
+
+    it('limits the structural fallback to the inline definition when the destination was also deleted', () => {
+        const schema = {...layout, children: [{id: 'task', type: ElementType.UiDefinitionInput}]} as GroupLayout;
+        const field = {id: 'email', type: ElementType.Text, label: 'E-Mail'};
+        const group = (id: string, children: typeof field[]) => ({id, type: ElementType.GroupLayout, children});
+        const form = (...groups: ReturnType<typeof group>[]) => literalAuthoredValue({
+            id: 'root', type: ElementType.FormLayout, children: groups,
+        });
+        const base = node({configuration: {task: form(group('a', [field]), group('b', []))}});
+        const mine = {...base, name: 'Lokaler Name', configuration: {task: form(group('a', []), group('b', [field]))}};
+        const theirs = {...base, lockVersion: 2, notes: 'Gespeicherte Notizen', configuration: {task: form(group('a', []))}};
+        const spec = createProcessNodeMergeSpec(schema, theirs);
+        const {conflicts} = threeWayMerge(base, mine, theirs, spec);
+        expect(conflicts.map(({path}) => path)).toEqual([['configuration', 'task', 'value']]);
+        for (const choice of ['mine', 'theirs'] as const) {
+            const resolved = threeWayMerge(base, mine, theirs, spec, {[conflicts[0].id]: choice});
+            expect(resolved).toEqual({conflicts: [], merged: {...theirs, name: mine.name,
+                configuration: choice === 'mine' ? mine.configuration : theirs.configuration}});
+        }
     });
 
     it('keeps the own changes on top of a newer save and takes its lock version', () => {

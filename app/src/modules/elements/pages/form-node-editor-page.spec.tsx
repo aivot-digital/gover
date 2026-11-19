@@ -1,6 +1,6 @@
 import {createTheme as createMuiTheme, ThemeProvider} from '@mui/material';
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createMemoryRouter, Link, RouterProvider} from 'react-router-dom';
 import {AuthService} from '../../../services/auth-service';
@@ -656,6 +656,100 @@ describe('FormNodeEditorPage', () => {
             name: 'Anderswo gespeichert',
             lockVersion: 2,
         }));
+    });
+
+    describe('moving and deleting the same form field', () => {
+        type Location = 'source' | 'target' | 'removed';
+        function layout(location: Location, title = 'Testformular', sibling = 'Nachbarfeld') {
+            const email = {id: 'email', type: ElementType.Text, label: 'E-Mail'};
+            return {...createFormLayout([{id: 'step', type: ElementType.Step, title: 'Kontaktdaten', children: [
+                {id: 'source', type: ElementType.GroupLayout, label: 'Quellgruppe', children: location === 'source' ? [email] : []},
+                {id: 'target', type: ElementType.GroupLayout, label: 'Zielgruppe', children: [
+                    {id: 'left', type: ElementType.Text, label: 'Davor'},
+                    ...(location === 'target' ? [email] : []),
+                    {id: 'right', type: ElementType.Text, label: sibling},
+                ]},
+            ]}]), publicTitle: title};
+        }
+
+        async function editLayout(value: FormLayoutElement) {
+            const imported = Promise.withResolvers<FormLayoutElement>();
+            vi.mocked(XdfApiService.prototype.xdfTransform).mockReturnValueOnce(imported.promise);
+            chooseMoreOption('XDatenfeld-Schema importieren');
+            await act(async () => imported.resolve(value));
+        }
+
+        async function choosePosition(mine: Location, theirs: Location, choice: 'mine' | 'theirs') {
+            const group = within(await screen.findByRole('group', {name: /Abweichende Einstellung: Position im Formular/}));
+            const mineOption = group.getByRole('radio', {name: 'Meine Änderung soll behalten werden'});
+            const storedOption = group.getByRole('radio', {name: 'Gespeicherter Stand soll übernommen werden'});
+            const descriptions = {source: /Quellgruppe/, target: /Verschoben nach.*Zielgruppe/i, removed: /Entfernt/i};
+            expect(mineOption).toHaveAccessibleDescription(descriptions[mine]);
+            expect(storedOption).toHaveAccessibleDescription(descriptions[theirs]);
+            fireEvent.click(choice === 'mine' ? mineOption : storedOption);
+        }
+
+        const storedTitle = 'Testformular';
+        const editedTitle = 'Eigener Formulartitel';
+        const storedSibling = 'Anderswo bearbeitetes Nachbarfeld';
+        it.each([
+            {mine: 'target', theirs: 'removed', choice: 'mine'},
+            {mine: 'target', theirs: 'removed', choice: 'theirs'},
+            {mine: 'removed', theirs: 'target', choice: 'mine'},
+            {mine: 'removed', theirs: 'target', choice: 'theirs'},
+        ] as const)('waits after 409 before saving the exact chosen tree ($mine vs $theirs, $choice)', async ({mine, theirs, choice}) => {
+            const local = layout(mine, editedTitle);
+            const stored = {...createNode(layout(theirs, storedTitle, storedSibling)), lockVersion: 2};
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValueOnce({...createNode(layout('source')), lockVersion: 1}).mockResolvedValue(stored);
+            const update = vi.mocked(ProcessNodeApiService.prototype.update).mockRejectedValueOnce(lockConflict)
+                .mockImplementation(async (_, node) => ({...stored, ...node, lockVersion: 3}));
+            await renderDraftEditor();
+            await editLayout(local);
+            fireEvent.click(formSaveButton());
+
+            await choosePosition(mine, theirs, choice);
+            expect(update.mock.calls.map(([, payload]) => payload)).toEqual([{...createNode(local), lockVersion: 1}]);
+            fireEvent.click(screen.getByRole('button', {name: 'Übernehmen und speichern'}));
+            await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+            const expected = layout(choice === 'mine' ? mine : theirs, editedTitle, storedSibling);
+            expect(update.mock.calls[1][1]).toEqual({...createNode(expected), lockVersion: 2});
+        });
+
+        it.each([
+            {scenario: 'draft', pending: false, mine: 'target', theirs: 'removed'},
+            {scenario: 'interrupted move reverted locally', pending: true, mine: 'source', theirs: 'removed'},
+            {scenario: 'interrupted move already stored', pending: true, mine: 'removed', theirs: 'target'},
+        ] as const)('recovers the exact layout after login ($scenario)', async ({pending, mine, theirs}) => {
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(layout('source')), lockVersion: 1});
+            const {returnFromLogin} = await renderDraftEditor();
+            const update = vi.mocked(ProcessNodeApiService.prototype.update);
+            const put = pending ? pendingFormSave() : undefined;
+            if (put) {
+                await editLayout(layout('target'));
+                fireEvent.click(formSaveButton());
+                await waitFor(() => expect(update).toHaveBeenCalledOnce());
+            }
+            await editLayout(layout(mine, editedTitle));
+            const stored = {...createNode(layout(theirs, storedTitle, storedSibling)), lockVersion: 2};
+            vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue(stored);
+            update.mockImplementation(async (_, node) => ({...stored, ...node, lockVersion: 3}));
+            await returnFromLogin();
+            const restore = await screen.findByRole('button', {name: 'Änderungen wiederherstellen'});
+            if (theirs === 'target') {
+                // The GET confirms the interrupted move. Only the later local deletion needs restoring.
+                expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+            } else {
+                await choosePosition(mine, theirs, 'mine');
+            }
+            fireEvent.click(restore);
+            await waitFor(() => expect(formSaveButton()).toBeEnabled());
+            if (put) await act(async () => put.resolve(stored));
+            expect(update).toHaveBeenCalledTimes(pending ? 1 : 0);
+
+            fireEvent.click(formSaveButton());
+            await waitFor(() => expect(update).toHaveBeenCalledTimes(pending ? 2 : 1));
+            expect(update.mock.lastCall?.[1]).toEqual({...createNode(layout(mine, editedTitle, storedSibling)), lockVersion: 2});
+        });
     });
 
     it.each(['Nächste Fassung', 'Testformular'])('keeps a later title (%s) as an unsaved change on top of the confirmed version', async (later) => {

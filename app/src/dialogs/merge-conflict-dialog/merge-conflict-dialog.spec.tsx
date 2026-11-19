@@ -41,6 +41,18 @@ function setup(overrides: Partial<ComponentProps<typeof MergeConflictDialog>> = 
 }
 
 describe('MergeConflictDialog', () => {
+    it('shows the complete destination for a moved field and the removal on the other side', () => {
+        const destination = 'Abschnitt „Ansprechpersonen“ › Gruppe „Zuständige Stelle für die Bearbeitung“ › Gruppe „Kontakt“';
+        setup({conflicts: [{
+            id: 'move-or-delete', label: 'E-Mail', propertyLabel: 'Position im Formular',
+            group: {id: 'email', label: 'Text „E-Mail“'}, mine: undefined, theirs: {id: 'email'},
+            elementPlacement: {elementId: 'email', theirs: destination},
+        }]});
+        const group = within(screen.getByRole('group', {name: /Position im Formular/}));
+        expect(group.getByRole('radio', {name: mineLabel})).toHaveAccessibleDescription('Entfernt');
+        expect(group.getByRole('radio', {name: theirsLabel})).toHaveAccessibleDescription(`Verschoben nach ${destination}`);
+    });
+
     it('updates a dependent element decision in the open dialog and submits only the visible decisions', async () => {
         const props = setup({
             conflicts: [groupedConflicts[0]],

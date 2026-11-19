@@ -85,7 +85,8 @@ export function prepareMerge<T>(
                 id: conflict.id,
                 label: spec.label?.(conflict.path, {base, mine, theirs}) ?? (pathToId(conflict.path) || 'Gesamter Inhalt'),
                 group: presentation?.group,
-                propertyLabel: presentation?.propertyLabel,
+                propertyLabel: conflict.elementPlacement ? 'Position im Formular' : presentation?.propertyLabel,
+                elementPlacement: conflict.elementPlacement,
                 mine: conflict.mine,
                 theirs: conflict.theirs,
             };

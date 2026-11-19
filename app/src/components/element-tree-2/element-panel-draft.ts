@@ -2,8 +2,9 @@ import {type AnyElement} from '../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {ElementChildOptions, type ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {flattenElements, flattenElementsWithParents, type ElementWithParents} from '../../utils/flatten-elements';
-import {keyById, threeWayMerge} from '../../utils/three-way-merge';
-import {editorValuesEqual, variableReferenceMergeRules} from '../../utils/variable-reference-merge';
+import {threeWayMerge} from '../../utils/three-way-merge';
+import {editorValuesEqual} from '../../utils/variable-reference-merge';
+import {elementTreeMergeRules} from '../../modules/elements/utils/element-tree-structure-merge';
 
 /** An edit becomes part of the form layout only when the element editor applies it. */
 export interface ElementPanelDraft {
@@ -16,12 +17,46 @@ export interface ElementPanelDraft {
     detached?: boolean;
     /** Current bases for edits to descendants which have since moved to another branch of the form. */
     movedDescendantBases?: AnyElement[];
+    /** Keep an agreed removal outside the open group pending until Apply. */
+    pendingMovedRemovals?: {element: AnyElement; parentId: string}[];
     parents: {element: AnyElement; childIndex: number}[];
     /** The comparison base of a structural save conflict shown provisionally in the open editor. */
-    unconfirmedSaveBase?: Pick<ElementPanelDraft, 'base' | 'parents' | 'detached' | 'movedDescendantBases'>;
+    unconfirmedSaveBase?: Pick<ElementPanelDraft, 'base' | 'parents' | 'detached' | 'movedDescendantBases' | 'pendingMovedRemovals'>;
 }
 
 type PanelPlacement<T> = {tree: T; affectedId: string} | {error: string};
+
+/** Detect children removed by the open edit but still present elsewhere, including earlier confirmed removals. */
+export function findMovedPanelRemovals(draft: ElementPanelDraft, updated: AnyElement, tree: ElementWithParents[]) {
+    if (!isAnyElementWithChildren(draft.base) && !draft.movedDescendantBases?.length && !draft.pendingMovedRemovals?.length) return [];
+    const retained = new Set(flattenElements(updated).map((element) => element.id));
+    const originalParents = new Map(flattenElementsWithParents(draft.base, []).slice(1)
+        .map(({element, parents}) => [element.id, parents.at(-1)!.id]));
+    const moved = new Set(draft.movedDescendantBases?.map((element) => element.id));
+    const pending = new Map(draft.pendingMovedRemovals?.map((removal) => [removal.element.id, removal]));
+    return tree.flatMap(({element, parents}) => {
+        const parentId = parents.at(-1)?.id;
+        if (parentId == null || retained.has(element.id)) return [];
+        const prior = pending.get(element.id);
+        if (prior == null) {
+            if (parents.some((parent) => parent.id === draft.base.id)) return [];
+            const originalParent = originalParents.get(element.id);
+            if (!moved.has(element.id) && (originalParent == null || originalParent === parentId)) return [];
+        }
+        return [{element, parents, parentId, confirmed: prior?.parentId === parentId && editorValuesEqual(element, prior.element)}];
+    });
+}
+
+/** Replace or remove children by ID without changing the identities of unrelated branches. */
+export function updatePanelDescendants<T extends AnyElement>(element: T, changes: Map<string, AnyElement | undefined>): T {
+    if (changes.size === 0 || !isAnyElementWithChildren(element) || element.children == null) return element;
+    const children = element.children.flatMap((item) => {
+        const next = changes.has(item.id) ? changes.get(item.id) : updatePanelDescendants(item, changes);
+        return next == null ? [] : [next];
+    });
+    return children.length === element.children.length && children.every((child, i) => child === element.children![i])
+        ? element : {...element, children};
+}
 
 /** Used for both the conflict preview and Apply. A deleted element is kept outside the layout until then. */
 export function applyPanelDraftToTree<T extends AnyElement>(
@@ -45,7 +80,19 @@ export function applyPanelDraftToTree<T extends AnyElement>(
     if (outside.has(updated.id)) return duplicateIds;
     const bases = new Map([...flattenElements(draft.base), ...draft.movedDescendantBases ?? []].map((item) => [item.id, item]));
     const movedUpdates: AnyElement[] = [];
+    const removals = new Map<string, undefined>();
     let movedConflict = false;
+    if (target && draft.base.type === updated.type && updated.type === target.element.type &&
+        isAnyElementWithChildren(updated) && !editorValuesEqual(draft.base, target.element)) {
+        // A stale Apply must not replace the entire group before its internal placement conflict was resolved.
+        const {conflicts} = threeWayMerge(draft.base, updated, target.element, elementTreeMergeRules);
+        movedConflict = conflicts.some((conflict) => conflict.elementPlacement != null || conflict.path.length === 0);
+    }
+    for (const removal of findMovedPanelRemovals(draft, updated, entries)) {
+        if (removal.parents.some((parent) => removals.has(parent.id))) continue;
+        if (!removal.confirmed) movedConflict = true;
+        else removals.set(removal.element.id, undefined);
+    }
     function atOriginalLocation(element: AnyElement): AnyElement {
         if (!isAnyElementWithChildren(element) || element.children == null) return element;
         const children: AnyElement[] = [];
@@ -56,7 +103,7 @@ export function applyPanelDraftToTree<T extends AnyElement>(
                 children.push(atOriginalLocation(child));
             } else if (!editorValuesEqual(base, child)) {
                 // An applied structure can edit the moved child itself. Keep those property edits at its new position.
-                const merged = threeWayMerge(base, child, stored, {...variableReferenceMergeRules, arrayKey: keyById});
+                const merged = threeWayMerge(base, child, stored, elementTreeMergeRules);
                 if (merged.conflicts.length > 0) movedConflict = true;
                 else if (!editorValuesEqual(merged.merged, stored)) movedUpdates.push(merged.merged);
             }
@@ -99,8 +146,9 @@ export function applyPanelDraftToTree<T extends AnyElement>(
         if (moved == null) return invalidPlacement;
         tree = replaceAtLocation(tree, moved, update);
     }
+    if (removals.size > 0) tree = updatePanelDescendants(tree, removals);
     const ids = flattenElements(tree).map((element) => element.id);
-    return new Set(ids).size === ids.length ? {tree, affectedId: movedUpdates.length > 0 ? tree.id : affectedId} : duplicateIds;
+    return new Set(ids).size === ids.length ? {tree, affectedId: movedUpdates.length > 0 || removals.size > 0 ? tree.id : affectedId} : duplicateIds;
 }
 
 function replaceAtLocation<T extends AnyElement>(root: T, location: ElementWithParents, change: AnyElement): T {

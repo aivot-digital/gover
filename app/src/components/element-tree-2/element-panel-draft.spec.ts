@@ -14,6 +14,17 @@ const draft: ElementPanelDraft = {
 const forForm = ElementDisplayContext.CustomerFacing;
 
 describe('applying an open element to its current form', () => {
+    it('rejects a stale subtree edit when an internal move conflicts with a removal', () => {
+        const second = {...group, id: 'second', children: []};
+        const original = {...step, children: [group, second]};
+        const removed = {...step, children: [{...group, children: []}, second]};
+        const moved = {...step, children: [{...group, children: []}, {...second, children: [child]}]};
+        for (const [mine, stored] of [[removed, moved], [moved, removed]]) {
+            const panel = {...draft, base: original, mine, parents: []};
+            expect(applyPanelDraftToTree(stored, panel, mine, forForm)).toHaveProperty('error');
+        }
+    });
+
     it('keeps a child moved elsewhere on the server when restoring a group over a different element type', () => {
         const replacement = {...child, id: group.id};
         const moved = {...child, label: 'Neuer Titel'};

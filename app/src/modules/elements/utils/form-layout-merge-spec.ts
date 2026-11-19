@@ -1,28 +1,19 @@
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {type AnyElement} from '../../../models/elements/any-element';
-import {keyById, type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
-import {variableReferenceMergeRules} from '../../../utils/variable-reference-merge';
+import {type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {getElementName} from '../../../data/element-type/element-names';
 import {describeElementProperty} from './element-conflict-labels';
+import {elementTreeMergeRules, isElementTree} from './element-tree-structure-merge';
 
 export const formLayoutMergeSpec: MergeSpec<FormLayoutElement | null> = {
-    ...variableReferenceMergeRules,
-    // Elements are merged by their ID, so changes to different elements of the same form can be combined.
-    arrayKey: keyById,
+    ...elementTreeMergeRules,
     normalize: normalizeUiDefinitionForStorage,
     validate: (layout) => layout == null || hasUniqueElementIds(layout),
     label: (path, {base, mine, theirs}) => describeElementPath(path, [mine, theirs, base], 'Gesamtes Formular'),
     describeConflict: (path, {base, mine, theirs}) => describeElementConflict(path, [mine, theirs, base], 'Formular'),
 };
-
-export function isElementTree(value: unknown): value is AnyElement {
-    return value != null &&
-        typeof value === 'object' &&
-        typeof (value as Partial<AnyElement>).id === 'string' &&
-        typeof (value as Partial<AnyElement>).type === 'number';
-}
 
 /** A merge must never produce an element twice, e.g. one that one side moved and the other side changed. */
 export function hasUniqueElementIds(root: AnyElement): boolean {

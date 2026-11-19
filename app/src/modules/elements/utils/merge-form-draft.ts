@@ -1,4 +1,4 @@
-import {applyPanelDraftToTree, getPanelDraftParents, type ElementPanelDraft} from '../../../components/element-tree-2/element-panel-draft';
+import {applyPanelDraftToTree, findMovedPanelRemovals, getPanelDraftParents, updatePanelDescendants, type ElementPanelDraft} from '../../../components/element-tree-2/element-panel-draft';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {prepareDependentMerge, prepareMerge, prepareScopedMerge, type PreparedMerge} from '../../../hooks/use-merge-conflict-resolution';
 import {type AnyElement} from '../../../models/elements/any-element';
@@ -6,11 +6,12 @@ import {isAnyElementWithChildren} from '../../../models/elements/any-element-wit
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {normalizeElementDefinition} from '../../../utils/normalize-element-definition';
-import {keyById, type MergeChoices, type MergeSpec} from '../../../utils/three-way-merge';
-import {editorValuesEqual, variableReferenceMergeRules} from '../../../utils/variable-reference-merge';
+import {type MergeChoices, type MergeSpec} from '../../../utils/three-way-merge';
+import {editorValuesEqual} from '../../../utils/variable-reference-merge';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 import {type EditorSaveCheckpoint, prepareEditorDraftRecovery, preparePostSaveMerge} from '../../../utils/editor-save-rebase';
 import {describeElementConflict, formatElementConflictLabel, formLayoutMergeSpec, hasUniqueElementIds} from './form-layout-merge-spec';
+import {elementContainerPath, elementTreeMergeRules} from './element-tree-structure-merge';
 
 interface FormRecoveryState {
     layout: FormLayoutElement | null;
@@ -38,8 +39,7 @@ function findInLayout(layout: FormLayoutElement | null, id: string) {
 
 function elementMergeSpec(base: AnyElement, mine: AnyElement, theirs: AnyElement): MergeSpec<AnyElement | undefined> {
     return {
-        ...variableReferenceMergeRules,
-        arrayKey: keyById,
+        ...elementTreeMergeRules,
         normalize: normalizeElementDefinition,
         validate: (value) => value == null || hasUniqueElementIds(value),
         describeConflict: (path) => describeElementConflict(
@@ -47,27 +47,40 @@ function elementMergeSpec(base: AnyElement, mine: AnyElement, theirs: AnyElement
     };
 }
 
-/** Replace or remove moved children without changing the identities of unrelated element subtrees. */
-function updateDescendants(element: AnyElement, changes: Map<string, AnyElement | undefined>): AnyElement {
-    if (!isAnyElementWithChildren(element) || element.children == null) return element;
-    const children = element.children.flatMap((item) => {
-        const next = changes.has(item.id) ? changes.get(item.id) : updateDescendants(item, changes);
-        return next == null ? [] : [next];
-    });
-    return children.length === element.children.length && children.every((child, i) => child === element.children![i])
-        ? element : {...element, children} as AnyElement;
-}
-
 /** A move on the server keeps the child at its new location. Its pending property changes follow it on Apply. */
 function rebaseMovedChildren(panel: ElementPanelDraft, root: FormLayoutElement | null, target: AnyElement | undefined, choices: MergeChoices, afterSave: boolean) {
     const conflicts: PreparedMerge<unknown>['conflicts'] = [];
-    if (root == null || !isAnyElementWithChildren(panel.mine)) return {panel, conflicts};
+    if (root == null) return {panel: panel.pendingMovedRemovals?.length ? {...panel, pendingMovedRemovals: undefined} : panel, conflicts};
+    if (!isAnyElementWithChildren(panel.base) && !isAnyElementWithChildren(panel.mine) &&
+        !panel.movedDescendantBases?.length && !panel.pendingMovedRemovals?.length) return {panel, conflicts};
     const originals = new Map([...flattenElements(panel.base).slice(1), ...panel.movedDescendantBases ?? []].map((item) => [item.id, item]));
-    const outside = new Map(flattenElements(root).map((item) => [item.id, item]));
+    const entries = flattenElementsWithParents(root, []);
+    const outside = new Map(entries.map(({element}) => [element.id, element]));
     if (target != null) for (const item of flattenElements(target)) outside.delete(item.id);
     const remove = new Map<string, undefined>();
     const edits = new Map<string, AnyElement | undefined>();
     const movedDescendantBases = [];
+    const pendingMovedRemovals = [];
+    const coveredRemovals = new Set<string>();
+    for (const {element, parents, parentId, confirmed} of findMovedPanelRemovals(panel, panel.mine, entries)) {
+        // Keeping a moved group can reveal another decision about a separately moved descendant.
+        if (parents.some((parent) => coveredRemovals.has(parent.id))) continue;
+        remove.set(element.id, undefined);
+        const id = 'element/remove-moved/' + element.id;
+        const choice = confirmed ? 'mine' : choices[id];
+        if (choice === 'theirs') continue;
+        coveredRemovals.add(element.id);
+        if (choice === 'mine') {
+            pendingMovedRemovals.push({element, parentId});
+        } else {
+            const presentation = describeElementConflict(['children', '[' + element.id + ']'], [element], 'Offenes Formularelement', ['panel', panel.base.id]);
+            conflicts.push({
+                ...presentation, id, label: presentation.group.label, propertyLabel: 'Position im Formular',
+                mine: undefined, theirs: element,
+                elementPlacement: {elementId: element.id, theirs: elementContainerPath(parents)},
+            });
+        }
+    }
     for (const {element, parents} of flattenElementsWithParents(panel.mine, []).slice(1)) {
         // The merge of a moved subtree includes its descendants.
         if (parents.some((parent) => remove.has(parent.id))) continue;
@@ -80,9 +93,9 @@ function rebaseMovedChildren(panel: ElementPanelDraft, root: FormLayoutElement |
         edits.set(element.id, result.changed ? result.value : undefined);
         if (result.changed) movedDescendantBases.push(saved);
     }
-    if (remove.size === 0) return {panel, conflicts};
+    if (remove.size === 0 && !panel.pendingMovedRemovals?.length) return {panel, conflicts};
     return {
-        panel: {...panel, base: updateDescendants(panel.base, remove), mine: updateDescendants(panel.mine, edits), movedDescendantBases},
+        panel: {...panel, base: updatePanelDescendants(panel.base, remove), mine: updatePanelDescendants(panel.mine, edits), movedDescendantBases, pendingMovedRemovals},
         conflicts,
     };
 }
@@ -93,7 +106,7 @@ function restoreRemovedElement(
     panel: ElementPanelDraft,
     choices: MergeChoices,
 ): PreparedMerge<FormRecoveryState> {
-    if (!panel.detached && editorValuesEqual(panel.mine, panel.base)) return form;
+    if (!panel.detached && !panel.pendingMovedRemovals?.length && editorValuesEqual(panel.mine, panel.base)) return form;
     const detached = {...panel, detached: true};
     // Reuse the exact Apply projection to present the full structural choice, e.g. when reinserting
     // the field would also replace an ancestor that now has an incompatible type.
@@ -132,8 +145,8 @@ export function rebaseOpenElementDraft(draft: ElementPanelDraft | null, previous
     }
     const panel = result.value.panel;
     if (panel == null || !needsDecision) return {draft: panel ?? null, needsDecision: false};
-    const {base, parents, detached, movedDescendantBases} = draft;
-    return {draft: {...panel, unconfirmedSaveBase: draft.unconfirmedSaveBase ?? {base, parents, detached, movedDescendantBases}}, needsDecision};
+    const {base, parents, detached, movedDescendantBases, pendingMovedRemovals} = draft;
+    return {draft: {...panel, unconfirmedSaveBase: draft.unconfirmedSaveBase ?? {base, parents, detached, movedDescendantBases, pendingMovedRemovals}}, needsDecision};
 }
 
 function mergeFormDraftLayers(request: FormDraftMergeRequest, choices: MergeChoices, afterSave = false): PreparedMerge<FormRecoveryState> {
@@ -152,6 +165,7 @@ function mergeFormDraftLayers(request: FormDraftMergeRequest, choices: MergeChoi
         parents: unconfirmedSaveBase.parents,
         detached: unconfirmedSaveBase.detached,
         movedDescendantBases: unconfirmedSaveBase.movedDescendantBases,
+        pendingMovedRemovals: unconfirmedSaveBase.pendingMovedRemovals,
     };
 
     const isRoot = draft.parents.length === 0;
@@ -178,7 +192,7 @@ function mergeFormDraftLayers(request: FormDraftMergeRequest, choices: MergeChoi
 
     // After confirming a deletion conflict, continued editing represents a pending insertion over an absent base.
     const element = mergePanelLayer('element', panel.detached ? undefined : panelBase, panelMine, target, elementMergeSpec(panelBase, panelMine, target), choices, usePostSaveMerge);
-    if (element.value == null || !element.changed) {
+    if (element.value == null || (!element.changed && !panel.pendingMovedRemovals?.length)) {
         return {...formResult, conflicts: element.conflicts};
     }
     return {
@@ -187,7 +201,9 @@ function mergeFormDraftLayers(request: FormDraftMergeRequest, choices: MergeChoi
             panel: {
                 ...panel,
                 base: target,
-                mine: element.value,
+                mine: panel.pendingMovedRemovals?.length
+                    ? updatePanelDescendants(element.value, new Map(panel.pendingMovedRemovals.map(({element}) => [element.id, undefined])))
+                    : element.value,
                 parents: getPanelDraftParents(located.parents, located.element.id),
                 detached: false,
             },

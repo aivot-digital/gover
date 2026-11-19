@@ -10,6 +10,8 @@ export interface MergeConflict {
     base: unknown;
     mine: unknown;
     theirs: unknown;
+    /** The selected side either keeps the element in this container path or removes it. */
+    elementPlacement?: {elementId: string; mine?: string; theirs?: string};
 }
 
 export type MergeChoice = 'mine' | 'theirs';
@@ -20,6 +22,20 @@ export type MergeChoices = Record<string, MergeChoice>;
 export interface MergeResult<T> {
     merged: T;
     conflicts: MergeConflict[];
+}
+
+interface SubtreeStates {
+    base: unknown;
+    mine: unknown;
+    theirs: unknown;
+    interruptedWrite?: {value: unknown};
+}
+
+export interface SubtreeMergeInput extends SubtreeStates {
+    path: string[];
+    choices: MergeChoices;
+    /** Merge the remaining values at the same path, preserving regular field and ordering decisions. */
+    mergeRest: (states: SubtreeStates) => MergeResult<unknown>;
 }
 
 export interface MergeConflictPresentation {
@@ -35,6 +51,8 @@ export interface MergeConflictPresentation {
  * Each type that can be recovered from a lock version conflict defines its own spec next to its entity.
  */
 export interface MergeSpec<T> {
+    /** May handle an entire structural conflict at a domain-defined tree root. */
+    mergeSubtree?: (input: SubtreeMergeInput) => MergeResult<unknown> | undefined;
     /** Top-level fields that the server maintains, such as the lock version. They are always taken from the stored state. */
     serverManaged?: string[];
     /**
@@ -85,6 +103,7 @@ export function threeWayMerge<T>(
     const merged = mergeValue(normalizedBase, withServerManaged(normalizedMine, normalizedTheirs, spec), normalizedTheirs, [], {
         arrayKey: spec.arrayKey ?? (() => undefined),
         atomicValue: spec.atomicValue,
+        mergeSubtree: spec.mergeSubtree,
         choices,
         conflicts,
         interrupted: interruptedWrite != null,
@@ -117,6 +136,7 @@ export function pathToId(path: string[]): string {
 export const keyById = (): string => 'id';
 
 interface MergeContext {
+    mergeSubtree?: MergeSpec<unknown>['mergeSubtree'];
     arrayKey: (path: string[]) => string | undefined;
     atomicValue?: AtomicComparisonValue;
     choices: MergeChoices;
@@ -126,6 +146,28 @@ interface MergeContext {
 }
 
 function mergeValue(
+    base: unknown, mine: unknown, theirs: unknown, path: string[], context: MergeContext, submitted?: unknown,
+): unknown {
+    if (context.mergeSubtree) {
+        const result = context.mergeSubtree({
+            base, mine, theirs, path, choices: context.choices,
+            interruptedWrite: context.interrupted ? {value: submitted} : undefined,
+            mergeRest: (states) => {
+                const conflicts: MergeConflict[] = [];
+                const merged = mergeOrdinaryValue(states.base, states.mine, states.theirs, path,
+                    {...context, conflicts, interrupted: states.interruptedWrite != null}, states.interruptedWrite?.value);
+                return {merged, conflicts};
+            },
+        });
+        if (result) {
+            context.conflicts.push(...result.conflicts);
+            return result.merged;
+        }
+    }
+    return mergeOrdinaryValue(base, mine, theirs, path, context, submitted);
+}
+
+function mergeOrdinaryValue(
     base: unknown, mine: unknown, theirs: unknown, path: string[], context: MergeContext, submitted?: unknown,
 ): unknown {
     const {atomicValue} = context;

@@ -125,12 +125,13 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             return;
         }
         const base = panel?.base ?? value;
-        if (!panel?.detached && editorValuesEqual(updated, base)) {
+        const hasPendingStructure = panel?.detached || !!panel?.pendingMovedRemovals?.length;
+        if (!hasPendingStructure && editorValuesEqual(updated, base)) {
             setLocalElement(undefined);
             onPanelDraftChange(null);
             return;
         }
-        if (!panel?.detached && localElement != null && editorValuesEqual(updated, localElement)) {
+        if (!hasPendingStructure && localElement != null && editorValuesEqual(updated, localElement)) {
             onPanelDraftChange(null);
             return;
         }

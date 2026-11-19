@@ -1,5 +1,6 @@
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
+import {isFormLayoutElement} from '../../../models/elements/form-layout-element';
 import {keyById, type MergeConflictPresentation, type MergeSpec} from '../../../utils/three-way-merge';
 import {variableReferenceMergeRules} from '../../../utils/variable-reference-merge';
 import {flattenElements} from '../../../utils/flatten-elements';
@@ -8,9 +9,9 @@ import {
     describeElementConflict,
     formatElementConflictLabel,
     hasUniqueElementIds,
-    isElementTree,
 } from '../../elements/utils/form-layout-merge-spec';
 import {describeConfigurationProperty} from '../../elements/utils/element-conflict-labels';
+import {isElementTree, mergeElementTreeStructure} from '../../elements/utils/element-tree-structure-merge';
 import {isUiDefinitionInputFieldElement} from '../../../models/elements/form/input/ui-definition-input-field-element';
 
 const FieldLabels: Record<string, string> = {
@@ -37,6 +38,8 @@ export function getExternallyEditedFields(layout: GroupLayout | null): string[] 
 export function createProcessNodeMergeSpec(layout: GroupLayout | null, stored?: ProcessNodeEntity): MergeSpec<ProcessNodeEntity> {
     const layoutElements = layout == null ? [] : flattenElements(layout);
     const externalFields = getExternallyEditedFields(layout);
+    const inlineDefinitions = new Set(layoutElements.filter(isUiDefinitionInputFieldElement)
+        .filter((field) => !field.openExternalEditor).map((field) => field.id));
     const describeConflict: NonNullable<MergeSpec<ProcessNodeEntity>['describeConflict']> = (path, {base, mine, theirs}) => {
         const [field, configurationKey, ...rest] = path;
         const nodePrefix = ['process-node', mine.id];
@@ -62,6 +65,9 @@ export function createProcessNodeMergeSpec(layout: GroupLayout | null, stored?: 
 
         // A configuration field can contain an entire form. Its root belongs to the field's own group.
         if (rest[0] === 'value' && trees.some(isElementTree)) {
+            if (rest.length === 1 && !trees.some(isFormLayoutElement)) {
+                return {group: {id: JSON.stringify(groupPrefix), label: fieldLabel}, propertyLabel: 'Gesamte UI-Definition'};
+            }
             return describeElementConflict(rest.slice(1), trees, fieldLabel, groupPrefix);
         }
 
@@ -96,6 +102,12 @@ export function createProcessNodeMergeSpec(layout: GroupLayout | null, stored?: 
             return {...node, configuration};
         },
         arrayKey: keyById,
+        mergeSubtree: (input) => {
+            const [field, key, property] = input.path;
+            if (input.path.length === 3 && field === 'configuration' && property === 'value' && inlineDefinitions.has(key)) {
+                return mergeElementTreeStructure(input);
+            }
+        },
         validate: (node) => Object.values(node.configuration ?? {})
             .map((value) => getLiteralAuthoredValue(value))
             .filter(isElementTree)

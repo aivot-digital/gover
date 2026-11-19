@@ -169,6 +169,24 @@ describe('form data key editing session', () => {
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).not.toHaveAttribute('readonly');
     });
 
+    it('preserves an external removal when reverting a title and discards it on Cancel', async () => {
+        const field = {...generateElementWithDefaultValues(ElementType.Text), id: 'field', label: 'Vorname'};
+        const pending = [{element: {...field, id: 'moved'}, parentId: 'other-group'}];
+        const initialDraft = {
+            base: field, mine: field, tab: DefaultTabs.properties, parents: [],
+            automaticDataKey: false, dataKeyUnlocked: false, pendingMovedRemovals: pending,
+        };
+        const {onApply, onDraft} = renderEditor({trackDraft: true, initialDraft});
+        const title = screen.getByRole('textbox', {name: /^Titel/});
+        fireEvent.change(title, {target: {value: 'Rufname'}});
+        fireEvent.change(title, {target: {value: 'Vorname'}});
+        expect(onDraft.mock.lastCall![0]).toMatchObject({mine: field, pendingMovedRemovals: pending});
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Abbrechen'}));
+        expect(confirm).toHaveBeenCalledOnce();
+        expect(onDraft).toHaveBeenLastCalledWith(null);
+        expect(onApply).not.toHaveBeenCalled();
+    });
+
     it('records only an applied structure and retains it while reference recalculation is pending', async () => {
         const user = userEvent.setup();
         const {onDraft, onApply, unmount} = renderEditor({trackDraft: true});
