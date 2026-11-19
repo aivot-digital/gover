@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.user.controllers;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.core.GenericCrudController;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.services.UserDeputyMailService;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -17,6 +18,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,18 +35,36 @@ import org.springframework.web.bind.annotation.RestController;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class UserDeputyController extends GenericCrudController<UserDeputyEntity, Integer, UserDeputyFilter> {
+    private static final Logger logger = LoggerFactory.getLogger(UserDeputyController.class);
+
     private final PermissionService permissionService;
     private final UserDeputyService userDeputyService;
+    private final UserDeputyMailService userDeputyMailService;
 
     public UserDeputyController(AuditService auditService,
                                 UserService userService,
                                 UserDeputyService service,
-                                PermissionService permissionService) {
+                                PermissionService permissionService,
+                                UserDeputyMailService userDeputyMailService) {
         super(auditService.createScopedAuditService(UserDeputyController.class, "Mitarbeiter:innen"),
                 userService,
                 service);
         this.permissionService = permissionService;
         this.userDeputyService = service;
+        this.userDeputyMailService = userDeputyMailService;
+    }
+
+    @Override
+    protected UserDeputyEntity performCreate(@Nonnull UserEntity execUser,
+                                             @Nonnull UserDeputyEntity newItem) throws ResponseException {
+        var created = super.performCreate(execUser, newItem);
+        // Like membership notifications, a failed mail must not undo the saved relation.
+        try {
+            userDeputyMailService.sendAssigned(execUser, created);
+        } catch (Exception exception) {
+            logger.warn("Could not notify deputy {} about deputy relation {}.", created.getDeputyUserId(), created.getId(), exception);
+        }
+        return created;
     }
 
     @Override

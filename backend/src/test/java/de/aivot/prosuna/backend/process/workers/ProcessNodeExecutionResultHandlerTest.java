@@ -1536,7 +1536,7 @@ class ProcessNodeExecutionResultHandlerTest {
         private boolean throwOnUnassigned;
 
         private RecordingProcessTaskMailService() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         @Override

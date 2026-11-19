@@ -22,6 +22,8 @@ public enum MailTemplate implements Identifiable<String> {
     ProcessInstanceUnassigned("process-instance-unassigned", ProcessNotificationInstanceAssignmentChangedUserConfigDefinition.KEY),
 
     UnhandledSystemException("unhandled-system-exception", null),
+    // Sent regardless of notification settings, because the deputy receives permissions and tasks of another person.
+    DeputyAssigned("deputy-assigned", null),
     ;
 
     private final String key;

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.mail.services;
 
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
 import de.aivot.prosuna.backend.mail.config.ProcessNotificationInstanceAssignmentChangedUserConfigDefinition;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 class ProcessInstanceMailServiceTest {
     private MailService mailService;
+    private UserDeputyService deputies;
     private ProcessInstanceMailService service;
     private ThemeEntity theme;
     private ProcessInstanceEntity instance;
@@ -38,7 +40,8 @@ class ProcessInstanceMailServiceTest {
         mailService = mock(MailService.class);
         var processService = mock(ProcessService.class);
         var departmentService = mock(DepartmentService.class);
-        service = new ProcessInstanceMailService(mailService, processService, departmentService);
+        deputies = mock(UserDeputyService.class);
+        service = new ProcessInstanceMailService(mailService, processService, departmentService, deputies);
 
         var process = new ProcessEntity().setId(17).setInternalTitle("Beispielprozess").setDepartmentId(3);
         var department = new DepartmentEntity().setId(3);
@@ -107,6 +110,21 @@ class ProcessInstanceMailServiceTest {
         assertEquals("Der Ihnen zugewiesene Vorgang wurde einer anderen Person zugewiesen.", context.get("intro"));
         assertEquals("Alex Beispiel", context.get("changeSource"));
         assertFalse(context.containsKey("instancePath"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sendsUnassignmentToActiveDeputiesWordedForThem() throws Exception {
+        var deputy = new UserEntity().setId("daniel").setFullName("Daniel Müller");
+        when(deputies.findActiveDeputies(java.util.Set.of("recipient"))).thenReturn(Map.of("recipient", List.of(deputy)));
+
+        service.sendUnassigned(null, recipient, instance, true);
+
+        var captor = ArgumentCaptor.forClass(Map.class);
+        verify(mailService).sendMailToUser(eq(theme), eq("daniel"), eq("[Prosuna] In Vertretung: Zuweisung zum Vorgang aufgehoben"),
+                eq(MailTemplate.ProcessInstanceUnassigned), captor.capture());
+        assertEquals("Der Empfangende Person zugewiesene Vorgang wurde einer anderen Person zugewiesen. "
+                + "Sie erhalten diese Benachrichtigung, weil Sie Empfangende Person derzeit vertreten.", captor.getValue().get("intro"));
     }
 
     @SuppressWarnings("unchecked")
