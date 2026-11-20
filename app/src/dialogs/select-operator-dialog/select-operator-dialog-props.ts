@@ -9,4 +9,5 @@ export interface SelectOperatorDialogProps {
     /** Called once the dialog has finished closing. */
     onExited?: () => void;
     desiredReturnType: NoCodeDataType;
+    mode?: 'add' | 'replace';
 }

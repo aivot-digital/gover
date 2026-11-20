@@ -2,4 +2,5 @@ import {NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-detai
 
 export interface OperatorInfoProps {
     operator: NoCodeOperatorDetailsDTO;
+    headingBaseLevel?: 3 | 4;
 }

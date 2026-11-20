@@ -10,6 +10,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
         <>
             <MarkdownContent
                 markdown={props.operator.description}
+                headingBaseLevel={props.headingBaseLevel ?? 3}
             />
 
             <Collapse
@@ -64,7 +65,8 @@ export function OperatorInfo(props: OperatorInfoProps) {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            Keine Parameter {' -> '} {NoCodeDataTypeLabels[signature.returnType]}
+                                                            Keine
+                                                            Parameter {' -> '} {NoCodeDataTypeLabels[signature.returnType]}
                                                         </>
                                                     )
                                                 }

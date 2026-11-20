@@ -44,7 +44,7 @@ export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNod
                     // Focus only when opening; tab changes and result updates must not steal focus.
                     onEnter: () => props.initialFocusRef?.current?.focus(),
                     onExited: props.onExited,
-                }
+                },
             }}
         >
             <DialogTitleWithClose
@@ -55,7 +55,7 @@ export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNod
                 {props.title}
             </DialogTitleWithClose>
 
-            <Tabs
+            {visibleTabs.length > 0 && <Tabs
                 value={props.activeTab}
                 onChange={(_, value) => {
                     props.onTabChange(value);
@@ -77,7 +77,7 @@ export function SelectionDialogShell(props: SelectionDialogShellProps): ReactNod
                         />
                     ))
                 }
-            </Tabs>
+            </Tabs>}
 
             <Box
                 sx={{

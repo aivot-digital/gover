@@ -73,7 +73,10 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                         {props.icon}
                     </Box>
 
-                    <Box sx={{minWidth: 0, flex: 1}}>
+                    <Box sx={{
+                        minWidth: 0,
+                        flex: 1,
+                    }}>
                         <Typography
                             variant="caption"
                             sx={{
@@ -95,6 +98,7 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                         >
                             <Typography
                                 variant="h6"
+                                component="h3"
                                 title={getTitleAttribute(props.title)}
                                 sx={{
                                     lineHeight: 1.2,
@@ -102,7 +106,7 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                                     minWidth: 0,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
+                                    whiteSpace: 'nowrap',
                                 }}>
                                 {props.title}
                             </Typography>
@@ -126,9 +130,10 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
             >
                 {
                     props.description != null &&
-                    <Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
+                    <Typography variant="body2"
+                                sx={{
+                                    color: 'text.secondary',
+                                }}>
                         {props.description}
                     </Typography>
                 }

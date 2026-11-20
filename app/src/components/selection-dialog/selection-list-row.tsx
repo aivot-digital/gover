@@ -13,6 +13,10 @@ interface SelectionListRowProps {
     detailsLabel?: string;
     detailsIcon?: ReactNode;
     primaryActionLabel: string;
+    primaryActionAriaLabel?: string;
+    detailsAriaLabel?: string;
+    detailsExpanded?: boolean;
+    detailsControls?: string;
     primaryActionIcon: ReactNode;
     onPrimaryAction: () => void;
     primaryActionDisabled?: boolean;
@@ -27,6 +31,7 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
             startIcon={props.primaryActionIcon}
             onClick={props.onPrimaryAction}
             disabled={props.primaryActionDisabled}
+            aria-label={props.primaryActionAriaLabel}
         >
             {props.primaryActionLabel}
         </Button>
@@ -81,7 +86,7 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                             minWidth: 0,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
                         }}>
                         {props.title}
                     </Typography>
@@ -93,8 +98,8 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                     <Typography
                         variant="body2"
                         sx={{
-                            color: "text.secondary",
-                            mt: 0.5
+                            color: 'text.secondary',
+                            mt: 0.5,
                         }}>
                         {props.description}
                     </Typography>
@@ -117,6 +122,9 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                         size="small"
                         startIcon={props.detailsIcon ?? <InfoOutlinedIcon sx={{fontSize: 18}}/>}
                         onClick={props.onShowDetails}
+                        aria-label={props.detailsAriaLabel}
+                        aria-expanded={props.detailsExpanded}
+                        aria-controls={props.detailsControls}
                     >
                         {props.detailsLabel ?? 'Details'}
                     </Button>
