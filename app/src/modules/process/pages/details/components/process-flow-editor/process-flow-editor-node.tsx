@@ -1,5 +1,6 @@
+import {getExecutionsForNode} from '../../../../utils/process-task-executions';
 import {Handle, type NodeProps, Position, useUpdateNodeInternals} from '@xyflow/react';
-import {Box, Button, Divider, IconButton, Paper, Tooltip, useTheme} from '@mui/material';
+import {Box, Button, Chip, Divider, IconButton, Paper, Tooltip, useTheme} from '@mui/material';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
@@ -63,6 +64,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onStartCloneNode,
         onShowNodeProviderDetails,
         onShowTaskEvents,
+        onShowNodeExecutions,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
@@ -84,6 +86,9 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         displayPorts,
     } = graphNode;
 
+    const executions = useMemo(() => getExecutionsForNode(runtimeData?.tasks ?? [], node.id), [node.id, runtimeData]);
+    const executionsIncomplete = runtimeData?.tasksComplete === false;
+    const executionsLabel = `${executionsIncomplete ? 'Mindestens ' : ''}${executions.length} ${executions.length === 1 ? 'Ausführung' : 'Ausführungen'} anzeigen`;
     const associatedTask = useMemo(() => {
         if (runtimeData == null) {
             return null;
@@ -655,6 +660,23 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             >
                                 Ereignisse
                             </Button>
+
+                            {onShowNodeExecutions != null && (executions.length > 1 || executionsIncomplete) && (
+                                <Tooltip title={executionsLabel}
+                                         arrow>
+                                    <Chip
+                                        className="nodrag nopan"
+                                        size="small"
+                                        variant="outlined"
+                                        label={`${executionsIncomplete ? '≥' : ''}${executions.length}×`}
+                                        aria-label={executionsLabel}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onShowNodeExecutions(node, provider);
+                                        }}
+                                    />
+                                </Tooltip>
+                            )}
 
                             <Box sx={{flex: 1}}/>
 
