@@ -1,4 +1,4 @@
-FROM node:22.11-alpine as build_app
+FROM docker.io/library/node:26.13.1-alpine3.24 as build_app
 
 ARG buildDate=unknown
 ARG version=0.0.0
@@ -61,7 +61,7 @@ RUN mv build customer
 
 
 # Build server
-FROM  maven:3.9.9-eclipse-temurin-21 as build_server
+FROM  docker.io/library/maven:3.10.0-eclipse-temurin-21 as build_server
 
 ARG version=0.0.0
 
@@ -84,7 +84,7 @@ COPY --from=build_app /mails/dist src/main/resources/templates/mail
 RUN mvn install -DskipTests
 
 # App
-FROM eclipse-temurin:21.0.10_7-jre
+FROM docker.io/library/eclipse-temurin:21.0.13_9-jre-noble
 
 ARG buildDate=unknown
 ARG version=0.0.0
@@ -100,11 +100,8 @@ LABEL org.opencontainers.image.vendor="Aivot"
 LABEL org.opencontainers.image.title="Gover Backend"
 LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
 
-# Set locale env config
+# Set timezone. Keep the base image's en_US.UTF-8 locale: de_DE.UTF-8 is not installed and makes Java read env vars as ASCII
 ENV TZ "Europe/Berlin"
-ENV LANG de_DE.UTF-8
-ENV LANGUAGE de_DE:de
-ENV LC_ALL de_DE.UTF-8
 
 # Copy nginx configs
 COPY docker/nginx.staff.conf /etc/nginx/sites-available/staff.conf

@@ -12,7 +12,7 @@ if [ "$1" = "serve" ]; then
   done
 
   echo "Starting server…"
-  java -jar /app/gover.jar
+  java -XX:-UseBASE64Intrinsics -jar /app/gover.jar
 fi
 
 if [ "$1" = "staff" ]; then
