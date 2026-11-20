@@ -38,8 +38,8 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
 
     const selectableElements = useMemo(() => {
         return allElements;
-            // Remove this for now, because we have no current concept of how to limit this compatability.
-            //.filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
+        // Remove this for now, because we have no current concept of how to limit this compatability.
+        //.filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
     }, [allElements, desiredType]);
 
     const allElementOptions: SelectFieldComponentOption[] = useMemo(() => {
@@ -56,6 +56,7 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
     return (
         <>
             <SelectFieldComponent
+                required
                 label={`${label ?? ''} — (Wert eines Elementes)`}
                 value={operand.elementId ?? ''}
                 onChange={(val) => {
@@ -66,26 +67,26 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
                 }}
                 hint={hint}
                 options={allElementOptions}
-                startIcon={<MyLocation />}
+                startIcon={<MyLocation/>}
                 endAction={[
                     {
                         color: 'error',
                         tooltip: 'Diesen Verweis auf ein Element löschen',
-                        icon: <Delete />,
+                        icon: <Delete/>,
                         onClick: () => {
                             onChange(undefined);
                         },
                     },
                     {
                         tooltip: 'Element für diesen Verweis auswählen',
-                        icon: <DatabaseSearch />,
+                        icon: <DatabaseSearch/>,
                         onClick: () => {
                             setShowSelectElementDialog(true);
                         },
                     },
                     {
                         tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
-                        icon: <Functions />,
+                        icon: <Functions/>,
                         onClick: onAddEnclosingExpression,
                     },
                 ]}

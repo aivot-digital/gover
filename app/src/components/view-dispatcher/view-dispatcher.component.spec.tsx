@@ -11,6 +11,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {ViewDispatcherComponent} from './view-dispatcher.component';
 import {ViewDispatcherContextProvider, ViewDispatcherMode} from './view-dispatcher.context';
 
+vi.mock('../../hooks/use-api', () => ({useApi: () => ({})}));
 vi.mock('../../hooks/use-app-selector', () => ({useAppSelector: () => true}));
 vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 vi.mock('../element-tree-2/components/element-tree-inline-editor-context', () => ({
@@ -84,6 +85,43 @@ describe('ViewDispatcherComponent authored values', () => {
 
         expect(screen.getByRole('textbox', {name: 'Test value'}))
             .toHaveAttribute('data-dynamic-text', String(expected));
+    });
+
+    it('shows an empty default No-Code mode without authoring a fixed value', () => {
+        const element = {
+            ...generateElementWithDefaultValues(ElementType.Text),
+            id: 'field',
+            label: 'Test value',
+            inputModePolicy: {
+                allowedModes: [InputMode.NoCode],
+                defaultMode: InputMode.NoCode,
+            },
+        };
+        const derivedData = createDerivedRuntimeElementData();
+        const onChange = vi.fn();
+        render(<ViewDispatcherContextProvider value={{
+            mode: ViewDispatcherMode.Viewer,
+            rootElement: element,
+            allElements: [element],
+            rootAuthoredElementValues: {},
+            rootDerivedData: derivedData,
+            inputModesEnabled: true,
+        }}>
+            <ViewDispatcherComponent element={element}
+                                     authoredElementValues={{}}
+                                     derivedData={derivedData}
+                                     onAuthoredElementValuesChange={onChange}
+                                     onElementBlur={vi.fn()}
+                                     onDerive={vi.fn()}
+                                     onEvent={vi.fn()}
+                                     onResetErrors={vi.fn()}
+                                     isBusy={false}
+                                     isDeriving={false}
+                                     suppressErrors={false}
+                                     derivationTriggerIdQueue={[]}/>
+        </ViewDispatcherContextProvider>);
+        expect(screen.getByRole('button', {name: /Test value: Kein Ausdruck definiert/})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it.each([false, true])('keeps unchanged literals stable with input modes enabled: %s', (inputModesEnabled) => {

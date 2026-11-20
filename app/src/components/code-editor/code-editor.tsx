@@ -3,6 +3,7 @@ import {MonacoEditor} from './monaco-editor';
 import {type editor} from 'monaco-editor';
 import {Box, useTheme} from '@mui/material';
 import React, {useCallback, useEffect, useRef} from 'react';
+import {createPortal} from 'react-dom';
 import {CodeEditorProps} from './code-editor-props';
 import {ActionsProps} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
@@ -50,7 +51,8 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
         };
     }, []);
 
-    const hasTopContent = props.label != null || props.actions.length > 0;
+    const hasInlineActions = props.toolbarContainer == null && props.actions.length > 0;
+    const hasTopContent = props.label != null || hasInlineActions;
 
     const handleEditorMount = useCallback((editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         monacoRef.current = monaco;
@@ -94,6 +96,8 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
 
     return (
         <Box sx={props.sx}>
+            {props.toolbarContainer != null && props.actions.length > 0 && createPortal(
+                <Actions actions={props.actions}/>, props.toolbarContainer)}
             {
                 props.alert &&
                 <AlertComponent {...props.alert} />
@@ -106,17 +110,18 @@ export function CodeEditor(props: CodeEditorProps & ActionsProps) {
                             alignItems: 'center',
                         }}
                     >
-                        <Box component="span" sx={{fontWeight: 500}}>
+                        <Box component="span"
+                             sx={{fontWeight: 500}}>
                             {props.label}
                         </Box>
 
-                        <Box
+                        {hasInlineActions && <Box
                             sx={{
                                 ml: 'auto',
                             }}
                         >
-                            <Actions actions={props.actions} />
-                        </Box>
+                            <Actions actions={props.actions}/>
+                        </Box>}
                     </Box>
                 )
             }

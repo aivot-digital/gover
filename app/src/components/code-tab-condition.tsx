@@ -1,6 +1,11 @@
 import {type Condition} from '../models/functions/conditions/condition';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
-import {type ConditionOperator, ConditionOperatorIsUnary, ConditionOperatorLabel, getConditionOperatorHint} from '../data/condition-operator';
+import {
+    type ConditionOperator,
+    ConditionOperatorIsUnary,
+    ConditionOperatorLabel,
+    getConditionOperatorHint,
+} from '../data/condition-operator';
 import React, {useMemo} from 'react';
 import {ElementType} from '../data/element-type/element-type';
 import {evaluators as Evaluators} from '../evaluators';
@@ -22,6 +27,7 @@ interface CodeTabConditionProps {
     onDelete: () => void;
     onChange: (cond: Condition) => void;
     editable: boolean;
+    presentation?: 'reference';
 }
 
 export function CodeTabCondition({
@@ -31,6 +37,7 @@ export function CodeTabCondition({
                                      onDelete,
                                      onChange,
                                      editable,
+                                     presentation,
                                  }: CodeTabConditionProps) {
     const referencedElement = allElements.find((e) => e.element.id === cond.reference);
     const referencedElements = useMemo(
@@ -68,6 +75,75 @@ export function CodeTabCondition({
 
     const isUnaryOperator = cond.operator != null ? ConditionOperatorIsUnary[cond.operator] : true;
     const valueHelperText = getConditionOperatorHint(referencedElement?.element.type, cond.operator);
+
+    if (presentation === 'reference') {
+        const referenceLabel = (id: string) => {
+            const found = allElements.find(({element}) => element.id === id);
+            return <>
+                <Typography>{found != null ? generateComponentTitle(found.element) : 'Nicht gefundenes Element'}</Typography>
+                <Typography variant="caption"
+                            color="text.secondary"
+                            sx={{
+                                display: 'block',
+                                fontFamily: 'monospace',
+                            }}>
+                    {id ? `ID: ${id}` : 'Keine Referenz hinterlegt'}
+                </Typography>
+            </>;
+        };
+        const option = availableValueOptions?.find((item) => typeof item === 'string' ? item === cond.value : item.value === cond.value);
+        const optionLabel = typeof option === 'string' ? option : option?.label;
+        const hasDistinctOptionLabel = Boolean(optionLabel && optionLabel !== cond.value);
+        const value = cond.value == null ? 'Kein Vergleichswert hinterlegt' : cond.value === '' ? 'Leerer Text ("")' : cond.value;
+        return <Box sx={{
+            containerType: 'inline-size',
+            minWidth: 0,
+            overflowWrap: 'anywhere',
+        }}>
+            <Box component="dl"
+                 sx={{
+                     m: 0,
+                     display: 'grid',
+                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                     gap: 2,
+                     '@container (max-width: 500px)': {
+                         gridTemplateColumns: 'minmax(0, 1fr)',
+                         gap: 1,
+                     },
+                     '& dt': {
+                         typography: 'body2',
+                         color: 'text.secondary',
+                         mb: 0.5,
+                     },
+                     '& dd': {m: 0},
+                 }}>
+                <Box>
+                    <Box component="dt">Element</Box>
+                    <Box component="dd">{referenceLabel(cond.reference)}</Box>
+                </Box>
+                <Box>
+                    <Box component="dt">Vergleich</Box>
+                    <Box component="dd">
+                        {cond.operator == null ? 'Kein Operator hinterlegt' : ConditionOperatorLabel[cond.operator] ?? `Unbekannter Operator (${cond.operator})`}
+                    </Box>
+                </Box>
+                {!isUnaryOperator && <Box>
+                    <Box component="dt">{cond.target != null ? 'Vergleichselement' : 'Wert'}</Box>
+                    <Box component="dd"
+                         sx={{whiteSpace: 'pre-wrap'}}>
+                        {cond.target != null ? referenceLabel(cond.target) : <>
+                            <Typography sx={{whiteSpace: 'pre-wrap'}}>{hasDistinctOptionLabel ? optionLabel : value}</Typography>
+                            {hasDistinctOptionLabel && <Typography variant="caption"
+                                                                   color="text.secondary"
+                                                                   sx={{display: 'block'}}>
+                                Gespeicherter Wert: {value}
+                            </Typography>}
+                        </>}
+                    </Box>
+                </Box>}
+            </Box>
+        </Box>;
+    }
 
     return (
         <Box>
@@ -121,9 +197,15 @@ export function CodeTabCondition({
                                 reference: val ?? '',
                             });
                         }}
-                        options={allElements.map(({element, parents}) => ({
+                        options={allElements.map(({
+                                                      element,
+                                                      parents,
+                                                  }) => ({
                             label: generateComponentTitle(element),
-                            subLabel: generateElementNameWithParent({element, parents}),
+                            subLabel: generateElementNameWithParent({
+                                element,
+                                parents,
+                            }),
                             value: element.id,
                         }))}
                         disabled={!editable}
@@ -171,7 +253,10 @@ export function CodeTabCondition({
                             availableOperators != null &&
                             availableOperators.length > 0 &&
                             <>
-                                <Box sx={{flex: 1, maxWidth: '300px'}}>
+                                <Box sx={{
+                                    flex: 1,
+                                    maxWidth: '300px',
+                                }}>
                                     {
                                         cond.value != null &&
                                         (

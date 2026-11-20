@@ -1,9 +1,8 @@
-import React, {useMemo, useReducer, useRef} from 'react';
-import {ConditionSetOperator} from '../../../data/condition-set-operator';
+import {LegacyNoCodeMigrationReference} from '../../../modules/nocode/components/legacy-no-code-migration-reference';
+import {hasLegacyNoCode} from '../../../modules/nocode/hooks/use-legacy-no-code-migration';
+import React, {useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {BaseCodeTab} from '../../element-editor-code-tab/base-code-tab';
-import {ConditionOperator} from '../../../data/condition-operator';
 import {CodeEditor} from '../../code-editor/code-editor';
-import {CodeTabNoCodeEditor} from '../../code-tab-no-code-editor';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {Box, Button, Typography} from '@mui/material';
 import {TextFieldComponent} from '../../text-field/text-field-component';
@@ -44,9 +43,13 @@ export function ElementTreeEditorContentTabValidation() {
     } = useElementTreeContext();
 
     const {
+        noCodeValidationRequest,
+        noCodeValidationIndex,
         currentElement,
         onChangeCurrentElement,
         parents,
+        legacyMigrations,
+        startLegacyMigration,
     } = useElementTreeEditorContext<BaseInputElement<any>>();
 
     const {
@@ -63,9 +66,17 @@ export function ElementTreeEditorContentTabValidation() {
     }, [_validation]);
 
     const hasValidationFunction = useMemo(() => {
-        return validation.type != null;
+        return validation.type != null || hasLegacyNoCode(validation);
     }, [validation]);
 
+    const addValidationRef = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        if (noCodeValidationRequest && validation.type === 'NoCode' && !validation.noCodeList?.length) {
+            addValidationRef.current?.focus();
+        }
+    }, [noCodeValidationRequest]);
+
+    const [toolbarContainer, setToolbarContainer] = useState<HTMLDivElement | null>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
@@ -82,6 +93,7 @@ export function ElementTreeEditorContentTabValidation() {
     return (
         <>
             <BaseCodeTab
+                functionToolbarRef={validation.type === 'Javascript' && editable ? setToolbarContainer : undefined}
                 label="Validierung"
                 description="Hier können Sie die Validierung des Elements konfigurieren. Hierzu definieren Sie die Regeln, die das Element erfüllen muss, um als valide/gültig zu gelten."
                 requirements={validation.requirements ?? undefined}
@@ -104,26 +116,6 @@ export function ElementTreeEditorContentTabValidation() {
                 allowsExpression={true}
                 onSelectFunction={(type) => {
                     switch (type) {
-                        case 'legacy-condition':
-                            handleChange({
-                                type: 'ConditionSet',
-                                conditionSet: {
-                                    operator: ConditionSetOperator.Any,
-                                    conditions: [
-                                        {
-                                            reference: '',
-                                            operator: ConditionOperator.Equals,
-                                            value: '',
-                                            conditionUnmetMessage: '',
-                                        },
-                                    ],
-                                    conditionsSets: [],
-                                    conditionSetUnmetMessage: '',
-                                },
-                                noCodeList: undefined,
-                                javascriptCode: undefined,
-                            });
-                            break;
                         case 'code':
                             handleChange({
                                 type: 'Javascript',
@@ -135,6 +127,10 @@ export function ElementTreeEditorContentTabValidation() {
                             });
                             break;
                         case 'expression':
+                            if (hasLegacyNoCode(validation)) {
+                                startLegacyMigration?.('validation');
+                                break;
+                            }
                             handleChange({
                                 type: 'NoCode',
                                 conditionSet: undefined,
@@ -149,11 +145,13 @@ export function ElementTreeEditorContentTabValidation() {
                             break;
                     }
                 }}
+                functionActionsDisabled={legacyMigrations?.validation != null}
                 hasFunction={hasValidationFunction}
             >
                 {
                     validation.type === 'Javascript' && (
                         <CodeEditor
+                            toolbarContainer={toolbarContainer}
                             value={validation.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
@@ -180,36 +178,27 @@ export function ElementTreeEditorContentTabValidation() {
                         />
                     )
                 }
-                {
-                    validation.type === 'ConditionSet' && (
-                        <CodeTabNoCodeEditor
-                            parents={parents as any}
-                            element={currentElement}
-                            func={{
-                                requirements: '',
-                                conditionSet: validation.conditionSet ?? undefined,
-                            }}
-                            onChange={(updatedFunc) => {
-                                handleChange({
-                                    conditionSet: updatedFunc.conditionSet,
-                                });
-                            }}
-                            shouldReturnString={true}
-                            editable={editable}
-                        />
-                    )
-                }
+                <LegacyNoCodeMigrationReference section="validation"/>
                 {
                     validation.type === 'NoCode' && (
                         <>
                             <Box>
                                 {
                                     (validation.noCodeList ?? [])
-                                        .map(({message, noCode}, index) => (
+                                        .map(({
+                                                  message,
+                                                  noCode,
+                                              }, index) => (
                                             <Box
                                                 key={index}
+                                                component="section"
+                                                aria-label={`Validierung ${index + 1}`}
                                                 sx={{
-                                                    mb: 4,
+                                                    mb: 2,
+                                                    p: 2,
+                                                    border: 1,
+                                                    borderColor: 'divider',
+                                                    borderRadius: 1,
                                                 }}
                                             >
                                                 <Box
@@ -220,6 +209,7 @@ export function ElementTreeEditorContentTabValidation() {
                                                 >
                                                     <Typography
                                                         variant="subtitle1"
+                                                        component="h3"
                                                         sx={{
                                                             mr: 'auto',
                                                         }}
@@ -228,7 +218,7 @@ export function ElementTreeEditorContentTabValidation() {
                                                     </Typography>
 
                                                     <Actions
-                                                        actions={[
+                                                        actions={editable ? [
                                                             {
                                                                 color: 'error',
                                                                 icon: <Delete/>,
@@ -243,15 +233,11 @@ export function ElementTreeEditorContentTabValidation() {
                                                                     });
                                                                 },
                                                             },
-                                                        ]}
+                                                        ] : []}
                                                     />
                                                 </Box>
 
-                                                <Box
-                                                    sx={{
-                                                        ml: 2,
-                                                    }}
-                                                >
+                                                <Box>
                                                     <TextFieldComponent
                                                         label="Fehlermeldung"
                                                         value={message ?? undefined}
@@ -272,6 +258,10 @@ export function ElementTreeEditorContentTabValidation() {
                                                     />
 
                                                     <NoCodeEditorWrapper
+                                                        emptyDescription="Legen Sie fest, welche Bedingung eine Eingabe erfüllen muss. Ist die Bedingung nicht erfüllt, erscheint die hinterlegte Fehlermeldung."
+                                                        validationRequest={noCodeValidationRequest}
+                                                        focusOnValidation={index === (noCodeValidationIndex ?? 0)}
+                                                        required
                                                         label="Bedingung"
                                                         hint="Hier kann eine Bedingung definiert werden, die bestimmt, ob das Element valide ist."
                                                         parents={parents}
@@ -299,6 +289,8 @@ export function ElementTreeEditorContentTabValidation() {
                             </Box>
 
                             <Button
+                                ref={addValidationRef}
+                                disabled={!editable}
                                 startIcon={<AddOutlinedIcon/>}
                                 onClick={() => {
                                     handleChange({
@@ -329,6 +321,7 @@ export function ElementTreeEditorContentTabValidation() {
             </BaseCodeTab>
 
             <SelectElementDialog
+                primaryActionLabel="Element-ID verwenden"
                 allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {

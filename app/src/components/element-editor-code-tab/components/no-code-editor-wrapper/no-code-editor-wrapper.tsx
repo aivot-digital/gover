@@ -4,23 +4,21 @@ import {NoCodeApiService} from '../../../../services/no-code-api-service';
 import {NoCodeOperatorDetailsDTO} from '../../../../models/dtos/no-code-operator-details-dto';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
-import {flattenElementsWithParents} from '../../../../utils/flatten-elements';
-import {ElementType} from '../../../../data/element-type/element-type';
-import {Box, CircularProgress, Typography} from '@mui/material';
-import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
+import {Alert, Box, Button, CircularProgress, Typography} from '@mui/material';
 import {NoCodeOperand, NoCodeOperandError} from '../../../../models/functions/no-code-expression';
-import {OperandEditor} from '../expression-editor/operand-editor';
 import {FormLayoutElement as RootElement} from '../../../../models/elements/form-layout-element';
 import {StepElement} from '../../../../models/elements/steps/step-element';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
 import {
-    NoCodeOperandEditor,
     NoCodeOperandEditorContextType,
 } from '../../../../modules/nocode/components/no-code-operand-editor';
-import {PillNoCodeEditor} from '../../../../modules/nocode/components/pill-no-code-editor';
+import {NoCodeEditor} from '../../../../modules/nocode/components/no-code-editor';
 import {AnyElement} from '../../../../models/elements/any-element';
+
+import {noCodeEditorElements} from '../../../../modules/nocode/utils/no-code-editor-elements';
+import {validateNoCode} from '../../../../modules/nocode/utils/validate-no-code';
 
 interface NoCodeEditorWrapperProps {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | AnyElement>;
@@ -33,12 +31,15 @@ interface NoCodeEditorWrapperProps {
     label?: string;
     contextType?: NoCodeOperandEditorContextType;
     operandError?: NoCodeOperandError;
+    required?: boolean;
+    validationRequest?: number;
+    focusOnValidation?: boolean;
+    toolbarContainer?: HTMLElement | null;
+    emptyDescription?: string;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+    onAvailabilityChange?: (available: boolean) => void;
+    onValidityChange?: (valid: boolean) => void;
 }
-
-const old_editor = localStorage.getItem('old_editor') != null;
-// Opt-in preview of the token-based editor; both editors read and write the same NoCodeOperand JSON.
-const pillNoCodeEditor = localStorage.getItem('pill-no-code') != null;
-const CurrentNoCodeEditor = pillNoCodeEditor ? PillNoCodeEditor : NoCodeOperandEditor;
 
 export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
     const {
@@ -52,46 +53,49 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         contextType = 'FORM',
         operandError,
     } = props;
-    const useNewEditor = !old_editor || contextType === 'PROCESS';
 
     const api = useApi();
     const dispatch = useAppDispatch();
 
     const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[]>([]);
     const [isBusy, setIsBusy] = useState<boolean>(true);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadAttempt, setLoadAttempt] = useState(0);
 
     useEffect(() => {
+        let active = true;
         setIsBusy(true);
+        setLoadFailed(false);
         new NoCodeApiService(api)
             .getNoCodeOperators()
-            .then(setOperators)
+            .then((loaded) => {
+                if (active) setOperators(loaded);
+            })
             .catch(err => {
+                if (!active) return;
+                setLoadFailed(true);
                 console.error(err);
                 dispatch(showErrorSnackbar('Operatoren für No-Code-Ausdrücke konnten nicht geladen werden.'));
             })
-            .finally(() => setIsBusy(false));
-    }, []);
+            .finally(() => {
+                if (active) setIsBusy(false);
+            });
+        return () => {
+            active = false;
+        };
+    }, [loadAttempt]);
 
-    const parent = useMemo(() => {
-        for (const par of [...parents].reverse()) {
-            if (par.type === ElementType.ReplicatingContainer) {
-                return par;
-            }
-        }
-        return parents[0];
-    }, [parents]);
+    const allElements = useMemo(() => noCodeEditorElements(parents), [parents]);
 
-    const allElements = useMemo(() => {
-        const allElements = flattenElementsWithParents(parent, [], true)
-            .filter((e) => isAnyInputElement(e.element));
-
-        // Check if the parent is a replicating list container. shift it to prevent selectability for children
-        if (parent.type === ElementType.ReplicatingContainer) {
-            allElements.shift();
-        }
-
-        return allElements;
-    }, [parent]);
+    const validation = useMemo(() => validateNoCode(noCode, operators, allElements, props.required ?? false),
+        [noCode, operators, allElements, props.required]);
+    useEffect(() => {
+        props.onAvailabilityChange?.(!isBusy && !loadFailed);
+    }, [isBusy, loadFailed, props.onAvailabilityChange]);
+    const valid = !isBusy && !loadFailed && validation.isValid;
+    useEffect(() => {
+        props.onValidityChange?.(valid);
+    }, [valid, validation, props.onValidityChange]);
 
     return (
         <>
@@ -107,7 +111,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                         border: '1px solid #e0e0e0',
                     }}
                 >
-                    <CircularProgress />
+                    <CircularProgress/>
                     <Typography
                         variant="body1"
                         sx={{ml: 3}}
@@ -115,54 +119,34 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                         Daten werden geladen, bitte warten...
                     </Typography>
                 </Box>
-            ) : (
+            ) : loadFailed ? <Alert severity="error"
+                                    action={<Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Erneut
+                                                                                                             laden</Button>}>
+                Die Operatoren konnten nicht geladen werden. Der Ausdruck kann noch nicht geprüft werden.
+            </Alert> : (
                 <>
-                    {
-                        !useNewEditor &&
-                        <OperandEditor
-                            allElements={allElements}
-                            allOperators={operators}
-                            disabled={!editable}
-                            operand={noCode}
-                            onChange={(noCode) => {
-                                onChange(noCode);
-                            }}
-                            isTopLevelOperand={true}
-                            isLastOperand={true}
-                            parameter={{
-                                label: 'Ausdruck',
-                                description: props.hint ?? '',
-                                type: NoCodeDataType.Runtime,
-                                options: [],
-                            }}
-                        />
-                    }
-
-                    {
-                        useNewEditor &&
-                        <Box
-                            sx={{
-                                pointerEvents: editable ? 'auto' : 'none',
-                                opacity: editable ? 1 : 0.65,
-                            }}
-                        >
-                            <CurrentNoCodeEditor
-                                parameter={{
-                                    label: label ?? '',
-                                    description: hint ?? '',
-                                    type: desiredReturnType,
-                                    options: [],
-                                }}
-                                operand={noCode}
-                                onChange={onChange}
-                                allOperators={operators}
-                                allElements={allElements}
-                                contextType={contextType}
-                                operandError={operandError}
-                            />
-                        </Box>
-                    }
-
+                    <NoCodeEditor
+                        validationRequest={props.validationRequest}
+                        focusOnValidation={props.focusOnValidation}
+                        toolbarContainer={props.toolbarContainer}
+                        emptyDescription={props.emptyDescription}
+                        scrollContainerRef={props.scrollContainerRef}
+                        parameter={{
+                            label: label ?? '',
+                            description: hint ?? '',
+                            type: desiredReturnType,
+                            options: [],
+                        }}
+                        operand={noCode}
+                        readOnly={!editable}
+                        onChange={(value) => {
+                            if (editable) onChange(value);
+                        }}
+                        allOperators={operators}
+                        allElements={allElements}
+                        contextType={contextType}
+                        operandError={!validation.isValid ? validation : operandError ?? validation}
+                    />
                 </>
             )}
         </>

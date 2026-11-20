@@ -3,13 +3,30 @@ import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {InputModeComparison} from './input-mode-comparison';
+import {type NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-details-dto';
 
-vi.mock('../../hooks/use-api', () => {
-    const api = {get: vi.fn().mockResolvedValue([{
-        identifier: 'add',
-        humanReadableTemplate: 'Addiere #0 und #1',
-        signatures: [{parameters: [{label: 'Wert 1'}, {label: 'Wert 2'}]}],
-    }])};
+vi.mock('../../hooks/use-api', async () => {
+    const {NoCodeDataType} = await import('../../data/no-code-data-type');
+    const api = {
+        get: vi.fn().mockResolvedValue([{
+            identifier: 'add',
+            packageName: 'core',
+            label: 'Addiere',
+            abstractDescription: '',
+            description: '',
+            tags: [],
+            humanReadableTemplate: 'Addiere #0 und #1',
+            signatures: [{
+                returnType: NoCodeDataType.Number,
+                parameters: ['Wert 1', 'Wert 2'].map(label => ({
+                    label,
+                    type: NoCodeDataType.Number,
+                    description: null,
+                    options: [],
+                })),
+            }],
+        } satisfies NoCodeOperatorDetailsDTO]),
+    };
     return {useApi: () => api};
 });
 
@@ -29,7 +46,7 @@ describe('InputModeComparison', () => {
         expect(literal.getByRole('textbox', {name: /^Inkrement/})).toHaveValue('13');
         expect(within(screen.getByRole('group', {name: 'Variable'})).getByText('Anzahl der Positionen')).toBeInTheDocument();
         expect(within(screen.getByRole('group', {name: 'Ausdruck (No-Code)'})).getByText('Ausdruck definiert')).toBeInTheDocument();
-        expect(await screen.findByText('Addiere Vorgangsdaten → warenkorb.positionen.anzahl und „1“')).toBeInTheDocument();
+        expect(await screen.findByText('Addiere Vorgangsdaten → warenkorb.positionen.anzahl und 1')).toBeInTheDocument();
         expect(within(screen.getByRole('group', {name: 'Skript (Low-Code)'}))
             .getByText('const anzahl = $.warenkorb?.positionen?.anzahl ?? 0;')).toBeInTheDocument();
 

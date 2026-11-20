@@ -17,6 +17,8 @@ interface CodeTabConditionSetEditorProps {
     shouldReturnString: boolean;
     suppressConditionUnmetMessage?: boolean;
     editable: boolean;
+    presentation?: 'reference';
+    referenceNested?: boolean;
 }
 
 export function CodeTabConditionSetEditor({
@@ -27,7 +29,78 @@ export function CodeTabConditionSetEditor({
                                               shouldReturnString,
                                               suppressConditionUnmetMessage,
                                               editable,
+                                              presentation,
+                                              referenceNested,
                                           }: CodeTabConditionSetEditorProps) {
+    if (presentation === 'reference') {
+        const any = conditionSet.operator === ConditionSetOperator.Any;
+        const known = any || conditionSet.operator === ConditionSetOperator.All;
+        const groupMessageActive = shouldReturnString && any && !suppressConditionUnmetMessage;
+        const conditionMessageActive = shouldReturnString && !any && !suppressConditionUnmetMessage;
+        return <Box sx={{
+            minWidth: 0,
+            overflowWrap: 'anywhere',
+        }}>
+            <Typography sx={{mb: 1}}>
+                {!known ? `Unbekannte Verknüpfung (${conditionSet.operator})` : referenceNested
+                    ? any ? 'Mindestens eine dieser Bedingungen muss erfüllt sein (ODER):' : 'Alle diese Bedingungen müssen erfüllt sein (UND):'
+                    : shouldReturnString
+                        ? any ? 'Die Validierung meldet einen Fehler, wenn keine der folgenden Bedingungen erfüllt ist:' : 'Die Validierung meldet einen Fehler, wenn nicht alle folgenden Bedingungen erfüllt sind:'
+                        : any ? 'Die Regel ist wahr, wenn mindestens eine der folgenden Bedingungen erfüllt ist:' : 'Die Regel ist wahr, wenn alle folgenden Bedingungen erfüllt sind:'}
+            </Typography>
+            <Box component="ul"
+                 sx={{
+                     m: 0,
+                     p: 0,
+                     listStyle: 'none',
+                     '& > li': {
+                         py: 1.5,
+                         borderBottom: 1,
+                         borderColor: 'divider',
+                     },
+                     '& > li:last-child': {
+                         borderBottom: 0,
+                         pb: 0,
+                     },
+                 }}>
+                {conditionSet.conditions?.map((cond, index) => <Box component="li"
+                                                                    key={index}>
+                    <CodeTabCondition allElements={allElements}
+                                      cond={cond}
+                                      index={index}
+                                      onChange={() => undefined}
+                                      onDelete={() => undefined}
+                                      editable={false}
+                                      presentation="reference"/>
+                    <ReferenceMessage message={cond.conditionUnmetMessage}
+                                      active={conditionMessageActive}/>
+                </Box>)}
+                {conditionSet.conditionsSets?.map((cs, index) => <Box component="li"
+                                                                      key={`group-${index}`}>
+                    <Box sx={{
+                        borderLeft: 2,
+                        borderColor: 'divider',
+                        pl: 1.5,
+                        py: 0.5,
+                    }}>
+                        <CodeTabConditionSetEditor element={element}
+                                                   allElements={allElements}
+                                                   conditionSet={cs}
+                                                   onChange={() => undefined}
+                                                   shouldReturnString={shouldReturnString}
+                                                   editable={false}
+                                                   presentation="reference"
+                                                   referenceNested
+                                                   suppressConditionUnmetMessage={suppressConditionUnmetMessage || any}/>
+                    </Box>
+                </Box>)}
+            </Box>
+            {!conditionSet.conditions?.length && !conditionSet.conditionsSets?.length &&
+                <Typography color="text.secondary">Keine Bedingungen hinterlegt.</Typography>}
+            <ReferenceMessage message={conditionSet.conditionSetUnmetMessage}
+                              active={groupMessageActive}/>
+        </Box>;
+    }
     return (
         <Box>
             <Typography>
@@ -89,10 +162,10 @@ export function CodeTabConditionSetEditor({
             </TextField>
             {
                 shouldReturnString &&
-                conditionSet.operator === ConditionSetOperator.Any &&
-                !suppressConditionUnmetMessage &&
+                conditionSet.operator === ConditionSetOperator.Any && !suppressConditionUnmetMessage &&
                 <TextField
                     fullWidth
+                    disabled={!editable}
                     label="Fehlermeldung"
                     value={conditionSet.conditionSetUnmetMessage}
                     onChange={(event) => {
@@ -178,8 +251,7 @@ export function CodeTabConditionSetEditor({
                                 />
                                 {
                                     shouldReturnString &&
-                                    conditionSet.operator === ConditionSetOperator.All &&
-                                    !suppressConditionUnmetMessage &&
+                                    conditionSet.operator === ConditionSetOperator.All && !suppressConditionUnmetMessage &&
                                     <TextField
                                         label="Fehlermeldung, wenn diese Bedingung nicht wahr ist"
                                         value={cond.conditionUnmetMessage}
@@ -292,7 +364,7 @@ export function CodeTabConditionSetEditor({
                                         });
                                     }}
                                     shouldReturnString={shouldReturnString}
-                                    suppressConditionUnmetMessage={conditionSet.operator === ConditionSetOperator.Any}
+                                    suppressConditionUnmetMessage={suppressConditionUnmetMessage || conditionSet.operator === ConditionSetOperator.Any}
                                     editable={editable}
                                 />
                             </Box>
@@ -302,5 +374,33 @@ export function CodeTabConditionSetEditor({
             </Box>
         </Box>
     );
+}
+
+function ReferenceMessage({
+                              message,
+                              active,
+                          }: { message: string | null | undefined; active: boolean }) {
+    if (!active && message == null) return null;
+    const text = <Typography variant="body2"
+                             sx={{
+                                 whiteSpace: 'pre-wrap',
+                                 overflowWrap: 'anywhere',
+                             }}>
+        <Box component="span"
+             sx={{fontWeight: 600}}>Fehlermeldung: </Box>
+        {message == null ? 'Keine eigene Fehlermeldung hinterlegt.' : message === '' ? 'Leere Fehlermeldung ("")' : message}
+    </Typography>;
+    return active ? <Box sx={{mt: 0.5}}>{text}</Box> : <Box component="details"
+                                                            sx={{mt: 0.5}}>
+        <Box component="summary"
+             sx={{
+                 cursor: 'pointer',
+                 typography: 'body2',
+                 color: 'text.secondary',
+             }}>Weitere gespeicherte Angaben</Box>
+        <Box sx={{mt: 0.5}}>{text}</Box>
+        <Typography variant="body2"
+                    color="text.secondary">Diese Meldung wird in dieser Gruppierung nicht ausgegeben.</Typography>
+    </Box>;
 }
 

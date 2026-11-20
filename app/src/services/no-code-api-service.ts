@@ -10,14 +10,18 @@ export class NoCodeApiService {
         this.api = api;
     }
 
-    public async getNoCodeOperators(filters?: {inputType?: NoCodeDataType, outputType?: NoCodeDataType, search?: string}): Promise<NoCodeOperatorDetailsDTO[]> {
+    public async getNoCodeOperators(filters?: {
+        inputType?: NoCodeDataType,
+        outputType?: NoCodeDataType,
+        search?: string
+    }): Promise<NoCodeOperatorDetailsDTO[]> {
         return this.api.get('no-code/operators', {
-            queryParams: filters
+            queryParams: filters,
         });
     }
 
     /** Evaluates an expression with test data and returns the result of every operand, without saving anything. */
-    public async dryRun(request: NoCodeDryRunRequestDTO): Promise<NoCodeDryRunResultDTO> {
-        return this.api.post('no-code/dry-run/', request);
+    public async dryRun(request: NoCodeDryRunRequestDTO, abortController?: AbortController): Promise<NoCodeDryRunResultDTO> {
+        return this.api.post('no-code/dry-run/', request, {abortController});
     }
 }

@@ -11,26 +11,17 @@ interface FunctionSelectorProps {
     allowNoCode: boolean;
     allowExpression: boolean;
     fullWidth: boolean;
+    mode?: 'create' | 'change';
 }
 
 export function FunctionSelector(props: FunctionSelectorProps) {
     const options = [];
 
-    if (props.allowNoCode) {
-        options.push(
-            {
-                title: 'No-Code (Regelbasierte Konfiguration)',
-                description: 'Diese Funktion erlaubt eine einfache, regelbasierte Konfiguration ohne Programmierung. Sie eignet sich besonders für grundlegende Entscheidungen, Berechnungen oder Validierungen, die auf den eingegebenen Formulardaten basieren.',
-                onSelect: props.onSelectNoCode,
-                icon: FunctionTypeIcon['legacy-condition'],
-            },
-        );
-    }
     if (props.allowExpression) {
         options.push(
             {
-                title: '[ALPHA] Erweiterter No-Code (Fortgeschrittene Regelgestaltung)',
-                description: 'Diese neue No-Code-Variante ermöglicht eine leistungsfähigere Regelverarbeitung mit erweiterten Bedingungen und komplexeren Berechnungen. Der Editor bietet mehr Flexibilität, setzt jedoch ein grundlegendes Verständnis von logischen Verknüpfungen und strukturierten Regeln voraus. Daher sind Vorkenntnisse im Umgang mit regelbasierten Systemen empfehlenswert.',
+                title: 'No-Code – Regeln und Berechnungen',
+                description: 'Stellen Sie Bedingungen und Berechnungen aus Werten, Variablen und Operatoren zusammen, ohne Programmcode zu schreiben.',
                 onSelect: props.onSelectNoCodeExpression,
                 icon: FunctionTypeIcon['expression'],
             },
@@ -39,8 +30,8 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
     options.push(
         {
-            title: 'Low-Code (Individuelle Logik und Zugriff auf externe Datenquellen)',
-            description: 'Diese Funktion bietet maximale Flexibilität durch individuelle Skripte und die Möglichkeit, externe Datenquellen wie APIs zu nutzen. Sie eignet sich besonders für spezifische Anforderungen, die mit reinen No-Code-Regeln nicht abgedeckt werden können. Für die Nutzung sind technisches Verständnis und Erfahrung im Umgang mit Skriptsprachen hilfreich.',
+            title: 'Low-Code – JavaScript',
+            description: 'Schreiben Sie ein JavaScript-Skript für individuelle Logik. Dafür benötigen Sie Programmierkenntnisse.',
             onSelect: props.onSelectCloudCode,
             icon: FunctionTypeIcon['code'],
         },
@@ -48,12 +39,14 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
     return (
         <Box>
-            <ElementEditorSectionHeader
+            {props.mode === 'change' ? <Typography sx={{mb: 2}}>
+                Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
+            </Typography> : <ElementEditorSectionHeader
                 title="No-/Low-Code-Funktion"
                 variant="h5"
             >
                 Wählen Sie einen geeigneten Typ für die Funktion aus, die Sie umsetzen möchten.
-            </ElementEditorSectionHeader>
+            </ElementEditorSectionHeader>}
             <Grid
                 container
                 spacing={2}
@@ -63,16 +56,19 @@ export function FunctionSelector(props: FunctionSelectorProps) {
             >
                 {
                     options
-                        .map((option, index) => (
+                        .map((option) => (
                             <Grid
                                 key={option.title}
                                 size={props.fullWidth ? 12 : 6}
                             >
                                 <Box
+                                    component="section"
+                                    aria-label={option.title}
                                     sx={{
                                         p: 2,
-                                        border: '1px solid #e0e0e0',
-                                        borderRadius: '4px',
+                                        border: 1,
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
                                         height: '100%',
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -89,6 +85,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
 
                                         <Typography
                                             variant="subtitle1"
+                                            component={props.mode === 'change' ? 'h3' : 'h6'}
                                             sx={{
                                                 ml: 1,
                                             }}
@@ -114,7 +111,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
                                         onClick={option.onSelect}
                                         variant={'outlined'}
                                     >
-                                        Funktion anlegen
+                                        {props.mode === 'change' ? 'Typ auswählen' : 'Funktion anlegen'}
                                     </Button>
                                 </Box>
                             </Grid>

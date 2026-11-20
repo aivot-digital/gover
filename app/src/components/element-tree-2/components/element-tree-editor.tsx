@@ -1,4 +1,9 @@
-import {Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
+import {useLegacyNoCodeMigration} from '../../../modules/nocode/hooks/use-legacy-no-code-migration';
+import {useApi} from '../../../hooks/use-api';
+import {NoCodeApiService} from '../../../services/no-code-api-service';
+import {elementNoCodeFunctions, validateNoCode} from '../../../modules/nocode/utils/validate-no-code';
+import {noCodeEditorElements} from '../../../modules/nocode/utils/no-code-editor-elements';
+import {Alert, Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
@@ -36,6 +41,10 @@ interface ElementTreeEditorProps<T extends AnyElement> {
 
 export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditorProps<T>): React.ReactNode | null {
     const showConfirm = useConfirm();
+    const api = useApi();
+    const [noCodeValidationIndex, setNoCodeValidationIndex] = useState(0);
+    const [noCodeValidationRequest, setNoCodeValidationRequest] = useState(0);
+    const [noCodeSaveError, setNoCodeSaveError] = useState<string | null>(null);
     const theme = useTheme();
 
     const {
@@ -65,6 +74,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     } = props;
 
     const [updatedElement, setUpdatedElement] = useState<T>();
+    const migration = useLegacyNoCodeMigration(updatedElement ?? value, setUpdatedElement);
     const [isBusy, setIsBusy] = useState<boolean>(false);
     const [dataKeyUnlocked, setDataKeyUnlocked] = useState(false);
     const [automaticDataKey, setAutomaticDataKey] = useState(false);
@@ -84,46 +94,86 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             setDataKeyUnlocked(false);
             setDataKeyValidationRequested(false);
             const generatedKey = automatic && isAnyInputElement(value)
-                ? suggestDestinationKey(value.label, {element: value, parents}, allElements)
+                ? suggestDestinationKey(value.label, {
+                    element: value,
+                    parents,
+                }, allElements)
                 : null;
-            setUpdatedElement(generatedKey == null ? undefined : {...value, destinationKey: generatedKey});
+            setUpdatedElement(generatedKey == null ? undefined : {
+                ...value,
+                destinationKey: generatedKey,
+            });
             setIsBusy(false);
+            setNoCodeSaveError(null);
+            setNoCodeValidationRequest(0);
+            setNoCodeValidationIndex(0);
+            migration.reset();
         }
     }, [open, value.id]);
 
     const changeCurrentElement = (updated: T) => {
-        const previous = updatedElement ?? value;
+        if (isBusy) return;
+        setNoCodeSaveError(null);
+        const previous = migration.current;
         if (automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
             if (updated.destinationKey !== previous.destinationKey) {
                 setAutomaticDataKey(false);
             } else if (updated.label !== previous.label) {
-                updated = {...updated, destinationKey: suggestDestinationKey(updated.label, {element: updated, parents}, allElements)};
+                updated = {
+                    ...updated,
+                    destinationKey: suggestDestinationKey(updated.label, {
+                        element: updated,
+                        parents,
+                    }, allElements),
+                };
             }
         }
-        setUpdatedElement(updated);
+        migration.update(updated);
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
         navigateToEditorTab(newTab);
     };
 
-    const handleSave = (): void => {
-        const current = updatedElement ?? value;
+    const handleSave = async (): Promise<void> => {
+        if (isBusy || !editable) return;
+        const current = migration.current;
         setDataKeyValidationRequested(true);
         if (displayContext !== ElementDisplayContext.DataObjectSchema && isAnyInputElement(current) &&
             validateDataKeyPath(current.destinationKey) != null) {
             navigateToEditorTab(DefaultTabs.properties);
             return;
         }
-        if (updatedElement == null) {
+        if (updatedElement == null && Object.keys(migration.migrations).length === 0) {
             markElementApplied?.(value.id);
             handleClose();
             return;
         }
 
         setIsBusy(true);
+        setNoCodeSaveError(null);
+        const functions = elementNoCodeFunctions(current);
+        if (functions.length > 0) {
+            try {
+                const operators = await new NoCodeApiService(api).getNoCodeOperators();
+                const elements = noCodeEditorElements(parents);
+                const invalid = functions.find(({operand}) => !validateNoCode(operand, operators, elements).isValid);
+                if (invalid != null) {
+                    setNoCodeValidationIndex(functions.filter((fn) => fn.section === invalid.section).indexOf(invalid));
+                    setNoCodeValidationRequest((current) => current + 1);
+                    setNoCodeSaveError('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.');
+                    navigateToEditorTab(invalid.section);
+                    setIsBusy(false);
+                    return;
+                }
+            } catch {
+                setNoCodeSaveError('Die No-Code-Ausdrücke konnten nicht geprüft werden. Versuchen Sie es erneut.');
+                setIsBusy(false);
+                return;
+            }
+        }
         new ElementsApiService()
-            .recalculateReferencedIds(updatedElement)
+            .recalculateReferencedIds(current)
             .then((recalculatedElement) => {
                 setDataKeyUnlocked(false);
                 markElementApplied?.(value.id);
@@ -133,7 +183,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                 // If the recalculation fails, we can still try to save the element with the risk of broken references.
                 setDataKeyUnlocked(false);
                 markElementApplied?.(value.id);
-                onChange(updatedElement);
+                onChange(current);
             })
             .finally(() => {
                 setIsBusy(false);
@@ -141,7 +191,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     };
 
     const handleClose = async (): Promise<void> => {
-        if (updatedElement != null) {
+        if (isBusy) return;
+        if (updatedElement != null || Object.keys(migration.migrations).length > 0) {
             const confirmed = await showConfirm({
                 theme: drawerTheme,
                 confirmButtonColor: 'error',
@@ -150,7 +201,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                 children: (
                     <div>
                         Möchten Sie die Änderungen an diesem{' '}
-                        {updatedElement != null ? 'Element' : 'Formular'} wirklich verwerfen? Diese Aktion kann nicht
+                        {value.type === ElementType.FormLayout ? 'Formular' : 'Element'} wirklich verwerfen? Diese
+                        Aktion kann nicht
                         rückgängig gemacht werden.
                     </div>
                 ),
@@ -255,7 +307,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                         sx={{
                                             color: 'text.secondary',
                                             fontSize: 'inherit',
-                                            px: 0.5
+                                            px: 0.5,
                                         }}>
                                         –
                                     </Typography>
@@ -263,7 +315,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                         component="span"
                                         sx={{
                                             color: 'text.secondary',
-                                            fontSize: 'inherit'
+                                            fontSize: 'inherit',
                                         }}>
                                         {typeName}
                                     </Typography>
@@ -404,7 +456,27 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                     >
                         <ElementTreeEditorContextProvider
                             value={{
-                                currentElement: updatedElement ?? value,
+                                currentElement: migration.current,
+                                noCodeValidationRequest,
+                                noCodeValidationIndex,
+                                legacyMigrations: migration.migrations,
+                                startLegacyMigration: (section) => {
+                                    if (editable && !isBusy) migration.start(section);
+                                },
+                                cancelLegacyMigration: async (section) => {
+                                    if (!editable || isBusy) return;
+                                    const draft = migration.migrations[section];
+                                    if (draft == null) return;
+                                    if (JSON.stringify(draft.draft) !== JSON.stringify(draft.initial) && !await showConfirm({
+                                        theme: drawerTheme,
+                                        confirmButtonColor: 'error',
+                                        title: 'Umstellung abbrechen?',
+                                        confirmButtonText: 'Neue Fassung verwerfen',
+                                        children: 'Die neue Fassung wird verworfen. Die bisherige Regel und andere Änderungen am Element bleiben erhalten.',
+                                    })) return;
+                                    migration.cancel(section);
+                                    setNoCodeSaveError(null);
+                                },
                                 originalElement: value,
                                 dataKeyUnlocked,
                                 onUnlockDataKey: () => {
@@ -419,11 +491,13 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             }}
                         >
                             <ElementTreeEditorContentDispatcher
-                                element={updatedElement ?? value}
+                                element={migration.current}
                                 currentTab={currentEditorTab}
                                 onChange={(changedElement) => {
-                                    setUpdatedElement({
-                                        ...(updatedElement ?? value),
+                                    if (isBusy) return;
+                                    setNoCodeSaveError(null);
+                                    migration.update({
+                                        ...migration.current,
                                         ...changedElement,
                                     });
                                 }}
@@ -432,6 +506,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         </ElementTreeEditorContextProvider>
                     </Box>
 
+                    {noCodeSaveError != null && <Alert severity="error"
+                                                       sx={{
+                                                           mx: 2,
+                                                           mb: 1,
+                                                       }}>{noCodeSaveError}</Alert>}
                     <Box
                         sx={{
                             pt: 2,
@@ -448,7 +527,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 {
                                     label: 'Übernehmen',
                                     onClick: handleSave,
-                                    disabled: isBusy || updatedElement == null,
+                                    disabled: isBusy || (updatedElement == null && Object.keys(migration.migrations).length === 0),
                                     visible: editable,
                                     variant: 'contained',
                                 },

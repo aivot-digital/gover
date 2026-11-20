@@ -1,3 +1,4 @@
+import {useDrag, type DragOptions} from 'react-aria-components';
 import {type MouseEvent, type Ref} from 'react';
 import {Box, ButtonBase, IconButton, Typography} from '@mui/material';
 import Abc from '@aivot/mui-material-symbols-400-n25-outlined/Abc';
@@ -27,16 +28,22 @@ export const NoCodeDataTypeIcons: Record<NoCodeDataType, typeof Abc> = {
 };
 
 const focusRing = {
-    '&.Mui-focusVisible': {outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 2},
+    '&.Mui-focusVisible': {
+        outline: '2px solid',
+        outlineColor: 'primary.main',
+        outlineOffset: 2,
+    },
 };
 
 export interface NoCodePillProps {
+    /** Only the value button starts a drag; dismiss controls and surrounding text stay independent. */
+    drag?: Pick<DragOptions, 'getItems' | 'onDragStart' | 'onDragEnd'>;
     dataType: NoCodeDataType;
     label: string;
     /** Accessible name of the dismiss button, naming what it deletes. */
     dismissLabel: string;
     onClick: (event: MouseEvent<HTMLButtonElement>) => void;
-    onDismiss: () => void;
+    onDismiss?: () => void;
     error?: string | null;
     /** Lets a surrounding element, such as a tree item, reference the error as its description. */
     errorId?: string;
@@ -65,6 +72,17 @@ export function NoCodePill(props: NoCodePillProps) {
         ref,
     } = props;
 
+    const {
+        dragProps,
+        isDragging,
+    } = useDrag({
+        ...props.drag,
+        getItems: props.drag?.getItems ?? (() => []),
+        isDisabled: props.drag == null,
+        // The surrounding tree provides keyboard moving; Enter must keep opening the value editor.
+        hasDragButton: true,
+        getAllowedDropOperations: () => ['move'],
+    });
     const generatedId = useNormalizedReactId();
     const errorId = props.errorId ?? `${generatedId}-error`;
     const warningId = props.warningId ?? `${generatedId}-warning`;
@@ -90,7 +108,7 @@ export function NoCodePill(props: NoCodePillProps) {
                     display: 'inline-flex',
                     alignItems: 'center',
                     maxWidth: '100%',
-                    height: 28,
+                    minHeight: 28,
                     borderRadius: 14,
                     border: 1,
                     borderColor: hasError ? 'error.main' : hasWarning ? 'warning.main' : 'divider',
@@ -98,6 +116,7 @@ export function NoCodePill(props: NoCodePillProps) {
                 }}
             >
                 <ButtonBase
+                    {...dragProps}
                     ref={ref}
                     tabIndex={tabIndex}
                     aria-label={`${label}, ${NoCodeDataTypeLabels[dataType]}`}
@@ -111,6 +130,8 @@ export function NoCodePill(props: NoCodePillProps) {
                         gap: 0.5,
                         borderRadius: 'inherit',
                         typography: 'body2',
+                        cursor: props.drag != null ? 'grab' : undefined,
+                        opacity: isDragging ? 0.5 : 1,
                         ...focusRing,
                     }}
                 >
@@ -122,16 +143,16 @@ export function NoCodePill(props: NoCodePillProps) {
                     <Box
                         component="span"
                         sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            whiteSpace: 'normal',
+                            overflowWrap: 'anywhere',
+                            textAlign: 'left',
                         }}
                     >
                         {label}
                     </Box>
                 </ButtonBase>
 
-                <IconButton
+                {onDismiss != null && <IconButton
                     size="small"
                     tabIndex={tabIndex}
                     aria-label={dismissLabel}
@@ -143,7 +164,7 @@ export function NoCodePill(props: NoCodePillProps) {
                     }}
                 >
                     <Close fontSize="inherit"/>
-                </IconButton>
+                </IconButton>}
             </Box>
 
             {
@@ -162,9 +183,15 @@ export function NoCodePill(props: NoCodePillProps) {
                 <Typography
                     id={warningId}
                     variant="caption"
-                    sx={{display: 'flex', alignItems: 'center', gap: 0.5}}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                    }}
                 >
-                    <Warning fontSize="inherit" aria-hidden sx={{color: 'warning.main'}}/>
+                    <Warning fontSize="inherit"
+                             aria-hidden
+                             sx={{color: 'warning.main'}}/>
                     {warning}
                 </Typography>
             }

@@ -1,9 +1,8 @@
-import React, {useMemo, useReducer, useRef} from 'react';
-import {ConditionSetOperator} from '../../../data/condition-set-operator';
+import {LegacyNoCodeMigrationReference} from '../../../modules/nocode/components/legacy-no-code-migration-reference';
+import {hasLegacyNoCode} from '../../../modules/nocode/hooks/use-legacy-no-code-migration';
+import React, {useMemo, useReducer, useRef, useState} from 'react';
 import {BaseCodeTab} from '../../element-editor-code-tab/base-code-tab';
-import {ConditionOperator} from '../../../data/condition-operator';
 import {CodeEditor} from '../../code-editor/code-editor';
-import {CodeTabNoCodeEditor} from '../../code-tab-no-code-editor';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import LocationSearchingIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationSearching';
@@ -13,7 +12,9 @@ import {createLowCodeContextType} from '../../../utils/create-low-code-context-t
 import {ReferenceCheck} from '../../element-editor-code-tab/components/reference-check/reference-check';
 import {ElementVisibilityFunction} from '../../../models/elements/element-visibility-function';
 import {editor} from 'monaco-editor';
-import {NoCodeEditorWrapper} from '../../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
+import {
+    NoCodeEditorWrapper,
+} from '../../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeContext} from '../element-tree-context';
@@ -36,9 +37,12 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
     } = useElementTreeContext();
 
     const {
+        noCodeValidationRequest,
         currentElement,
         onChangeCurrentElement,
         parents,
+        legacyMigrations,
+        startLegacyMigration,
     } = useElementTreeEditorContext<T>();
 
     const {
@@ -55,9 +59,10 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
     }, [_visibility]);
 
     const hasVisibilityFunction = useMemo(() => {
-        return visibility.type != null;
+        return visibility.type != null || hasLegacyNoCode(visibility);
     }, [visibility]);
 
+    const [toolbarContainer, setToolbarContainer] = useState<HTMLDivElement | null>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
@@ -74,6 +79,7 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
     return (
         <>
             <BaseCodeTab
+                functionToolbarRef={visibility.type === 'NoCode' || visibility.type === 'Javascript' && editable ? setToolbarContainer : undefined}
                 label="Sichtbarkeit"
                 description="Hier können Sie die Sichtbarkeit des Elements dynamisch bestimmen. Dies ist besonders nützlich, wenn die Sichtbarkeit des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."
                 editable={editable}
@@ -87,26 +93,6 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
                 }}
                 onSelectFunction={(type) => {
                     switch (type) {
-                        case 'legacy-condition':
-                            handleChange({
-                                type: 'ConditionSet',
-                                conditionSet: {
-                                    operator: ConditionSetOperator.Any,
-                                    conditions: [
-                                        {
-                                            reference: '',
-                                            operator: ConditionOperator.Equals,
-                                            value: '',
-                                            conditionUnmetMessage: '',
-                                        },
-                                    ],
-                                    conditionsSets: [],
-                                    conditionSetUnmetMessage: '',
-                                },
-                                noCode: undefined,
-                                javascriptCode: undefined,
-                            });
-                            break;
                         case 'code':
                             handleChange({
                                 type: 'Javascript',
@@ -118,6 +104,10 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
                             });
                             break;
                         case 'expression':
+                            if (hasLegacyNoCode(visibility)) {
+                                startLegacyMigration?.('visibility');
+                                break;
+                            }
                             handleChange({
                                 type: 'NoCode',
                                 conditionSet: undefined,
@@ -136,11 +126,13 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
                         type: undefined,
                     });
                 }}
+                functionActionsDisabled={legacyMigrations?.visibility != null}
                 hasFunction={hasVisibilityFunction}
             >
                 {
                     visibility.type === 'Javascript' && (
                         <CodeEditor
+                            toolbarContainer={toolbarContainer}
                             value={visibility.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
@@ -152,7 +144,7 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
                             actions={editable ? [
                                 {
                                     tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
+                                    icon: <LocationSearchingIcon/>,
                                     onClick: toggleShowElementSelectDialog,
                                 },
                             ] : []}
@@ -167,28 +159,14 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
                         />
                     )
                 }
-                {
-                    visibility.type === 'ConditionSet' && (
-                        <CodeTabNoCodeEditor
-                            parents={parents as any}
-                            element={currentElement}
-                            func={{
-                                requirements: '',
-                                conditionSet: visibility.conditionSet ?? undefined,
-                            }}
-                            onChange={(updatedFunc) => {
-                                handleChange({
-                                    conditionSet: updatedFunc.conditionSet,
-                                });
-                            }}
-                            shouldReturnString={false}
-                            editable={editable}
-                        />
-                    )
-                }
+                <LegacyNoCodeMigrationReference section="visibility"/>
                 {
                     visibility.type === 'NoCode' && (
                         <NoCodeEditorWrapper
+                            toolbarContainer={toolbarContainer}
+                            emptyDescription="Legen Sie fest, unter welchen Bedingungen dieses Element sichtbar ist."
+                            validationRequest={noCodeValidationRequest}
+                            required
                             parents={parents}
                             noCode={visibility.noCode}
                             onChange={(noCode) => {
@@ -216,6 +194,7 @@ export function ElementTreeEditorContentTabVisibility<T extends AnyElement>() {
             </BaseCodeTab>
 
             <SelectElementDialog
+                primaryActionLabel="Element-ID verwenden"
                 allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {

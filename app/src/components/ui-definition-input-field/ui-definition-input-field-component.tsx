@@ -26,7 +26,10 @@ import {ElementType} from '../../data/element-type/element-type';
 import {UiDefinitionInputFieldElementItem} from '../../models/elements/form/input/ui-definition-input-field-element';
 import {ElementTree} from '../element-tree-2/element-tree';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
-import {ElementDerivationContext, type ElementDerivationContextHandle} from '../../modules/elements/components/element-derivation-context';
+import {
+    ElementDerivationContext,
+    type ElementDerivationContextHandle,
+} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
 import {AuthoredElementValues, type DerivedRuntimeElementData} from '../../models/element-data';
 import {ElementsApiService, type ElementDerivationOptions} from '../../modules/elements/elements-api-service';
@@ -64,6 +67,8 @@ import {mergeRecalculatedReferencedIds, normalizeUiDefinitionForStorage} from '.
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {findLegacyNoCode} from '../../modules/nocode/utils/find-legacy-no-code';
+import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
 import {normalizeElementDefinition} from '../../utils/normalize-element-definition';
 
 export interface UiDefinitionInputFieldComponentProps extends FormFieldLayoutProps {
@@ -129,6 +134,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         onDerive,
     } = props;
     const value = useMemo(() => normalizeElementDefinition(rawValue), [rawValue]);
+    const hasLegacyRules = useMemo(() => findLegacyNoCode(value).length > 0, [value]);
 
     const generatedId = useNormalizedReactId();
     const controlId = props.id ?? `ui-definition-field-${generatedId}`;
@@ -479,7 +485,23 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
             <FormField
                 id={controlId}
                 label={label}
-                hint={hint}
+                hint={hasLegacyRules ? <>
+                    {hint}
+                    <Box component="span"
+                         sx={{
+                             display: 'flex',
+                             alignItems: 'flex-start',
+                             gap: 0.5,
+                             mt: hint ? 0.5 : 0,
+                         }}>
+                        <Warning sx={{
+                            fontSize: 16,
+                            color: 'warning.main',
+                            flexShrink: 0,
+                        }}/>
+                        <Box component="span">{value?.type === ElementType.FormLayout ? 'Dieses Formular enthält veraltete No-Code-Regeln.' : 'Diese UI-Definition enthält veraltete No-Code-Regeln.'}</Box>
+                    </Box>
+                </> : hint}
                 error={error}
                 required={Boolean(required)}
                 disabled={Boolean(disabled)}
@@ -497,7 +519,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         : props.labelAction;
 
                     return (
-                        <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
+                        <Stack direction="row"
+                               spacing={0.5}
+                               sx={{alignItems: 'center'}}>
                             {suppliedLabelAction}
                             <Button
                                 size="small"
@@ -541,8 +565,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             direction="row"
                             spacing={1}
                             sx={{
-                                alignItems: "center",
-                                width: '100%'
+                                alignItems: 'center',
+                                width: '100%',
                             }}>
                             <MobileLayout
                                 sx={{
@@ -555,17 +579,20 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 variant="body2"
                                 title={summary}
                                 sx={{
-                                    color: "text.secondary",
+                                    color: 'text.secondary',
                                     flexGrow: 1,
                                     lineHeight: 1.4,
-                                    minWidth: 0
+                                    minWidth: 0,
                                 }}>
                                 {summary}
                             </Typography>
 
                             {
                                 expectedRootTypeHint != null &&
-                                <Box sx={{flexShrink: 0, ml: 'auto'}}>
+                                <Box sx={{
+                                    flexShrink: 0,
+                                    ml: 'auto',
+                                }}>
                                     {expectedRootTypeHint}
                                 </Box>
                             }
@@ -617,7 +644,10 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
                         {
                             expectedRootTypeHint != null &&
-                            <Box sx={{flexShrink: 0, ml: 'auto'}}>
+                            <Box sx={{
+                                flexShrink: 0,
+                                ml: 'auto',
+                            }}>
                                 {expectedRootTypeHint}
                             </Box>
                         }
@@ -848,7 +878,7 @@ function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSetting
                     sx: {
                         py: 1,
                     },
-                }
+                },
             }}
         >
             <MenuItem
@@ -873,7 +903,7 @@ function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSetting
                     slotProps={{
                         primary: {
                             noWrap: true,
-                        }
+                        },
                     }}
                 />
                 <Switch
