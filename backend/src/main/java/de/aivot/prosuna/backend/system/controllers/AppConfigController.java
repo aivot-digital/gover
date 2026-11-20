@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.system.controllers;
 
 import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.ai.properties.AiChatAttachmentProperties;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -11,6 +12,7 @@ import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.dtos.ThemeResponseDTO;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ public class AppConfigController {
     private final AssetService assetService;
     private final SystemService systemService;
     private final KnownExtensionsService knownExtensionsService;
+    private final AiChatAttachmentProperties aiChatAttachmentProperties;
 
     @Value("${keycloak.hostname}")
     private String oidcIssuerURI;
@@ -44,17 +47,22 @@ public class AppConfigController {
     @Value("${keycloak.realm}")
     private String oidcRealm;
 
+    @Value("${spring.ai.openai.api-key}")
+    private String openAiApiKey;
+
     @Autowired
     public AppConfigController(ProsunaConfig prosunaConfig,
                                SystemConfigService systemConfigService,
                                AssetService assetService,
                                SystemService systemService,
-                               KnownExtensionsService knownExtensionsService) {
+                               KnownExtensionsService knownExtensionsService,
+                               AiChatAttachmentProperties aiChatAttachmentProperties) {
         this.prosunaConfig = prosunaConfig;
         this.systemConfigService = systemConfigService;
         this.assetService = assetService;
         this.systemService = systemService;
         this.knownExtensionsService = knownExtensionsService;
+        this.aiChatAttachmentProperties = aiChatAttachmentProperties;
     }
 
     private static final String KNOWN_EXTENSIONS_CONFIG_KEY = "knownFileExtensions";
@@ -72,6 +80,8 @@ public class AppConfigController {
     private static final String DEPARTMENT_LEVEL_LABELS_CONFIG_KEY = "departmentLevelLabels";
     private static final String MODULE_FLAGS_KEY = "moduleFlags";
     private static final String PROCESS_NODE_LIMITS_KEY = "processNodeLimits";
+    private static final String AI_ENABLED = "aiEnabled";
+    private static final String AI_CHAT_ATTACHMENTS = "aiChatAttachments";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -120,6 +130,16 @@ public class AppConfigController {
         appConfig.put(MODULE_FLAGS_KEY, prosunaConfig.getModuleFlags());
         appConfig.put(PROCESS_NODE_LIMITS_KEY, prosunaConfig.getProcessNodeLimits());
 
+        // AI is enabled if the OpenAI API key is set.
+        // This is a simple check to determine if the AI features should be available in the frontend.
+        boolean aiEnabled = StringUtils.isNotNullOrEmpty(openAiApiKey);
+        appConfig.put(AI_ENABLED, aiEnabled);
+        appConfig.put(AI_CHAT_ATTACHMENTS, new AiChatAttachmentConfig(
+                aiChatAttachmentProperties.getMaxFiles(),
+                aiChatAttachmentProperties.getMaxFileSizeBytes(),
+                aiChatAttachmentProperties.getExtensions()
+        ));
+
         // TODO: This data should not be required in the fronted because the backend handles the authentication flow
         var oidc = new HashMap<String, String>();
         oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);
@@ -165,5 +185,8 @@ public class AppConfigController {
     private ThemeEntity getSystemTheme() throws ResponseException {
         return systemService
                 .retrieveDefaultTheme();
+    }
+
+    private record AiChatAttachmentConfig(int maxFiles, long maxFileSizeBytes, java.util.List<String> extensions) {
     }
 }

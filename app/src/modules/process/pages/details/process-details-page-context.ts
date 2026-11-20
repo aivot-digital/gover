@@ -1,4 +1,5 @@
 import React, {createContext} from 'react';
+import {type ProcessChatEditor} from './hooks/use-process-ai-chat';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
 
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
@@ -6,6 +7,7 @@ import {ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
 import {RequestOptions} from '../../../../services/base-api-service';
 
 export interface ProcessDetailsPageContextType {
+    registerChatEditor: (editor: ProcessChatEditor) => () => void;
     editable: boolean;
     structureEditable: boolean;
     onSave: (node: ProcessNodeEntity, options?: RequestOptions) => Promise<ProcessNodeEntity>;

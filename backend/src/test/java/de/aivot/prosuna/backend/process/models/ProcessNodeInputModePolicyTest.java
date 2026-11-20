@@ -5,8 +5,8 @@ import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
-import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
-import de.aivot.prosuna.backend.plugins.ai.v1.nodes.AiProcessDataTransformationActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiCompletionActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.AiProcessDataTransformationActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.ApprovalActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.CommunicationMessageActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.CounterActionNodeV1;
@@ -49,8 +49,8 @@ class ProcessNodeInputModePolicyTest {
 
     @Test
     void runtimeValueFields_ShouldExposeAllInputModesAndVariableSources() throws Exception {
-        assertDynamicFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "model", "prompt");
-        assertDynamicFields(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.class, "model", "prompt");
+        assertDynamicFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "prompt");
+        assertDynamicFields(AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig.class, "prompt");
         assertDynamicFields(ApprovalActionNodeV1.ApprovalConfiguration.class, "criteria", "customContent");
         assertDynamicFields(EMailActionNodeV1.EMailActionNodeConfig.class, "to", "bcc");
         assertDynamicFields(EMailActionNodeV1.EMailActionNodeConfig.class, SHARED_MESSAGE_FIELDS);
@@ -74,8 +74,6 @@ class ProcessNodeInputModePolicyTest {
     @Test
     void structuralAndSecurityFields_ShouldRemainLiteralOnly() throws Exception {
         // These values influence editor structure, metadata, credentials, assignments or durable data destinations.
-        // In particular, the AI endpoint and secret are needed during authoring to load the literal model options.
-        assertLiteralOnlyFields(AiCompletionActionNodeV1.AiCompletionActionNodeConfig.class, "endpointUrl", "apiKeySecret");
         assertLiteralOnlyFields(ApprovalActionNodeV1.ApprovalConfiguration.class, "contentMode", "dataContent", "assignmentContext");
         assertLiteralOnlyFields(
                 EMailActionNodeV1.EMailActionNodeConfig.class,

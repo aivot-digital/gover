@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.seeding.seeds;
 
+import de.aivot.prosuna.backend.ai.permissions.AiChatPermissionProvider;
 import de.aivot.prosuna.backend.asset.permissions.AssetPermissionProvider;
 import de.aivot.prosuna.backend.audit.permissions.AuditPermissionProvider;
 import de.aivot.prosuna.backend.codeLists.permissions.CodeListPermissionProvider;
@@ -201,7 +202,9 @@ public class SystemRolesSeed implements SeedProvider {
                         CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_UPDATE,
                         CommunicationProviderPermissionProvider.COMMUNICATION_PROVIDER_DELETE,
 
-                        AuditPermissionProvider.AUDIT_LOG_READ
+                        AuditPermissionProvider.AUDIT_LOG_READ,
+
+                        AiChatPermissionProvider.AI_CHAT_USE
                 )));
 
         systemRoleService.create(new SystemRoleEntity()
