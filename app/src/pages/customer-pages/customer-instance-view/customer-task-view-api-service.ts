@@ -139,6 +139,13 @@ export class CustomerTaskViewApiService extends BaseApiService {
         });
     }
 
+    public async downloadAttachment(instanceAccessKey: string, taskAccessKey: string, attachmentKey: string): Promise<Blob> {
+        return await this.getBlob(
+            `/api/public/processes/${encodeURIComponent(instanceAccessKey)}/tasks/${encodeURIComponent(taskAccessKey)}/attachments/${encodeURIComponent(attachmentKey)}/file/?download=true`,
+            {skipAuthCheck: true, doNotHandleStatusCodes: true},
+        );
+    }
+
     public async deriveTaskView(instanceAccessKey: string, taskAccessKey: string, values: AuthoredElementValues, skipErrorsForElements: string[] = []): Promise<DerivedRuntimeElementData> {
         return await this.post(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/derive/`, values, {
             query: {

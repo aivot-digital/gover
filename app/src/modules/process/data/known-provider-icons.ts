@@ -1,4 +1,5 @@
 import AltRoute from '@aivot/mui-material-symbols-400-n25-outlined/AltRoute';
+import CallSplit from '@aivot/mui-material-symbols-400-n25-outlined/CallSplit';
 import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import FactCheck from '@aivot/mui-material-symbols-400-n25-outlined/FactCheck';
 import Webhook from '@aivot/mui-material-symbols-400-n25-outlined/Webhook';
@@ -28,6 +29,7 @@ export const KnownProviderIcons: Record<string, SvgIconComponent> = {
     'ai_completion': SmartToy,
     'ai_process_data_transformation': Neurology,
     'if': AltRoute,
+    'switch': CallSplit,
     'webhook': Webhook,
     'fit_connect_trigger': MoveToInbox,
     'form': FormsAddOn,

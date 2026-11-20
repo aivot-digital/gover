@@ -490,6 +490,76 @@ public class FileUploadMultipartInputService {
                 .toList();
     }
 
+    /**
+     * Returns the keys of the stored attachments that the upload fields of a task view may reference: those that the
+     * trusted data of the view references and the task's own uploads. Uploads flagged as removed count as well, because
+     * the upload fields may reference them again. References in values that a customer submitted or saved grant
+     * nothing by themselves, so they have to be checked against these keys.
+     *
+     * @param trustedData the data of the view from stable sources, without values the customer saved
+     */
+    @Nonnull
+    public Set<UUID> findAuthorizedAttachmentKeys(@Nonnull BaseElement layout,
+                                                  @Nonnull AuthoredElementValues trustedData,
+                                                  @Nonnull Long processInstanceId,
+                                                  @Nonnull Long processInstanceTaskId) throws ResponseException {
+        var attachmentKeys = findReferencedAttachmentKeys(layout, trustedData);
+        processInstanceAttachmentService
+                .findAllUploadsOfTaskIncludingRemoved(processInstanceTaskId, findUploadAttachmentSetIds(layout, processInstanceId, processInstanceTaskId))
+                .forEach(attachment -> attachmentKeys.add(attachment.getKey()));
+        return attachmentKeys;
+    }
+
+    /**
+     * Returns the keys of the stored attachments that the values of the upload fields of the layout reference,
+     * including upload fields in the rows of replicating containers.
+     */
+    @Nonnull
+    public Set<UUID> findReferencedAttachmentKeys(@Nonnull BaseElement layout,
+                                                  @Nonnull AuthoredElementValues values) {
+        var attachmentKeys = new HashSet<UUID>();
+        collectReferencedAttachmentKeys(layout, values, attachmentKeys);
+        return attachmentKeys;
+    }
+
+    private void collectReferencedAttachmentKeys(@Nonnull BaseElement element,
+                                                 @Nonnull AuthoredElementValues values,
+                                                 @Nonnull Set<UUID> attachmentKeys) {
+        if (element instanceof FileUploadInputElement fileUploadElement) {
+            var items = FileUploadInputElement._formatValue(values.getLiteral(fileUploadElement.getId()));
+            if (items != null) {
+                for (var item : items) {
+                    var attachmentKey = parseAttachmentKey(item.getUri());
+                    if (attachmentKey != null) {
+                        attachmentKeys.add(attachmentKey);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
+            if (values.getLiteral(replicatingContainer.getId()) instanceof List<?> rawRows) {
+                for (var rawRow : rawRows) {
+                    var rowValue = resolveReplicatingContainerRowValue(rawRow);
+                    if (rowValue == null || rowValue.getValues() == null) {
+                        continue;
+                    }
+                    for (var child : replicatingContainer.getChildren()) {
+                        collectReferencedAttachmentKeys(child, rowValue.getValues(), attachmentKeys);
+                    }
+                }
+            }
+            return;
+        }
+
+        if (element instanceof LayoutElement<?> layoutElement) {
+            for (var child : layoutElement.getChildren()) {
+                collectReferencedAttachmentKeys(child, values, attachmentKeys);
+            }
+        }
+    }
+
     @Nonnull
     private List<Integer> findUploadAttachmentSetIds(@Nonnull BaseElement layout,
                                                      @Nonnull Long processInstanceId,
