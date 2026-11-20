@@ -4,7 +4,21 @@
 ## [4.6.3](https://github.com/aivot-digital/gover/compare/v4.6.2...v4.6.3) (2026-XX-XX)
 
 ### Bug Fixes
+* **Mail:** Fix non-ASCII sender names in the `From` header of outgoing mails.
 * **Reverse Proxy:** Pin Traefik backend network on multi-homed routed services.
+
+### Improvements
+* **Services:** Updated patch versions of all services in the docker compose setup.
+* **Image:** Updated base image to `eclipse-temurin:21.0.13_9-jre-noble`.
+* **Image:** Disabled the JVM Base64 intrinsics (`-XX:-UseBASE64Intrinsics`) for Gover and Keycloak.
+* **Backend:** Updated the following backend dependencies:
+    * spring-boot to `3.5.16`
+    * postgresql to `42.7.14`
+    * json to `20260814`
+    * java-jwt to `4.6.2`
+    * thymeleaf to `3.1.7.RELEASE`
+    * flyway to `11.20.3`
+    * commons-codec to `1.23.0`
 
 
 ## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
