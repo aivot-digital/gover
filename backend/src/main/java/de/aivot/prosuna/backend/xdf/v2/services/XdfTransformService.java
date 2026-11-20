@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.elements.enums.SelectInputPresentation;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.ValidationNoCodeWrapper;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
@@ -13,12 +14,8 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingConta
 import de.aivot.prosuna.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.prosuna.backend.enums.AlertType;
-import de.aivot.prosuna.backend.enums.ConditionOperator;
-import de.aivot.prosuna.backend.enums.ConditionSetOperator;
 import de.aivot.prosuna.backend.enums.DateType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.models.functions.conditions.Condition;
-import de.aivot.prosuna.backend.models.functions.conditions.ConditionSet;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
@@ -34,7 +31,6 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -511,40 +507,32 @@ public class XdfTransformService {
             return null;
         }
 
-        var conditions = new LinkedList<Condition>();
+        var validations = new LinkedList<ValidationNoCodeWrapper>();
 
         if (praezisierung.getMinValue() != null) {
-            var cond = new Condition();
-
-            cond.setReference(fieldId);
-            cond.setOperator(ConditionOperator.GreaterThanOrEqual);
-            cond.setValue(String.valueOf(praezisierung.getMinValue()));
-            cond.setConditionUnmetMessage(String.format("Bitte geben Sie einen Wert größer oder gleich %d ein.", praezisierung.getMinValue()));
-
-            conditions.add(cond);
+            validations.add(new ValidationNoCodeWrapper()
+                    .setNoCode(NoCodeExpression.of(
+                            "greater-than-or-equal",
+                            NoCodeReference.of(fieldId),
+                            NoCodeStaticValue.of(praezisierung.getMinValue())
+                    ))
+                    .setMessage(String.format("Bitte geben Sie einen Wert größer oder gleich %d ein.", praezisierung.getMinValue())));
         }
 
 
         if (praezisierung.getMaxValue() != null) {
-            var cond = new Condition();
-
-            cond.setReference(fieldId);
-            cond.setOperator(ConditionOperator.LessThanOrEqual);
-            cond.setValue(String.valueOf(praezisierung.getMaxValue()));
-            cond.setConditionUnmetMessage(String.format("Bitte geben Sie einen Wert kleiner oder gleich %d ein.", praezisierung.getMaxValue()));
-
-            conditions.add(cond);
+            validations.add(new ValidationNoCodeWrapper()
+                    .setNoCode(NoCodeExpression.of(
+                            "less-than-or-equal",
+                            NoCodeReference.of(fieldId),
+                            NoCodeStaticValue.of(praezisierung.getMaxValue())
+                    ))
+                    .setMessage(String.format("Bitte geben Sie einen Wert kleiner oder gleich %d ein.", praezisierung.getMaxValue())));
         }
 
 
-        var conditionSet = new ConditionSet();
-        conditionSet.setOperator(ConditionSetOperator.All);
-        conditionSet.setConditions(conditions);
-        conditionSet.setConditionsSets(Collections.emptyList());
-
-        var fs = new ElementValidationFunctions();
-
-        fs.setConditionSet(conditionSet);
+        var fs = new ElementValidationFunctions().setNoCodeList(validations);
+        fs.recalculateReferencedIds();
 
         return fs;
     }
