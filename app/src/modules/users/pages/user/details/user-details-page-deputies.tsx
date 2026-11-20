@@ -1,4 +1,6 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
+import {useSearchParams} from 'react-router-dom';
+import {RadioFieldComponent} from '../../../../../components/radio-field/radio-field-component';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import Box from '@mui/material/Box';
@@ -45,9 +47,29 @@ import {
 } from '../../../../../utils/temporal-utils';
 
 const deputyColumns = createDeputyColumns('deputyUserFullName', 'Stellvertreter:in');
+const deputyViews = [
+    {value: 'deputies', label: 'Wird vertreten von'},
+    {value: 'represented', label: 'Vertritt folgende Personen'},
+];
 
 const deletedUserDeputyTooltip = 'Für beim Identitätsanbieter gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
+type DeputyNames = Pick<VUserDeputyWithDetailsEntity, 'originalUserFullName' | 'deputyUserFullName'>;
+
+function DeputyParticipants({originalUserFullName, deputyUserFullName}: DeputyNames) {
+    return (
+        <Box component="dl" sx={{display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 1, my: 0, overflowWrap: 'anywhere'}}>
+            <Typography component="dt" variant="body2" sx={{fontWeight: 600}}>Vertretene Person:</Typography>
+            <Typography component="dd" variant="body2" sx={{m: 0}}>
+                {stringOrDefault(originalUserFullName, 'Kein Name hinterlegt')}
+            </Typography>
+            <Typography component="dt" variant="body2" sx={{fontWeight: 600}}>Stellvertreter:in:</Typography>
+            <Typography component="dd" variant="body2" sx={{m: 0}}>
+                {stringOrDefault(deputyUserFullName, 'Kein Name hinterlegt')}
+            </Typography>
+        </Box>
+    );
+}
 
 function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
     const fromLabel = formatLocalDate(item.fromDate);
@@ -61,6 +83,8 @@ function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
 
 export function UserDetailsPageDeputies() {
     const dispatch = useAppDispatch();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const view = searchParams.get('view') === 'represented' ? 'represented' : 'deputies';
     const canCreateDeputy = useHasSystemPermission(Permission.DEPUTY_CREATE);
     const canUpdateDeputy = useHasSystemPermission(Permission.DEPUTY_UPDATE);
     const canDeleteDeputy = useHasSystemPermission(Permission.DEPUTY_DELETE);
@@ -73,7 +97,7 @@ export function UserDetailsPageDeputies() {
 
     const [showSelectUserDialog, setShowSelectUserDialog] = useState(false);
     const [deputyDraft, setDeputyDraft] = useState<UserDeputyEntity | null>(null);
-    const [deputyDraftDetails, setDeputyDraftDetails] = useState<VUserDeputyWithDetailsEntity | null>(null);
+    const [deputyDraftDetails, setDeputyDraftDetails] = useState<DeputyNames | null>(null);
     const isDeputyDialogOpen = deputyDraft != null;
     // Keep the last selected deputy visible until the close transition has finished.
     const renderDeputyDraft = useRetainedDialogValue(isDeputyDialogOpen, deputyDraft);
@@ -96,11 +120,14 @@ export function UserDetailsPageDeputies() {
 
     const refreshPermissionsAfterDeputyChange = useCallback(() => {
         // Deputy changes may alter effective permissions for the active user or another open tab.
-        refreshPermissionSet({broadcast: true})
-            .catch((err) => dispatch(showApiErrorSnackbar(
-                err,
-                'Die Berechtigungen konnten nach der Änderung der Stellvertretung nicht aktualisiert werden.',
-            )));
+        refreshPermissionSet({broadcast: true}).catch((error) => {
+            const message = 'Die Berechtigungen konnten nach der Änderung der Stellvertretung nicht aktualisiert werden.';
+            if (isApiError(error) && error.displayableToUser) {
+                dispatch(showErrorSnackbar(`${message} ${error.message}`));
+            } else {
+                dispatch(showApiErrorSnackbar(error, message));
+            }
+        });
     }, [dispatch, refreshPermissionSet]);
 
     const isEditingDeputy = renderDeputyDraft != null && renderDeputyDraft.id !== 0;
@@ -118,7 +145,7 @@ export function UserDetailsPageDeputies() {
         }
 
         if (untilDate.toMillis() < fromDate.toMillis()) {
-            return 'Das Ende der Vertretung darf nicht vor dem Start der Vertretung liegen.';
+            return 'Das Ende der Stellvertretung darf nicht vor ihrem Beginn liegen.';
         }
 
         return undefined;
@@ -153,7 +180,7 @@ export function UserDetailsPageDeputies() {
                         setShowSelectUserDialog(true);
                     }}
                 >
-                    Stellvertreter:in hinzufügen
+                    Stellvertretung hinzufügen
                 </Button>
             </DisabledTooltip>,
         ];
@@ -173,7 +200,7 @@ export function UserDetailsPageDeputies() {
         }
 
         return new VUserDeputyWithDetailsApiService()
-            .listAllOrdered(options.sort, options.order, {
+            .list(options.page, options.size, options.sort, options.order, {
                 originalUserId: userId,
                 deputyUserFullName: options.search,
             });
@@ -185,6 +212,7 @@ export function UserDetailsPageDeputies() {
         );
     }
 
+    const representedPersonName = stringOrDefault(user.fullName, 'diese Person');
     const closeDeputyDialog = () => {
         setDeputyDraft(null);
         setDeputyDraftDetails(null);
@@ -206,8 +234,8 @@ export function UserDetailsPageDeputies() {
 
         dispatch(setLoadingMessage({
             message: isEditingDeputy
-                ? `Aktualisiere Stellvertretung für ${deputyDraft.deputyUserId}`
-                : `Füge Stellvertretung für ${stringOrDefault(user.fullName, 'diese Person')} hinzu`,
+                ? `Aktualisiere Stellvertretung für ${representedPersonName}`
+                : `Füge Stellvertretung für ${representedPersonName} hinzu`,
             blocking: true,
             estimatedTime: 3000,
         }));
@@ -223,16 +251,9 @@ export function UserDetailsPageDeputies() {
                 refreshPermissionsAfterDeputyChange();
                 closeDeputyDialog();
             })
-            .catch((error) => {
-                if (isApiError(error) && error.displayableToUser) {
-                    dispatch(showErrorSnackbar(error.message));
-                } else {
-                    console.error(error);
-                    dispatch(showErrorSnackbar(isEditingDeputy
-                        ? 'Fehler beim Aktualisieren der Stellvertretung'
-                        : 'Fehler beim Hinzufügen der Stellvertretung'));
-                }
-            })
+            .catch((error) => dispatch(showApiErrorSnackbar(error, isEditingDeputy
+                ? 'Die Änderungen an der Stellvertretung konnten nicht gespeichert werden.'
+                : 'Die Stellvertretung konnte nicht hinzugefügt werden.')))
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
             });
@@ -245,12 +266,11 @@ export function UserDetailsPageDeputies() {
 
         confirm({
             isDestructive: true,
-            title: 'Stellvertreter:in löschen',
+            title: 'Stellvertretung löschen?',
+            confirmButtonText: 'Stellvertretung löschen',
             children: (
                 <>
-                    <Typography>
-                        Sind Sie sicher, dass Sie die Stellvertretung von <strong>{item.originalUserFullName}</strong> durch <strong>{item.deputyUserFullName}</strong> löschen möchten?
-                    </Typography>
+                    <DeputyParticipants {...item}/>
                     <Typography sx={{mt: 2}}>
                         Zeitraum: <strong>{getDeputyPeriodLabel(item)}</strong>
                     </Typography>
@@ -263,7 +283,9 @@ export function UserDetailsPageDeputies() {
                 }
 
                 dispatch(setLoadingMessage({
-                    message: `Lösche Stellvertretung von ${item.originalUserFullName} durch ${item.deputyUserFullName}`,
+                    message: item.deputyUserFullName?.trim()
+                        ? `Lösche Stellvertretung für ${representedPersonName} durch ${item.deputyUserFullName}`
+                        : `Lösche Stellvertretung für ${representedPersonName}`,
                     blocking: true,
                     estimatedTime: 3000,
                 }));
@@ -275,14 +297,7 @@ export function UserDetailsPageDeputies() {
                         listControlRef.current?.refresh();
                         refreshPermissionsAfterDeputyChange();
                     })
-                    .catch((error) => {
-                        if (isApiError(error) && error.displayableToUser) {
-                            dispatch(showErrorSnackbar(error.message));
-                        } else {
-                            console.error(error);
-                            dispatch(showErrorSnackbar('Fehler beim Löschen der Stellvertretung'));
-                        }
-                    })
+                    .catch((error) => dispatch(showApiErrorSnackbar(error, 'Die Stellvertretung konnte nicht gelöscht werden.')))
                     .finally(() => {
                         dispatch(setLoadingMessage(undefined));
                     });
@@ -292,17 +307,32 @@ export function UserDetailsPageDeputies() {
     return (
         <>
             <Box sx={{pt: 1.5}}>
-                <Typography
-                    variant="h5"
-                    sx={{mb: 1}}
-                >
-                    Stellvertreter:innen
-                </Typography>
-
-                <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Stellvertreter:innen, die für diese Mitarbeiter:in eingerichtet sind.
-                </Typography>
-
+                <RadioFieldComponent
+                    label="Ansicht"
+                    options={deputyViews}
+                    value={view}
+                    displayInline
+                    toggleButtons
+                    showOptionalIndicator={false}
+                    onChange={(nextView) => {
+                        if (nextView == null) {
+                            return;
+                        }
+                        const next = new URLSearchParams(searchParams);
+                        if (nextView === 'represented') {
+                            next.set('view', nextView);
+                        } else {
+                            next.delete('view');
+                        }
+                        // Each direction searches and sorts by a different person's name.
+                        for (const key of ['search', 'page', 'sort', 'order']) {
+                            next.delete(key);
+                        }
+                        setSearchParams(next);
+                    }}
+                />
+            </Box>
+            {view === 'deputies' ? (
                 <GenericList<VUserDeputyWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
@@ -313,13 +343,13 @@ export function UserDetailsPageDeputies() {
                     controlRef={listControlRef}
                     fetch={fetchDeputies}
                     getRowIdentifier={(item) => item.id.toString()}
-                    searchLabel="Stellvertreter:in suchen"
-                    searchPlaceholder="Name der Stellvertreter:in eingeben…"
+                    searchLabel="Stellvertreter:innen suchen"
+                    searchPlaceholder="Name eingeben…"
                     defaultSortField="untilDate"
                     rowMenuItems={[]}
                     noDataPlaceholder={
                         <EmptyDataListPlaceholder
-                            title="Keine Stellvertretungen eingerichtet"
+                            title="Keine Stellvertreter:innen eingetragen"
                             description="Stellvertretungen legen fest, wer Aufgaben dieser Person für einen Zeitraum übernehmen kann."
                             addText="Stellvertretung hinzufügen"
                             onAdd={() => setShowSelectUserDialog(true)}
@@ -327,8 +357,9 @@ export function UserDetailsPageDeputies() {
                             addDisabledTooltip={addDeputyDisabledTooltip}
                         />
                     }
-                    loadingPlaceholder="Lade Stellvertreter:innen…"
-                    noSearchResultsPlaceholder="Keine Stellvertreter:innen gefunden"
+                    loadingPlaceholder="Stellvertreter:innen werden geladen…"
+                    noSearchResultsPlaceholder="Keine Stellvertreter:innen für diesen Suchbegriff gefunden"
+                    rowActionsCount={2}
                     rowActions={(item) => {
                         const updateDisabled = item.originalUserDeletedInIdp || item.deputyUserDeletedInIdp || !canUpdateDeputy;
                         const updateDisabledTooltip = item.originalUserDeletedInIdp || item.deputyUserDeletedInIdp
@@ -356,7 +387,7 @@ export function UserDetailsPageDeputies() {
                             },
                             {
                                 color: 'error',
-                                tooltip: 'Stellvertreter:in löschen',
+                                tooltip: 'Stellvertretung löschen',
                                 disabled: !canDeleteDeputy,
                                 disabledTooltip: formatMissingPermissionTooltip(Permission.DEPUTY_DELETE),
                                 icon: <Delete/>,
@@ -368,29 +399,16 @@ export function UserDetailsPageDeputies() {
                     }}
                     preSearchElements={preSearchElements}
                 />
-            </Box>
-
-            <Box sx={{pt: 5}}>
-                <Typography
-                    variant="h5"
-                    sx={{mb: 1}}
-                >
-                    Vertretene Mitarbeiter:innen
-                </Typography>
-
-                <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Mitarbeiter:innen, für die diese Mitarbeiter:in als Stellvertreter:in eingetragen
-                    ist. Sie können diese Vertretungen in den Details der jeweiligen Mitarbeiter:in bearbeiten.
-                </Typography>
-
+            ) : (
                 <RepresentedUsersList
                     deputyUserId={user.id}
-                    emptyDescription="Diese Mitarbeiter:in ist für niemanden als Stellvertreter:in eingetragen."
+                    emptyDescription="Stellvertretungen werden im Profil der vertretenen Person eingerichtet."
                 />
-            </Box>
+            )}
 
             <SelectUserDialog
                 open={showSelectUserDialog}
+                title={`Stellvertreter:in für ${representedPersonName} auswählen`}
                 onClose={() => {
                     setShowSelectUserDialog(false);
                 }}
@@ -402,7 +420,7 @@ export function UserDetailsPageDeputies() {
                         fromDate: getCurrentApplicationDate(),
                         untilDate: null,
                     });
-                    setDeputyDraftDetails(null);
+                    setDeputyDraftDetails({originalUserFullName: user.fullName, deputyUserFullName: deputy.fullName});
                     setShowSelectUserDialog(false);
                 }}
                 idsToExclude={[
@@ -419,7 +437,7 @@ export function UserDetailsPageDeputies() {
                 <DialogTitleWithClose
                     onClose={closeDeputyDialog}
                 >
-                    {isEditingDeputy ? 'Stellvertretung bearbeiten' : 'Stellvertreter:in hinzufügen'}
+                    {isEditingDeputy ? 'Stellvertretung bearbeiten' : 'Stellvertretung hinzufügen'}
                 </DialogTitleWithClose>
 
                 <DialogContent>
@@ -429,25 +447,20 @@ export function UserDetailsPageDeputies() {
                         title="Alle Berechtigungen werden übernommen"
                         sx={{mt: 0, mb: 2}}
                     >
-                        Während der Vertretung erhält die Stellvertreter:in alle Berechtigungen der vertretenen
-                        Mitarbeiter:in, auch die aus deren Systemrolle und Domänenrollen. Wählen Sie deshalb eine
-                        Person mit vergleichbaren Berechtigungen und passender Funktion.
+                        Während der Stellvertretung erhält die stellvertretende Person alle Berechtigungen der vertretenen
+                        Person, auch die aus deren Systemrolle und Domänenrollen.
+                        {!isEditingDeputy && ' Wählen Sie deshalb eine Person mit vergleichbaren Berechtigungen und passender Funktion.'}
                     </AlertComponent>
 
                     {
-                        isEditingDeputy && renderDeputyDraftDetails != null &&
+                        renderDeputyDraftDetails != null &&
                         <Box sx={{mb: 2}}>
-                            <Typography variant="body2">
-                                <Box component="span" sx={{fontWeight: 600}}>Mitarbeiter:in:</Box> {renderDeputyDraftDetails.originalUserFullName}
-                            </Typography>
-                            <Typography variant="body2">
-                                <Box component="span" sx={{fontWeight: 600}}>Stellvertreter:in:</Box> {renderDeputyDraftDetails.deputyUserFullName}
-                            </Typography>
+                            <DeputyParticipants {...renderDeputyDraftDetails}/>
                         </Box>
                     }
 
                     <DateFieldComponent
-                        label="Start der Vertretung"
+                        label="Beginn der Stellvertretung"
                         mode={DateFieldComponentModelMode.Day}
                         value={renderDeputyDraft?.fromDate}
                         onChange={(val) => {
@@ -465,7 +478,7 @@ export function UserDetailsPageDeputies() {
                     />
 
                     <DateFieldComponent
-                        label="Ende der Vertretung"
+                        label="Ende der Stellvertretung"
                         mode={DateFieldComponentModelMode.Day}
                         value={renderDeputyDraft?.untilDate ?? undefined}
                         minDate={renderDeputyDraft?.fromDate}

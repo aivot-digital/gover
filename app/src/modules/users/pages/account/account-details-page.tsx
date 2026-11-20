@@ -41,7 +41,7 @@ export function AccountDetailsPage() {
                     },
                     {
                         path: '/account/deputies',
-                        label: 'Vertretungen',
+                        label: 'Stellvertretung',
                     },
                     {
                         path: '/account/notifications',

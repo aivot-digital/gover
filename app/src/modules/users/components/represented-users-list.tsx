@@ -7,11 +7,11 @@ import {type VUserDeputyWithDetailsEntity} from '../entities/v-user-deputy-with-
 import {VUserDeputyWithDetailsApiService} from '../services/v-user-deputy-with-details-api-service';
 import {createDeputyColumns} from './deputy-columns';
 
-const columns = createDeputyColumns('originalUserFullName', 'Vertretene Mitarbeiter:in');
+const columns = createDeputyColumns('originalUserFullName', 'Vertretene Person');
 
 interface RepresentedUsersListProps {
     deputyUserId: string;
-    emptyDescription: string;
+    emptyDescription?: string;
 }
 
 /**
@@ -21,7 +21,7 @@ interface RepresentedUsersListProps {
 export function RepresentedUsersList({deputyUserId, emptyDescription}: RepresentedUsersListProps) {
     const fetchRelations = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>): Promise<Page<VUserDeputyWithDetailsEntity>> => {
         return new VUserDeputyWithDetailsApiService()
-            .listAllOrdered(options.sort, options.order, {
+            .list(options.page, options.size, options.sort, options.order, {
                 deputyUserId,
                 originalUserFullName: options.search,
             });
@@ -37,18 +37,18 @@ export function RepresentedUsersList({deputyUserId, emptyDescription}: Represent
             columnDefinitions={columns}
             fetch={fetchRelations}
             getRowIdentifier={(item) => item.id.toString()}
-            searchLabel="Vertretene Mitarbeiter:in suchen"
-            searchPlaceholder="Name der vertretenen Mitarbeiter:in eingeben…"
+            searchLabel="Vertretene Personen suchen"
+            searchPlaceholder="Name eingeben…"
             defaultSortField="untilDate"
             rowMenuItems={[]}
             noDataPlaceholder={
                 <EmptyDataListPlaceholder
-                    title="Keine Vertretungen eingetragen"
+                    title="Keine vertretenen Personen eingetragen"
                     description={emptyDescription}
                 />
             }
-            loadingPlaceholder="Lade Vertretungen…"
-            noSearchResultsPlaceholder="Keine vertretenen Mitarbeiter:innen gefunden"
+            loadingPlaceholder="Vertretene Personen werden geladen…"
+            noSearchResultsPlaceholder="Keine vertretenen Personen für diesen Suchbegriff gefunden"
         />
     );
 }

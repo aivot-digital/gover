@@ -13,19 +13,16 @@ export function AccountDetailsPageDeputies() {
                 variant="h5"
                 sx={{mb: 1}}
             >
-                Von Ihnen vertretene Mitarbeiter:innen
+                Personen, die Sie vertreten
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Eine Übersicht der Mitarbeiter:innen, für die Sie als Stellvertreter:in eingetragen sind. Während einer
-                aktiven Vertretung übernehmen Sie deren Aufgaben und erhalten deren Berechtigungen.
+                Während einer aktiven Stellvertretung erhalten Sie die Berechtigungen der vertretenen Person und können
+                deren Aufgaben bearbeiten.
             </Typography>
 
             {user != null && (
-                <RepresentedUsersList
-                    deputyUserId={user.id}
-                    emptyDescription="Sie sind derzeit für niemanden als Stellvertreter:in eingetragen."
-                />
+                <RepresentedUsersList deputyUserId={user.id}/>
             )}
         </Box>
     );

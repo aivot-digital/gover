@@ -1,4 +1,5 @@
 import React from 'react';
+import {ThemeProvider} from '@mui/material/styles';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -6,6 +7,7 @@ import {Actions} from '../../../../components/actions/actions';
 import type {Action} from '../../../../components/actions/actions-props';
 import {FormTriggerApiService, type FormOverviewItem} from '../../services/form-trigger-api-service';
 import {FormsListPage} from './forms-list-page';
+import {BaseTheme} from '../../../../theming/base-theme';
 
 const mocks = vi.hoisted(() => ({
     dispatch: vi.fn(),
@@ -50,7 +52,11 @@ vi.mock('../../../../utils/download-qrcode', () => ({downloadQrCode: mocks.downl
 vi.mock('../../../../utils/copy-to-clipboard', () => ({copyToClipboardText: mocks.copyToClipboardText}));
 
 function renderPage() {
-    return render(<MemoryRouter><FormsListPage /></MemoryRouter>);
+    return render(
+        <ThemeProvider theme={BaseTheme}>
+            <MemoryRouter><FormsListPage /></MemoryRouter>
+        </ThemeProvider>,
+    );
 }
 
 describe('FormsListPage actions', () => {
@@ -157,6 +163,17 @@ describe('FormsListPage actions', () => {
 
         expect(screen.getByText('Nur per Direktlink')).toBeInTheDocument();
         expect(screen.queryByText('Im Formularverzeichnis')).not.toBeInTheDocument();
+    });
+
+    it('distinguishes record titles, values and supporting lines by weight and size', () => {
+        renderPage();
+
+        expect(getComputedStyle(screen.getByRole('heading', {name: 'Online-Antrag'})))
+            .toMatchObject({fontSize: '16px', fontWeight: '600'});
+        expect(getComputedStyle(screen.getByText('Veröffentlicht')))
+            .toMatchObject({fontSize: '16px', fontWeight: '400'});
+        expect(getComputedStyle(screen.getByText('Im Formularverzeichnis')))
+            .toMatchObject({fontSize: '14px', fontWeight: '400'});
     });
 
     it('keeps long cell labels on one line while retaining their full text', () => {

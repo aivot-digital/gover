@@ -1,7 +1,10 @@
 import {useCallback} from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {linearProgressClasses} from '@mui/material/LinearProgress';
+import {getDataGridUtilityClass} from '@mui/x-data-grid';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {MemoryRouter, useLocation, useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../empty-data-list-placeholder/empty-data-list-placeholder';
 import {GenericList} from './generic-list';
 import {StorageKey} from '../../data/storage-key';
 import {StorageScope, StorageService} from '../../services/storage-service';
@@ -46,6 +49,7 @@ const page = {
         totalPages: 10,
     },
 };
+const emptyPage = {content: [], page: {number: 0, size: 12, totalElements: 0, totalPages: 0}};
 type FetchRows = (
     options: GenericListPropsFetchOptions<{id: string; name: string}> & {departmentId?: string; modules: string[]},
 ) => Promise<typeof page>;
@@ -116,6 +120,106 @@ function renderList(fetch: FetchRows, url = '/', controlRef?: React.RefObject<Li
         </MemoryRouter>,
     );
 }
+
+describe('GenericList loading states', () => {
+    it.each([
+        ['Treffer', [{id: 'two', name: 'Treffer'}]],
+        ['Ohne Treffer', []],
+    ] as const)('keeps the previous row readable while searching for "%s"', async (query, results) => {
+        const initial = Promise.withResolvers<typeof page>();
+        const search = Promise.withResolvers<typeof page>();
+        const fetch = vi.fn().mockReturnValueOnce(initial.promise).mockReturnValueOnce(search.promise);
+        const loadingText = 'Teammitglieder werden geladen…';
+        render(
+            <MemoryRouter>
+                <GenericList<{id: string; name: string}>
+                    fetch={fetch}
+                    getRowIdentifier={row => row.id}
+                    columnDefinitions={columns}
+                    searchLabel="Suchen"
+                    loadingPlaceholder={loadingText}
+                    noSearchResultsPlaceholder="Keine passenden Einträge"
+                />
+            </MemoryRouter>,
+        );
+
+        const grid = screen.getByRole('grid');
+        const status = screen.getByRole('status');
+        expect(status).toHaveTextContent(loadingText);
+        expect(status).toHaveClass('visually-hidden');
+        expect(grid.querySelector(`.${getDataGridUtilityClass('skeletonLoadingOverlay')}`)).toBeInTheDocument();
+        expect(within(grid).queryByText(loadingText)).not.toBeInTheDocument();
+
+        await act(async () => initial.resolve({...page, page: {...page.page, totalElements: 1, totalPages: 1}}));
+        const input = screen.getByRole('searchbox', {name: 'Suchen'});
+        fireEvent.change(input, {target: {value: query}});
+        fireEvent.blur(input);
+
+        expect(fetch).toHaveBeenLastCalledWith(expect.objectContaining({search: query}));
+        expect(within(grid).getByRole('progressbar')).toHaveClass(linearProgressClasses.root);
+        expect(within(grid).getByRole('gridcell', {name: 'Eintrag'})).toBeVisible();
+        expect(within(grid).queryByText(loadingText)).not.toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent(loadingText);
+        expect(screen.queryByText('Keine passenden Einträge')).not.toBeInTheDocument();
+
+        await act(async () => search.resolve({
+            content: [...results],
+            page: {...page.page, totalElements: results.length, totalPages: results.length},
+        }));
+        expect(within(grid).getByText(results[0]?.name ?? 'Keine passenden Einträge')).toBeVisible();
+        expect(within(grid).queryByText('Eintrag')).not.toBeInTheDocument();
+        expect(within(grid).queryByRole('progressbar')).not.toBeInTheDocument();
+        expect(screen.queryByText(loadingText)).not.toBeInTheDocument();
+    });
+});
+
+describe('GenericList empty states', () => {
+    it('announces default loading text before showing the default empty heading', async () => {
+        const pending = Promise.withResolvers<typeof emptyPage>();
+        render(
+            <MemoryRouter>
+                <GenericList<{id: string; name: string}>
+                    fetch={() => pending.promise}
+                    getRowIdentifier={row => row.id}
+                    columnDefinitions={columns}
+                />
+            </MemoryRouter>,
+        );
+        const status = screen.getByRole('status');
+        expect(status).toHaveTextContent('Einträge werden geladen…');
+        expect(status).toHaveClass('visually-hidden');
+        await act(async () => pending.resolve(emptyPage));
+        expect(screen.getByRole('heading', {name: 'Keine Daten vorhanden.', level: 2})).toBeVisible();
+        expect(status).toBeEmptyDOMElement();
+    });
+
+    it('preserves the heading, description and action of a custom empty state', async () => {
+        const onAdd = vi.fn();
+        render(
+            <MemoryRouter>
+                <GenericList<{id: string; name: string}>
+                    fetch={async () => emptyPage}
+                    getRowIdentifier={row => row.id}
+                    columnDefinitions={columns}
+                    noDataPlaceholder={(
+                        <EmptyDataListPlaceholder
+                            title="Keine Teams vorhanden"
+                            description="Legen Sie ein Team an."
+                            addText="Team hinzufügen"
+                            onAdd={onAdd}
+                        />
+                    )}
+                />
+            </MemoryRouter>,
+        );
+        const grid = within(screen.getByRole('grid'));
+        expect(await grid.findByRole('heading', {name: 'Keine Teams vorhanden', level: 2})).toBeVisible();
+        expect(grid.getAllByRole('heading')).toHaveLength(1);
+        expect(grid.getByText('Legen Sie ein Team an.')).toBeVisible();
+        fireEvent.click(grid.getByRole('button', {name: 'Team hinzufügen'}));
+        expect(onAdd).toHaveBeenCalledOnce();
+    });
+});
 
 describe('GenericList additional filters', () => {
     it('loads URL filters and pagination together and restores them on back/forward navigation', async () => {
@@ -203,33 +307,18 @@ describe('GenericList additional filters', () => {
     it.each(['/?departmentId=10', '/?filter=published', '/?search=abc'])(
         'uses the filtered empty state for %s',
         async (url) => {
-            const fetch = vi.fn().mockResolvedValue({
-                content: [],
-                page: {
-                    number: 0,
-                    size: 12,
-                    totalElements: 0,
-                    totalPages: 0,
-                },
-            });
+            const fetch = vi.fn().mockResolvedValue(emptyPage);
             renderList(fetch, url);
             expect(await screen.findByText('Keine passenden Einträge')).toBeInTheDocument();
+            expect(within(screen.getByRole('grid')).queryByRole('heading')).not.toBeInTheDocument();
             expect(screen.queryByText('Noch keine Einträge')).not.toBeInTheDocument();
         },
     );
 
     it('does not consider a pre-search action to be an active filter', async () => {
-        const fetch = vi.fn().mockResolvedValue({
-            content: [],
-            page: {
-                number: 0,
-                size: 12,
-                totalElements: 0,
-                totalPages: 0,
-            },
-        });
+        const fetch = vi.fn().mockResolvedValue(emptyPage);
         renderList(fetch);
-        expect(await screen.findByText('Noch keine Einträge')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: 'Noch keine Einträge', level: 2})).toBeVisible();
         expect(screen.getByText('Hinzufügen')).toBeEnabled();
     });
 

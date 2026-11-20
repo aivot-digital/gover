@@ -18,7 +18,7 @@ describe('RepresentedUsersList', () => {
     afterEach(cleanup);
 
     it('lists only the relations in which the user is the deputy', async () => {
-        const list = vi.spyOn(VUserDeputyWithDetailsApiService.prototype, 'listAllOrdered').mockResolvedValue({
+        const list = vi.spyOn(VUserDeputyWithDetailsApiService.prototype, 'list').mockResolvedValue({
             content: [{
                 ...new VUserDeputyWithDetailsApiService().initialize(),
                 id: 4,
@@ -44,7 +44,7 @@ describe('RepresentedUsersList', () => {
         expect(await screen.findByText('Philipp Schröder')).toBeInTheDocument();
         expect(screen.queryByText('Daniel Müller')).not.toBeInTheDocument();
         expect(screen.getByText('Unbegrenzt')).toBeInTheDocument();
-        expect(list).toHaveBeenCalledWith(expect.anything(), expect.anything(),
+        expect(list).toHaveBeenCalledWith(0, 12, 'untilDate', 'ASC',
             expect.objectContaining({deputyUserId: 'daniel'}));
     });
 });

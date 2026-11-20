@@ -42,7 +42,7 @@ class UserDeputyServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Das Ende der Vertretung darf nicht vor dem Start der Vertretung liegen.",
+                "Das Ende der Stellvertretung darf nicht vor ihrem Beginn liegen.",
                 exception.getTitle()
         );
         verify(repository, never()).save(any(UserDeputyEntity.class));
@@ -108,6 +108,9 @@ class UserDeputyServiceTest {
         var exception = assertThrows(ResponseException.class, () -> service.create(deputy));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Im gewählten Zeitraum würden sich die beteiligten Personen direkt oder "
+                + "über weitere Stellvertretungen gegenseitig vertreten. Wählen Sie einen anderen Zeitraum.",
+                exception.getTitle());
         verify(repository, never()).save(any(UserDeputyEntity.class));
     }
 
