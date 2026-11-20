@@ -28,6 +28,7 @@ import {DialogTitleWithClose} from "../../../../../components/dialog-title-with-
 import {DateFieldComponent} from "../../../../../components/date-field/date-field-component";
 import {DateFieldComponentModelMode} from "../../../../../models/elements/form/input/date-field-element";
 import {formatLocalDate} from '../../../../../utils/date-utils';
+import {stringOrDefault} from '../../../../../utils/string-utils';
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
@@ -206,7 +207,7 @@ export function UserDetailsPageDeputies() {
         dispatch(setLoadingMessage({
             message: isEditingDeputy
                 ? `Aktualisiere Stellvertretung für ${deputyDraft.deputyUserId}`
-                : `Füge Stellvertretung für ${deputyDraft.deputyUserId} hinzu`,
+                : `Füge Stellvertretung für ${stringOrDefault(user.fullName, 'diese Person')} hinzu`,
             blocking: true,
             estimatedTime: 3000,
         }));
