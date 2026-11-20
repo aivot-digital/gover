@@ -1,9 +1,11 @@
 package de.aivot.prosuna.backend.nocode.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -31,13 +33,27 @@ public abstract class NoCodeOperand implements Serializable, Cloneable {
     @Nonnull
     private String type;
 
+    @Nullable
+    private NoCodeEditorMetadata editorMetadata;
+
+    @Nullable
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public NoCodeEditorMetadata getEditorMetadata() {
+        return editorMetadata;
+    }
+
+    @Nonnull
+    public NoCodeOperand setEditorMetadata(@Nullable NoCodeEditorMetadata editorMetadata) {
+        this.editorMetadata = editorMetadata;
+        return this;
+    }
+
     public NoCodeOperand(@Nonnull String type) {
         this.type = type;
     }
 
     /**
-     * Copies this operand without normalizing its stored fields through getters or JSON.
-     * Subclasses with mutable payloads must copy them with the supplied recursive value copier.
+     * Copies this operand without normalizing its stored fields through getters or JSON. Subclasses with mutable payloads must copy them with the supplied recursive value copier.
      */
     @Nonnull
     public NoCodeOperand copy(@Nonnull UnaryOperator<Object> copyValue) {
@@ -53,7 +69,7 @@ public abstract class NoCodeOperand implements Serializable, Cloneable {
         if (o == null || getClass() != o.getClass()) return false;
 
         NoCodeOperand that = (NoCodeOperand) o;
-        return Objects.equals(type, that.type);
+        return Objects.equals(type, that.type) && Objects.equals(editorMetadata, that.editorMetadata);
     }
 
     @Nonnull
@@ -61,7 +77,7 @@ public abstract class NoCodeOperand implements Serializable, Cloneable {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(type);
+        return Objects.hash(type, editorMetadata);
     }
 
     @Nonnull

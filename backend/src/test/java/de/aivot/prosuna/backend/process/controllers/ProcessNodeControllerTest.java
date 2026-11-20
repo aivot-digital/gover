@@ -1,5 +1,10 @@
 package de.aivot.prosuna.backend.process.controllers;
 
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.nocode.models.NoCodeEditorMetadata;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEditorMetadataCleaner;
+import de.aivot.prosuna.backend.elements.models.input.NoCodeAuthoredInputValue;
+
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
@@ -92,9 +97,16 @@ class ProcessNodeControllerTest {
         var users = mock(UserService.class);
         when(users.fromJWT(null)).thenReturn(Optional.of(new UserEntity().setId("staff").setFullName("Anna Beispiel")));
         var exportService = new ProcessNodeExportService(mock(ProcessService.class), nodes, definitions,
-                new BuildProperties(), mock(SystemConfigService.class, RETURNS_DEEP_STUBS));
+                new BuildProperties(), mock(SystemConfigService.class, RETURNS_DEEP_STUBS),
+                new NoCodeEditorMetadataCleaner(JsonMapperFactory.getInstance()));
         var mapper = JsonMapperFactory.getInstance();
+        var rule = new NoCodeStaticValue("exported-value")
+                .setEditorMetadata(new NoCodeEditorMetadata("export-secret", null));
+        source.getConfiguration().put("rule", new NoCodeAuthoredInputValue(rule));
         var exported = exportService.export(7);
+        org.junit.jupiter.api.Assertions.assertFalse(mapper.writeValueAsString(exported).contains("export-secret"));
+        org.junit.jupiter.api.Assertions.assertTrue(mapper.writeValueAsString(exported).contains("exported-value"));
+        org.junit.jupiter.api.Assertions.assertNotNull(rule.getEditorMetadata());
         var imported = mapper.readValue(mapper.writeValueAsString(exported), ProcessNodeExportService.ProcessNodeExport.class);
         var controller = new ProcessNodeController(mock(AuditService.class, RETURNS_DEEP_STUBS), users, nodes,
                 mock(ProcessService.class), mock(PermissionService.class), definitions, exportService, versions,

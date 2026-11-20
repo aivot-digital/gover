@@ -1,5 +1,10 @@
 package de.aivot.prosuna.backend.process.services;
 
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.nocode.models.NoCodeEditorMetadata;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEditorMetadataCleaner;
+import de.aivot.prosuna.backend.elements.models.input.NoCodeAuthoredInputValue;
+
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -44,10 +49,17 @@ class ProcessExportServiceTest {
         when(definitions.getProcessNodeDefinition("test.node", 1)).thenReturn(Optional.of(definition));
         when(definition.cleanConfigurationForExport(any())).thenAnswer(invocation -> invocation.getArgument(0));
         var service = new ProcessExportService(processes, versions, nodes, edges, definitions,
-                new BuildProperties(), mock(SystemConfigService.class, RETURNS_DEEP_STUBS));
+                new BuildProperties(), mock(SystemConfigService.class, RETURNS_DEEP_STUBS),
+                new NoCodeEditorMetadataCleaner(JsonMapperFactory.getInstance()));
 
+        var rule = new NoCodeStaticValue("exported-value")
+                .setEditorMetadata(new NoCodeEditorMetadata("export-secret", null));
+        node.getConfiguration().put("rule", new NoCodeAuthoredInputValue(rule));
         var exported = service.export(10, 2);
         var mapper = JsonMapperFactory.getInstance();
+        org.junit.jupiter.api.Assertions.assertFalse(mapper.writeValueAsString(exported).contains("export-secret"));
+        org.junit.jupiter.api.Assertions.assertTrue(mapper.writeValueAsString(exported).contains("exported-value"));
+        org.junit.jupiter.api.Assertions.assertNotNull(rule.getEditorMetadata());
         var imported = mapper.readValue(mapper.writeValueAsString(exported), ProcessExportService.ProcessExport.class);
 
         assertEquals(strict, imported.nodes().getFirst().getDeadlines().get("processing").strict());

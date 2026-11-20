@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEditorMetadataCleaner;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -18,16 +19,18 @@ public class ProcessNodeExportService {
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final BuildProperties buildProperties;
     private final SystemConfigService systemConfigService;
+    private final NoCodeEditorMetadataCleaner metadataCleaner;
 
     public ProcessNodeExportService(ProcessService processService,
                                     ProcessNodeService processNodeService,
                                     ProcessNodeDefinitionService processNodeDefinitionService,
                                     BuildProperties buildProperties,
-                                    SystemConfigService systemConfigService) {
+                                    SystemConfigService systemConfigService, NoCodeEditorMetadataCleaner metadataCleaner) {
         this.processNodeService = processNodeService;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.buildProperties = buildProperties;
         this.systemConfigService = systemConfigService;
+        this.metadataCleaner = metadataCleaner;
     }
 
     public ProcessNodeExport export(Integer nodeId) throws ResponseException {
@@ -57,7 +60,7 @@ public class ProcessNodeExportService {
                 node.getDataKey(), // dataKey
                 node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
                 node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
-                cleanedConfiguration, // configuration
+                metadataCleaner.cleanConfiguration(cleanedConfiguration), // configuration
                 Map.of(), // outputMappings
                 node.getDeadlines(),
                 node.getRequirements(), // requirements
