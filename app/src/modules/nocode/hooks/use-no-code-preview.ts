@@ -1,3 +1,5 @@
+import {NoCodeDataType} from '../../../data/no-code-data-type';
+import {useNoCodePresentationContext} from './use-no-code-presentation-context';
 import {useEffect, useMemo, useState} from 'react';
 import {useApi} from '../../../hooks/use-api';
 import {NoCodeApiService} from '../../../services/no-code-api-service';
@@ -8,7 +10,7 @@ import {isAnyInputElement} from '../../../models/elements/form/input/any-input-e
 import {flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {humanizeNoCode} from '../utils/humanize-no-code';
 
-export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: AnyElement): string | undefined {
+export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: AnyElement, type?: NoCodeDataType): string | undefined {
     const api = useApi();
     const needsOperators = isNoCodeExpression(operand);
     const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[] | null>(null);
@@ -37,6 +39,8 @@ export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: An
     const allElements = useMemo(() => rootElement == null ? [] : flattenElementsWithParents(rootElement, [], true)
         .filter((entry) => isAnyInputElement(entry.element)), [rootElement]);
 
+    const presentation = useNoCodePresentationContext(operand, allElements);
+
     return useMemo(() => {
         if (operand == null) return undefined;
         if (needsOperators && failed) return 'Vorschau nicht verfügbar';
@@ -44,9 +48,12 @@ export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: An
 
         try {
             // Humanization describes the definition; it does not evaluate the expression or predict its result.
-            return humanizeNoCode(operand, allElements, operators ?? []);
+            return humanizeNoCode(operand, allElements, operators ?? [], {
+                ...presentation,
+                type,
+            });
         } catch {
             return 'Vorschau nicht verfügbar';
         }
-    }, [operand, allElements, needsOperators, operators, failed]);
+    }, [operand, allElements, needsOperators, operators, failed, presentation, type]);
 }

@@ -1,0 +1,95 @@
+import {validateNoCodeNodeDataPath} from './no-code-node-data-path';
+import {AnyElement} from '../../../models/elements/any-element';
+import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
+import {NoCodeOperand, NoCodeOperandError} from '../../../models/functions/no-code-expression';
+import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {ElementWithParents} from '../../../utils/flatten-elements';
+import {isValidProcessDataPath} from '../../../utils/process-data-path';
+
+/** Structural checks mirror NoCodeOperand.validate; type conversion remains the evaluator's responsibility. */
+export function validateNoCode(
+    operand: NoCodeOperand | null | undefined,
+    operators: NoCodeOperatorDetailsDTO[],
+    elements: ElementWithParents[],
+    required = true,
+): NoCodeOperandError {
+    let error: string | null = null;
+    let subErrors: NoCodeOperandError[] = [];
+    if (operand == null) {
+        error = required ? 'Legen Sie einen Ausdruck fest.' : null;
+    } else {
+        switch (operand.type) {
+            case 'NoCodeStaticValue':
+                // The node itself represents an intentional value, including an empty value, false or zero.
+                break;
+            case 'NoCodeReference':
+                if (!operand.elementId) error = 'Wählen Sie ein Element aus.';
+                else if (!elements.some(({element}) => element.id === operand.elementId)) error = 'Das ausgewählte Element ist nicht verfügbar.';
+                break;
+            case 'NoCodeExpression': {
+                const operator = operators.find((candidate) => candidate.identifier === operand.operatorIdentifier);
+                if (!operand.operatorIdentifier) error = 'Wählen Sie einen Operator aus.';
+                else if (operator == null) error = 'Der ausgewählte Operator ist nicht verfügbar.';
+                const operands = operand.operands ?? [];
+                if (operator != null && !operator.signatures.some((signature) => signature.parameters.length === operands.length)) {
+                    error = 'Die Anzahl der Parameter passt nicht zum Operator.';
+                }
+                subErrors = operands.map((child) => validateNoCode(child, operators, elements));
+                break;
+            }
+            case 'NoCodeNodeDataReference':
+                error = validateNoCodeNodeDataPath(operand) ?? null;
+                break;
+            case 'NoCodeProcessDataReference':
+            case 'NoCodeInstanceDataReference':
+                if (!operand.path || !isValidProcessDataPath(operand.path, operand.type === 'NoCodeProcessDataReference')) {
+                    error = operand.type === 'NoCodeProcessDataReference'
+                        ? 'Geben Sie einen Datenpfad wie person.name, items[0].name oder items[*].name an.'
+                        : 'Geben Sie einen Datenpfad wie person.name oder items[0].name an.';
+                }
+                break;
+            default:
+                error = 'Diese Ausdrucksart wird nicht unterstützt.';
+        }
+    }
+    return {
+        operand: operand ?? null,
+        error,
+        subErrors,
+        isValid: error == null && subErrors.every((child) => child.isValid),
+    };
+}
+
+export interface ElementNoCodeFunction {
+    section: 'visibility' | 'value' | 'validation';
+    operand: NoCodeOperand | null | undefined;
+}
+
+/** Include selected-but-empty functions so switching tabs cannot bypass the apply check. */
+export function elementNoCodeFunctions(element: AnyElement): ElementNoCodeFunction[] {
+    const functions: ElementNoCodeFunction[] = [];
+    if (element.visibility?.type === 'NoCode') {
+        functions.push({
+            section: 'visibility',
+            operand: element.visibility.noCode,
+        });
+    }
+    if (isAnyInputElement(element)) {
+        if (element.value?.type === 'NoCode') functions.push({
+            section: 'value',
+            operand: element.value.noCode,
+        });
+        if (element.validation?.type === 'NoCode') {
+            const validations = element.validation.noCodeList ?? [];
+            if (validations.length === 0) functions.push({
+                section: 'validation',
+                operand: null,
+            });
+            else validations.forEach(({noCode}) => functions.push({
+                section: 'validation',
+                operand: noCode,
+            }));
+        }
+    }
+    return functions;
+}

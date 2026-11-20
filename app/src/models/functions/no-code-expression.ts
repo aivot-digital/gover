@@ -1,4 +1,10 @@
-export interface NoCodeExpression {
+import {NoCodeEditorMetadata} from './no-code-editor-metadata';
+
+interface NoCodeAuthoredOperand {
+    editorMetadata?: NoCodeEditorMetadata | null;
+}
+
+export interface NoCodeExpression extends NoCodeAuthoredOperand {
     type: 'NoCodeExpression';
     operatorIdentifier: string | null | undefined;
     operands: (NoCodeOperand | null)[] | null | undefined;
@@ -8,7 +14,7 @@ export function isNoCodeExpression(obj: any): obj is NoCodeExpression {
     return obj != null && obj.type === 'NoCodeExpression';
 }
 
-export interface NoCodeReference {
+export interface NoCodeReference extends NoCodeAuthoredOperand {
     type: 'NoCodeReference';
     elementId: string | null | undefined;
 }
@@ -17,7 +23,7 @@ export function isNoCodeReference(obj: any): obj is NoCodeReference {
     return obj != null && obj.type === 'NoCodeReference';
 }
 
-export interface NoCodeProcessDataReference {
+export interface NoCodeProcessDataReference extends NoCodeAuthoredOperand {
     type: 'NoCodeProcessDataReference';
     path: string | null | undefined;
 }
@@ -26,7 +32,7 @@ export function isNoCodeProcessDataReference(obj: any): obj is NoCodeProcessData
     return obj != null && obj.type === 'NoCodeProcessDataReference';
 }
 
-export interface NoCodeInstanceDataReference {
+export interface NoCodeInstanceDataReference extends NoCodeAuthoredOperand {
     type: 'NoCodeInstanceDataReference';
     path: string | null | undefined;
 }
@@ -35,7 +41,7 @@ export function isNoCodeInstanceDataReference(obj: any): obj is NoCodeInstanceDa
     return obj != null && obj.type === 'NoCodeInstanceDataReference';
 }
 
-export interface NoCodeNodeDataReference {
+export interface NoCodeNodeDataReference extends NoCodeAuthoredOperand {
     type: 'NoCodeNodeDataReference';
     nodeDataKey: string | null | undefined;
     path: string | null | undefined;
@@ -45,7 +51,7 @@ export function isNoCodeNodeDataReference(obj: any): obj is NoCodeNodeDataRefere
     return obj != null && obj.type === 'NoCodeNodeDataReference';
 }
 
-export interface NoCodeStaticValue {
+export interface NoCodeStaticValue extends NoCodeAuthoredOperand {
     type: 'NoCodeStaticValue';
     value: string | null | undefined;
 }
