@@ -21,6 +21,7 @@ export interface Api {
     post<T>(url: string, data: any, options?: ApiOptions): Promise<T>;
 
     postFormData<T>(url: string, data: FormData, options?: ApiOptions): Promise<T>;
+
     putFormData<T>(url: string, data: FormData, options?: ApiOptions): Promise<T>;
 
     postFormUrlEncoded<T>(url: string, data: Record<string, string>, options?: ApiOptions): Promise<T>;
@@ -90,10 +91,7 @@ function baseApiServiceAsApi(): Api {
         },
         post: async <T>(url: string, data: any, options?: ApiOptions): Promise<T> => {
             return await api
-                .post(`/api/${url}`, data, {
-                    ...apiOptionsToRequestOptions(options),
-                    skipAuthCheck: true,
-                });
+                .post(`/api/${url}`, data, apiOptionsToRequestOptions(options));
         },
         postXML: async <T>(url: string, data: ArrayBuffer | string, options?: ApiOptions): Promise<T> => {
             return await api
