@@ -36,6 +36,9 @@ public class NoCodeDryRunController {
             summary = "Dry Run No-Code Expression",
             description = "Evaluate a no-code expression against test data and return the result of every operand. " +
                     "Nothing is saved, and operators that read protected data or cause side effects are skipped. " +
+                    "Limits: 512 expression nodes, 32 nesting levels, 256 KiB of serialized request JSON and 1 MiB of result JSON. " +
+                    "Oversized intermediate results are skipped before their parent is evaluated. " +
+                    "At most four dry runs execute concurrently per backend instance; further requests receive HTTP 429. " +
                     "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE + "` in at least one process."
     )
     public NoCodeDryRunResultDTO dryRun(

@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.nocode.services;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunResultDTO;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
@@ -33,6 +34,19 @@ class NoCodeEvaluationServiceDryRunTest {
 
     private NoCodeDryRunResultDTO dryRun(NoCodeExpression expression) {
         return service.dryRun(expression, new DerivedRuntimeElementData(), new ProcessExecutionData());
+    }
+
+    @Test
+    void shouldUseExplicitVisibilityTestStatesForBothOperators() {
+        for (var visible : List.of(true, false)) {
+            var data = new DerivedRuntimeElementData();
+            data.getElementStates().put("field", ComputedElementState.create().setVisible(visible));
+            for (var identifier : List.of("is-visible", "is-invisible")) {
+                var result = service.dryRun(new NoCodeExpression(identifier, new NoCodeStaticValue("field")), data, new ProcessExecutionData());
+                assertEquals(NoCodeDryRunStatus.Evaluated, result.status());
+                assertEquals(identifier.equals("is-visible") ? visible : !visible, result.value());
+            }
+        }
     }
 
     @Test

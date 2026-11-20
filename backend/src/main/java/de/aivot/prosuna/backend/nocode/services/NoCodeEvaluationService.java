@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.nocode.services;
 
+import java.util.function.UnaryOperator;
+
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunResultDTO;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,8 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This service evaluates no code expressions.
- * It uses the operators provided by the registered {@link NoCodeOperatorsProvider} to evaluate the expressions.
+ * This service evaluates no code expressions. It uses the operators provided by the registered {@link NoCodeOperatorsProvider} to evaluate the expressions.
  */
 @Service
 public class NoCodeEvaluationService {
@@ -163,9 +165,8 @@ public class NoCodeEvaluationService {
     }
 
     /**
-     * Evaluates an operand like {@link #evaluate} and keeps the result of every nested operand, so the editor can
-     * show intermediate results. Failures are reported per operand instead of aborting the evaluation, and operators
-     * whose provider does not support dry runs are skipped, together with every expression that depends on them.
+     * Evaluates an operand like {@link #evaluate} and keeps the result of every nested operand, so the editor can show intermediate results. Failures are reported per operand
+     * instead of aborting the evaluation, and operators whose provider does not support dry runs are skipped, together with every expression that depends on them.
      *
      * @param operand            The operand to evaluate
      * @param elementData        The test values and states of the referenced elements
@@ -177,6 +178,29 @@ public class NoCodeEvaluationService {
             @Nullable NoCodeOperand operand,
             @Nonnull DerivedRuntimeElementData elementData,
             @Nonnull ProcessExecutionData processDataContext
+    ) {
+        return dryRun(operand, elementData, processDataContext, UnaryOperator.identity());
+    }
+
+    /**
+     * Apply the response budget to every intermediate result before passing it to a parent operator.
+     */
+    @Nonnull
+    public NoCodeDryRunResultDTO dryRun(
+            @Nullable NoCodeOperand operand,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult
+    ) {
+        return limitResult.apply(evaluateDryRun(operand, elementData, processDataContext, limitResult));
+    }
+
+    @Nonnull
+    private NoCodeDryRunResultDTO evaluateDryRun(
+            @Nullable NoCodeOperand operand,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult
     ) {
         if (!(operand instanceof NoCodeExpression expression)) {
             try {
@@ -190,7 +214,7 @@ public class NoCodeEvaluationService {
         var operands = expression.getOperands() == null ? List.<NoCodeOperand>of() : expression.getOperands();
         var operandResults = operands
                 .stream()
-                .map(child -> dryRun(child, elementData, processDataContext))
+                .map(child -> dryRun(child, elementData, processDataContext, limitResult))
                 .toList();
 
         var operatorIdentifier = expression.getOperatorIdentifier();
