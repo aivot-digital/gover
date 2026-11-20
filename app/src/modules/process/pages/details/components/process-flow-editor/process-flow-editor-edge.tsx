@@ -1,5 +1,5 @@
 import {BaseEdge, EdgeLabelRenderer, type EdgeProps} from '@xyflow/react';
-import {Box, IconButton, Tooltip, useTheme} from '@mui/material';
+import {Alert, Box, IconButton, Tooltip, useTheme} from '@mui/material';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
@@ -152,7 +152,8 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                         editable &&
                         graphEdge.port != null &&
                         nextTaskForEdge == null &&
-                        <Tooltip title="Element einfügen" arrow>
+                        <Tooltip title="Element einfügen"
+                                 arrow>
                             <IconButton
                                 sx={{
                                     'cursor': 'pointer',
@@ -205,21 +206,28 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                                             <Typography variant="h6">
                                                 Vorgangsdaten beim Übergang zum nächsten Prozesselement
                                             </Typography>
-                                            <ExpandableCodeBlock
-                                                value={JSON.stringify(
-                                                    transferredProcessDataComparison?.currentValue ?? {},
-                                                    null,
-                                                    4,
-                                                )}
-                                                previousValue={transferredProcessDataComparison?.previousValue == null
-                                                    ? undefined
-                                                    : JSON.stringify(
-                                                        transferredProcessDataComparison.previousValue,
+                                            {transferredProcessDataComparison == null ? <Alert severity="info"
+                                                                                               sx={{mt: 2}}>Der
+                                                                                                            Datenstand
+                                                                                                            dieses
+                                                                                                            Übergangs
+                                                                                                            ist nicht
+                                                                                                            verfügbar.</Alert> :
+                                                <ExpandableCodeBlock
+                                                    value={JSON.stringify(
+                                                        transferredProcessDataComparison?.currentValue ?? {},
                                                         null,
                                                         4,
                                                     )}
-                                                language="json"
-                                            />
+                                                    previousValue={transferredProcessDataComparison?.previousValue == null
+                                                        ? undefined
+                                                        : JSON.stringify(
+                                                            transferredProcessDataComparison.previousValue,
+                                                            null,
+                                                            4,
+                                                        )}
+                                                    language="json"
+                                                />}
                                         </>
                                     ),
                                 });
