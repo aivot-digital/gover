@@ -352,7 +352,8 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Fall #"),
             @ElementPOJOBindingProperty(key = "addLabel", strValue = "Fall hinzufügen"),
-            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Fall entfernen")
+            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Fall entfernen"),
+            @ElementPOJOBindingProperty(key = "sortable", boolValue = true)
     })
     public static class SwitchCaseConfig {
         @ReplicatingContainerRowIdPOJOBinding

@@ -32,6 +32,12 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
     @Nullable
     private String removeLabel;
 
+    /**
+     * Allows reordering the rows. Elements stored before this option existed have no value and stay unsortable.
+     */
+    @Nullable
+    private Boolean sortable;
+
     @Nonnull
     private List<BaseFormElement> children = new LinkedList<>();
 
@@ -170,7 +176,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
         if (!super.equals(o)) return false;
 
         ReplicatingContainerLayoutElement that = (ReplicatingContainerLayoutElement) o;
-        return Objects.equals(minimumRequiredSets, that.minimumRequiredSets) && Objects.equals(maximumSets, that.maximumSets) && Objects.equals(headlineTemplate, that.headlineTemplate) && Objects.equals(addLabel, that.addLabel) && Objects.equals(removeLabel, that.removeLabel) && Objects.equals(children, that.children);
+        return Objects.equals(minimumRequiredSets, that.minimumRequiredSets) && Objects.equals(maximumSets, that.maximumSets) && Objects.equals(headlineTemplate, that.headlineTemplate) && Objects.equals(addLabel, that.addLabel) && Objects.equals(removeLabel, that.removeLabel) && Objects.equals(sortable, that.sortable) && Objects.equals(children, that.children);
     }
 
     @Override
@@ -181,6 +187,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
         result = 31 * result + Objects.hashCode(headlineTemplate);
         result = 31 * result + Objects.hashCode(addLabel);
         result = 31 * result + Objects.hashCode(removeLabel);
+        result = 31 * result + Objects.hashCode(sortable);
         result = 31 * result + Objects.hashCode(children);
         return result;
     }
@@ -236,6 +243,16 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Rep
 
     public ReplicatingContainerLayoutElement setRemoveLabel(@Nullable String removeLabel) {
         this.removeLabel = removeLabel;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getSortable() {
+        return sortable;
+    }
+
+    public ReplicatingContainerLayoutElement setSortable(@Nullable Boolean sortable) {
+        this.sortable = sortable;
         return this;
     }
 
