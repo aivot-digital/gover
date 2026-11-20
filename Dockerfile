@@ -100,11 +100,8 @@ LABEL org.opencontainers.image.vendor="Aivot"
 LABEL org.opencontainers.image.title="Gover Backend"
 LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
 
-# Set locale env config
+# Set timezone. Keep the base image's en_US.UTF-8 locale: de_DE.UTF-8 is not installed and makes Java read env vars as ASCII
 ENV TZ "Europe/Berlin"
-ENV LANG de_DE.UTF-8
-ENV LANGUAGE de_DE:de
-ENV LC_ALL de_DE.UTF-8
 
 # Copy nginx configs
 COPY docker/nginx.staff.conf /etc/nginx/sites-available/staff.conf

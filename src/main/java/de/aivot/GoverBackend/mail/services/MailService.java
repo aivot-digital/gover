@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.templatemode.TemplateMode;
 
@@ -375,7 +376,8 @@ public class MailService {
         String textMessage = loadTemplate(template.getKey() + ".txt", context, TemplateMode.TEXT);
         String htmlMessage = loadTemplate(template.getKey() + ".html", context, TemplateMode.HTML);
 
-        message.setFrom(goverConfig.getFromMail());
+        // RFC 2047-encodes a non-ASCII sender name instead of writing raw bytes into the header
+        new MimeMessageHelper(message, "utf-8").setFrom(goverConfig.getFromMail());
         message.setSubject(subject.replaceAll("\\r?\\n", " "), "utf-8");
         message.setText(textMessage, "utf-8");
 
