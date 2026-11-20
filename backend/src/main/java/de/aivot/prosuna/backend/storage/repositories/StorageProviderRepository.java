@@ -24,6 +24,8 @@ public interface StorageProviderRepository extends JpaRepository<StorageProvider
 
     List<StorageProviderEntity> findAllByType(StorageProviderType type);
 
+    boolean existsByIdAndReadOnlyStorageTrue(Integer id);
+
     @Query(value = """
             SELECT * FROM storage_providers 
             WHERE read_only_storage = false 

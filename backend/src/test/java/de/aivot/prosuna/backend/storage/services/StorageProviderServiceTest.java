@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.storage.services;
 
 import de.aivot.prosuna.backend.TestData;
+import de.aivot.prosuna.backend.asset.configs.DefaultStorageAssetsSystemConfigDefinition;
+import de.aivot.prosuna.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -130,6 +132,53 @@ class StorageProviderServiceTest {
         var order = inOrder(storageProviderRepository, storageSyncWorker);
         order.verify(storageProviderRepository).save(existingEntity);
         order.verify(storageSyncWorker).publish(7);
+    }
+
+    @Test
+    void performUpdate_DefaultProviderCannotBecomeReadOnly() throws ResponseException {
+        var existingEntity = createProvider().setId(7);
+        var updatedEntity = createProvider().setId(7).setReadOnlyStorage(true);
+        when(systemConfigService.getValue(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY)).thenReturn("7");
+
+        var exception = assertThrows(ResponseException.class,
+                () -> storageProviderService.performUpdate(existingEntity.getId(), updatedEntity, existingEntity));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(false, existingEntity.getReadOnlyStorage());
+        verifyNoInteractions(storageProviderRepository, storageSyncWorker);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void performUpdate_OtherProviderCanBecomeReadOnly() throws ResponseException {
+        var existingEntity = createProvider().setId(7);
+        var updatedEntity = createProvider().setId(7).setReadOnlyStorage(true);
+        when(systemConfigService.getValue(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY)).thenReturn("8");
+        when(systemConfigService.getValue(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY)).thenReturn("8");
+        var definition = (StorageProviderDefinition<Object>) mock(StorageProviderDefinition.class);
+        when(storageProviderDefinitionService.retrieveProviderDefinition("local-disk", 1)).thenReturn(Optional.of(definition));
+        when(storageProviderRepository.save(any(StorageProviderEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = storageProviderService.performUpdate(existingEntity.getId(), updatedEntity, existingEntity);
+
+        assertEquals(true, result.getReadOnlyStorage());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void performUpdate_ReadOnlyDefaultProviderCanStillBeEdited() throws ResponseException {
+        var existingEntity = createProvider().setId(7).setReadOnlyStorage(true);
+        var updatedEntity = createProvider().setId(7).setReadOnlyStorage(true).setName("Renamed");
+        var definition = (StorageProviderDefinition<Object>) mock(StorageProviderDefinition.class);
+        when(storageProviderDefinitionService.retrieveProviderDefinition("local-disk", 1)).thenReturn(Optional.of(definition));
+        when(storageProviderRepository.save(any(StorageProviderEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = storageProviderService.performUpdate(existingEntity.getId(), updatedEntity, existingEntity);
+
+        assertEquals("Renamed", result.getName());
+        verifyNoInteractions(systemConfigService);
     }
 
     @Test
