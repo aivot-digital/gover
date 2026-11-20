@@ -53,8 +53,8 @@ The server must be reachable via a given domain name from the internet.
 
 ### Prerequisites
 
-- Ubuntu 20.04 LTS
-- Docker
+- Ubuntu 24.04 LTS oder neuer
+- Docker 4.74.0 oder neuer
 
 ### Setup
 

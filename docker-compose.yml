@@ -15,7 +15,7 @@ services:
 
 
   gover_database:
-    image: postgres:15.15
+    image: postgres:15.20
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ GOVER_DB_PASSWORD }}" # Setzen Sie das Passwort für die Gover-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -29,7 +29,7 @@ services:
 
 
   keycloak_database:
-    image: postgres:15.15
+    image: postgres:15.20
     restart: always
     environment:
       POSTGRES_PASSWORD: "{{ KEYCLOAK_DB_PASSWORD }}" # Setzen Sie das Passwort für die Keycloak-Datenbank. Passen Sie dieses Passwort unbedingt an.
@@ -43,14 +43,14 @@ services:
 
 
   clamav:
-    image: clamav/clamav-debian:1.5.1
+    image: clamav/clamav:1.5.5-debian
     restart: always
     networks:
       - gover
 
 
   redis:
-    image: redis:7.4.7
+    image: redis:7.4.12
     restart: always
     networks:
       - gover
@@ -103,6 +103,9 @@ services:
       KC_SPI_EGOV_BAYERNID_DISPLAY_DESCRIPTION: "{{ ORG_DESCRIPTION }}" # Setzen Sie die Beschreibung Ihrer Organisation. Diese Beschreibung wird an den BayernID-Service übermittelt. Die Beschreibung sollte nicht mehr als 50 Zeichen enthalten. Die Beschreibung wird auf der Login-Seite des BayernID-Service angezeigt.
 
       QUARKUS_HTTP_LIMITS_MAX_FORM_ATTRIBUTE_SIZE: "10M"
+
+      # Deaktiviert die Verwendung von BASE64-Intrinsics, um Probleme mit der JVM zu vermeiden, die zu einer erhöhten CPU-Auslastung führen können.
+      JAVA_OPTS_APPEND: "-XX:-UseBASE64Intrinsics"
     # Wenn Keycloak eine Verbindung zu einem LDAP-Server oder einem anderen Dienst mit einem selbstsignierten oder internen CA-Zertifikat herstellen soll,
     # muss das Root-CA-Zertifikat in den Keycloak-Truststore eingebunden werden.
     # Entfernen Sie die Kommentarzeichen und passen Sie den Pfad zum Zertifikat an.
@@ -120,7 +123,7 @@ services:
 
 
   gover:
-    image: ghcr.io/aivot-digital/gover:4.6.2
+    image: ghcr.io/aivot-digital/gover:4.6.3
     depends_on:
       - gover_database
       - clamav
@@ -194,7 +197,7 @@ services:
 
 
   gover_staff_app:
-    image: ghcr.io/aivot-digital/gover:4.6.2
+    image: ghcr.io/aivot-digital/gover:4.6.3
     restart: always
     command: staff
     environment:
@@ -209,7 +212,7 @@ services:
 
 
   gover_customer_app:
-    image: ghcr.io/aivot-digital/gover:4.6.2
+    image: ghcr.io/aivot-digital/gover:4.6.3
     restart: always
     command: customer
     environment:
@@ -224,7 +227,7 @@ services:
 
 
   traefik:
-    image: traefik:2.11.37
+    image: traefik:2.11.63
     restart: always
     command:
       - --providers.docker
