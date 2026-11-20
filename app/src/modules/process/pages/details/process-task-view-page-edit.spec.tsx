@@ -18,6 +18,7 @@ import {ProcessTaskStatus} from '../../enums/process-task-status';
 import {BaseApiService} from '../../../../services/base-api-service';
 import type {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
 import {SnackbarSeverity} from '../../../../slices/shell-slice';
+import * as confirmDialog from '../../../../dialogs/confirm-dialog/confirm-dialog';
 
 const testState = vi.hoisted(() => ({
     dispatch: vi.fn(),
@@ -99,7 +100,7 @@ function createTaskView(data: AuthoredElementValues): TaskView {
     };
 }
 
-async function renderPage(initialValues: AuthoredElementValues) {
+async function renderPage(initialValues: AuthoredElementValues, targetLoader?: () => Promise<null>) {
     const getTaskView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getStaffTaskView')
         .mockResolvedValue(createTaskView(initialValues));
     const putTaskView = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'putStaffTaskView')
@@ -116,6 +117,7 @@ async function renderPage(initialValues: AuthoredElementValues) {
         },
         {
             path: '/target',
+            loader: targetLoader,
             element: <div>Zielseite</div>,
         },
     ], {
@@ -324,14 +326,17 @@ describe('ProcessTaskViewPageEdit autosave', () => {
         expect(screen.getByText('Warten auf Verbindung')).toBeInTheDocument();
     });
 
-    it('flushes the first change before navigating away', async () => {
+    it('flushes the first change and never asks to discard it while navigating away', async () => {
         const initialValues = {
             subject: literalAuthoredValue('Existing subject'),
         };
         const nextValues = {
             subject: literalAuthoredValue(null),
         };
-        const {putTaskView} = await renderPage(initialValues);
+        const destination = Promise.withResolvers<null>();
+        const loadDestination = vi.fn(() => destination.promise);
+        const discardDialog = vi.spyOn(confirmDialog, 'ConfirmDialog');
+        const {putTaskView} = await renderPage(initialValues, loadDestination);
         testState.nextValues = nextValues;
         vi.useFakeTimers();
 
@@ -344,8 +349,32 @@ describe('ProcessTaskViewPageEdit autosave', () => {
 
         expect(putTaskView).toHaveBeenCalledOnce();
         expect(putTaskView).toHaveBeenCalledWith(10, 20, nextValues, []);
+        expect(loadDestination).toHaveBeenCalledOnce();
+        expect(discardDialog).not.toHaveBeenCalled();
+        await act(async () => destination.resolve(null));
         expect(screen.getByText('Zielseite')).toBeInTheDocument();
-        expect(screen.queryByText('Ungespeicherte Eingaben')).not.toBeInTheDocument();
+        expect(discardDialog).not.toHaveBeenCalled();
+    });
+
+    it.each(['failed', 'offline'])('keeps unsaved inputs until the user decides to leave after a %s save', async (reason) => {
+        const {putTaskView} = await renderPage({});
+        if (reason === 'offline') {
+            vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+        } else {
+            putTaskView.mockRejectedValue({status: 500, message: 'Save failed', details: null, displayableToUser: false});
+        }
+        testState.nextValues = {subject: literalAuthoredValue('Draft')};
+        fireEvent.click(screen.getByRole('button', {name: 'Werte ändern'}));
+        fireEvent.click(screen.getByRole('link', {name: 'Aufgabe verlassen'}));
+
+        expect(await screen.findByRole('dialog')).toHaveTextContent('Ungespeicherte Eingaben');
+        fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Werte ändern'})).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('link', {name: 'Aufgabe verlassen'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Seite verlassen'}));
+        expect(await screen.findByText('Zielseite')).toBeInTheDocument();
+        expect(putTaskView).toHaveBeenCalledTimes(reason === 'offline' ? 0 : 1);
     });
 });
 

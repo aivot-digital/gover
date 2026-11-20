@@ -138,6 +138,23 @@ class InstanceAssignmentResultHandlerTest {
     }
 
     @Test
+    void revokedMembershipPreventsManualAssignmentAndTaskCompletion() throws Exception {
+        var instance = instance();
+        var task = task().setStatus(ProcessTaskStatus.AwaitingStaff);
+        var selected = result("recipient").requireDirectMembership();
+        doThrow(ResponseException.badRequest("Kein Zugriff"))
+                .when(assignments).requireManualInstanceAssignee(99L, "recipient");
+
+        assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class, () -> handler.handleResult(
+                logger, user("dispatcher"), provider, new InstanceAssignmentActionNodeV1.Config(),
+                node(), instance, task, null, selected));
+
+        assertEquals("previous", instance.getAssignedUserId());
+        assertEquals(ProcessTaskStatus.AwaitingStaff, task.getStatus());
+        verifyNoInteractions(instances, tasks, workRequests, instanceMail);
+    }
+
+    @Test
     void invalidOutputMappingDoesNotChangeAssignment() {
         var instance = instance();
         var node = node();

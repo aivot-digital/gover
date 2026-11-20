@@ -864,10 +864,14 @@ public class ProcessNodeExecutionResultHandler {
                     context.result.getNodeData() != null ? context.result.getNodeData() : Map.of(), processData);
         }
 
-        if (context.result.getAssignedUserId() != null) {
+        var selectedUserId = context.result.getAssignedUserId();
+        if (selectedUserId != null) {
             try {
-                assignmentService.requireRuntimeInstanceAssignee(
-                        context.processInstance.getId(), context.result.getAssignedUserId());
+                if (context.result.isDirectMembershipRequired()) {
+                    assignmentService.requireManualInstanceAssignee(context.processInstance.getId(), selectedUserId);
+                } else {
+                    assignmentService.requireRuntimeInstanceAssignee(context.processInstance.getId(), selectedUserId);
+                }
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionInvalidAssignment(e,
                         "Die ausgewählte Person kann diesem Vorgang nicht zugewiesen werden.");
@@ -875,7 +879,7 @@ public class ProcessNodeExecutionResultHandler {
         }
 
         var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
-        var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
+        var newlyAssignedUser = requireOptionalUser(context, selectedUserId);
         var triggeringUser = Optional.ofNullable(context.triggeringUser);
         var assignmentSnapshot = new LinkedHashMap<String, Object>();
         previousAssignedUser.ifPresent(user -> {

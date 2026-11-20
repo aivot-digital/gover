@@ -37,6 +37,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
+import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -502,6 +504,20 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
         assertFalse(loggedInsideTransaction.get());
         verify(logger).logException(failure);
+    }
+
+    @Test
+    void recipientRevokedAtPersistenceReturnsTheRecoverableAssignmentError() throws Exception {
+        var provider = new InlineStaffTaskProcessNodeDefinition(null, new ProcessNodeExecutionResultInstanceCompleted());
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var unavailable = new ManualAssignmentRecipientUnavailableException("withdrawn");
+        doThrow(new ProcessNodeExecutionExceptionInvalidAssignment(unavailable, "Zuweisung fehlgeschlagen"))
+                .when(handler).handleResult(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        var fixture = createFixture(provider, new TestElementDerivationService(), handler);
+
+        var response = assertThrows(ResponseException.class, () -> fixture.controller().update(fixture.jwt(),
+                fixture.instance().getId(), fixture.task().getId(), "{}", null, null, "inline-complete", null));
+        assertSame(unavailable, response);
     }
 
     private static List<String> visibilityReferencesOf(StaffProcessInstanceTaskViewController.TaskViewResponse response,

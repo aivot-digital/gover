@@ -1,11 +1,13 @@
 package de.aivot.prosuna.backend.process.repositories;
 
+import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.projections.DashboardActivityBucketProjection;
 import de.aivot.prosuna.backend.process.projections.DashboardInstanceCountsProjection;
 import de.aivot.prosuna.backend.process.projections.ProcessInstanceStatusCountProjection;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -86,6 +88,32 @@ public interface ProcessInstanceRepository extends JpaRepository<ProcessInstance
     boolean hasPermissionWithoutDeputies(@Nonnull @Param("userId") String userId,
                                          @Nonnull @Param("processInstanceId") Long processInstanceId,
                                          @Nonnull @Param("permission") String permission);
+
+    // A manual assignment node can select a recipient only through their own membership
+    // in the same department or team that grants access to the running instance.
+    @Query(value = """
+            SELECT u.id, u.full_name AS name, u.email
+            FROM users u
+            WHERE u.enabled AND NOT u.deleted_in_idp
+              AND (CAST(:userId AS varchar) IS NULL OR u.id = :userId)
+              AND EXISTS (
+                  SELECT 1
+                  FROM v_user_process_instance_access_permissions access
+                  JOIN v_user_domain_permissions membership
+                    ON membership.user_id = access.user_id
+                   AND (membership.department_id = access.via_source_department_id
+                        OR membership.team_id = access.via_source_team_id)
+                  WHERE access.user_id = u.id
+                    AND access.target_process_instance_id = :instanceId
+                    AND membership.is_direct_member
+                    AND :permission = ANY(membership.direct_permissions)
+                    AND :permission = ANY(access.permissions)
+              )
+            ORDER BY u.full_name, u.id
+            """, nativeQuery = true)
+    List<ProcessAssignmentOptionDTO> findManualInstanceAssignmentOptions(@Nonnull @Param("instanceId") Long instanceId,
+                                                                        @Nonnull @Param("permission") String permission,
+                                                                        @Nullable @Param("userId") String userId);
 
     @Query(
             value = "SELECT DISTINCT p.target_process_instance_id FROM v_user_process_instance_access_permissions p WHERE p.user_id = :userId AND p.target_process_instance_id IS NOT NULL AND p.permissions::text[] @> ARRAY[:permission]",
