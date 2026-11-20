@@ -74,8 +74,8 @@ function renderView(
         ...overrides,
     };
 
-    render(<ReplicatingContainerView {...props}/>, {wrapper});
-    return props;
+    const {rerender} = render(<ReplicatingContainerView {...props}/>, {wrapper});
+    return {props, rerender};
 }
 
 const threeAddresses: ReplicatingContainerElementValues = [
@@ -100,9 +100,22 @@ describe('ReplicatingContainerView', () => {
         expect(screen.queryByRole('button', {name: /verschieben$/})).not.toBeInTheDocument();
     });
 
+    it('places each handle directly after its row label when a second data set is added', () => {
+        const {props, rerender} = renderView({element: {...element, sortable: true}}, DragAndDropProvider);
+        expect(screen.queryByRole('button', {name: 'Adresse 1 verschieben'})).not.toBeInTheDocument();
+
+        rerender(<ReplicatingContainerView {...props} value={threeAddresses.slice(0, 2)}/>);
+
+        for (const label of ['Adresse 1', 'Adresse 2']) {
+            const row = screen.getByRole('group', {name: label});
+            const handle = within(row).getByRole('button', {name: `${label} verschieben`});
+            expect(handle.previousElementSibling).toHaveTextContent(label);
+        }
+    });
+
     it('moves a data set by one position through the menu of its handle', async () => {
         const user = userEvent.setup();
-        const props = renderView({element: {...element, sortable: true}, value: threeAddresses}, DragAndDropProvider);
+        const {props} = renderView({element: {...element, sortable: true}, value: threeAddresses}, DragAndDropProvider);
 
         await user.click(screen.getByRole('button', {name: 'Adresse 1 verschieben'}));
         const menu = screen.getByRole('menu', {name: 'Adresse 1 verschieben'});
@@ -116,7 +129,7 @@ describe('ReplicatingContainerView', () => {
     });
 
     it('moves a dragged data set to the position of the data set it is dropped on', async () => {
-        const props = renderView({element: {...element, sortable: true}, value: threeAddresses}, DragAndDropProvider);
+        const {props} = renderView({element: {...element, sortable: true}, value: threeAddresses}, DragAndDropProvider);
         const handle = screen.getByRole('button', {name: 'Adresse 1 verschieben'});
         const target = screen.getByRole('group', {name: 'Adresse 3'});
 
@@ -137,7 +150,7 @@ describe('ReplicatingContainerView', () => {
 
     it('allows clearing an optional collection below its minimum', async () => {
         const user = userEvent.setup();
-        const props = renderView({element: {...element, minimumRequiredSets: 3}});
+        const {props} = renderView({element: {...element, minimumRequiredSets: 3}});
         await user.click(screen.getByRole('button', {name: 'Datensatz löschen'}));
         expect(props.setValue).not.toHaveBeenCalled();
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Löschen'}));

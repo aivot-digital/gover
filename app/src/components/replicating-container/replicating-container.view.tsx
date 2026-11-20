@@ -208,7 +208,6 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                             rowGap: 1.25,
                                         }}
                                     >
-                                        {sortable?.handle}
                                         <Chip
                                             id={itemLabelId}
                                             label={itemLabel}
@@ -225,6 +224,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                 },
                                             }}
                                         />
+                                        {sortable?.handle}
 
                                         {(minRequiredSets === 0 || valueIndex >= minRequiredSets) && (
                                             <Box
@@ -472,8 +472,7 @@ function SortableRow(props: SortableRowProps) {
                 onClick={(event) => setMenuAnchor(event.currentTarget)}
                 sx={{
                     p: 0.25,
-                    ml: -0.5,
-                    mr: 0.5,
+                    ml: 0.5,
                     color: 'text.secondary',
                     cursor: 'grab',
                     opacity: menuAnchor != null ? 1 : 0,

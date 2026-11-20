@@ -109,7 +109,11 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     disabled={!props.editable}
                 />
             </Grid>
-            <Grid size={12}>
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
                 <CheckboxFieldComponent
                     label="Sortieren der Datensätze erlauben"
                     hint="Bei der Eingabe lassen sich die Datensätze per Drag-and-drop oder über das Verschieben-Symbol neben der Überschrift neu anordnen. Ohne diese Option bleiben sie in der Reihenfolge, in der sie hinzugefügt wurden."
