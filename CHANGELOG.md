@@ -1,7 +1,10 @@
 # Changelog
 
 
-## [4.6.3](https://github.com/aivot-digital/gover/compare/v4.6.2...v4.6.3) (2026-XX-XX)
+## [4.6.3](https://github.com/aivot-digital/gover/compare/v4.6.2...v4.6.3) (2026-11-20)
+
+### Breaking Changes
+- **UTF-8 handling of environment variables:** Before updating, check whether `GOVER_SECRETS_KEY` contains non-ASCII characters, such as umlauts or `ß`. If it does, the corrected character decoding changes the effective encryption key, making existing secrets unreadable after the update. Ensure you have their original values available and re-enter the affected secrets after updating.
 
 ### Bug Fixes
 * **Mail:** Fix non-ASCII sender names in the `From` header of outgoing mails.
