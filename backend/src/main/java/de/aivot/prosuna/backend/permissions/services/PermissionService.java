@@ -6,7 +6,6 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.repositories.VUserDepartmentPermissionRepository;
 import de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository;
 import de.aivot.prosuna.backend.permissions.repositories.VUserTeamPermissionRepository;
-import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.teams.entities.TeamEntity;
@@ -233,16 +232,11 @@ public class PermissionService {
                                      @Nonnull Integer processId,
                                      @Nonnull String permission) throws ResponseException {
         if (!hasProcessPermission(userId, processId, permission)) {
-            var processName = processRepository
-                    .findById(processId)
-                    .map(ProcessEntity::getInternalTitle)
-                    .map(StringUtils::quote)
-                    .orElse("mit der ID " + processId);
-
+            // The caller may lack read access, so do not resolve the process name for this error.
             throw ResponseException.forbidden(
-                    "Sie benötigen die Berechtigung %s für den Prozess %s.",
+                    "Sie benötigen die Berechtigung %s für den Prozess mit der ID %s.",
                     StringUtils.quote(permission),
-                    processName
+                    StringUtils.quote(String.valueOf(processId))
             );
         }
     }

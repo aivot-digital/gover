@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
+import de.aivot.prosuna.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlPresetEntity;
@@ -34,12 +35,14 @@ public class ProcessInstanceAccessAuditDescriptionService {
 
     @Nonnull
     public String describePreset(@Nonnull ProcessInstanceAccessControlPresetEntity entry) {
-        var process = processes.findById(entry.getTargetProcessId())
-                .map(ProcessEntity::getInternalTitle)
-                .map(StringUtils::quote)
-                .orElse("mit der ID " + entry.getTargetProcessId());
-        return "die Standardberechtigungen für neue Vorgänge des Prozesses " + process
+        return "die Standardberechtigungen für neue Vorgänge des Prozesses " + describeProcess(entry.getTargetProcessId())
                 + " (Version " + entry.getTargetProcessVersion() + ") für "
+                + describeRecipient(entry.getSourceDepartmentId(), entry.getSourceTeamId());
+    }
+
+    @Nonnull
+    public String describeProcessAccess(@Nonnull ProcessAccessControlEntity entry) {
+        return "die Prozessberechtigungen des Prozesses " + describeProcess(entry.getTargetProcessId()) + " für "
                 + describeRecipient(entry.getSourceDepartmentId(), entry.getSourceTeamId());
     }
 
@@ -51,6 +54,14 @@ public class ProcessInstanceAccessAuditDescriptionService {
                 .orElse("mit der ID " + entry.getTargetProcessInstanceId());
         return "die Berechtigungen am Vorgang " + instance + " für "
                 + describeRecipient(entry.getSourceDepartmentId(), entry.getSourceTeamId());
+    }
+
+    @Nonnull
+    private String describeProcess(@Nonnull Integer processId) {
+        return processes.findById(processId)
+                .map(ProcessEntity::getInternalTitle)
+                .map(StringUtils::quote)
+                .orElse("mit der ID " + processId);
     }
 
     @Nonnull

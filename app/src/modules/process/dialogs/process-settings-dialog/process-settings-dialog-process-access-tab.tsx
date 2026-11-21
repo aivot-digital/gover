@@ -7,12 +7,13 @@ import {ProcessAccessControlEntity} from '../../entities/process-access-control-
 import {PermissionApiService} from '../../../permissions/permission-api-service';
 import {ProcessAccessControlApiService} from '../../services/process-access-control-api-service';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {Typography} from '@mui/material';
+import {Alert, Typography} from '@mui/material';
 import {getDepartmentPath} from '../../../departments/utils/department-utils';
 import {TeamEntity} from '../../../teams/entities/team-entity';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
+import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {
     ProcessSettingsDialogAccessControlMatrix,
     type ProcessSettingsAccessControlAddDomainOption,
@@ -20,6 +21,7 @@ import {
 
 interface ProcessSettingsDialogTabProps {
     open: boolean;
+    readOnly: boolean;
     process: ProcessEntity;
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
@@ -70,9 +72,11 @@ function getAccessDomainKey(access: Pick<ProcessAccessControlEntity, 'sourceDepa
 export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsDialogProcessAccessTabHandle, ProcessSettingsDialogTabProps>(function ProcessSettingsDialogProcessAccessTab(props, ref) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         open,
+        readOnly,
         process,
         departments,
         teams,
@@ -314,7 +318,14 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
         } finally {
             setIsSaving(false);
         }
-    }, [dispatch, draftAccess, hasUnsavedChanges, isSaving, persistedAccess, toAccessEntity]);
+
+        // Grants can change the current user's process permissions; refresh even after a partial failure, since earlier requests may have applied.
+        try {
+            await refreshPermissionSet({broadcast: true});
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Die Berechtigungen konnten nach dem Speichern der Prozessberechtigungen nicht aktualisiert werden.'));
+        }
+    }, [dispatch, draftAccess, hasUnsavedChanges, isSaving, persistedAccess, refreshPermissionSet, toAccessEntity]);
 
     const handleReset = useCallback(() => {
         setDraftAccess(persistedAccess.map(createDraftAccess));
@@ -340,6 +351,16 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
                 Welche Aktionen ihre Mitglieder ausführen dürfen, ergibt sich aus deren Berechtigungen.
             </ElementEditorSectionHeader>
 
+            {
+                readOnly &&
+                <Alert
+                    severity="info"
+                    sx={{mb: 2}}
+                >
+                    Nur die verwaltende Organisationseinheit kann die Prozessberechtigungen ändern. Sie können sie hier einsehen.
+                </Alert>
+            }
+
             <ProcessSettingsDialogAccessControlMatrix
                 permissions={permissions}
                 accessControls={draftAccess}
@@ -347,6 +368,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
                 departments={departments}
                 teams={teams}
                 isBusy={isSaving}
+                readOnly={readOnly}
                 onAccessControlsChange={setDraftAccess}
                 onAddAccessControl={handleAddAccess}
                 onDeleteAccessControl={(access) => {

@@ -16,9 +16,14 @@ import {MoveProcessToDepartmentDialog} from '../move-process-to-department-dialo
 import {DepartmentSelectField} from '../../../departments/components/department-select-field';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 interface ProcessSettingsDialogGeneralTabProps {
     open: boolean;
+    readOnly: boolean;
+    canDeleteProcess: boolean;
+    canMoveProcess: boolean;
     process: ProcessEntity;
     departments: VDepartmentShadowedEntity[];
     onProcessChange: (process: ProcessEntity) => void;
@@ -38,6 +43,9 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
 
     const {
         open,
+        readOnly,
+        canDeleteProcess,
+        canMoveProcess,
         process,
         departments,
         onProcessChange,
@@ -218,6 +226,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
 
                 <TextFieldComponent
                     label="Interne Bezeichnung"
+                    disabled={readOnly}
                     value={draft.internalTitle}
                     onChange={(val) => {
                         setDraft({
@@ -234,6 +243,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
 
                 <TextFieldComponent
                     label="URL-Namespace des Prozesses"
+                    disabled={readOnly}
                     value={draft.slug}
                     onChange={(val) => {
                         const nextSlug = normalizeProcessSlugInput(val) ?? '';
@@ -288,6 +298,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                         <Button
                             variant="outlined"
                             startIcon={<History/>}
+                            disabled={readOnly}
                             onClick={() => {
                                 setShowSlugHistoryDialog(true);
                             }}
@@ -317,13 +328,14 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                     }
                     hint={
                         'Versionsunabhängig. Eine Übertragung kann die Sichtbarkeit des Prozesses und Ihre eigenen Berechtigungen verändern.' +
+                        (canMoveProcess ? '' : ' Nur die verwaltende Organisationseinheit kann diesen Prozess übertragen.') +
                         (hasUnsavedChanges ? ' Speichern Sie zuerst die allgemeinen Einstellungen.' : '')
                     }
                     externalAction={
                         <Button
                             variant="outlined"
                             startIcon={<MoveGroup/>}
-                            disabled={hasUnsavedChanges || isSaving}
+                            disabled={!canMoveProcess || hasUnsavedChanges || isSaving}
                             onClick={() => {
                                 // Moving the process changes its permission boundary, so keep it separate from unsaved metadata edits.
                                 setShowMoveDialog(true);
@@ -343,8 +355,10 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                 </ElementEditorSectionHeader>
 
                 <DisabledTooltip
-                    disabled={hasUnsavedChanges || isSaving}
-                    title={hasUnsavedChanges ? 'Speichern Sie zuerst die allgemeinen Einstellungen.' : undefined}
+                    disabled={!canDeleteProcess || hasUnsavedChanges || isSaving}
+                    title={!canDeleteProcess
+                        ? formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_DELETE)
+                        : hasUnsavedChanges ? 'Speichern Sie zuerst die allgemeinen Einstellungen.' : undefined}
                     wrapperSx={{
                         alignSelf: 'flex-start',
                     }}
@@ -353,7 +367,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                         variant="outlined"
                         color="error"
                         startIcon={<Delete/>}
-                        disabled={hasUnsavedChanges || isSaving}
+                        disabled={!canDeleteProcess || hasUnsavedChanges || isSaving}
                         onClick={onDeleteProcess}
                     >
                         Prozess löschen

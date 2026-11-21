@@ -528,7 +528,7 @@ public class ProcessController {
             summary = "Move Process",
             description = "Move a process to another department. " +
                     "Requires the permission `" + ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE +
-                    "` for the affected process and `" + ProcessPermissionProvider.PROCESS_DEFINITION_CREATE +
+                    "` for the organisation unit that manages the process and `" + ProcessPermissionProvider.PROCESS_DEFINITION_CREATE +
                     "` for the target organisation unit. System-level grants satisfy the corresponding requirement."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
@@ -550,10 +550,10 @@ public class ProcessController {
         var existingMap = objectMapper
                 .convertValue(process, Map.class);
 
-        // Check if the user has edit permission for the process in the original department
-        permissionService.requireProcessPermission(
+        // Delegated process grants do not count: moving a process would hand its access rules to the target department.
+        permissionService.requireDepartmentPermission(
                 user.getId(),
-                process.getId(),
+                process.getDepartmentId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 

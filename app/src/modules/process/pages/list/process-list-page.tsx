@@ -6,7 +6,13 @@ import {Box} from '@mui/material';
 import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectMemberships} from '../../../../slices/user-slice';
+import {selectMemberships, selectPermissions} from '../../../../slices/user-slice';
+import {Permission} from '../../../../data/permissions/permission';
+import {
+    formatMissingPermissionTooltip,
+    hasAnyDepartmentPermission,
+    hasProcessPermission,
+} from '../../../permissions/utils/permission-utils';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
 import {GridColDef} from '@mui/x-data-grid';
@@ -204,6 +210,9 @@ const columns: GridColDef<ProcessListEntry>[] = [
 export function ProcessListPage() {
     const dispatch = useAppDispatch();
     const memberships = useAppSelector(selectMemberships);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateProcess = hasAnyDepartmentPermission(permissions, Permission.PROCESS_DEFINITION_CREATE);
+    const missingCreateTooltip = formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE);
     const listControlRef = useRef<ListControlRef>(null);
     const deleteProcess = useDeleteProcess();
     const {value: departmentFilter, setValue: setDepartmentFilter} = useListFilter('departmentId');
@@ -306,6 +315,8 @@ export function ProcessListPage() {
                     setShowAddDialog(true);
                 },
                 variant: 'contained',
+                disabled: !canCreateProcess,
+                disabledTooltip: missingCreateTooltip,
             },
         ],
         helpDialog: {
@@ -340,7 +351,7 @@ export function ProcessListPage() {
                 </>
             ),
         },
-    }), []);
+    }), [canCreateProcess, missingCreateTooltip]);
 
     const fetchFilterCounts = useCallback<FetchListFilterCounts>(
         ({signal}) => new ProcessDefinitionApiService().counts(signal),
@@ -404,51 +415,58 @@ export function ProcessListPage() {
                     description="Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration. Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden."
                     addText="Neuen Prozess anlegen"
                     onAdd={() => setShowAddDialog(true)}
+                    addDisabled={!canCreateProcess}
+                    addDisabledTooltip={missingCreateTooltip}
                 />
             }
         </Box>
-    ), [memberships]);
+    ), [canCreateProcess, memberships, missingCreateTooltip]);
 
-    const rowActions = useCallback((item: ProcessListEntry) => [
-        {
-            icon: <Edit/>,
-            to: `/processes/${item.id}/versions/${item.draftedVersion}`,
-            tooltip: 'Prozess bearbeiten',
-            visible: item.draftedVersion != null,
-        },
-        {
-            icon: <Visibility/>,
-            to: `/processes/${item.id}/versions/latest`,
-            tooltip: 'Prozess ansehen',
-            visible: item.draftedVersion === null && item.versionCount > 0,
-        },
-        {
-            icon: <NewWindow/>,
-            onClick: () => {
-                handleAddDraft(item.id);
+    const rowActions = useCallback((item: ProcessListEntry) => {
+        const canUpdate = hasProcessPermission(permissions, item.id, Permission.PROCESS_DEFINITION_UPDATE);
+
+        return [
+            {
+                icon: canUpdate ? <Edit/> : <Visibility/>,
+                to: `/processes/${item.id}/versions/${item.draftedVersion}`,
+                tooltip: canUpdate ? 'Prozess bearbeiten' : 'Prozess ansehen',
+                visible: item.draftedVersion != null,
             },
-            tooltip: 'Neuen Entwurf anlegen',
-            visible: item.draftedVersion == null,
-            disabled: item.publishedVersion == null && item.draftedVersion != null,
-        },
-        {
-            icon: <HomeStorage/>,
-            onClick: () => {
-                setShowVersionsDialogForProcess(item);
+            {
+                icon: <Visibility/>,
+                to: `/processes/${item.id}/versions/latest`,
+                tooltip: 'Prozess ansehen',
+                visible: item.draftedVersion === null && item.versionCount > 0,
             },
-            tooltip: 'Versionen anzeigen',
-        },
-        {
-            icon: <MoreVertOutlinedIcon/>,
-            onClick: (event: React.MouseEvent<HTMLElement>) => {
-                setRowMenu({
-                    target: event.currentTarget as HTMLElement,
-                    process: item,
-                });
+            {
+                icon: <NewWindow/>,
+                onClick: () => {
+                    handleAddDraft(item.id);
+                },
+                tooltip: 'Neuen Entwurf anlegen',
+                visible: item.draftedVersion == null,
+                disabled: !canUpdate || (item.publishedVersion == null && item.draftedVersion != null),
+                disabledTooltip: canUpdate ? undefined : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE),
             },
-            tooltip: 'Optionen',
-        },
-    ], [handleAddDraft]);
+            {
+                icon: <HomeStorage/>,
+                onClick: () => {
+                    setShowVersionsDialogForProcess(item);
+                },
+                tooltip: 'Versionen anzeigen',
+            },
+            {
+                icon: <MoreVertOutlinedIcon/>,
+                onClick: (event: React.MouseEvent<HTMLElement>) => {
+                    setRowMenu({
+                        target: event.currentTarget as HTMLElement,
+                        process: item,
+                    });
+                },
+                tooltip: 'Optionen',
+            },
+        ];
+    }, [handleAddDraft, permissions]);
 
     return (
         <>

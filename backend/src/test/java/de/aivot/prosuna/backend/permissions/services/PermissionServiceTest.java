@@ -11,6 +11,8 @@ import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.teams.repositories.TeamRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.http.HttpStatus;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class PermissionServiceTest {
@@ -95,6 +98,32 @@ class PermissionServiceTest {
 
         assertDoesNotThrow(() -> permissionService.requireProcessPermission(USER_ID, 42, PERMISSION));
         assertDoesNotThrow(() -> permissionService.requireProcessPermission(USER_ID, 43, PERMISSION));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            ProcessPermissionProvider.PROCESS_DEFINITION_READ,
+            ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+    })
+    void deniedProcessPermissionShouldOnlyIdentifyTheRequestedIdWithoutLoadingTheName(String permission) {
+        var error = assertThrows(ResponseException.class,
+                () -> permissionService.requireProcessPermission(USER_ID, 42, permission));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatus());
+        assertEquals("Sie benötigen die Berechtigung „" + permission + "“ für den Prozess mit der ID „42“.", error.getMessage());
+        verify(processRepository).hasPermission(USER_ID, 42, permission);
+        verifyNoMoreInteractions(processRepository);
+    }
+
+    @Test
+    void deniedProcessInstancePermissionShouldIdentifyTheRequestedId() {
+        var error = assertThrows(ResponseException.class,
+                () -> permissionService.requireProcessInstancePermission(USER_ID, 42L, PROCESS_INSTANCE_READ));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatus());
+        assertEquals("Sie benötigen die Berechtigung „process_instance.read“ für den Vorgang mit der ID „42“.", error.getMessage());
+        verify(instances).hasPermission(USER_ID, 42L, PROCESS_INSTANCE_READ);
+        verifyNoMoreInteractions(instances);
     }
 
     @Test

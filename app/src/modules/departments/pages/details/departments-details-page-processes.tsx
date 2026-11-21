@@ -14,7 +14,7 @@ import {ProcessStatusChipGroup} from '../../../process/components/process-status
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {requireDepartmentPermission} from '../../../permissions/utils/permission-utils';
+import {hasProcessPermission, requireDepartmentPermission} from '../../../permissions/utils/permission-utils';
 import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 const filters = [
@@ -146,9 +146,9 @@ export function DepartmentsDetailsPageProcesses() {
                 noSearchResultsPlaceholder="Keine Prozesse gefunden"
                 rowActions={(item) => [
                     {
-                        icon: <Edit />,
+                        icon: hasProcessPermission(permissions, item.id, Permission.PROCESS_DEFINITION_UPDATE) ? <Edit /> : <Visibility />,
                         to: `/processes/${item.id}/versions/${item.draftedVersion}`,
-                        tooltip: 'Prozess bearbeiten',
+                        tooltip: hasProcessPermission(permissions, item.id, Permission.PROCESS_DEFINITION_UPDATE) ? 'Prozess bearbeiten' : 'Prozess ansehen',
                         visible: item.draftedVersion != null,
                     },
                     {
