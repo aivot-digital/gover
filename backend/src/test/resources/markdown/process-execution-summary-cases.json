@@ -1,0 +1,91 @@
+{
+  "cases": [
+    {
+      "name": "plain subject with Markdown characters",
+      "mode": "detail",
+      "title": "Betreff",
+      "value": "*Wichtig* & <Hinweis>",
+      "expectedMarkdown": "\n\nBetreff\n:   \\*Wichtig\\* \\& \\<Hinweis\\>",
+      "terms": [
+        "Betreff"
+      ],
+      "contains": [
+        "*Wichtig* & <Hinweis>"
+      ]
+    },
+    {
+      "name": "remark with paragraphs and a list",
+      "mode": "section",
+      "title": "Vermerk",
+      "value": "Erster Absatz.\n\n- **Freigegeben**\n- Zweiter Punkt",
+      "expectedMarkdown": "\n\nVermerk\n:   Erster Absatz.\n    \n    - **Freigegeben**\n    - Zweiter Punkt",
+      "terms": [
+        "Vermerk"
+      ],
+      "contains": [
+        "Erster Absatz.",
+        "Freigegeben",
+        "Zweiter Punkt"
+      ]
+    },
+    {
+      "name": "formatted response with fenced code",
+      "mode": "section",
+      "title": "Antwort der KI",
+      "value": "## Ergebnis\n\n```json\n{\"ok\": true}\n```",
+      "expectedMarkdown": "\n\nAntwort der KI\n:   ## Ergebnis\n    \n    ```json\n    {\"ok\": true}\n    ```",
+      "terms": [
+        "Antwort der KI"
+      ],
+      "contains": [
+        "Ergebnis",
+        "{\"ok\": true}"
+      ]
+    },
+    {
+      "name": "escaped term",
+      "mode": "section",
+      "title": "*Titel*",
+      "value": "Inhalt",
+      "expectedMarkdown": "\n\n\\*Titel\\*\n:   Inhalt",
+      "terms": [
+        "*Titel*"
+      ],
+      "contains": [
+        "Inhalt"
+      ]
+    },
+    {
+      "name": "missing value",
+      "mode": "detail",
+      "title": "Vermerk",
+      "value": null,
+      "expectedMarkdown": "",
+      "terms": [],
+      "contains": []
+    },
+    {
+      "name": "blank value",
+      "mode": "section",
+      "title": "Vermerk",
+      "value": "  \n\t",
+      "expectedMarkdown": "",
+      "terms": [],
+      "contains": []
+    },
+    {
+      "name": "indented code retains its indentation",
+      "mode": "section",
+      "title": "Beispiel",
+      "value": "    code\n\n    more code",
+      "expectedMarkdown": "\n\nBeispiel\n:       code\n    \n        more code",
+      "terms": [
+        "Beispiel"
+      ],
+      "contains": [
+        "code",
+        "more code"
+      ]
+    }
+  ]
+}

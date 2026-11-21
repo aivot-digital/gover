@@ -18,6 +18,7 @@ import {PROCESS_INSTANCE_STAFF_EVENT_TYPE} from '../data/process-instance-staff-
 export interface ProcessRuntimeData {
     instance: ProcessInstanceEntity;
     tasks: ProcessInstanceTaskEntity[];
+    tasksComplete?: boolean;
     events: ProcessInstanceEventEntity[];
     attachments: ProcessInstanceAttachmentEntity[];
     attachmentSets: ProcessInstanceAttachmentSetEntity[];
@@ -31,7 +32,10 @@ export function useProcessRuntimeData(instanceId: number | null) {
     const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     // Loads overlap, e.g. after a change of the instance, and can answer out of order. Only the latest load is shown,
     // and the loading state lasts until all have finished.
-    const loadsRef = useRef({latest: 0, running: 0});
+    const loadsRef = useRef({
+        latest: 0,
+        running: 0,
+    });
 
     const loadRuntimeData = useCallback(() => {
         const load = ++loadsRef.current.latest;
@@ -79,6 +83,7 @@ export function useProcessRuntimeData(instanceId: number | null) {
                 setRuntimeData({
                     instance,
                     tasks: tasks.content,
+                    tasksComplete: tasks.page.totalElements === tasks.content.length,
                     attachments: attachments.content,
                     attachmentSets: attachmentSets.content,
                     events,

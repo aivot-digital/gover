@@ -30,11 +30,11 @@ function permissions(instanceIds: number[], system = false): PermissionSet {
         })),
         systemPermissions: system
             ? [
-                  {
-                      userId: 'user',
-                      permissions: [Permission.PROCESS_INSTANCE_EDIT_TASK],
-                  },
-              ]
+                {
+                    userId: 'user',
+                    permissions: [Permission.PROCESS_INSTANCE_EDIT_TASK],
+                },
+            ]
             : [],
     };
 }
@@ -52,7 +52,12 @@ function emptyPage() {
 }
 
 function renderRuntimeData(instanceId: number, initialPermissions: PermissionSet) {
-    const store = configureStore({reducer: {user: userReducer, shell: shellReducer}});
+    const store = configureStore({
+        reducer: {
+            user: userReducer,
+            shell: shellReducer,
+        },
+    });
     store.dispatch(
         setUser({
             id: 'user',
@@ -69,14 +74,17 @@ function renderRuntimeData(instanceId: number, initialPermissions: PermissionSet
     store.dispatch(setPermissions(initialPermissions));
 
     const hook = renderHook(
-        ({instanceId}: {instanceId: number}) => {
+        ({instanceId}: { instanceId: number }) => {
             const runtime = useProcessRuntimeData(instanceId);
             // Mirrors the gate of "Aufgabe erneut ausführen" in the flow editor node.
             const canEditTask = useHasProcessInstancePermission(
                 runtime.runtimeData?.instance.id,
                 Permission.PROCESS_INSTANCE_EDIT_TASK,
             );
-            return {...runtime, canEditTask};
+            return {
+                ...runtime,
+                canEditTask,
+            };
         },
         {
             initialProps: {instanceId},
@@ -84,7 +92,10 @@ function renderRuntimeData(instanceId: number, initialPermissions: PermissionSet
         },
     );
 
-    return {...hook, store};
+    return {
+        ...hook,
+        store,
+    };
 }
 
 describe('useProcessRuntimeData', () => {
@@ -98,6 +109,20 @@ describe('useProcessRuntimeData', () => {
         vi.spyOn(ProcessInstanceAttachmentSetApiService.prototype, 'listAll').mockResolvedValue(emptyPage());
     });
     afterEach(() => vi.restoreAllMocks());
+
+    it('exposes whether the task page contains the complete instance history', async () => {
+        vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(permissions([17]));
+        vi.mocked(ProcessInstanceTaskApiService.prototype.listAll).mockResolvedValue({
+            ...emptyPage(),
+            page: {
+                ...emptyPage().page,
+                totalElements: 2000,
+            },
+        });
+        const {result} = renderRuntimeData(17, permissions([17]));
+        await waitFor(() => expect(result.current.runtimeData?.instance.id).toBe(17));
+        expect(result.current.runtimeData?.tasksComplete).toBe(false);
+    });
 
     it('waits for fresh permissions before exposing an instance created after they were loaded', async () => {
         let resolvePermissions!: (value: PermissionSet) => void;
@@ -114,13 +139,17 @@ describe('useProcessRuntimeData', () => {
         await act(async () => resolvePermissions(permissions([17, 18])));
         await waitFor(() => expect(result.current.runtimeData?.instance.id).toBe(18));
         expect(result.current.canEditTask).toBe(true);
+        expect(result.current.runtimeData?.tasksComplete).toBe(true);
     });
 
     it('refreshes the permissions when switching instances and reloading the runtime data', async () => {
         const refresh = vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet')
             .mockResolvedValueOnce(permissions([17]))
             .mockResolvedValue(permissions([17, 18]));
-        const {result, rerender} = renderRuntimeData(17, permissions([17]));
+        const {
+            result,
+            rerender,
+        } = renderRuntimeData(17, permissions([17]));
         await waitFor(() => expect(result.current.runtimeData?.instance.id).toBe(17));
 
         rerender({instanceId: 18});
@@ -142,9 +171,15 @@ describe('useProcessRuntimeData', () => {
             if (id === 17) {
                 await earlierLoadAnswered;
             }
-            return {...new ProcessInstanceApiService().initialize(), id};
+            return {
+                ...new ProcessInstanceApiService().initialize(),
+                id,
+            };
         });
-        const {result, rerender} = renderRuntimeData(17, permissions([17, 18]));
+        const {
+            result,
+            rerender,
+        } = renderRuntimeData(17, permissions([17, 18]));
 
         rerender({instanceId: 18});
         await waitFor(() => expect(result.current.runtimeData?.instance.id).toBe(18));
@@ -169,7 +204,10 @@ describe('useProcessRuntimeData', () => {
     it('does not show the runtime data with stale permissions when the refresh fails', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => undefined);
         vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockRejectedValue(new Error('Unavailable'));
-        const {result, store} = renderRuntimeData(18, permissions([18]));
+        const {
+            result,
+            store,
+        } = renderRuntimeData(18, permissions([18]));
 
         await waitFor(() => expect(result.current.isRefreshingRuntimeData).toBe(false));
         expect(result.current.runtimeData).toBeNull();
