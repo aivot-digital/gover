@@ -58,6 +58,11 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -66,12 +71,12 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
                                 NoCodeDataType.Object,
                                 "Objekt",
                                 "Das Objekt, aus dem ein Element abgerufen werden soll."
-                        ),
+                        ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Feldbezeichner",
                                 "Der Bezeichner des Feldes, das abgerufen werden soll."
-                        )
+                        ).withSentence("den Wert des Feldes")
                 )
         );
     }

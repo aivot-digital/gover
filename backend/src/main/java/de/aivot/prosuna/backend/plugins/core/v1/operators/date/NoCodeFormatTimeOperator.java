@@ -39,6 +39,11 @@ public class NoCodeFormatTimeOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -47,14 +52,14 @@ public class NoCodeFormatTimeOperator extends NoCodeOperator {
                                 NoCodeDataType.Time,
                                 "Uhrzeit",
                                 "Die zu formatierende lokale Uhrzeit."
-                        ),
+                        ).withSentence("die Uhrzeit"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Format",
                                 "Das Ausgabeformat.",
                                 new NoCodeParameterOption("Stunde und Minute", MINUTE_PATTERN),
                                 new NoCodeParameterOption("Mit Sekunden", SECOND_PATTERN)
-                        )
+                        ).withSentence("im Format")
                 )
         );
     }

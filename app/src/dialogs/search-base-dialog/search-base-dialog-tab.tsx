@@ -79,7 +79,7 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                     label={props.searchPlaceholder}
                     placeholder="Suchen…"
                     autoFocus
-                    size={"small"}
+                    size={'small'}
                     sx={{
                         marginRight: highlightedOption != null ? 2 : 0,
                     }}
@@ -116,6 +116,12 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                     ? props.primaryTextKey(option)
                                     : option[props.primaryTextKey] as string;
                                 const detailsExpanded = highlightedOption === option;
+                                const detailsActionProps = {
+                                    'aria-label': `${optionLabel}: Details ${detailsExpanded ? 'schließen' : 'anzeigen'}`,
+                                    'aria-expanded': detailsExpanded,
+                                    'aria-controls': detailsExpanded ? detailsId : undefined,
+                                    onClick: () => setHighlightedOption(detailsExpanded ? undefined : option),
+                                };
 
                                 return (
                                     <ListItem
@@ -123,34 +129,8 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                         sx={{
                                             background: highlightedOption === option ? theme.palette.grey['200'] : undefined,
                                             padding: 0,
+                                            alignItems: 'flex-start',
                                         }}
-                                        secondaryAction={
-                                            props.detailsBuilder != null ? (
-                                                <Tooltip
-                                                    title={detailsExpanded ? 'Details schließen' : 'Details anzeigen'}
-                                                    arrow
-                                                >
-                                                    <IconButton
-                                                        aria-label={`${optionLabel}: Details ${detailsExpanded ? 'schließen' : 'anzeigen'}`}
-                                                        aria-expanded={detailsExpanded}
-                                                        aria-controls={detailsExpanded ? detailsId : undefined}
-                                                        onClick={() => {
-                                                            if (detailsExpanded) {
-                                                                setHighlightedOption(undefined);
-                                                            } else {
-                                                                setHighlightedOption(option);
-                                                            }
-                                                        }}
-                                                    >
-                                                        {
-                                                            detailsExpanded ?
-                                                                <CancelOutlinedIcon /> :
-                                                                <InfoOutlinedIcon />
-                                                        }
-                                                    </IconButton>
-                                                </Tooltip>
-                                            ) : undefined
-                                        }
                                     >
                                         <ListItemButton
                                             onClick={() => {
@@ -158,6 +138,9 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                             }}
                                             sx={{
                                                 paddingY: 0,
+                                                minWidth: 0,
+                                                flex: 1,
+                                                alignItems: 'flex-start',
                                             }}
                                         >
                                             {
@@ -167,6 +150,10 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                                 </ListItemIcon>
                                             }
                                             <ListItemText
+                                                sx={{
+                                                    minWidth: 0,
+                                                    overflowWrap: 'anywhere',
+                                                }}
                                                 primary={
                                                     optionLabel
                                                 }
@@ -180,6 +167,26 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                                                 }
                                             />
                                         </ListItemButton>
+                                        {props.detailsBuilder != null && <Box sx={{
+                                            flexShrink: 0,
+                                            px: 1,
+                                            py: 0.5,
+                                        }}>
+                                            <Tooltip
+                                                title={detailsExpanded ? 'Details schließen' : 'Details anzeigen'}
+                                                arrow
+                                            >
+                                                <IconButton
+                                                    {...detailsActionProps}
+                                                >
+                                                    {
+                                                        detailsExpanded ?
+                                                            <CancelOutlinedIcon/> :
+                                                            <InfoOutlinedIcon/>
+                                                    }
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>}
                                     </ListItem>
                                 );
                             })
@@ -216,8 +223,10 @@ export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {
                             borderTop: `1px solid ${theme.palette.grey['300']}`,
                             paddingX: 2,
                             paddingY: 1,
+                            gap: 1,
                         }}
                     >
+                        <Button onClick={() => setHighlightedOption(undefined)}>Details schließen</Button>
                         <Button
                             variant="contained"
                             onClick={() => {

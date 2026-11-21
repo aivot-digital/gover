@@ -62,6 +62,11 @@ public class NoCodeDivideOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -70,12 +75,12 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Dividend",
                                 "Der zu teilende Wert."
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Divisor",
                                 "Der Wert, durch den geteilt wird."
-                        )
+                        ).withSentence("geteilt durch")
                 )
         );
     }

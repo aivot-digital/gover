@@ -54,6 +54,11 @@ public class NoCodeExtractDateTimePartOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return part == Part.DATE ? "ergibt das Datum" : "ergibt die Uhrzeit";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -62,7 +67,7 @@ public class NoCodeExtractDateTimePartOperator extends NoCodeOperator {
                                 NoCodeDataType.DateTime,
                                 "Zeitpunkt",
                                 "Der absolute Zeitpunkt."
-                        )
+                        ).withSentence("aus")
                 )
         );
     }

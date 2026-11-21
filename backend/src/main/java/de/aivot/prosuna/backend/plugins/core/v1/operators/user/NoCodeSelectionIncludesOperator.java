@@ -68,12 +68,12 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
                                 NoCodeDataType.Runtime,
                                 "Auswahl",
                                 "Die Auswahl oder der Zuweisungskontext, in dem gesucht werden soll."
-                        ),
+                        ).withSentence("wenn die Auswahl"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Gesuchte Einträge",
                                 "Ein Eintrag in der Form Typ:ID oder eine Auswahl, deren Einträge alle enthalten sein müssen."
-                        )
+                        ).withSentence("alle Einträge aus", "enthält")
                 )
         );
     }
@@ -117,5 +117,11 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
                 .stream()
                 .map(DomainAndUserSelectInputElementValue::toComparableKey)
                 .collect(Collectors.toSet());
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 }

@@ -22,12 +22,12 @@ public class NoCodePhoneNumberFormatOperator extends NoCodeOperator {
     @Override @Nonnull public String[] getTags() { return new String[]{"Telefonnummer", "Formatierung", "Telefon", "Text"}; }
     @Override @Nonnull public String getHumanReadableTemplate() { return "formatierte Telefonnummer von „#0“"; }
     @Override @Nonnull public NoCodeSignatur[] getSignatures() {
-        var number = new NoCodeParameter(NoCodeDataType.String, "Telefonnummer", "Die Telefonnummer mit internationaler Ländervorwahl.");
+        var number = new NoCodeParameter(NoCodeDataType.String, "Telefonnummer", "Die Telefonnummer mit internationaler Ländervorwahl.").withSentence("die Telefonnummer");
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(NoCodeDataType.String, number),
                 NoCodeSignatur.of(NoCodeDataType.String, number,
                         new NoCodeParameter(NoCodeDataType.String, "Darstellung", "Standard: international.",
-                                new NoCodeParameterOption("International", "international"), new NoCodeParameterOption("National", "national"))));
+                                new NoCodeParameterOption("International", "international"), new NoCodeParameterOption("National", "national")).withSentence("in der Darstellung")));
     }
     @Override @Nonnull
     public NoCodeResult performEvaluation(@Nonnull DerivedRuntimeElementData data, @Nonnull Object... args) throws NoCodeException {
@@ -39,5 +39,11 @@ public class NoCodePhoneNumberFormatOperator extends NoCodeOperator {
             default -> throw new NoCodeException("Bitte wählen Sie international oder national als Darstellung aus.");
         };
         return new NoCodeResult(PhoneNumberUtils.formatPhoneNumber(castToString(args[0]), national));
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "formatiert";
     }
 }

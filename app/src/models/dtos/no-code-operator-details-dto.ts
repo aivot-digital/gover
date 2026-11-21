@@ -7,6 +7,8 @@ export interface NoCodeOperatorDetailsDTO {
     description: string;
     abstractDescription: string;
     humanReadableTemplate: string | null;
+    /** Text after the operator that starts the sentence its parameters continue, such as „ergibt wahr“. */
+    sentenceLead?: string | null;
     tags: string[];
     signatures: NoCodeSignature[];
 }
@@ -20,6 +22,10 @@ export interface NoCodeParameter {
     type: NoCodeDataType;
     label: string;
     description: string | null | undefined;
+    /** Text before the operand. Null falls back to the label, an empty text shows nothing. */
+    sentencePhrase?: string | null;
+    /** Text after the operand. */
+    sentenceSuffix?: string | null;
     options: NoCodeParameterOption[];
 }
 

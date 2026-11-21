@@ -26,4 +26,5 @@ export interface CodeEditorProps {
     }[];
     alert?: AlertComponentProps;
     onEditorMount?: (editor: editor.IStandaloneCodeEditor) => void;
+    toolbarContainer?: HTMLElement | null;
 }

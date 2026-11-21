@@ -17,8 +17,9 @@ vi.mock('../../services/no-code-api-service', () => ({
     },
 }));
 vi.mock('../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper', () => ({
-    NoCodeEditorWrapper: (props: {editable: boolean; label?: string}) => (
-        <div data-testid="no-code-editor" data-editable={props.editable}>
+    NoCodeEditorWrapper: (props: { editable: boolean; label?: string }) => (
+        <div data-testid="no-code-editor"
+             data-editable={props.editable}>
             {props.label}
         </div>
     ),
@@ -62,6 +63,22 @@ describe('NoCodeInputFieldComponent', () => {
         expect(dialog).toHaveAttribute('role', 'dialog');
         expect(dialog).toHaveAccessibleName('Freigabebedingung');
         expect(screen.getByTestId('no-code-editor')).toHaveAttribute('data-editable', 'true');
+    });
+
+    it('uses a preview and dialog in compact process configurations', async () => {
+        render(<NoCodeInputFieldComponent rootElement={{
+            ...rootElement,
+            type: ElementType.GroupLayout,
+        } as unknown as AnyElement}
+                                          label="Bedingung"
+                                          value={null}
+                                          onChange={vi.fn()}
+                                          desiredReturnType={NoCodeDataType.Boolean}/>);
+        expect(screen.queryByTestId('no-code-editor')).not.toBeInTheDocument();
+        expect(screen.getByRole('group', {name: 'Bedingung – optional'})).toHaveTextContent('Kein Ausdruck definiert');
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Bearbeiten'}));
+        expect(await screen.findByRole('dialog', {name: 'Bedingung'})).toBeInTheDocument();
+        expect(screen.getByTestId('no-code-editor')).toBeInTheDocument();
     });
 
     it('renders one shared error and a view action in read-only mode', () => {

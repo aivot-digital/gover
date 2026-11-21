@@ -46,6 +46,11 @@ public class NoCodeValueOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt den Wert";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -54,7 +59,7 @@ public class NoCodeValueOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Ziel",
                                 "Die ID des Elementes, dessen Wert zurückgegeben werden soll."
-                        )
+                        ).withSentence("von")
                 )
         );
     }

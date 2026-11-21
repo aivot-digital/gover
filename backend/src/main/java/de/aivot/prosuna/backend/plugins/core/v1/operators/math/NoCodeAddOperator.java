@@ -66,6 +66,11 @@ public class NoCodeAddOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -74,12 +79,12 @@ public class NoCodeAddOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Summand 1",
                                 "Der erste Wert, der addiert werden soll."
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Summand 2",
                                 "Der zweite Wert, der addiert werden soll."
-                        )
+                        ).withSentence("plus")
                 )
         );
     }

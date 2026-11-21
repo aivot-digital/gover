@@ -74,6 +74,11 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -82,7 +87,7 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
                                 temporalType.dataType,
                                 "Wert 1",
                                 "Der linke Vergleichswert."
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Vergleich",
@@ -93,12 +98,12 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
                                 new NoCodeParameterOption("ist davor oder gleich", BEFORE_OR_EQUAL),
                                 new NoCodeParameterOption("ist danach", AFTER),
                                 new NoCodeParameterOption("ist danach oder gleich", AFTER_OR_EQUAL)
-                        ),
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 temporalType.dataType,
                                 "Wert 2",
                                 "Der rechte Vergleichswert."
-                        )
+                        ).withSentence("")
                 )
         );
     }

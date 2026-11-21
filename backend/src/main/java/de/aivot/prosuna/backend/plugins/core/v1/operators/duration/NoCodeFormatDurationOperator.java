@@ -49,12 +49,12 @@ public class NoCodeFormatDurationOperator extends NoCodeOperator {
     @Nonnull
     @Override
     public NoCodeSignatur[] getSignatures() {
-        var duration = new NoCodeParameter(NoCodeDataType.Number, "Zeitdauer in Sekunden", "Die gesamte Zeitdauer als Sekundenwert, zum Beispiel aus einem Zeitdauer-Feld.");
+        var duration = new NoCodeParameter(NoCodeDataType.Number, "Zeitdauer in Sekunden", "Die gesamte Zeitdauer als Sekundenwert, zum Beispiel aus einem Zeitdauer-Feld.").withSentence("die Zeitdauer in Sekunden");
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(NoCodeDataType.String, duration,
                         new NoCodeParameter(NoCodeDataType.String, "Größte Einheit", "Stunden oder Tage. Ein Tag entspricht immer 24 Stunden.",
                                 new NoCodeParameterOption("Stunden", "hours"),
-                                new NoCodeParameterOption("Tage", "days"))));
+                                new NoCodeParameterOption("Tage", "days")).withSentence("mit der größten Einheit")));
     }
 
     @Nonnull
@@ -67,5 +67,11 @@ public class NoCodeFormatDurationOperator extends NoCodeOperator {
             default -> throw new NoCodeException("Bitte wählen Sie Stunden oder Tage als größte Einheit aus.");
         };
         return new NoCodeResult(DurationValueUtils.formatSeconds(seconds, false, largestUnit));
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "formatiert";
     }
 }

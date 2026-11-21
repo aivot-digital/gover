@@ -59,6 +59,16 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    /** The phrase after the value, so subclasses keep the sentence of this operator. */
+    protected String getEmptinessSuffix() {
+        return "nicht leer ist";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -67,7 +77,7 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
                                 NoCodeDataType.Runtime,
                                 "Wert",
                                 "Der zu überprüfende Wert."
-                        )
+                        ).withSentence("wenn", getEmptinessSuffix())
                 )
         );
     }

@@ -56,6 +56,11 @@ public class NoCodeAndOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -66,14 +71,14 @@ public class NoCodeAndOperator extends NoCodeOperator {
                                 "Die erste Bedingung, die überprüft werden soll.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
                                 "Bedingung 2",
                                 "Die zweite Bedingung, die überprüft werden soll.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        )
+                        ).withSentence("und")
                 )
         );
     }

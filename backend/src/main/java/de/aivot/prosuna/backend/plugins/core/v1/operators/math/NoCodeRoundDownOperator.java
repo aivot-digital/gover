@@ -62,6 +62,11 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -70,12 +75,12 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Wert",
                                 "Die Zahl, die abgerundet werden soll."
-                        ),
+                        ).withSentence("", "abgerundet"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Dezimalstellen",
                                 "Die Anzahl der Dezimalstellen, auf die abgerundet werden soll."
-                        )
+                        ).withSentence("auf", "Dezimalstellen")
                 )
         );
     }

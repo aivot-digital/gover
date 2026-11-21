@@ -62,6 +62,11 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die gemeinsamen Einträge";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -70,12 +75,12 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste 1",
                                 "Die erste Liste, deren gemeinsame Werte ermittelt werden sollen."
-                        ),
+                        ).withSentence("von"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Liste 2",
                                 "Die zweite Liste, mit der die Schnittmenge gebildet werden soll."
-                        )
+                        ).withSentence("und")
                 )
         );
     }

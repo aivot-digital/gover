@@ -1,3 +1,4 @@
+import {NO_CODE_BOOLEAN_OPTIONS} from '../utils/no-code-options';
 import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
@@ -24,15 +25,13 @@ interface NoCodeOperandEditorStaticValueProps {
     value: NoCodeStaticValue;
     onChange: (value: NoCodeStaticValue | undefined) => void;
     options?: NoCodeParameterOption[];
+    optionsAreSuggestions?: boolean;
     desiredType: NoCodeDataType;
     onAddEnclosingExpression: () => void;
     operandError?: NoCodeOperandError;
 }
 
-export const BOOL_DEFAULT_OPTIONS: NoCodeParameterOption[] = [
-    {label: 'Wahr', value: 'true'},
-    {label: 'Falsch', value: 'false'},
-];
+export const BOOL_DEFAULT_OPTIONS = NO_CODE_BOOLEAN_OPTIONS;
 
 const staticValueOptionFilter = createFilterOptions<SelectFieldComponentOption>({
     stringify: (option) => `${option.label} ${option.value}`,
@@ -63,7 +62,9 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
     if (suggestionOptions != null) {
         return (
             <>
-                <SuggestedStaticValue {...props} options={suggestionOptions}/>
+                {props.optionsAreSuggestions === false
+                    ? <SelectStaticValue {...props} options={suggestionOptions}/>
+                    : <SuggestedStaticValue {...props} options={suggestionOptions}/>}
 
                 {
                     operandError != null &&
@@ -223,6 +224,7 @@ function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
 function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TextFieldComponent
+            showOptionalIndicator={false}
             label={getStaticValueLabel(props.label)}
             hint={props.hint}
             value={props.value.value}
@@ -280,7 +282,10 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                         typeof value === 'string' ? value : value?.value,
                     );
                 }}
-                renderOption={({key, ...renderProps}, option) => (
+                renderOption={({
+                                   key,
+                                   ...renderProps
+                               }, option) => (
                     <Box
                         key={key}
                         component="li"
@@ -309,6 +314,7 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                 )}
                 renderInput={(params) => (
                     <TextFieldComponent
+                        showOptionalIndicator={false}
                         muiPassTroughProps={params}
                         label={getStaticValueLabel(props.label)}
                         hint={props.hint}
@@ -358,6 +364,7 @@ function getSuggestedValueNote(options: SelectFieldComponentOption[], value: str
 function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { options: SelectFieldComponentOption[] }) {
     return (
         <SelectFieldComponent
+            showOptionalIndicator={false}
             label={getStaticValueLabel(props.label)}
             hint={props.hint}
             value={props.value.value ?? undefined}
@@ -378,6 +385,7 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
 function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <DateFieldComponent
+            showOptionalIndicator={false}
             label={getStaticValueLabel(props.label)}
             hint={props.hint}
             value={props.value.value ?? undefined}
@@ -397,6 +405,7 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
 function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <DateTimeFieldComponent
+            showOptionalIndicator={false}
             label={getStaticValueLabel(props.label)}
             hint={props.hint}
             value={props.value.value ?? undefined}
@@ -413,6 +422,7 @@ function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
 function TimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TimeFieldComponent
+            showOptionalIndicator={false}
             label={getStaticValueLabel(props.label)}
             hint={props.hint}
             value={props.value.value ?? undefined}

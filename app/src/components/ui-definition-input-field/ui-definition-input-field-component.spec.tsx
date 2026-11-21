@@ -4,7 +4,9 @@ import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {ElementType} from '../../data/element-type/element-type';
-import {type UiDefinitionInputFieldElementItem} from '../../models/elements/form/input/ui-definition-input-field-element';
+import {
+    type UiDefinitionInputFieldElementItem,
+} from '../../models/elements/form/input/ui-definition-input-field-element';
 import {UiDefinitionInputFieldComponent} from './ui-definition-input-field-component';
 import {type ElementDerivationOptions} from '../../modules/elements/elements-api-service';
 import {type AuthoredElementValues, getLiteralElementValue, literalAuthoredValue} from '../../models/element-data';
@@ -12,6 +14,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type TextFieldElement} from '../../models/elements/form/input/text-field-element';
 import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
+import {ConditionSetOperator} from '../../data/condition-set-operator';
 
 const recalculateReferencedIds = vi.hoisted(() => vi.fn(async (element: unknown) => element));
 
@@ -48,11 +51,61 @@ vi.mock('allotment', () => ({
     ),
 }));
 
+it('associates the short legacy notice with its UI definition instead of exposing nested configuration paths', () => {
+    const value: GroupLayout = {
+        ...generateElementWithDefaultValues(ElementType.GroupLayout),
+        id: 'root',
+        children: [{
+            ...generateElementWithDefaultValues(ElementType.Text),
+            id: 'name',
+            label: 'Name',
+            visibility: {
+                type: 'ConditionSet',
+                requirements: '',
+                noCode: null,
+                javascriptCode: null,
+                referencedIds: [],
+                conditionSet: {operator: ConditionSetOperator.Any},
+            },
+        }],
+    };
+    const {rerender} = render(<UiDefinitionInputFieldComponent label="Eingabemaske"
+                                                               hint="Fachlicher Hinweis"
+                                                               value={value}
+                                                               onChange={() => undefined}
+                                                               displayContext={ElementDisplayContext.StaffFacing}/>);
+    expect(screen.getByRole('group', {name: /Eingabemaske/})).toHaveAccessibleDescription(
+        'Fachlicher Hinweis Diese UI-Definition enthält veraltete No-Code-Regeln.',
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Konfiguration\./)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Bearbeiten'})).toBeEnabled();
+    rerender(<UiDefinitionInputFieldComponent label="Eingabemaske"
+                                              hint="Fachlicher Hinweis"
+                                              value={{
+                                                  ...value,
+                                                  children: [{
+                                                      ...value.children![0],
+                                                      visibility: null,
+                                                  }],
+                                              }}
+                                              onChange={() => undefined}
+                                              displayContext={ElementDisplayContext.StaffFacing}/>);
+    expect(screen.getByRole('group', {name: /Eingabemaske/})).toHaveAccessibleDescription('Fachlicher Hinweis');
+    expect(screen.queryByText(/enthält veraltete No-Code-Regeln/)).not.toBeInTheDocument();
+});
+
 vi.mock('../element-tree-2/element-tree', () => ({
-    ElementTree: ({value, onChange}: {value: GroupLayout; onChange: (value: GroupLayout) => void}) => (
+    ElementTree: ({
+                      value,
+                      onChange,
+                  }: { value: GroupLayout; onChange: (value: GroupLayout) => void }) => (
         <button onClick={() => onChange({
             ...value,
-            children: value.children?.map(child => ({...child, minCharacters: 3})),
+            children: value.children?.map(child => ({
+                ...child,
+                minCharacters: 3,
+            })),
         })}>
             Mindestlänge ändern
         </button>
@@ -66,8 +119,17 @@ describe('UiDefinitionInputFieldComponent', () => {
             ...generateElementWithDefaultValues(ElementType.GroupLayout),
             id: 'root',
             children: [{
-                id: 'contact', type: 11, label: 'Kontaktweg', destinationKey: 'contactMethod',
-                options: [{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}],
+                id: 'contact',
+                type: 11,
+                label: 'Kontaktweg',
+                destinationKey: 'contactMethod',
+                options: [{
+                    value: 'email',
+                    label: 'E-Mail',
+                }, {
+                    value: 'post',
+                    label: 'Post',
+                }],
             }],
         })) as GroupLayout;
         const onChange = vi.fn();
@@ -78,7 +140,10 @@ describe('UiDefinitionInputFieldComponent', () => {
             displayContext={ElementDisplayContext.StaffFacing}
             onDerive={async () => ({
                 effectiveValues: {contact: 'email'},
-                elementStates: {root: {visible: true}, contact: {visible: true}},
+                elementStates: {
+                    root: {visible: true},
+                    contact: {visible: true},
+                },
             })}
         />);
 
@@ -91,9 +156,17 @@ describe('UiDefinitionInputFieldComponent', () => {
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
             id: 'root',
             children: [expect.objectContaining({
-                id: 'contact', type: ElementType.Select, presentation: SelectFieldPresentation.Radio,
+                id: 'contact',
+                type: ElementType.Select,
+                presentation: SelectFieldPresentation.Radio,
                 destinationKey: 'contactMethod',
-                options: [{value: 'email', label: 'E-Mail'}, {value: 'post', label: 'Post'}],
+                options: [{
+                    value: 'email',
+                    label: 'E-Mail',
+                }, {
+                    value: 'post',
+                    label: 'Post',
+                }],
             })],
         }));
         expect(value.children![0].type).toBe(11);
@@ -219,8 +292,14 @@ describe('UiDefinitionInputFieldComponent', () => {
                             type: 'NoCodeExpression',
                             operatorIdentifier: 'equals',
                             operands: [
-                                {type: 'NoCodeProcessDataReference', path: 'fahrzeug.marke'},
-                                {type: 'NoCodeStaticValue', value: 'Audi'},
+                                {
+                                    type: 'NoCodeProcessDataReference',
+                                    path: 'fahrzeug.marke',
+                                },
+                                {
+                                    type: 'NoCodeStaticValue',
+                                    value: 'Audi',
+                                },
                             ],
                         },
                         // The element editor only recalculates the edited element and misses the writing input.
@@ -235,7 +314,10 @@ describe('UiDefinitionInputFieldComponent', () => {
                 ...root,
                 children: root.children?.map(child => child.id !== 'audiOnly' || child.visibility == null ? child : {
                     ...child,
-                    visibility: {...child.visibility, referencedIds: ['brand']},
+                    visibility: {
+                        ...child.visibility,
+                        referencedIds: ['brand'],
+                    },
                 }),
             };
         });
@@ -307,12 +389,18 @@ describe('UiDefinitionInputFieldComponent', () => {
         await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
         await user.click(await screen.findByRole('button', {name: 'Mindestlänge ändern'}));
         await act(async () => {
-            resolveOutdatedRecalculation({...value, children: []});
+            resolveOutdatedRecalculation({
+                ...value,
+                children: [],
+            });
         });
         await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
-            children: [expect.objectContaining({id: 'name', minCharacters: 3})],
+            children: [expect.objectContaining({
+                id: 'name',
+                minCharacters: 3,
+            })],
         }));
     });
 

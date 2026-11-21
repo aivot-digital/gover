@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameterOption;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.time.DateTimeException;
@@ -81,12 +82,12 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
                                 NoCodeDataType.DateTime,
                                 "Zeitpunkt",
                                 "Der Ausgangszeitpunkt."
-                        ),
+                        ).withSentence("den Zeitpunkt"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Anzahl",
                                 "Die Anzahl der Einheiten."
-                        ),
+                        ).withSentence(direction == Direction.ADD ? "plus" : "minus"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Einheit",
@@ -95,7 +96,7 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
                                 new NoCodeParameterOption("Wochen", WEEKS_UNIT),
                                 new NoCodeParameterOption("Monate", MONTHS_UNIT),
                                 new NoCodeParameterOption("Jahre", YEARS_UNIT)
-                        )
+                        ).withSentence("")
                 )
         );
     }
@@ -129,5 +130,11 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
         } catch (DateTimeException | ArithmeticException exception) {
             throw new NoCodeException("Der Zeitpunkt liegt außerhalb des unterstützten Bereichs.");
         }
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "berechnet";
     }
 }

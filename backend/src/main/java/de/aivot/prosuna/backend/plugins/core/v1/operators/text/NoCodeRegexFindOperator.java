@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.regex.Pattern;
@@ -53,12 +54,12 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der zu durchsuchende Text."
-                        ),
+                        ).withSentence("wenn der Text"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Regulärer Ausdruck",
                                 "Das Muster, nach dem im Text gesucht werden soll."
-                        )
+                        ).withSentence("einen Treffer für den regulären Ausdruck", "enthält")
                 )
         );
     }
@@ -79,5 +80,11 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
         } catch (PatternSyntaxException e) {
             throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
         }
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 }

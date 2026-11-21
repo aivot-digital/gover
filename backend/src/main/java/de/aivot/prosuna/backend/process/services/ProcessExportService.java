@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.config.services.SystemConfigService;
+import de.aivot.prosuna.backend.nocode.services.NoCodeEditorMetadataCleaner;
 import de.aivot.prosuna.backend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.*;
@@ -24,13 +25,14 @@ public class ProcessExportService {
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final BuildProperties buildProperties;
     private final SystemConfigService systemConfigService;
+    private final NoCodeEditorMetadataCleaner metadataCleaner;
 
     public ProcessExportService(ProcessService processDefinitionService,
                                 ProcessVersionService processDefinitionVersionService,
                                 ProcessNodeService processDefinitionNodeService,
                                 ProcessEdgeService processDefinitionEdgeService,
                                 ProcessNodeDefinitionService processNodeProviderService,
-                                BuildProperties buildProperties, SystemConfigService systemConfigService) {
+                                BuildProperties buildProperties, SystemConfigService systemConfigService, NoCodeEditorMetadataCleaner metadataCleaner) {
         this.processDefinitionService = processDefinitionService;
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processDefinitionNodeService = processDefinitionNodeService;
@@ -38,6 +40,7 @@ public class ProcessExportService {
         this.processNodeProviderService = processNodeProviderService;
         this.buildProperties = buildProperties;
         this.systemConfigService = systemConfigService;
+        this.metadataCleaner = metadataCleaner;
     }
 
     public ProcessExport export(Integer processId, Integer version) throws ResponseException {
@@ -83,7 +86,7 @@ public class ProcessExportService {
                             node.getDataKey(), // dataKey
                             node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
                             node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
-                            cleanedConfiguration, // configuration
+                            metadataCleaner.cleanConfiguration(cleanedConfiguration), // configuration
                             node.getOutputMappings(), // outputMappings
                             node.getDeadlines(),
                             node.getRequirements(), // requirements

@@ -11,24 +11,61 @@ vi.mock('../../utils/copy-to-clipboard', () => ({copyToClipboardText: vi.fn().mo
 function renderPicker(reference: InputVariableReference | null = null, readOnly = false, offerFormattedInsertion = false, variables: InputModeVariable[] = []) {
     const onSelect = vi.fn();
     render(<VariablePickerDialog
-        open title="Variable referenzieren" variables={variables}
+        open
+        title="Variable referenzieren"
+        variables={variables}
         allowedSources={Object.values(InputVariableSource)}
-        selectedReference={reference} readOnly={readOnly} allowClear
+        selectedReference={reference}
+        readOnly={readOnly}
+        allowClear
         offerFormattedInsertion={offerFormattedInsertion}
-        onSelect={onSelect} onClear={vi.fn()} onClose={vi.fn()}
+        onSelect={onSelect}
+        onClear={vi.fn()}
+        onClose={vi.fn()}
     />);
     return {onSelect};
 }
 
 describe('custom variable references', () => {
     it.each([
-        {source: InputVariableSource.ProcessData, path: 'person.Name', prefix: '$.', input: 'person.Name'},
-        {source: InputVariableSource.ProtectedProcessData, path: 'caseNumber', prefix: '$$.', input: 'caseNumber'},
-        {source: InputVariableSource.ElementData, path: '[0].Name', nodeDataKey: 'pruefen', prefix: '_.', input: 'pruefen[0].Name'},
-        {source: InputVariableSource.ElementMetadata, path: 'finished', nodeDataKey: 'pruefen', prefix: '$$.taskMetadata.', input: 'pruefen.finished'},
-    ])('displays and copies the $source prefix without storing it in the reference', async ({source, path, nodeDataKey, prefix, input}) => {
+        {
+            source: InputVariableSource.ProcessData,
+            path: 'person.Name',
+            prefix: '$.',
+            input: 'person.Name',
+        },
+        {
+            source: InputVariableSource.ProtectedProcessData,
+            path: 'caseNumber',
+            prefix: '$$.',
+            input: 'caseNumber',
+        },
+        {
+            source: InputVariableSource.ElementData,
+            path: '[0].Name',
+            nodeDataKey: 'pruefen',
+            prefix: '_.',
+            input: 'pruefen[0].Name',
+        },
+        {
+            source: InputVariableSource.ElementMetadata,
+            path: 'finished',
+            nodeDataKey: 'pruefen',
+            prefix: '$$.taskMetadata.',
+            input: 'pruefen.finished',
+        },
+    ])('displays and copies the $source prefix without storing it in the reference', async ({
+                                                                                                source,
+                                                                                                path,
+                                                                                                nodeDataKey,
+                                                                                                prefix,
+                                                                                                input,
+                                                                                            }) => {
         const user = userEvent.setup();
-        const reference = {source, path, ...(nodeDataKey ? {nodeDataKey} : {})};
+        const reference = {
+            source,
+            path, ...(nodeDataKey ? {nodeDataKey} : {}),
+        };
         const {onSelect} = renderPicker(reference);
         const field = screen.getByRole('textbox', {name: /^Variablenpfad/});
         expect(field).toHaveValue(input);
@@ -58,13 +95,20 @@ describe('custom variable references', () => {
         fireEvent.change(field, {target: {value: 'personen[0].Name'}});
         expect(field).not.toHaveAttribute('aria-invalid', 'true');
         await user.click(apply);
-        expect(onSelect).toHaveBeenCalledWith({source: InputVariableSource.ProcessData, path: 'personen[0].Name'}, undefined, 'text');
+        expect(onSelect).toHaveBeenCalledWith({
+            source: InputVariableSource.ProcessData,
+            path: 'personen[0].Name',
+        }, undefined, 'text');
     });
 
     it.each([InputVariableSource.ElementData, InputVariableSource.ElementMetadata])
     ('explains the required child path for %s and reevaluates it when changing sources', async (source) => {
         const user = userEvent.setup();
-        renderPicker({source, nodeDataKey: 'pruefen', path: ''});
+        renderPicker({
+            source,
+            nodeDataKey: 'pruefen',
+            path: '',
+        });
         const field = screen.getByRole('textbox', {name: /^Variablenpfad/});
         expect(field).not.toHaveAttribute('aria-invalid', 'true');
         fireEvent.blur(field);
@@ -78,7 +122,10 @@ describe('custom variable references', () => {
 
     it('keeps copying available for a read-only reference', async () => {
         const user = userEvent.setup();
-        renderPicker({source: InputVariableSource.ProcessData, path: 'person.Name'}, true);
+        renderPicker({
+            source: InputVariableSource.ProcessData,
+            path: 'person.Name',
+        }, true);
         expect(screen.getByRole('textbox', {name: /^Variablenpfad/})).toBeDisabled();
         expect(screen.queryByRole('button', {name: 'Referenz verwenden'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Variablenpfad kopieren'}));
@@ -87,7 +134,10 @@ describe('custom variable references', () => {
 });
 
 describe('insertion into Markdown fields', () => {
-    const reference = {source: InputVariableSource.ProcessData, path: 'nachricht'};
+    const reference = {
+        source: InputVariableSource.ProcessData,
+        path: 'nachricht',
+    };
 
     it('inserts values as text unless the author chooses formatting', async () => {
         const user = userEvent.setup();
@@ -104,8 +154,14 @@ describe('insertion into Markdown fields', () => {
 
     it('keeps the formatting of Markdown inputs unless the author chooses text', async () => {
         const user = userEvent.setup();
-        const markdownReference = {...reference, markdown: true};
-        const suggestion: InputModeVariable = {id: 'message', label: 'Nachricht', ...markdownReference};
+        const markdownReference = {
+            ...reference,
+            markdown: true,
+        };
+        const suggestion: InputModeVariable = {
+            id: 'message',
+            label: 'Nachricht', ...markdownReference,
+        };
         const {onSelect} = renderPicker(markdownReference, false, true, [suggestion]);
 
         expect(screen.getByRole('radio', {name: 'Mit Formatierung'})).toBeChecked();
@@ -127,4 +183,46 @@ describe('insertion into Markdown fields', () => {
 
         expect(onSelect).toHaveBeenCalledWith(reference, undefined, 'text');
     });
+});
+
+it('omits redundant category tabs for a single allowed source, but keeps them when several sources are allowed', () => {
+    const props = {
+        open: true,
+        title: 'Variable auswählen',
+        selectedReference: null,
+        readOnly: false,
+        allowClear: false,
+        onSelect: vi.fn(),
+        onClear: vi.fn(),
+        onClose: vi.fn(),
+        variables: [
+            {
+                source: InputVariableSource.ProtectedProcessData,
+                path: 'caseNumber',
+                label: 'Vorgangskennung',
+            },
+            {
+                source: InputVariableSource.ProcessData,
+                path: 'name',
+                label: 'Name',
+            },
+        ],
+    };
+    const {rerender} = render(
+        <VariablePickerDialog {...props} allowedSources={[InputVariableSource.ProtectedProcessData]}/>);
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tabpanel')).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', {name: /Vorgangskennung/})).toBeInTheDocument();
+    expect(screen.queryByRole('radio', {name: /^Name/})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', {name: /Vorgangskennung/}));
+    fireEvent.click(screen.getByRole('button', {name: 'Referenz verwenden'}));
+    expect(props.onSelect).toHaveBeenCalledWith({
+        source: InputVariableSource.ProtectedProcessData,
+        path: 'caseNumber',
+    }, props.variables[0], 'text');
+    rerender(<VariablePickerDialog {...props} variables={[props.variables[0]]}
+                                   allowedSources={[InputVariableSource.ProtectedProcessData, InputVariableSource.ProcessData]}/>);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getByRole('tab', {name: 'Alle'})).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Alle');
 });

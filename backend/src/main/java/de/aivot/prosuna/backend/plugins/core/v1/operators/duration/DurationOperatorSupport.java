@@ -19,7 +19,7 @@ final class DurationOperatorSupport {
                 new NoCodeParameterOption("Sekunden", "seconds"),
                 new NoCodeParameterOption("Minuten", "minutes"),
                 new NoCodeParameterOption("Stunden", "hours"),
-                new NoCodeParameterOption("Tage", "days"));
+                new NoCodeParameterOption("Tage", "days")).withSentence("in der Einheit");
     }
 
     @Nonnull

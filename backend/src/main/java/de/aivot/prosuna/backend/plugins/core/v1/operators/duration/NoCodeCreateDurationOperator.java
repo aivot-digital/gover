@@ -49,7 +49,7 @@ public class NoCodeCreateDurationOperator extends NoCodeOperator {
     @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(NoCodeSignatur.of(NoCodeDataType.Number,
-                new NoCodeParameter(NoCodeDataType.Number, "Anzahl", "Die Anzahl in der gewählten Einheit. Verwenden Sie für Dezimalzahlen einen Punkt, zum Beispiel 1.5. Das Ergebnis muss ganze Sekunden enthalten."),
+                new NoCodeParameter(NoCodeDataType.Number, "Anzahl", "Die Anzahl in der gewählten Einheit. Verwenden Sie für Dezimalzahlen einen Punkt, zum Beispiel 1.5. Das Ergebnis muss ganze Sekunden enthalten.").withSentence("der Anzahl"),
                 DurationOperatorSupport.unitParameter()));
     }
 
@@ -59,5 +59,11 @@ public class NoCodeCreateDurationOperator extends NoCodeOperator {
         var amount = castToNumber(args[0]);
         var factor = DurationOperatorSupport.factor(castToString(args[1]));
         return new NoCodeResult(BigDecimal.valueOf(DurationOperatorSupport.seconds(amount.multiply(factor))));
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "bildet eine Zeitdauer aus";
     }
 }

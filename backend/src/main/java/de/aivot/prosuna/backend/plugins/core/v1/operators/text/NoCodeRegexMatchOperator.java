@@ -63,6 +63,11 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -71,12 +76,12 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der zu überprüfende Text"
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Regulärer Ausdruck",
                                 "Der reguläre Ausdruck, mit dem der Text verglichen werden soll"
-                        )
+                        ).withSentence("auf den regulären Ausdruck", "passt")
                 )
         );
     }

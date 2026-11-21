@@ -56,6 +56,11 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die Länge";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -64,7 +69,7 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste, deren Länge ermittelt werden soll."
-                        )
+                        ).withSentence("von")
                 )
         );
     }

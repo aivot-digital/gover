@@ -1,309 +1,161 @@
-import {Box, Button, ButtonGroup, Typography} from '@mui/material';
+import {Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from '@mui/material';
 import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
 import DatabaseSearch from '@aivot/mui-material-symbols-400-n25-outlined/DatabaseSearch';
-import Help from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import MyLocation from '@aivot/mui-material-symbols-400-n25-outlined/MyLocation';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {useState} from 'react';
-import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
-import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
+import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
-import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeOperatorDetailsDTO, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
 import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
 
 interface NoCodeOperandEditorSelectorProps {
     allOperators: NoCodeOperatorDetailsDTO[];
     label: string;
     hint?: string | null;
+    desiredType?: NoCodeDataType;
     onChange: (value: NoCodeOperand) => void;
     contextType?: NoCodeOperandEditorContextType;
 }
 
-export function NoCodeOperandEditorSelector(props: NoCodeOperandEditorSelectorProps) {
-    const {
-        allOperators,
-        label,
-        hint,
-        onChange,
-        contextType = 'BOTH',
-    } = props;
-
-    const disableFormOptions = contextType === 'PROCESS';
-    const disableProcessOptions = contextType === 'FORM';
-
-    const [showStaticValueHelp, setShowStaticValueHelp] = useState(false);
-    const [showReferenceHelp, setShowReferenceHelp] = useState(false);
-    const [showProcessDataReferenceHelp, setShowProcessDataReferenceHelp] = useState(false);
-    const [showInstanceDataReferenceHelp, setShowInstanceDataReferenceHelp] = useState(false);
-    const [showNodeDataReferenceHelp, setShowNodeDataReferenceHelp] = useState(false);
-    const [showExpressionHelp, setShowExpressionHelp] = useState(false);
-
+export function NoCodeOperandEditorSelector({
+                                                allOperators,
+                                                label,
+                                                hint,
+                                                desiredType = NoCodeDataType.Runtime,
+                                                onChange,
+                                                contextType = 'BOTH',
+                                            }: NoCodeOperandEditorSelectorProps) {
     const [showOperatorSelector, setShowOperatorSelector] = useState(false);
+    const id = useNormalizedReactId();
+    const options = [
+        {
+            title: 'Operator',
+            description: 'Werte vergleichen, verknüpfen oder berechnen.',
+            icon: Functions,
+            select: () => setShowOperatorSelector(true),
+        },
+        {
+            title: 'Fester Wert',
+            description: 'Zum Beispiel Text, eine Zahl oder einen Wahrheitswert eingeben.',
+            icon: Article,
+            select: () => onChange({
+                type: 'NoCodeStaticValue',
+                value: '',
+            }),
+        },
+        ...(contextType === 'PROCESS' ? [] : [
+            {
+                title: 'Wert eines Elements',
+                description: 'Einen eingegebenen oder berechneten Formularwert verwenden.',
+                icon: MyLocation,
+                select: () => onChange({
+                    type: 'NoCodeReference',
+                    elementId: '',
+                }),
+            },
+        ]),
+        ...(contextType === 'FORM' ? [] : [
+            {
+                title: 'Vorgangsdaten',
+                description: 'Einen Wert aus den Vorgangsdaten verwenden.',
+                icon: DatabaseSearch,
+                select: () => onChange({
+                    type: 'NoCodeProcessDataReference',
+                    path: '',
+                }),
+            },
+            {
+                title: 'Geschützte Vorgangsdaten',
+                description: 'Eine systemseitig bereitgestellte Information zum Vorgang verwenden.',
+                icon: DatabaseSearch,
+                select: () => onChange({
+                    type: 'NoCodeInstanceDataReference',
+                    path: '',
+                }),
+            },
+            {
+                title: 'Elementdaten',
+                description: 'Ein Ergebnis eines Prozesselementes verwenden.',
+                icon: DatabaseSearch,
+                select: () => onChange({
+                    type: 'NoCodeNodeDataReference',
+                    nodeDataKey: '',
+                    path: '',
+                }),
+            },
+        ]),
+    ];
 
-    return (
-        <>
-            <Box
-                data-no-code-selector
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: 2,
-                }}
-            >
-                <Typography>
-                    {label}
-                </Typography>
-
-                <ButtonGroup size="small">
-                    <Button
-                        startIcon={<Article/>}
-                        onClick={() => {
-                            onChange({
-                                type: 'NoCodeStaticValue',
-                                value: '',
-                            });
-                        }}
-                    >
-                        Fester Wert
-                    </Button>
-                    <Button
-                        onClick={() => setShowStaticValueHelp(true)}
-                    >
-                        <Help fontSize="small"/>
-                    </Button>
-                </ButtonGroup>
-
-                {
-                    !disableFormOptions &&
-                    <ButtonGroup size="small">
-                        <Button
-                            startIcon={<MyLocation/>}
-                            disabled={disableFormOptions}
-                            onClick={() => {
-                                onChange({
-                                    type: 'NoCodeReference',
-                                    elementId: '',
-                                });
-                            }}
-                        >
-                            Wert eines Elements
-                        </Button>
-                        <Button
-                            disabled={disableFormOptions}
-                            onClick={() => setShowReferenceHelp(true)}
-                        >
-                            <Help fontSize="small"/>
-                        </Button>
-                    </ButtonGroup>
-                }
-
-                {
-                    !disableProcessOptions &&
-                    <ButtonGroup size="small">
-                        <Button
-                            startIcon={<DatabaseSearch/>}
-                            onClick={() => {
-                                onChange({
-                                    type: 'NoCodeProcessDataReference',
-                                    path: '',
-                                });
-                            }}
-                        >
-                            Vorgangsdaten
-                        </Button>
-                        <Button
-                            onClick={() => setShowProcessDataReferenceHelp(true)}
-                        >
-                            <Help fontSize="small"/>
-                        </Button>
-                    </ButtonGroup>
-                }
-
-                {
-                    false &&
-                    !disableProcessOptions &&
-                    <ButtonGroup size="small">
-                        <Button
-                            startIcon={<DatabaseSearch/>}
-                            onClick={() => {
-                                onChange({
-                                    type: 'NoCodeInstanceDataReference',
-                                    path: '',
-                                });
-                            }}
-                        >
-                            Geschützte Vorgangsdaten
-                        </Button>
-                        <Button
-                            onClick={() => setShowInstanceDataReferenceHelp(true)}
-                        >
-                            <Help fontSize="small"/>
-                        </Button>
-                    </ButtonGroup>
-                }
-
-                {
-                    !disableProcessOptions &&
-                    <ButtonGroup size="small">
-                        <Button
-                            startIcon={<DatabaseSearch/>}
-                            onClick={() => {
-                                onChange({
-                                    type: 'NoCodeNodeDataReference',
-                                    nodeDataKey: '',
-                                    path: '',
-                                });
-                            }}
-                        >
-                            Elementdaten
-                        </Button>
-                        <Button
-                            onClick={() => setShowNodeDataReferenceHelp(true)}
-                        >
-                            <Help fontSize="small"/>
-                        </Button>
-                    </ButtonGroup>
-                }
-
-
-                <ButtonGroup size="small">
-                    <Button
-                        startIcon={<MyLocation/>}
-                        onClick={() => {
-                            setShowOperatorSelector(true);
-                        }}
-                    >
-                        Ausdruck
-                    </Button>
-                    <Button
-                        onClick={() => setShowExpressionHelp(true)}
-                    >
-                        <Help fontSize="small"/>
-                    </Button>
-                </ButtonGroup>
-
-                {
-                    hint != null &&
-                    <HintTooltip title={hint}>
-                        <Help fontSize="small"/>
-                    </HintTooltip>
-                }
-            </Box>
-
-            <InfoDialog
-                title="Fester Wert"
-                severity="info"
-                open={showStaticValueHelp}
-                onClose={() => setShowStaticValueHelp(false)}
-            >
-                <Typography>
-                    Ein „Fester Wert” ermöglicht es Ihnen, einen konstanten Wert direkt in den Ausdruck einzufügen.
-                    Dies ist nützlich, wenn Sie mit unveränderlichen Daten arbeiten oder Standardwerte festlegen
-                    möchten.
-                </Typography>
-                <Typography>
-                    Nachdem Sie den Wert festgelegt haben, können Sie diesen mit anderen Werten oder Ausdrücken
-                    kombinieren, um komplexere Berechnungen oder Logiken zu erstellen.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Wert eines Elements"
-                severity="info"
-                open={showReferenceHelp}
-                onClose={() => setShowReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Mit der Option „Wert eines Elements” können Sie auf Werte zugreifen, die in anderen Feldern
-                    eingegeben oder berechnet wurden.
-                    Dies ist besonders nützlich, um Beziehungen zwischen verschiedenen Datenpunkten herzustellen und
-                    dynamische Ausdrücke zu erstellen.
-                </Typography>
-                <Typography gutterBottom>
-                    Sie können nur Elemente auswählen, die sich im selben Kontext befinden und die oberhalb des
-                    aktuellen Elements liegen.
-                </Typography>
-                <Typography>
-                    Nachdem Sie ein Element ausgewählt haben, können Sie dessen Wert in Ihrem Ausdruck verwenden und mit
-                    anderen Werten oder Ausdrücken kombinieren.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Vorgangsdaten"
-                severity="info"
-                open={showProcessDataReferenceHelp}
-                onClose={() => setShowProcessDataReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Mit der Option „Vorgangsdaten” können Sie auf Daten aus dem Prozesskontext zugreifen.
-                </Typography>
-                <Typography gutterBottom>
-                    Diese Option greift auf den Vorgangsdaten-Kontext (`$`) zu.
-                </Typography>
-                <Typography>
-                    Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Geschützte Vorgangsdaten"
-                severity="info"
-                open={showInstanceDataReferenceHelp}
-                onClose={() => setShowInstanceDataReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Diese Option greift auf geschützte Vorgangsdaten (`$$`) zu.
-                </Typography>
-                <Typography>
-                    Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Elementdaten"
-                severity="info"
-                open={showNodeDataReferenceHelp}
-                onClose={() => setShowNodeDataReferenceHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Diese Option greift auf Elementdaten (`_`) zu.
-                </Typography>
-                <Typography>
-                    Für Elementdaten muss zusätzlich der Datenschlüssel des Prozesselementes angegeben werden.
-                </Typography>
-            </InfoDialog>
-
-            <InfoDialog
-                title="Ausdruck"
-                severity="info"
-                open={showExpressionHelp}
-                onClose={() => setShowExpressionHelp(false)}
-            >
-                <Typography gutterBottom>
-                    Mit der Option „Ausdruck” können Sie einen benutzerdefinierten Ausdruck erstellen, der verschiedene
-                    Werte mit einem Operator kombiniert.
-                </Typography>
-            </InfoDialog>
-
-            <SelectOperatorDialog
-                open={showOperatorSelector}
-                operators={allOperators}
-                onSelect={(op) => {
-                    setShowOperatorSelector(false);
-                    onChange({
-                        type: 'NoCodeExpression',
-                        operatorIdentifier: op.identifier,
-                        operands: null,
-                    });
-                }}
-                onClose={() => {
-                    setShowOperatorSelector(false);
-                }}
-                desiredReturnType={NoCodeDataType.Runtime}
-            />
-        </>
-    );
+    return <>
+        <Box data-no-code-selector
+             sx={{
+                 width: 440,
+                 maxWidth: '100%',
+             }}>
+            <Typography id={`${id}-title`}
+                        variant="h6"
+                        component="h3"
+                        sx={{
+                            px: 1.5,
+                            pt: 1,
+                        }}>{label}</Typography>
+            {hint && <Typography variant="body2"
+                                 color="text.secondary"
+                                 sx={{
+                                     px: 1.5,
+                                     mt: 0.5,
+                                 }}>{hint}</Typography>}
+            <List aria-labelledby={`${id}-title`}>
+                {options.map(({
+                                  title,
+                                  description,
+                                  icon: Icon,
+                                  select,
+                              }, index) => <ListItem key={title}
+                                                     disablePadding>
+                    <ListItemButton component="button"
+                                    type="button"
+                                    onClick={select}
+                                    alignItems="flex-start"
+                                    aria-label={title}
+                                    aria-describedby={`${id}-option-${index}`}
+                                    sx={{
+                                        borderRadius: 1,
+                                        px: 1.5,
+                                        width: '100%',
+                                    }}>
+                        <ListItemIcon sx={{
+                            minWidth: 32,
+                            mt: 0.75,
+                        }}><Icon fontSize="small"/></ListItemIcon>
+                        <ListItemText primary={title}
+                                      secondary={description}
+                                      slotProps={{
+                                          primary: {sx: {fontWeight: 600}},
+                                          secondary: {
+                                              id: `${id}-option-${index}`,
+                                              sx: {fontSize: '0.875rem'},
+                                          },
+                                      }}/>
+                    </ListItemButton>
+                </ListItem>)}
+            </List>
+        </Box>
+        <SelectOperatorDialog open={showOperatorSelector}
+                              operators={allOperators.filter(operator => operator.signatures.length > 0)}
+                              desiredReturnType={desiredType}
+                              onClose={() => setShowOperatorSelector(false)}
+                              onSelect={(operator) => {
+                                  setShowOperatorSelector(false);
+                                  const signature = resolveNoCodeSignature(operator, {desiredReturnType: desiredType});
+                                  onChange({
+                                      type: 'NoCodeExpression',
+                                      operatorIdentifier: operator.identifier,
+                                      operands: signature.parameters.map(() => null),
+                                  });
+                              }}/>
+    </>;
 }

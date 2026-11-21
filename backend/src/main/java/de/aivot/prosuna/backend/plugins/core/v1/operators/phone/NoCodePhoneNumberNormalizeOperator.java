@@ -50,6 +50,11 @@ public class NoCodePhoneNumberNormalizeOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die normalisierte Telefonnummer";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -58,7 +63,7 @@ public class NoCodePhoneNumberNormalizeOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Telefonnummer",
                                 "Die zu normalisierende Telefonnummer mit Ländervorwahl."
-                        )
+                        ).withSentence("von")
                 )
         );
     }

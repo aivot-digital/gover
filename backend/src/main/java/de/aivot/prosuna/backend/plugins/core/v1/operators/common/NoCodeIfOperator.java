@@ -65,17 +65,17 @@ public class NoCodeIfOperator extends NoCodeOperator {
                                 "Der zu überprüfende Wahrheitswert.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Ergebnis bei Wahr",
                                 "Der zurückzugebende Wert, wenn der Wahrheitswert wahr ist."
-                        ),
+                        ).withSentence("dann"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Ergebnis bei Falsch",
                                 "Der zurückzugebende Wert, wenn der Wahrheitswert falsch ist."
-                        )
+                        ).withSentence("sonst")
                 )
         );
     }

@@ -1,4 +1,5 @@
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {useState} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {CodeEditor} from './code-editor';
 
@@ -13,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('./monaco-editor', () => ({
-    MonacoEditor: (props: {onMount?: (editor: typeof mocks.editor, monaco: unknown) => void}) => {
+    MonacoEditor: (props: { onMount?: (editor: typeof mocks.editor, monaco: unknown) => void }) => {
         props.onMount?.(mocks.editor, {
             languages: {},
             typescript: {
@@ -41,13 +42,44 @@ describe('CodeEditor', () => {
         mocks.getTypes.mockResolvedValue('declare const $: Record<string, unknown>;');
     });
 
+    it('places actions in the provided header without leaving an empty toolbar above the editor', async () => {
+        const onLookup = vi.fn();
+
+        function Harness() {
+            const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
+            return <>
+                <div ref={setToolbar}
+                     role="group"
+                     aria-label="Funktionsaktionen"/>
+                <CodeEditor value=""
+                            onChange={vi.fn()}
+                            toolbarContainer={toolbar}
+                            actions={[{
+                                label: 'Element-ID nachschlagen',
+                                onClick: onLookup,
+                            }]}/>
+            </>;
+        }
+
+        render(<Harness/>);
+        const action = within(screen.getByRole('group', {name: 'Funktionsaktionen'})).getByRole('button', {name: 'Element-ID nachschlagen'});
+        expect(screen.getAllByRole('button', {name: 'Element-ID nachschlagen'})).toHaveLength(1);
+        expect(screen.getByRole('group', {name: 'Code-Editor'}).previousElementSibling).toBeNull();
+        fireEvent.click(action);
+        expect(onLookup).toHaveBeenCalledOnce();
+        await waitFor(() => expect(mocks.getTypes).toHaveBeenCalled());
+    });
+
     it('registers JavaScript type hints through the Monaco top-level TypeScript API', async () => {
         render(
             <CodeEditor
                 value=""
                 onChange={vi.fn()}
                 actions={[]}
-                typeHints={[{name: 'element', content: 'declare const element: unknown;'}]}
+                typeHints={[{
+                    name: 'element',
+                    content: 'declare const element: unknown;',
+                }]}
             />,
         );
 

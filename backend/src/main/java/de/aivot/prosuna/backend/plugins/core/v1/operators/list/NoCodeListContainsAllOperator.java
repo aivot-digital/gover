@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -53,12 +54,12 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste, in der gesucht werden soll."
-                        ),
+                        ).withSentence("wenn die Liste"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Gesuchte Werte",
                                 "Die Werte, die alle in der Liste enthalten sein müssen."
-                        )
+                        ).withSentence("alle Werte aus", "enthält")
                 )
         );
     }
@@ -90,5 +91,11 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
         }
 
         return list.stream().anyMatch(item -> item != null && (isEqualToReference(value, item) || isEqualToReference(item, value)));
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 }

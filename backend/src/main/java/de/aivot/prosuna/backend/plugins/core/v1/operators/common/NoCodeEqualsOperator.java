@@ -58,6 +58,16 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
+    }
+
+    /** The phrase before the second value, so subclasses keep the sentence of this operator. */
+    protected String getComparisonPhrase() {
+        return "gleich";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -66,12 +76,12 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
                                 NoCodeDataType.Runtime,
                                 "Wert 1",
                                 "Der erste Wert, der mit dem zweiten Wert verglichen werden soll."
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Wert 2",
                                 "Der zweite Wert, der mit dem ersten Wert verglichen werden soll."
-                        )
+                        ).withSentence(getComparisonPhrase())
                 )
         );
     }

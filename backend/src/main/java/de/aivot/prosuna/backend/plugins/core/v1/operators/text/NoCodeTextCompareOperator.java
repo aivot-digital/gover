@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 /**
@@ -106,14 +107,23 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der zu prüfende Text."
-                        ),
+                        ).withSentence("wenn der Text"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 mode == Mode.EQUALS_IGNORE_CASE ? "Vergleichstext" : "Suchtext",
                                 mode == Mode.EQUALS_IGNORE_CASE
                                         ? "Der Text, mit dem verglichen werden soll."
                                         : "Der Text, nach dem gesucht werden soll."
-                        )
+                        ).withSentence(switch (mode) {
+                            case CONTAINS -> "den Text";
+                            case STARTS_WITH, ENDS_WITH -> "mit dem Text";
+                            case EQUALS_IGNORE_CASE -> "dem Text";
+                        }, switch (mode) {
+                            case CONTAINS -> "enthält";
+                            case STARTS_WITH -> "beginnt";
+                            case ENDS_WITH -> "endet";
+                            case EQUALS_IGNORE_CASE -> "ohne Beachtung der Groß- und Kleinschreibung entspricht";
+                        })
                 )
         );
     }
@@ -141,5 +151,11 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
             // Matches the legacy EqualsIgnoreCase condition, including umlauts.
             case EQUALS_IGNORE_CASE -> text.equalsIgnoreCase(other);
         });
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 }

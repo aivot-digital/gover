@@ -68,6 +68,11 @@ public class NoCodeUserFullNameOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt den vollständigen Namen";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -76,7 +81,7 @@ public class NoCodeUserFullNameOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Mitarbeiter:innen-ID",
                                 "Die ID der Mitarbeiter:in, deren vollständiger Name ermittelt werden soll."
-                        )
+                        ).withSentence("zur Mitarbeiter:innen-ID")
                 )
         );
     }

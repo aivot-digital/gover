@@ -20,6 +20,7 @@ interface CodeTabNoCodeEditorProps {
     onChange: (func: Function) => void;
     shouldReturnString: boolean;
     editable: boolean;
+    presentation?: 'reference';
 }
 
 export function CodeTabNoCodeEditor({
@@ -29,6 +30,7 @@ export function CodeTabNoCodeEditor({
                                         onChange,
                                         shouldReturnString,
                                         editable,
+                                        presentation,
                                     }: CodeTabNoCodeEditorProps) {
     let parent: AnyElement | null = null;
     for (const par of [...parents].reverse()) {
@@ -45,7 +47,7 @@ export function CodeTabNoCodeEditor({
         .filter((e) => Evaluators[e.element.type] != null);
 
     // Check if the parent is a replicating list container. shift it to prevent selectability for children
-    if (parent.type === ElementType.ReplicatingContainer) {
+    if (parent?.type === ElementType.ReplicatingContainer) {
         allElements.shift();
     }
 
@@ -73,6 +75,7 @@ export function CodeTabNoCodeEditor({
             onChange={handleChange}
             shouldReturnString={shouldReturnString}
             editable={editable}
+            presentation={presentation}
         />
     );
 }

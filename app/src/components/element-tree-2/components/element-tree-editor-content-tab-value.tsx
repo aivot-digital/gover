@@ -1,4 +1,4 @@
-import React, {useMemo, useReducer, useRef} from 'react';
+import React, {useMemo, useReducer, useRef, useState} from 'react';
 import {BaseCodeTab} from '../../element-editor-code-tab/base-code-tab';
 import {CodeEditor} from '../../code-editor/code-editor';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -35,6 +35,7 @@ export function ElementTreeEditorContentTabValue() {
     } = useElementTreeContext();
 
     const {
+        noCodeValidationRequest,
         currentElement,
         onChangeCurrentElement,
         parents,
@@ -56,6 +57,7 @@ export function ElementTreeEditorContentTabValue() {
         return value.type != null;
     }, [value]);
 
+    const [toolbarContainer, setToolbarContainer] = useState<HTMLDivElement | null>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
@@ -72,6 +74,7 @@ export function ElementTreeEditorContentTabValue() {
     return (
         <>
             <BaseCodeTab
+                functionToolbarRef={value.type === 'NoCode' || value.type === 'Javascript' && editable ? setToolbarContainer : undefined}
                 label="Dynamischer Wert"
                 description="Hier können Sie einen dynamischen Wert für das Element definieren. Dieser Wert wird in der Anzeige des Elements verwendet und kann von den Nutzereingaben abhängen."
                 editable={editable}
@@ -116,6 +119,7 @@ export function ElementTreeEditorContentTabValue() {
                 {
                     value.type === 'Javascript' && (
                         <CodeEditor
+                            toolbarContainer={toolbarContainer}
                             value={value.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
@@ -127,7 +131,7 @@ export function ElementTreeEditorContentTabValue() {
                             actions={editable ? [
                                 {
                                     tooltip: 'Element-ID nachschlagen',
-                                    icon: <LocationSearchingIcon />,
+                                    icon: <LocationSearchingIcon/>,
                                     onClick: toggleShowElementSelectDialog,
                                 },
                             ] : []}
@@ -145,6 +149,10 @@ export function ElementTreeEditorContentTabValue() {
                 {
                     value.type === 'NoCode' && (
                         <NoCodeEditorWrapper
+                            toolbarContainer={toolbarContainer}
+                            emptyDescription="Legen Sie fest, wie der Wert dieses Elements berechnet oder aus anderen Daten übernommen wird."
+                            validationRequest={noCodeValidationRequest}
+                            required
                             parents={parents}
                             noCode={value.noCode}
                             onChange={(noCode) => {
@@ -172,6 +180,7 @@ export function ElementTreeEditorContentTabValue() {
             </BaseCodeTab>
 
             <SelectElementDialog
+                primaryActionLabel="Element-ID verwenden"
                 allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {

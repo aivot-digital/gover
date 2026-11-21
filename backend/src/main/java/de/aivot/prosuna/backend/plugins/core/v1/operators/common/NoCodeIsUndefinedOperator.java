@@ -62,4 +62,9 @@ public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
     public String getHumanReadableTemplate() {
         return "„#0“ ist leer";
     }
+
+    @Override
+    protected String getEmptinessSuffix() {
+        return "leer ist";
+    }
 }

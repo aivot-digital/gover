@@ -1,5 +1,5 @@
 import React from 'react';
-import {Box, type SxProps, type Theme} from '@mui/material';
+import {Box, Typography, type SxProps, type Theme} from '@mui/material';
 import {type Components} from 'react-markdown';
 import {MarkdownRenderer} from './markdown-renderer';
 
@@ -9,10 +9,37 @@ interface MarkdownContentProps {
     sx?: SxProps<Theme>;
     components?: Components;
     revealLinkTargets?: boolean;
+    /** Opt-in compact headings below an enclosing title, e.g. level 3 below a dialog's h2. */
+    headingBaseLevel?: 2 | 3 | 4;
 }
 
 export function MarkdownContent(props: MarkdownContentProps) {
-    const {markdown, className, sx, components, revealLinkTargets} = props;
+    const {
+        markdown,
+        className,
+        sx,
+        components,
+        revealLinkTargets,
+        headingBaseLevel,
+    } = props;
+    const headings: Components = {};
+    if (headingBaseLevel != null) {
+        for (const sourceLevel of [1, 2, 3, 4, 5, 6] as const) {
+            const tag = `h${Math.min(6, headingBaseLevel + sourceLevel - 1)}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+            headings[`h${sourceLevel}`] = ({
+                                               node: _node,
+                                               ...headingProps
+                                           }) => <Typography
+                {...headingProps} component={tag}
+                sx={{
+                    fontSize: sourceLevel === 1 ? '1.125rem' : sourceLevel === 2 ? '1rem' : '0.9375rem',
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                    mt: 2.5,
+                    mb: 1,
+                }}/>;
+        }
+    }
 
     return (
         <Box
@@ -88,14 +115,14 @@ export function MarkdownContent(props: MarkdownContentProps) {
                     '& .task-list-item': {
                         listStyle: 'none',
                         ml: -3,
-                    }
+                    },
                 },
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
         >
             <MarkdownRenderer
                 markdown={markdown}
-                components={components}
+                components={{...headings, ...components}}
                 revealLinkTargets={revealLinkTargets}
             />
         </Box>

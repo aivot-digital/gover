@@ -54,6 +54,11 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt die Uhrzeit";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         // Empty expressions use the first signature, so new expressions expose seconds.
         // Stored two-operand expressions still resolve the second signature by operand count.
@@ -64,17 +69,17 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Stunde",
                                 "Die Stunde der Zeit (0-23)."
-                        ),
+                        ).withSentence("aus Stunde"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Minute",
                                 "Die Minute der Zeit (0-59)."
-                        ),
+                        ).withSentence("Minute"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Sekunde",
                                 "Die Sekunde der Zeit (0-59)."
-                        )
+                        ).withSentence("Sekunde")
                 ),
                 NoCodeSignatur.of(
                         NoCodeDataType.Time,
@@ -82,12 +87,12 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Stunde",
                                 "Die Stunde der Zeit (0-23)."
-                        ),
+                        ).withSentence("aus Stunde"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Minute",
                                 "Die Minute der Zeit (0-59)."
-                        )
+                        ).withSentence("Minute")
                 )
         );
     }

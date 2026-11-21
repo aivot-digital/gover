@@ -8,7 +8,12 @@ import {
     NoCodeExpression,
     NoCodeOperand, NoCodeOperandError,
 } from '../../../models/functions/no-code-expression';
-import {NoCodeOperatorDetailsDTO, NoCodeParameter} from '../../../models/dtos/no-code-operator-details-dto';
+import {
+    NoCodeOperatorDetailsDTO,
+    NoCodeParameter,
+    NoCodeParameterOption,
+    resolveNoCodeSignature,
+} from '../../../models/dtos/no-code-operator-details-dto';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {useState} from 'react';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
@@ -23,6 +28,7 @@ export type NoCodeOperandEditorContextType = 'BOTH' | 'FORM' | 'PROCESS';
 
 interface NoCodeOperandEditorProps {
     parameter: NoCodeParameter;
+    suggestions?: NoCodeParameterOption[];
     operand: NoCodeOperand | undefined | null;
     onChange: (operand: NoCodeOperand | undefined | null) => void;
     allOperators: NoCodeOperatorDetailsDTO[];
@@ -53,6 +59,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     allOperators={allOperators}
                     label={parameter.label}
                     hint={parameter.description}
+                    desiredType={parameter.type}
                     onChange={onChange}
                     contextType={contextType}
                 />
@@ -69,7 +76,8 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}
-                    options={parameter.options}
+                    options={parameter.options.length > 0 ? parameter.options : props.suggestions}
+                    optionsAreSuggestions={parameter.options.length === 0}
                     operandError={operandError}
                 />
             }
@@ -122,15 +130,13 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
 
             <SelectOperatorDialog
                 open={showEnclosingOperatorPicker}
-                operators={allOperators}
+                operators={allOperators.filter((op) => op.signatures.some((signature) => signature.parameters.length > 0))}
                 onSelect={(op) => {
                     setShowEnclosingOperatorPicker(false);
                     onChange({
                         type: 'NoCodeExpression',
                         operatorIdentifier: op.identifier,
-                        operands: [
-                            operand ?? null,
-                        ],
+                        operands: resolveNoCodeSignature(op, {operandCount: 1}).parameters.map((_, index) => index === 0 ? operand ?? null : null),
                     });
 
                 }}

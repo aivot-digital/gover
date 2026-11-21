@@ -51,6 +51,11 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
     }
 
     @Override
+    public String getSentenceLead() {
+        return "ergibt das Datum";
+    }
+
+    @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
@@ -59,7 +64,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                                 NoCodeDataType.Number,
                                 "Tag",
                                 "Der Tag des Monats (1-31)"
-                        ),
+                        ).withSentence("aus Tag"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Monat",
@@ -76,12 +81,12 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                                 new NoCodeParameterOption("Oktober", "10"),
                                 new NoCodeParameterOption("November", "11"),
                                 new NoCodeParameterOption("Dezember", "12")
-                        ),
+                        ).withSentence("Monat"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Jahr",
                                 "Das Jahr (z.B. 2023)"
-                        )
+                        ).withSentence("Jahr")
                 )
         );
     }
