@@ -103,16 +103,19 @@ public class ProcessTaskMailService {
 
         var theme = departmentService.getDepartmentTheme(department);
         var subjectPrefix = "[Prosuna] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "");
-        if (!isTriggeringUser(triggeringUser, assignedUser)) {
-            mailService.sendMailToUser(theme, assignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskAssigned, mailData);
-        }
-
         var deputyTitle = isReassignment ? "In Vertretung: Aufgabe neu zugewiesen" : "In Vertretung: Aufgabe zugewiesen";
         var deputyIntro = assignedUser.getFullName() + (isReassignment
                 ? " wurde in Prosuna eine Aufgabe neu zugewiesen. "
                 : " wurde in Prosuna eine Aufgabe zur Bearbeitung zugewiesen. ") + deputyNotice(assignedUser);
-        sendToDeputies(triggeringUser, assignedUser, theme, subjectPrefix + deputyTitle, MailTemplate.ProcessTaskAssigned,
-                mailData, Map.of("title", deputyTitle, "assignmentIntro", deputyIntro));
+        // A failed mail to the assignee still reaches the caller, but must not keep the deputies from their copies.
+        try {
+            if (!isTriggeringUser(triggeringUser, assignedUser)) {
+                mailService.sendMailToUser(theme, assignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskAssigned, mailData);
+            }
+        } finally {
+            sendToDeputies(triggeringUser, assignedUser, theme, subjectPrefix + deputyTitle, MailTemplate.ProcessTaskAssigned,
+                    mailData, Map.of("title", deputyTitle, "assignmentIntro", deputyIntro));
+        }
     }
 
     public void sendUnassigned(@Nullable UserEntity triggeringUser,
@@ -147,15 +150,17 @@ public class ProcessTaskMailService {
 
         var theme = departmentService.getDepartmentTheme(department);
         var subjectPrefix = "[Prosuna] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "");
-        if (!isTriggeringUser(triggeringUser, previouslyAssignedUser)) {
-            mailService.sendMailToUser(theme, previouslyAssignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskUnassigned, mailData);
-        }
-
         var deputyTitle = "In Vertretung: " + title;
         var deputyIntro = "Die " + previouslyAssignedUser.getFullName() + " zugewiesene Aufgabe wurde einer anderen Person zugewiesen. "
                 + deputyNotice(previouslyAssignedUser);
-        sendToDeputies(triggeringUser, previouslyAssignedUser, theme, subjectPrefix + deputyTitle, MailTemplate.ProcessTaskUnassigned,
-                mailData, Map.of("title", deputyTitle, "intro", deputyIntro));
+        try {
+            if (!isTriggeringUser(triggeringUser, previouslyAssignedUser)) {
+                mailService.sendMailToUser(theme, previouslyAssignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskUnassigned, mailData);
+            }
+        } finally {
+            sendToDeputies(triggeringUser, previouslyAssignedUser, theme, subjectPrefix + deputyTitle, MailTemplate.ProcessTaskUnassigned,
+                    mailData, Map.of("title", deputyTitle, "intro", deputyIntro));
+        }
     }
 
     @Nonnull

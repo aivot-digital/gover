@@ -21,8 +21,11 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -125,6 +128,19 @@ class ProcessInstanceMailServiceTest {
                 eq(MailTemplate.ProcessInstanceUnassigned), captor.capture());
         assertEquals("Der Empfangende Person zugewiesene Vorgang wurde einer anderen Person zugewiesen. "
                 + "Sie erhalten diese Benachrichtigung, weil Sie Empfangende Person derzeit vertreten.", captor.getValue().get("intro"));
+    }
+
+    @Test
+    void stillSendsTheDeputyCopiesWhenTheMailToTheFormerAssigneeFails() throws Exception {
+        var deputy = new UserEntity().setId("daniel").setFullName("Daniel Müller");
+        when(deputies.findActiveDeputies(java.util.Set.of("recipient"))).thenReturn(Map.of("recipient", List.of(deputy)));
+        doThrow(new jakarta.mail.MessagingException("SMTP unavailable")).when(mailService)
+                .sendMailToUser(eq(theme), eq("recipient"), any(), any(), any());
+
+        assertThrows(jakarta.mail.MessagingException.class, () -> service.sendUnassigned(null, recipient, instance, false));
+
+        verify(mailService).sendMailToUser(eq(theme), eq("daniel"), eq("[Prosuna] In Vertretung: Zuweisung zum Vorgang aufgehoben"),
+                eq(MailTemplate.ProcessInstanceUnassigned), any());
     }
 
     @SuppressWarnings("unchecked")

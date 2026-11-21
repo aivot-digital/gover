@@ -52,14 +52,17 @@ public class ProcessInstanceMailService {
                 ? "Ihnen wurde in Prosuna ein Vorgang neu zugewiesen."
                 : "Ihnen wurde in Prosuna ein Vorgang zugewiesen.";
 
-        sendNotification(triggeringUser, assignedUser, processInstance,
-                MailTemplate.ProcessInstanceAssigned, title, intro, true);
-
         var deputyIntro = assignedUser.getFullName() + (isReassignment
                 ? " wurde in Prosuna ein Vorgang neu zugewiesen. "
                 : " wurde in Prosuna ein Vorgang zugewiesen. ") + ProcessTaskMailService.deputyNotice(assignedUser);
-        sendToDeputies(triggeringUser, assignedUser, processInstance,
-                MailTemplate.ProcessInstanceAssigned, "In Vertretung: " + title, deputyIntro, true);
+        // A failed mail to the assignee still reaches the caller, but must not keep the deputies from their copies.
+        try {
+            sendNotification(triggeringUser, assignedUser, processInstance,
+                    MailTemplate.ProcessInstanceAssigned, title, intro, true);
+        } finally {
+            sendToDeputies(triggeringUser, assignedUser, processInstance,
+                    MailTemplate.ProcessInstanceAssigned, "In Vertretung: " + title, deputyIntro, true);
+        }
     }
 
     public void sendUnassigned(@Nullable UserEntity triggeringUser,
@@ -70,16 +73,18 @@ public class ProcessInstanceMailService {
                 ? "Der Ihnen zugewiesene Vorgang wurde einer anderen Person zugewiesen."
                 : "Die Zuweisung dieses Vorgangs an Sie wurde aufgehoben.";
 
-        sendNotification(triggeringUser, previouslyAssignedUser, processInstance,
-                MailTemplate.ProcessInstanceUnassigned, "Zuweisung zum Vorgang aufgehoben", intro, false);
-
         var name = previouslyAssignedUser.getFullName();
         var deputyIntro = (isReassignment
                 ? "Der " + name + " zugewiesene Vorgang wurde einer anderen Person zugewiesen. "
                 : "Die Zuweisung dieses Vorgangs an " + name + " wurde aufgehoben. ")
                 + ProcessTaskMailService.deputyNotice(previouslyAssignedUser);
-        sendToDeputies(triggeringUser, previouslyAssignedUser, processInstance,
-                MailTemplate.ProcessInstanceUnassigned, "In Vertretung: Zuweisung zum Vorgang aufgehoben", deputyIntro, false);
+        try {
+            sendNotification(triggeringUser, previouslyAssignedUser, processInstance,
+                    MailTemplate.ProcessInstanceUnassigned, "Zuweisung zum Vorgang aufgehoben", intro, false);
+        } finally {
+            sendToDeputies(triggeringUser, previouslyAssignedUser, processInstance,
+                    MailTemplate.ProcessInstanceUnassigned, "In Vertretung: Zuweisung zum Vorgang aufgehoben", deputyIntro, false);
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -129,5 +130,30 @@ class ProcessTaskMailServiceTest {
         assertEquals("Philipp Schröder wurde in Prosuna eine Aufgabe zur Bearbeitung zugewiesen. "
                 + "Sie erhalten diese Benachrichtigung, weil Sie Philipp Schröder derzeit vertreten.", context.get("assignmentIntro"));
         verify(mailService, never()).sendMailToUser(any(), eq(triggeringDeputy), any(), any(), any());
+    }
+
+    @Test
+    void stillSendsTheDeputyCopiesWhenTheMailToTheAssigneeFails() throws Exception {
+        var mailService = mock(MailService.class);
+        var processService = mock(ProcessService.class);
+        var departmentService = mock(DepartmentService.class);
+        var deputies = mock(UserDeputyService.class);
+        var service = new ProcessTaskMailService(mailService, processService, departmentService, deputies);
+        var department = new DepartmentEntity().setId(3);
+        when(processService.retrieve(17)).thenReturn(Optional.of(new ProcessEntity().setId(17).setDepartmentId(3)));
+        when(departmentService.retrieve(3)).thenReturn(Optional.of(department));
+        var assignee = new UserEntity().setId("philipp").setFullName("Philipp Schröder");
+        var deputy = new UserEntity().setId("daniel").setFullName("Daniel Müller");
+        when(deputies.findActiveDeputies(java.util.Set.of("philipp"))).thenReturn(Map.of("philipp", List.of(deputy)));
+        doThrow(new jakarta.mail.MessagingException("SMTP unavailable")).when(mailService)
+                .sendMailToUser(eq(null), eq("philipp"), any(), any(), any());
+
+        assertThrows(jakarta.mail.MessagingException.class, () -> service.sendAssigned(null, assignee,
+                new ProcessInstanceEntity().setId(5L).setAssignedFileNumbers(List.of()),
+                new ProcessInstanceTaskEntity().setId(8L).setProcessId(17).setStarted(java.time.Instant.now()),
+                new ProcessNodeEntity().setName("Prüfung"), mock(ProcessNodeDefinition.class), false));
+
+        verify(mailService).sendMailToUser(eq(null), eq(deputy), eq("[Prosuna] In Vertretung: Aufgabe zugewiesen"),
+                eq(MailTemplate.ProcessTaskAssigned), any());
     }
 }
