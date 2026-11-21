@@ -724,7 +724,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zur Autorisierung"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         required
                         value={identityProvider.authorizationEndpoint}
                         onChange={handleInputChange('authorizationEndpoint')}
@@ -738,7 +738,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         required
                         value={identityProvider.tokenEndpoint}
                         onChange={handleInputChange('tokenEndpoint')}
@@ -752,7 +752,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt für Nutzerinformationen"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         value={identityProvider.userinfoEndpoint ?? undefined}
                         onChange={val => {
                             handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
@@ -767,7 +767,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Sitzung"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         value={identityProvider.endSessionEndpoint ?? undefined}
                         onChange={val => {
                             handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);
