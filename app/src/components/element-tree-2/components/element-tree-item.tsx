@@ -76,6 +76,8 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         onHoveredElementIdChange,
         allElements,
         identityMappingInformation,
+        panelDraft,
+        onPanelDraftChange,
     } = useElementTreeContext();
 
     const {
@@ -365,6 +367,9 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         });
 
         if (confirmed) {
+            if (panelDraft?.base.id === value.id || panelDraft?.parents.some(({element}) => element.id === value.id)) {
+                onPanelDraftChange?.(null);
+            }
             if (options?.closeEditor) {
                 closeElementEditor();
             }

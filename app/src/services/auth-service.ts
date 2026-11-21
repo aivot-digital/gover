@@ -3,6 +3,7 @@ import {ApiError} from '../models/api-error';
 
 const APP_URI_QUERY_PARAM = 'app_uri';
 const APP_STATE_QUERY_PARAM = 'app_state';
+export const EDITOR_DRAFT_RETURN_PARAM = 'editor_draft_return';
 export const AUTH_EXPIRATION_LOCAL_STORAGE_KEY = 'auth_expiration';
 const CSRF_HEADER_NAME = 'X-CSRF-TOKEN';
 // The reverse proxy answers with these while it cannot reach the backend, e.g. during a restart.
@@ -12,6 +13,8 @@ interface JWT {
     accessExpires: number;
     refreshExpires: number;
     csrfToken?: string;
+    /** When this browser last renewed the session, shared by all tabs through the local storage. */
+    refreshedAt?: number;
 }
 
 const STORAGE_KEY_POST_LOGIN_REDIRECT = 'oidc-post-login-redirect';
@@ -22,12 +25,24 @@ class _AuthService {
     /**
      * Get the login URL for redirecting the user to the OIDC provider.
      */
-    public getLoginUrl(location: Location): string {
+    public getLoginUrl(location: Location, draftReturnId?: string): string {
         // Keep the post-login target per tab so multiple expired tabs do not overwrite each other.
-        sessionStorage.setItem(STORAGE_KEY_POST_LOGIN_REDIRECT, getNormalizedCurrentRelativeUrl());
+        const current = getNormalizedCurrentUrl();
+        try {
+            sessionStorage.setItem(STORAGE_KEY_POST_LOGIN_REDIRECT, current.pathname + current.search + current.hash);
+        } catch {
+            // Login also works when browser storage is disabled.
+        }
+
+        let appUri = '/staff' + location.pathname;
+        if (draftReturnId != null) {
+            // The backend redirects to app_uri. The editor may update the hash outside React Router.
+            current.searchParams.set(EDITOR_DRAFT_RETURN_PARAM, draftReturnId);
+            appUri += current.search + current.hash;
+        }
 
         const query = new URLSearchParams({
-            [APP_URI_QUERY_PARAM]:  '/staff' + location.pathname,
+            [APP_URI_QUERY_PARAM]: appUri,
             [APP_STATE_QUERY_PARAM]: location.search,
         });
         return `/api/auth/login?${query.toString()}`;
@@ -72,6 +87,7 @@ class _AuthService {
             localStorage.setItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY, JSON.stringify({
                 ...jwt,
                 csrfToken,
+                refreshedAt: Date.now(),
             }));
         })();
 
@@ -87,6 +103,16 @@ class _AuthService {
      */
     public logout(): void {
         localStorage.removeItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY);
+    }
+
+    /** When the session was last renewed in any tab, or null if that is unknown. */
+    public getRefreshedAt(): number | null {
+        const storedJwt = localStorage.getItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY);
+        if (storedJwt == null) {
+            return null;
+        }
+
+        return (JSON.parse(storedJwt) as JWT).refreshedAt ?? null;
     }
 
     public getCsrfToken(): string | null {
@@ -172,7 +198,7 @@ export const AuthService = new _AuthService();
 
 
 
-function getNormalizedCurrentRelativeUrl(): string {
+function getNormalizedCurrentUrl(): URL {
     const url = new URL(window.location.href);
 
     // Remove temporary auth/logout query params before restoring the route after login.
@@ -181,10 +207,10 @@ function getNormalizedCurrentRelativeUrl(): string {
         'iss',
         'session_state',
         'logout',
+        EDITOR_DRAFT_RETURN_PARAM,
     ].forEach((param) => {
         url.searchParams.delete(param);
     });
 
-    const query = url.searchParams.toString();
-    return `${url.pathname}${query.length > 0 ? `?${query}` : ''}${url.hash}`;
+    return url;
 }

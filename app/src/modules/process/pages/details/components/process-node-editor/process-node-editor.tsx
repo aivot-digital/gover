@@ -1,6 +1,6 @@
 import {validateDataKeyPath, validateNodeDataKey} from '../../../../../../utils/data-key-input';
 import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
-import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
 import {Alert, Box, Button, IconButton, Tab, Tabs, useTheme} from '@mui/material';
@@ -21,6 +21,23 @@ import {ProcessNodeEditorMenu} from './components/process-node-editor-menu';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {getNodeName} from '../process-flow-editor/utils/node-utils';
 import {isApiError} from '../../../../../../models/api-error';
+import {useEditorDraft} from '../../../../../../hooks/use-editor-draft';
+import {useEditorDraftVisit} from '../../../../../../hooks/use-editor-draft-visit';
+import {useAppSelector} from '../../../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../../../slices/user-slice';
+import {useMergeConflictResolution} from '../../../../../../hooks/use-merge-conflict-resolution';
+import {createProcessNodeMergeSpec, getExternallyEditedFields} from '../../../../utils/process-node-merge-spec';
+import {
+    type EditorSaveCheckpoint,
+    canPendingSaveStillCommit,
+    pendingSaveCanChangeStored,
+    prepareEditorDraftRecovery,
+    persistEditorSave,
+    signInToSaveEditorMessage,
+    rebaseAfterSave,
+} from '../../../../../../utils/editor-save-rebase';
+import {editorValuesEqual} from '../../../../../../utils/variable-reference-merge';
+import {useCurrentState} from '../../../../../../hooks/use-current-state';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
@@ -30,10 +47,6 @@ import {downloadObjectFile} from '../../../../../../utils/download-utils';
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
 import {isProcessNodeEditorTabNavigation, shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
-import {flattenElements} from '../../../../../../utils/flatten-elements';
-import {
-    isUiDefinitionInputFieldElement,
-} from '../../../../../../models/elements/form/input/ui-definition-input-field-element';
 import {type ProcessNodeDefinitionMetadata} from '../../../../entities/process-node-definition-metadata';
 import {
     getProcessNodeProviderIcon,
@@ -47,6 +60,7 @@ type IncomingMetadataState =
     | {status: 'failed'};
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
+const MERGED_SAVE_MESSAGE = 'Ihre Änderungen wurden mit dem zwischenzeitlich gespeicherten Stand zusammengeführt und gespeichert.';
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
 const processNodeEditorLoadedSidebarFlashLight = keyframes`
     0% {
@@ -73,8 +87,9 @@ export function ProcessNodeEditor(): ReactNode {
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
     const theme = useTheme();
+    const userId = useAppSelector(selectUser)?.id;
 
-    const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
+    const [originalNode, setOriginalNode, currentOriginal] = useCurrentState<ProcessNodeEntity | null>(null);
     // Replaced together with the node so the suggestions always belong to the configuration on screen.
     const [incomingMetadataState, setIncomingMetadataState] = useState<IncomingMetadataState>({status: 'loading'});
 
@@ -82,6 +97,7 @@ export function ProcessNodeEditor(): ReactNode {
         editable,
         structureEditable,
         onSave,
+        onStoredNode,
         onDelete,
         onStartReplaceNode,
         nodeRefreshSignal,
@@ -92,13 +108,22 @@ export function ProcessNodeEditor(): ReactNode {
     const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
     const [outputMappingErrors, setOutputMappingErrors] = useState<Record<string, string>>({});
     const [provider, setProvider] = useState<ProcessNodeProvider | null>(null);
-    const [editedNode, setEditedNode] = useState<ProcessNodeEntity | null>(null);
+    const [editedNode, setEditedNode, currentEdit] = useCurrentState<ProcessNodeEntity | null>(null);
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [isProviderDetailsDialogOpen, setIsProviderDetailsDialogOpen] = useState(false);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
     const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
     const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const activeSave = useRef<AbortController | null>(null);
+    const [saveCheckpoint, setSaveCheckpoint, currentCheckpoint] = useCurrentState<EditorSaveCheckpoint<ProcessNodeEntity> | undefined>(undefined);
+    const validatingNode = useRef<ProcessNodeEntity | null>(null);
+    const keyLockRevision = useRef(0);
+    const {
+        resolvePrepared,
+        dialog: mergeConflictDialog,
+    } = useMergeConflictResolution();
 
     const hasEditorContent = originalNode != null && layout != null && provider != null;
     const showNodeLoadingOverlay = useDelayedVisibility(isNodeLoading, PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY);
@@ -116,17 +141,46 @@ export function ProcessNodeEditor(): ReactNode {
         return parseInt(rawNodeId, 10);
     })();
     const nodeRefreshVersion = nodeRefreshSignal.nodeId === nodeId ? nodeRefreshSignal.version : 0;
+    // A change of editor tab keeps the existing visit. Revisiting the same node starts a new one.
+    const request = useMemo(() => ({
+        userId, nodeId, processId: params.processId, processVersion: params.processVersion, nodeRefreshVersion, editable,
+    }), [userId, nodeId, params.processId, params.processVersion, nodeRefreshVersion, editable]);
+    const [loaded, setLoaded] = useState<{request: typeof request; generation: number} | null>(null);
+    const matchesRequest = loaded?.request === request && originalNode?.id === nodeId &&
+        originalNode.processId === Number(params.processId) && originalNode.processVersion === Number(params.processVersion);
+    const visitKey = matchesRequest && editable && userId != null ? JSON.stringify([userId, nodeId, loaded.generation]) : null;
+    const {checked, isCurrent, finish, canEdit} = useEditorDraftVisit(visitKey);
+    const previewLocked = !matchesRequest || (editable && !checked);
 
+    const cancelActiveSave = useCallback(() => {
+        validatingNode.current = null;
+        if (activeSave.current != null) {
+            activeSave.current.abort();
+            activeSave.current = null;
+            setIsSaving(false);
+        }
+    }, []);
+
+    // A new load owns its editor even when revisiting the same node. Its internal tabs share the current save.
+    useLayoutEffect(() => cancelActiveSave, [cancelActiveSave, request]);
+
+    const hasNodeChanges = useMemo(() => !editorValuesEqual(originalNode, editedNode), [originalNode, editedNode]);
     const {
         hasChanged,
         dialog: changeBlockerDialog,
     } = useChangeBlocker({
-        //customTitle: 'Ungespeicherte Konfiguration',
-        //customMessage: 'Die geöffnete Prozesselementkonfiguration (links) hat ungespeicherte Änderungen',
-        original: originalNode,
-        edited: editedNode,
-        onConfirmNavigation: () => {
-            setEditedNode(originalNode);
+        visitKey,
+        original: false,
+        // Even a return to the old stored value needs protecting until the PUT's result is known.
+        edited: checked && (saveCheckpoint?.phase === 'pending' || hasNodeChanges),
+        onConfirmNavigation: async () => {
+            if (!canEdit()) return;
+            cancelActiveSave();
+            await discardForNavigation();
+            if (canEdit() && currentEdit.current === editedNode) {
+                setEditedNode(originalNode);
+                setSaveCheckpoint(undefined);
+            }
         },
         // Tab changes keep the same editing session. Do not persist a bypass in history state: revisiting that
         // entry from a different node would otherwise discard its unsaved changes without confirmation.
@@ -135,7 +189,7 @@ export function ProcessNodeEditor(): ReactNode {
             shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
     });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         let isCancelled = false;
         const hasEditorContent = originalNode != null && layout != null && provider != null;
 
@@ -149,6 +203,8 @@ export function ProcessNodeEditor(): ReactNode {
 
         setIsNodeLoading(true);
         setShowNodeLoadedFeedback(false);
+        setMenuAnchorEl(null);
+        setIsProviderDetailsDialogOpen(false);
 
         (async () => {
             const [node, configurationLayout, problems, incomingMetadataState] = await Promise.all([
@@ -183,6 +239,8 @@ export function ProcessNodeEditor(): ReactNode {
                 setOutputMappingErrors({});
                 setOriginalNode(node);
                 setEditedNode(node);
+                setSaveCheckpoint(undefined);
+                setLoaded((previous) => ({request, generation: (previous?.generation ?? 0) + 1}));
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
@@ -208,7 +266,7 @@ export function ProcessNodeEditor(): ReactNode {
         return () => {
             isCancelled = true;
         };
-    }, [nodeId, nodeRefreshVersion]);
+    }, [request]);
 
     useEffect(() => {
         if (!showNodeLoadingOverlay) {
@@ -247,6 +305,80 @@ export function ProcessNodeEditor(): ReactNode {
             window.clearTimeout(timeoutId);
         };
     }, [showNodeLoadedFeedback]);
+
+    const {
+        loadDraft,
+        clearDraft,
+        discardForNavigation,
+        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave,
+        isReady: isDraftStorageReady,
+    } = useEditorDraft<ProcessNodeEntity>({
+        draftKey: visitKey != null ? `process-node/${nodeId}/configuration` : null,
+        base: originalNode,
+        baseLockVersion: originalNode?.lockVersion,
+        edited: editedNode,
+        saveCheckpoint,
+        hasChanged,
+        enabled: checked,
+    });
+
+    // Offers the unsaved changes of an earlier visit after each load, e.g. after the session expired.
+    useLayoutEffect(() => {
+        if (originalNode == null || !isCurrent() || !isDraftStorageReady) {
+            return;
+        }
+        const controller = new AbortController();
+        const signal = draftLogoutSignal ? AbortSignal.any([controller.signal, draftLogoutSignal]) : controller.signal;
+        if (signal.aborted) {
+            finish();
+            return;
+        }
+        draftLogoutSignal?.addEventListener('abort', finish);
+        (async () => {
+            const draft = await loadDraft();
+            if (draft == null || signal.aborted || !isCurrent()) {
+                return;
+            }
+
+            const spec = createProcessNodeMergeSpec(layout, originalNode);
+            const pending = draft.saveCheckpoint;
+            const putCanStillChangeNode = canPendingSaveStillCommit(pending, draft.baseLockVersion, originalNode.lockVersion) &&
+                pendingSaveCanChangeStored(pending, originalNode, spec);
+            const outcome = await resolvePrepared({
+                merge: (choices) => {
+                    const merged = prepareEditorDraftRecovery(draft, originalNode, spec, choices);
+                    return putCanStillChangeNode ? {...merged, changed: true} : merged;
+                },
+                mode: 'restore',
+                signal,
+                storedStateChanged: draft.baseLockVersion !== (originalNode.lockVersion ?? null),
+            });
+            if (!await isDraftRecoveryCurrent() || signal.aborted || !isCurrent()) {
+                return;
+            }
+            if (outcome.status === 'apply') {
+                setEditedNode(outcome.value);
+                if (putCanStillChangeNode) setSaveCheckpoint(pending);
+            } else {
+                // Discarded, or nothing left to restore because the changes were saved elsewhere.
+                await clearDraft().catch(() => {
+                    if (!signal.aborted && isCurrent()) {
+                        dispatch(showErrorSnackbar('Die zwischengespeicherten Änderungen konnten nicht gelöscht werden.'));
+                    }
+                });
+            }
+        })()
+            .catch(console.error)
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    finish();
+                }
+            });
+        return () => {
+            controller.abort();
+            draftLogoutSignal?.removeEventListener('abort', finish);
+        };
+    }, [isCurrent, finish, isDraftStorageReady, loadDraft, draftLogoutSignal, isDraftRecoveryCurrent]);
 
     const {
         Icon: TypeIcon,
@@ -295,66 +427,126 @@ export function ProcessNodeEditor(): ReactNode {
         });
     }, [location]);
 
-    const handleSaveSelected = (): void => {
-        if (!editable || !hasChanged || editedNode == null) {
+    const canSave = checked && hasChanged && !isNodeLoading && editedNode?.id === nodeId;
+    const handleSaveSelected = async (): Promise<void> => {
+        // Guards against a second click while the first save is still running, which would end in a needless conflict.
+        const submitted = currentEdit.current;
+        if (!canSave || !canEdit() || originalNode == null || submitted?.id !== nodeId || activeSave.current != null) {
             return;
         }
 
         setDataKeyValidationRequested(true);
-        const invalidMappings = Object.fromEntries(Object.entries(editedNode.outputMappings ?? {})
+        const invalidMappings = Object.fromEntries(Object.entries(submitted.outputMappings ?? {})
             .filter(([key]) => provider?.outputs.some((output) => output.key === key))
             .map(([key, path]) => [key, validateDataKeyPath(path)])
             .filter((entry): entry is [string, string] => entry[1] != null));
         setOutputMappingErrors(invalidMappings);
-        if (validateNodeDataKey(editedNode.dataKey) != null || Object.keys(invalidMappings).length > 0) {
-            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${editedNode.id}/tabs/outputs?${searchParams.toString()}`);
+        if (validateNodeDataKey(submitted.dataKey) != null || Object.keys(invalidMappings).length > 0) {
+            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${submitted.id}/tabs/outputs?${searchParams.toString()}`);
             return;
         }
 
-        const fieldsToOmit = flattenElements(layout!, false)
-            .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
-            .map((e) => e.id);
+        // Once sent, a PUT can still commit. Its response updates the graph even if this editor has moved on.
+        const controller = new AbortController();
+        activeSave.current = controller;
+        validatingNode.current = null;
+        const lockRevisionAtClick = keyLockRevision.current;
+        const applyConfirmed = (stored: ProcessNodeEntity) => {
+            const working = currentEdit.current!;
+            const rebased = rebaseAfterSave(submitted, working, stored, createProcessNodeMergeSpec(layout, stored));
+            setOriginalNode(stored);
+            setEditedNode(rebased.value);
+            setSaveCheckpoint(rebased.checkpoint);
+            setProblems(null);
+            if (rebased.checkpoint || !editorValuesEqual(rebased.value, stored)) return;
+            if (keyLockRevision.current === lockRevisionAtClick) setDataKeyUnlocked(false);
+            setDataKeyValidationRequested(false);
+            setOutputMappingErrors({});
 
-        onSave(editedNode, {
-            query: {
-                omitConfigSave: fieldsToOmit,
-            }
-        })
-            .then((savedNode) => {
-                setDataKeyUnlocked(false);
-                setDataKeyValidationRequested(false);
-                setOutputMappingErrors({});
-                setOriginalNode(savedNode);
-                setEditedNode(savedNode);
-
-                dispatch(showSuccessSnackbar('Das Element wurde erfolgreich gespeichert.'));
-
-                return new ProcessNodeApiService()
-                    .validate(editedNode.id);
-            })
-            .then((problems) => {
-                setProblems(problems);
-            })
-            .catch((err: any) => {
-                if (isApiError(err) && err.status === 400) {
-                    if (isDerivedRuntimeElementData(err.details)) {
-                        setProblems({
-                            node: editedNode,
-                            derivedRuntimeElementData: err.details,
-                            commonErrors: {},
-                            problems: [],
-                        });
-                    } else {
-                        dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
-                    }
-                } else {
-                    dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
-                }
+            // Validation describes the confirmed node. A subsequent save may start while it runs.
+            const checked = rebased.value;
+            validatingNode.current = checked;
+            void new ProcessNodeApiService().validate(stored.id).then((updatedProblems) => {
+                if (validatingNode.current === checked && currentEdit.current === checked) setProblems(updatedProblems);
+            }).catch((error) => {
+                if (validatingNode.current === checked && currentEdit.current === checked) console.error(error);
             });
+        };
+
+        // Only show backend field errors for the PUT that produced them.
+        let attemptedNode: ProcessNodeEntity | undefined;
+        let signal = controller.signal;
+        setIsSaving(true);
+        try {
+            const token = await beginManualSave();
+            if (signal.aborted) return;
+            if (!token) {
+                dispatch(showErrorSnackbar(signInToSaveEditorMessage));
+                return;
+            }
+            signal = AbortSignal.any([signal, token.signal]);
+            const fieldsToOmit = getExternallyEditedFields(layout);
+            const result = await persistEditorSave<ProcessNodeEntity, ProcessNodeEntity>({
+                original: originalNode,
+                submitted,
+                checkpoint: saveCheckpoint,
+                read: () => {
+                    attemptedNode = undefined;
+                    return new ProcessNodeApiService().retrieve(nodeId);
+                },
+                write: (base, value, reserveVersion) => {
+                    attemptedNode = reserveVersion ? base : value;
+                    return onSave(attemptedNode, {query: {omitConfigSave: fieldsToOmit}, abortBeforeSend: signal});
+                },
+                valueOf: (stored) => stored,
+                specFor: (stored) => createProcessNodeMergeSpec(layout, stored),
+                setPending: setSaveCheckpoint,
+                resolvePrepared,
+                onRead: onStoredNode,
+                signal,
+                requireServerConfirmation: token.resumesDrafts,
+            });
+            signal.throwIfAborted();
+            if (result.status === 'cancel') {
+                setSaveCheckpoint(saveCheckpoint);
+                return;
+            }
+            if (result.status === 'unknown') {
+                dispatch(showApiErrorSnackbar(result.error, 'Das Prozesselement konnte nicht gespeichert werden.'));
+                return;
+            }
+            applyConfirmed(result.stored);
+            if (result.status === 'discarded') return;
+            await confirmManualSave(token);
+            if (signal.aborted) return;
+            dispatch(showSuccessSnackbar(result.merged ? MERGED_SAVE_MESSAGE : 'Das Element wurde erfolgreich gespeichert.'));
+        } catch (err) {
+            if (signal.aborted) {
+                return;
+            }
+            setSaveCheckpoint(saveCheckpoint);
+            if (attemptedNode && isApiError(err) && err.status === 400) {
+                if (currentEdit.current === submitted && editorValuesEqual(attemptedNode.configuration, submitted.configuration) &&
+                    isDerivedRuntimeElementData(err.details)) {
+                    setProblems({
+                        node: attemptedNode, derivedRuntimeElementData: err.details, commonErrors: {}, problems: [],
+                    });
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                }
+            } else {
+                dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
+            }
+        } finally {
+            if (activeSave.current === controller) {
+                activeSave.current = null;
+                setIsSaving(false);
+            }
+        }
     };
 
     const handleDeleteSelected = (): void => {
-        if (!structureEditable || originalNode == null || provider == null) {
+        if (!structureEditable || !canEdit() || originalNode == null || provider == null) {
             return;
         }
 
@@ -371,7 +563,7 @@ export function ProcessNodeEditor(): ReactNode {
             ),
         })
             .then((confirm) => {
-                if (confirm) {
+                if (confirm && canEdit()) {
                     setEditedNode(originalNode);
                     onDelete(originalNode);
                 }
@@ -383,7 +575,7 @@ export function ProcessNodeEditor(): ReactNode {
     };
 
     const handleExportSelected = (): void => {
-        if (originalNode == null || provider == null) {
+        if (!matchesRequest || originalNode == null || provider == null) {
             return;
         }
 
@@ -397,7 +589,7 @@ export function ProcessNodeEditor(): ReactNode {
             });
     };
 
-    if (!hasEditorContent) {
+    if (!hasEditorContent || loaded?.request.userId !== userId) {
         return showInitialNodeEditorSkeleton ?
             <ProcessNodeEditorSkeleton/> :
             <Box sx={{height: '100vh'}}/>;
@@ -421,6 +613,7 @@ export function ProcessNodeEditor(): ReactNode {
                             position: 'absolute',
                             inset: 0,
                             zIndex: 2,
+                            pointerEvents: 'none',
                             bgcolor: theme.palette.mode === 'dark'
                                 ? alpha(theme.palette.common.black, 0.42)
                                 : alpha(theme.palette.common.white, 0.42),
@@ -434,7 +627,6 @@ export function ProcessNodeEditor(): ReactNode {
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'hidden',
-                        pointerEvents: isNodeLoading ? 'none' : 'auto',
                         opacity: showNodeLoadingOverlay ? 0.78 : 1,
                         transition: 'opacity 140ms ease',
                     }}
@@ -517,6 +709,7 @@ export function ProcessNodeEditor(): ReactNode {
                         </Box>
 
                         <IconButton
+                            disabled={!matchesRequest}
                             sx={{
                                 marginLeft: 'auto',
                                 flexShrink: 0,
@@ -532,7 +725,7 @@ export function ProcessNodeEditor(): ReactNode {
                     <Tabs
                         value={currentTab}
                         onChange={(_, value) => {
-                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${originalNode.id}/tabs/${value}?${searchParams.toString()}`);
+                            navigate(`/processes/${params.processId}/versions/${params.processVersion}/nodes/${nodeId}/tabs/${value}?${searchParams.toString()}`);
                         }}
                         sx={{
                             mt: 0.25,
@@ -566,6 +759,8 @@ export function ProcessNodeEditor(): ReactNode {
 
                     <Box
                         ref={editorTabContentContainerRef}
+                        inert={previewLocked}
+                        aria-busy={isNodeLoading || (matchesRequest && previewLocked)}
                         sx={{
                             px: 2,
                             py: 1,
@@ -576,23 +771,33 @@ export function ProcessNodeEditor(): ReactNode {
                         {incomingMetadataState.status === 'failed' && tabUsesIncomingMetadata && (
                             <Alert severity="warning" sx={{mb: 2}}>
                                 Auswahlvorschläge und wiederverwendbare Inhalte konnten nicht geladen werden.
-                                {editable && ' Sie können die Konfiguration weiterhin bearbeiten.'}
+                                {checked && ' Sie können die Konfiguration weiterhin bearbeiten.'}
                             </Alert>
                         )}
+                        {/* Nested dialogs can live outside the inert subtree. Each working copy starts with fresh controls. */}
                         <ProcessNodeEditorProvider
-                            key={nodeId}
+                            key={JSON.stringify([nodeId, loaded?.generation, matchesRequest, checked])}
                             value={{
                                 provider,
                                 layout,
                                 testClaim,
-                                node: editedNode ?? originalNode,
+                                node: checked ? editedNode ?? originalNode : originalNode,
                                 originalNode,
                                 dataKeyUnlocked,
-                                onUnlockDataKey: () => setDataKeyUnlocked(true),
-                                onLockDataKey: () => setDataKeyUnlocked(false),
+                                onUnlockDataKey: () => {
+                                    if (!canEdit()) return;
+                                    keyLockRevision.current++;
+                                    setDataKeyUnlocked(true);
+                                },
+                                onLockDataKey: () => {
+                                    if (!canEdit()) return;
+                                    keyLockRevision.current++;
+                                    setDataKeyUnlocked(false);
+                                },
                                 dataKeyValidationRequested,
                                 outputMappingErrors,
                                 setNode: (node, updateOriginal) => {
+                                    if (!canEdit()) return;
                                     if (updateOriginal) {
                                         setOriginalNode(node);
                                     }
@@ -603,9 +808,12 @@ export function ProcessNodeEditor(): ReactNode {
                                         });
                                     }
                                     setOutputMappingErrors({});
+                                    if (currentCheckpoint.current?.phase === 'confirmed' && editorValuesEqual(node, currentOriginal.current)) {
+                                        setSaveCheckpoint(undefined);
+                                    }
                                     setEditedNode(node);
                                 },
-                                isEditable: editable,
+                                isEditable: checked,
                                 problems: problems,
                                 incomingMetadata: incomingMetadataState.status === 'loaded'
                                     ? incomingMetadataState.metadata
@@ -631,10 +839,12 @@ export function ProcessNodeEditor(): ReactNode {
                     }}
                 >
                     <Button
-                        onClick={handleSaveSelected}
+                        onClick={() => {
+                            void handleSaveSelected();
+                        }}
                         variant="contained"
                         startIcon={<Save/>}
-                        disabled={!editable || !hasChanged || isNodeLoading}
+                        disabled={!canSave || isSaving}
                     >
                         Konfiguration speichern
                     </Button>
@@ -650,19 +860,20 @@ export function ProcessNodeEditor(): ReactNode {
             </Box>
 
             {changeBlockerDialog}
+            {mergeConflictDialog}
 
             <ProcessNodeEditorMenu
                 anchorEl={menuAnchorEl}
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
-                editable={structureEditable}
+                editable={structureEditable && checked}
                 onShowNodeProviderDetails={() => {
                     setIsProviderDetailsDialogOpen(true);
                 }}
                 onExportNode={handleExportSelected}
                 onReplaceNode={() => {
-                    if (!structureEditable || originalNode == null) {
+                    if (!structureEditable || !canEdit() || originalNode == null) {
                         return;
                     }
 
