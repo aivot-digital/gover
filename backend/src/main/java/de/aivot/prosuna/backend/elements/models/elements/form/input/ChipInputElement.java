@@ -6,11 +6,13 @@ import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ChipInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
@@ -43,6 +45,19 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     public ChipInputElement() {
         super(ElementType.ChipInput);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        // Suggestions are optional, but resolving code list suggestions fails without a key.
+        if (optionsSource == OptionsSourceType.CodeList && StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        return errors;
     }
 
     @Nullable

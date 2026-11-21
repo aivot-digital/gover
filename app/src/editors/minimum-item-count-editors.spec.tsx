@@ -57,22 +57,22 @@ describe.each(cases)('minimum count editor: $name', testCase => {
     });
 });
 
-it.each([ElementType.DomainAndUserSelect, ElementType.AssignmentContext] as const)('allows an unlimited maximum with an optional minimum in editor %s', type => {
+it.each([ElementType.DomainAndUserSelect, ElementType.AssignmentContext] as const)('shows configuration errors of an optional minimum in editor %s', type => {
     const props = {...common, onPatch: vi.fn()};
-    function editor(maxItems: number) {
-        const limits = {required: false, minItems: 3, maxItems};
+    function editor(configurationErrors?: Record<string, string[]>) {
+        const limits = {required: false, minItems: 3, maxItems: 2};
         return type === ElementType.DomainAndUserSelect
-            ? <DomainUserSelectFieldEditor {...props} element={{...generateElementWithDefaultValues(type), ...limits}} />
-            : <AssignmentContextFieldEditor {...props} element={{...generateElementWithDefaultValues(type), ...limits}} />;
+            ? <DomainUserSelectFieldEditor {...props} configurationErrors={configurationErrors} element={{...generateElementWithDefaultValues(type), ...limits}} />
+            : <AssignmentContextFieldEditor {...props} configurationErrors={configurationErrors} element={{...generateElementWithDefaultValues(type), ...limits}} />;
     }
-    const {rerender} = render(editor(0));
+    const {rerender} = render(editor());
     expect(screen.getByRole('textbox', {name: /^Minimale Anzahl/})).not.toHaveAttribute('aria-invalid', 'true');
-    rerender(editor(2));
+    rerender(editor({minItems: ['Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.']}));
     expect(screen.getByRole('textbox', {name: /^Minimale Anzahl/})).toHaveAccessibleDescription(/Die Mindestanzahl darf nicht größer/);
 });
 
 
-it('edits the multiple-choice maximum and identifies conflicting limits', () => {
+it('edits the multiple-choice maximum and shows conflicting limits', () => {
     const onPatch = vi.fn();
     const element = {...generateElementWithDefaultValues(ElementType.MultiCheckbox), minimumRequiredOptions: 3};
     const {rerender} = render(<MultiCheckboxFieldComponentEditor {...common} element={element} onPatch={onPatch}/>);
@@ -83,8 +83,9 @@ it('edits the multiple-choice maximum and identifies conflicting limits', () => 
     fireEvent.change(input, {target: {value: '0'}});
     fireEvent.blur(input);
     expect(onPatch).toHaveBeenLastCalledWith({maximumOptions: undefined});
-    rerender(<MultiCheckboxFieldComponentEditor {...common} element={{...element, maximumOptions: 2}} onPatch={onPatch}/>);
-    expect(input).toHaveAccessibleDescription(/Die Maximalanzahl darf nicht kleiner/);
+    const conflict = ['Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.'];
+    rerender(<MultiCheckboxFieldComponentEditor {...common} element={{...element, maximumOptions: 2}} configurationErrors={{minimumRequiredOptions: conflict, maximumOptions: conflict}} onPatch={onPatch}/>);
+    expect(input).toHaveAccessibleDescription(/Die Mindestanzahl darf nicht größer/);
     expect(screen.getByRole('textbox', {name: /^Mindestanzahl/})).toHaveAccessibleDescription(/Die Mindestanzahl darf nicht größer/);
     rerender(<MultiCheckboxFieldComponentEditor {...common} editable={false} element={element} onPatch={onPatch}/>);
     expect(input).toBeDisabled();

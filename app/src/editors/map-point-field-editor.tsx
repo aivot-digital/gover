@@ -11,6 +11,7 @@ export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement>
         editable,
         scope,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
 
     if (hasSummaryLayoutParent) {
@@ -39,6 +40,7 @@ export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement>
             <Grid size={{xs: 12, lg: 4}}>
                 <NumberFieldComponent
                     label="Start-Breitengrad"
+                    error={configurationErrors?.centerLatitude?.join(' ')}
                     value={element.centerLatitude ?? 52.52}
                     onChange={(value) => {
                         onPatch({
@@ -53,6 +55,7 @@ export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement>
             <Grid size={{xs: 12, lg: 4}}>
                 <NumberFieldComponent
                     label="Start-Längengrad"
+                    error={configurationErrors?.centerLongitude?.join(' ')}
                     value={element.centerLongitude ?? 13.405}
                     onChange={(value) => {
                         onPatch({
@@ -67,6 +70,7 @@ export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement>
             <Grid size={{xs: 12, lg: 4}}>
                 <NumberFieldComponent
                     label="Start-Zoomstufe"
+                    error={configurationErrors?.zoom?.join(' ')}
                     value={element.zoom ?? 14}
                     onChange={(value) => {
                         onPatch({

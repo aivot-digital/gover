@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,6 +23,23 @@ public class MapPointInputElement extends BaseInputElement<MapPointInputElementV
 
     public MapPointInputElement() {
         super(ElementType.MapPoint);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        if (centerLatitude != null && (centerLatitude < -90 || centerLatitude > 90)) {
+            addConfigurationError(errors, "centerLatitude", "Der Breitengrad muss zwischen -90 und 90 liegen.");
+        }
+        if (centerLongitude != null && (centerLongitude < -180 || centerLongitude > 180)) {
+            addConfigurationError(errors, "centerLongitude", "Der Längengrad muss zwischen -180 und 180 liegen.");
+        }
+        // The editor offers the zoom levels of the map tiles only.
+        if (zoom != null && (zoom < 1 || zoom > 19)) {
+            addConfigurationError(errors, "zoom", "Die Zoomstufe muss zwischen 1 und 19 liegen.");
+        }
+        return errors;
     }
 
     @Nullable

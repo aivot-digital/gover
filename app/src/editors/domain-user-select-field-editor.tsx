@@ -17,21 +17,8 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
         element,
         editable,
         onPatch,
+        configurationErrors,
     } = props;
-
-    const minItemsError = (
-        element.maxItems != null &&
-        element.maxItems > 0 &&
-        element.minItems != null &&
-        element.minItems > element.maxItems
-    );
-
-    const maxItemsError = (
-        element.maxItems != null &&
-        element.maxItems > 0 &&
-        element.minItems != null &&
-        element.maxItems < element.minItems
-    );
 
     const allowedTypes = element.allowedTypes ?? DomainAndUserSelectItemTypes;
     const noTypeEnabled = allowedTypes.length === 0;
@@ -88,7 +75,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                         });
                     }}
                     hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
-                    error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                    error={configurationErrors?.minItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>
@@ -108,7 +95,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                         });
                     }}
                     hint="Lassen Sie das Feld leer, wenn keine Obergrenze gelten soll."
-                    error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                    error={configurationErrors?.maxItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>
@@ -166,6 +153,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                     >
                         <NumberFieldComponent
                             label="Prozess-ID"
+                            error={configurationErrors?.['processAccessConstraint.processId']?.join(' ')}
                             value={processAccessConstraint.processId}
                             onChange={(value) => {
                                 onPatch({
@@ -188,6 +176,7 @@ export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSel
                     >
                         <NumberFieldComponent
                             label="Prozessversion"
+                            error={configurationErrors?.['processAccessConstraint.processVersion']?.join(' ')}
                             value={processAccessConstraint.processVersion}
                             onChange={(value) => {
                                 onPatch({

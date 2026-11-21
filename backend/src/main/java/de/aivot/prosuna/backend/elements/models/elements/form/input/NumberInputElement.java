@@ -12,6 +12,8 @@ import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class NumberInputElement extends BaseInputElement<BigDecimal> implements PrintableElement<BigDecimal> {
@@ -29,6 +31,17 @@ public class NumberInputElement extends BaseInputElement<BigDecimal> implements 
 
     public NumberInputElement() {
         super(ElementType.Number);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // formatValue would round every value to tens, hundreds, etc.
+        if (decimalPlaces != null && decimalPlaces < 0) {
+            addConfigurationError(errors, "decimalPlaces", "Die Anzahl der Dezimalstellen darf nicht negativ sein.");
+        }
+        return errors;
     }
 
     @Nullable

@@ -101,6 +101,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         rows={3}
                         maxCharacters={120}
                         required
+                        error={props.configurationErrors?.publicTitle?.join(' ')}
                         disabled={!props.editable}
                     />
                 </Grid>

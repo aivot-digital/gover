@@ -10,6 +10,7 @@ import jakarta.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -69,6 +70,18 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
     @Nonnull
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
         return false;
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The title labels the field, is announced by screen readers and is the source of the generated data key, so
+        // technical fields and fields with an override need one as well.
+        if (StringUtils.isNullOrEmpty(label)) {
+            addConfigurationError(errors, "label", "Geben Sie einen Titel für das Feld an.");
+        }
+        return errors;
     }
 
     public abstract void performValidation(@Nullable T value) throws ValidationException;

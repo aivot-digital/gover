@@ -51,6 +51,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
         element,
         onPatch,
         editable,
+        configurationErrors,
     } = props;
     const target = resolveTarget(element);
     const [pickerOpen, setPickerOpen] = useState(false);
@@ -66,9 +67,11 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                 <TextFieldComponent
                     value={element.label}
                     label="Beschriftung"
+                    error={configurationErrors?.label?.join(' ')}
                     onChange={(label) => {
                         onPatch({label});
                     }}
+                    required
                     disabled={!editable}
                 />
             </Grid>
@@ -94,6 +97,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                         },
                     }}
                     includeEmptyOption={false}
+                    required
                     disabled={!editable}
                 />
             </Grid>
@@ -105,12 +109,14 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                             value={element.href}
                             label="Link"
                             hint="Geben Sie Webadressen mit Protokoll ein, zum Beispiel https://www.beispiel.de."
+                            error={configurationErrors?.href?.join(' ')}
                             validate={(value) => value?.trim() && resolveLinkButtonHref(value) == null
                                 ? 'Geben Sie einen gültigen Link an, zum Beispiel https://www.beispiel.de. Möglich sind auch mailto:, tel:, /pfad oder #anker.'
                                 : undefined}
                             onChange={(href) => {
                                 onPatch({href});
                             }}
+                            required
                             disabled={!editable}
                         />
                     </Grid>
@@ -133,12 +139,14 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                     <TextFieldComponent
                         value={element[target]}
                         label="Ereigniskennung"
+                        error={configurationErrors?.[target]?.join(' ')}
                         hint={'Geben Sie die technische Kennung einer Aktion an, die das jeweilige Prozesselement unterstützt. Eine frei gewählte Kennung legt keine neue Aktion an.' + (target === 'staffTaskEvent'
                             ? ' Beispiel: „complete“ schließt beim Prozesselement „Freie Aufgabe“ die Aufgabe ab.'
                             : ' Die gültigen Kennungen erhalten Sie von den Entwickler:innen des Prozesselements.')}
                         onChange={(event) => {
                             onPatch({[target]: event ?? ''});
                         }}
+                        required
                         disabled={!editable}
                     />
                 </Grid>
@@ -152,6 +160,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                     }}
                     options={variantOptions}
                     includeEmptyOption={false}
+                    required
                     disabled={!editable}
                 />
             </Grid>
@@ -165,6 +174,7 @@ export function LinkButtonEditor(props: BaseEditorProps<LinkButtonElement>): Rea
                     options={colorOptions}
                     hint="Primär und Sekundär verwenden die entsprechenden Farben des Erscheinungsbilds. Die weiteren Farben sind Signalfarben."
                     includeEmptyOption={false}
+                    required
                     disabled={!editable}
                 />
             </Grid>

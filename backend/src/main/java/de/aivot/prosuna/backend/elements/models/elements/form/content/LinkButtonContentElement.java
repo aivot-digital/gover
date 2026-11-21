@@ -2,9 +2,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class LinkButtonContentElement extends BaseFormElement {
@@ -31,6 +34,31 @@ public class LinkButtonContentElement extends BaseFormElement {
 
     public LinkButtonContentElement() {
         super(ElementType.LinkButton);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        if (hasOverride()) {
+            return errors;
+        }
+        if (StringUtils.isNullOrEmpty(label)) {
+            addConfigurationError(errors, "label", "Geben Sie eine Beschriftung für die Schaltfläche an.");
+        }
+        if (StringUtils.isNullOrEmpty(href)
+                && StringUtils.isNullOrEmpty(staffTaskEvent)
+                && StringUtils.isNullOrEmpty(customerTaskEvent)) {
+            // Like the editor, an empty event name keeps a selected task action; without one, the button opens a link.
+            if (staffTaskEvent != null) {
+                addConfigurationError(errors, "staffTaskEvent", "Geben Sie die Ereigniskennung an, die die Schaltfläche auslösen soll.");
+            } else if (customerTaskEvent != null) {
+                addConfigurationError(errors, "customerTaskEvent", "Geben Sie die Ereigniskennung an, die die Schaltfläche auslösen soll.");
+            } else {
+                addConfigurationError(errors, "href", "Geben Sie den Link an, den die Schaltfläche öffnen soll.");
+            }
+        }
+        return errors;
     }
 
     @Override

@@ -17,6 +17,8 @@ export function RichtextComponentEditor(props: BaseEditorProps<RichtextElement>)
                 }}>
                 <RichTextInputComponent
                     label={'Anzuzeigender Text'}
+                    error={props.configurationErrors?.content?.join(' ')}
+                    required
                     value={props.element.content ?? ''}
                     onChange={(value) => {
                         props.onPatch({content: value ?? undefined});

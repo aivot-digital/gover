@@ -16,13 +16,12 @@ function editorProps(): BaseEditorProps<ChipInputFieldElement> {
 }
 
 describe('ChipInputFieldEditor', () => {
-    it('exposes and validates the minimum even for optional fields', () => {
+    it('exposes the minimum and its configuration error even for optional fields', () => {
         const props = editorProps();
         props.element = {...props.element, required: false, minItems: 3, maxItems: 2};
-        render(<ChipInputFieldEditor {...props}/>);
+        render(<ChipInputFieldEditor {...props} configurationErrors={{minItems: ['Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.']}}/>);
         expect(screen.getByRole('textbox', {name: /^Minimale Anzahl/})).toHaveValue('3');
-        expect(screen.getByText('Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.')).toBeVisible();
-        expect(screen.getByText('Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.')).toBeVisible();
+        expect(screen.getByRole('textbox', {name: /^Minimale Anzahl/})).toHaveAccessibleDescription(/Die Mindestanzahl darf nicht größer/);
     });
 
     it('stores the maximum length for each entry', () => {

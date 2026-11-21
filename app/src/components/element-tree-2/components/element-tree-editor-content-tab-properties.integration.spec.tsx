@@ -25,13 +25,13 @@ describe('ElementTreeEditorContentTabProperties editor naming', () => {
         {
             kind: 'section',
             element: {...generateElementWithDefaultValues(ElementType.Step), title: 'Persönliche Angaben'},
-            publicField: /^Titel des Abschnitts/,
+            publicField: /^Titel des Abschnitts$/,
             publicValue: 'Persönliche Angaben',
         },
         {
             kind: 'input',
             element: {...generateElementWithDefaultValues(ElementType.Text), label: 'Nachname'},
-            publicField: /^Titel – optional$/,
+            publicField: /^Titel$/,
             publicValue: 'Nachname',
         },
         {
@@ -73,13 +73,15 @@ describe('ElementTreeEditorContentTabProperties editor naming', () => {
 
         if (publicField != null) {
             expect(screen.getByRole('textbox', {name: publicField})).toHaveValue(publicValue);
+            // The configuration validation rejects empty titles, so the field must not be marked as optional.
+            expect(screen.getByRole('textbox', {name: publicField})).toBeRequired();
         }
     });
 
     it('places the field title before its width control', () => {
         render(<TestProperties element={generateElementWithDefaultValues(ElementType.Text)}/>);
 
-        const title = screen.getByRole('textbox', {name: /^Titel – optional$/});
+        const title = screen.getByRole('textbox', {name: /^Titel$/});
         const key = screen.getByRole('textbox', {name: /^Datenschlüssel/});
         expect(title.compareDocumentPosition(key) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         const width = screen.getByRole('radiogroup', {name: 'Breite (Darstellung)'});

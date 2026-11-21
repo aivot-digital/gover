@@ -19,6 +19,7 @@ export function ImageEditor(props: BaseEditorProps<ImageElement>) {
                 value={props.element.src ?? ''}
                 label="URL (Link zur Grafikdatei)"
                 hint="Wählen Sie ein Bild aus Dateien und Medien oder geben Sie eine erreichbare Bild-URL an."
+                error={props.configurationErrors?.src?.join(' ')}
                 onChange={(val) => {
                     props.onPatch({
                         src: val,

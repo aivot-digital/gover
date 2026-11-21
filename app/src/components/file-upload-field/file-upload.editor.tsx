@@ -28,14 +28,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
             });
     }, []);
 
-    const invalidMinMax =
-        props.element.minFiles != null && props.element.minFiles > 0 &&
-        props.element.maxFiles != null && props.element.maxFiles > 0 &&
-        props.element.minFiles > props.element.maxFiles;
     const requiresSubmittedFileNameIndex = props.element.isMultifile === true || hasReplicatingContainerParent;
-    const submittedFileNameError = props.element.submittedFileName == null || props.element.submittedFileName.trim().length === 0 ?
-        'Bitte geben Sie einen Dateinamen bei Übermittlung an.' :
-        undefined;
     const submittedFileNameHint = !requiresSubmittedFileNameIndex
         ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
         : hasReplicatingContainerParent
@@ -101,7 +94,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                                     minFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Die Mindestanzahl an Anlagen darf nicht größer als die Maximalanzahl sein.' : undefined}
+                            error={props.configurationErrors?.minFiles?.join(' ')}
                             disabled={!props.editable}
                         />
                     </Grid>
@@ -120,7 +113,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                                     maxFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Die Mindestanzahl an Anlagen darf nicht größer als die Maximalanzahl sein.' : undefined}
+                            error={props.configurationErrors?.maxFiles?.join(' ')}
                             disabled={!props.editable}
                         />
                     </Grid>
@@ -136,7 +129,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                         });
                     }}
                     hint={submittedFileNameHint}
-                    error={submittedFileNameError}
+                    error={props.configurationErrors?.submittedFileName?.join(' ')}
                     required
                     disabled={!props.editable}
                 />
@@ -151,7 +144,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                         });
                     }}
                     hint="Die ausfüllende Person kann nur Dateien mit diesen Endungen hochladen."
-                    error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
+                    error={props.configurationErrors?.extensions?.join(' ')}
                     options={(allowedExtensions ?? []).map((ex) => ({
                         label: ex,
                         value: ex,
