@@ -74,7 +74,8 @@ public class ProcessInstanceAccessControlService implements EntityService<Proces
 
     @Nonnull
     public List<ProcessInstanceAccessControlEntity> replace(@Nonnull UserEntity actor, @Nonnull Long instanceId,
-                                                            @Nonnull List<ProcessInstanceAccessRuleDTO> rules) throws ResponseException {
+                                                            @Nonnull List<ProcessInstanceAccessRuleDTO> rules,
+                                                            @Nullable String basedOn) throws ResponseException {
         permissions.requireProcessInstancePermission(actor.getId(), instanceId, PROCESS_INSTANCE_UPDATE);
         var beforeAccess = guard.lockAndSnapshot(instanceId);
         // Recheck after waiting for concurrent changes, including withdrawal of the actor's own access.
@@ -89,6 +90,7 @@ public class ProcessInstanceAccessControlService implements EntityService<Proces
             }
         }
         var existing = repository.findAllByTargetProcessInstanceIdOrderById(instanceId);
+        requireBasedOnCurrentRules(basedOn, existing);
         var before = existing.stream().map(this::toRule).toList();
         repository.deleteAll(existing.stream().filter(entry -> !recipients.contains(recipient(entry.getSourceDepartmentId(), entry.getSourceTeamId()))).toList());
         for (var rule : rules) {
@@ -111,6 +113,38 @@ public class ProcessInstanceAccessControlService implements EntityService<Proces
                     .withMessage("Die Berechtigungen des Vorgangs wurden geändert.").log();
         }
         return result;
+    }
+
+    /**
+     * The rules are replaced as a set, so a removed rule is simply missing from the request and cannot carry its lock
+     * version. The client therefore states the stored rules its change is based on, as comma-separated
+     * {@code id:lockVersion} pairs. The save is rejected when any rule was added, changed or removed meanwhile.
+     * Without this statement the last save wins, as for other requests without a lock version.
+     */
+    private static void requireBasedOnCurrentRules(@Nullable String basedOn,
+                                                   @Nonnull List<ProcessInstanceAccessControlEntity> existing) throws ResponseException {
+        if (basedOn == null) {
+            return;
+        }
+        var known = new HashMap<Integer, Long>();
+        for (var token : basedOn.split(",")) {
+            if (token.isBlank()) {
+                continue;
+            }
+            var parts = token.split(":");
+            try {
+                if (parts.length != 2 || known.put(Integer.valueOf(parts[0].trim()), Long.valueOf(parts[1].trim())) != null) {
+                    throw new NumberFormatException();
+                }
+            } catch (NumberFormatException e) {
+                throw ResponseException.badRequest("Der Bearbeitungsstand der Berechtigungen ist ungültig.");
+            }
+        }
+        var stored = new HashMap<Integer, Long>();
+        existing.forEach(entry -> stored.put(entry.getId(), entry.getLockVersion()));
+        if (!stored.equals(known)) {
+            throw ResponseException.conflictWithDetails(LockVersioned.CONFLICT_MESSAGE, LockVersioned.CONFLICT_DETAILS);
+        }
     }
 
     private ProcessInstanceAccessRuleDTO toRule(ProcessInstanceAccessControlEntity entry) {

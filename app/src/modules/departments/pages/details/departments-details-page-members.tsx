@@ -274,7 +274,7 @@ export function DepartmentsDetailsPageMembers() {
             });
     }, [dispatch, item, listControlRef, refreshPermissionsAfterMembershipChange]);
 
-    const handleUpdateMembership = useCallback((membership: VDepartmentMembershipWithDetailsEntity | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = useCallback((membership: VDepartmentMembershipWithDetailsEntity | null, roleIds: number[], lockVersion: number | null) => {
         if (membership == null) {
             return;
         }
@@ -285,28 +285,9 @@ export function DepartmentsDetailsPageMembers() {
             estimatedTime: 5000,
         }));
 
-        const apiService = new VDepartmentUserRoleAssignmentWithDetailsService();
-
-        const addPromises = roleIdsToAdd
-            .map((roleId) => apiService.create({
-                id: 0,
-                departmentMembershipId: membership.membershipId,
-                teamMembershipId: null,
-                userRoleId: roleId,
-                created: new Date().toISOString(),
-            }));
-
-        const removePromises = userRoleAssignmentIdsToRemove
-            .map((assignmentId) => apiService.destroy(assignmentId));
-
-        Promise
-            .all([
-                ...addPromises,
-                ...removePromises,
-            ])
+        new VDepartmentUserRoleAssignmentWithDetailsService()
+            .updateRoles(membership.membershipId, lockVersion ?? membership.lockVersion, roleIds)
             .then(() => {
-                // Refresh list
-                listControlRef.current?.refresh();
                 refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
@@ -318,6 +299,8 @@ export function DepartmentsDetailsPageMembers() {
                 }
             })
             .finally(() => {
+                // After a conflict the list shows the roles saved in the meantime instead of this dialog's state.
+                listControlRef.current?.refresh();
                 dispatch(setLoadingMessage(undefined));
             });
     }, [dispatch, listControlRef, refreshPermissionsAfterMembershipChange]);
@@ -416,8 +399,8 @@ export function DepartmentsDetailsPageMembers() {
                 onClose={() => {
                     setShowSelectRolesDialogForMembership(null);
                 }}
-                onSave={(roleIdsToAdd, userRoleAssignmentIdsToRemove) => {
-                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIdsToAdd, userRoleAssignmentIdsToRemove);
+                onSave={(roleIds, lockVersion) => {
+                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIds, lockVersion);
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}

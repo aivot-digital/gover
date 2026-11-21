@@ -18,7 +18,7 @@ import {DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_SERIAL, ID_GEN_UUID} from '../..
 import {ElementType} from '../../../../data/element-type/element-type';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {RadioFieldComponent} from '../../../../components/radio-field/radio-field-component';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {
     MultiCheckboxComponent,
@@ -241,12 +241,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen am Datenmodell erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    console.error(err);
-                    if (isApiError(err) && err.displayableToUser) {
-                        dispatch(showErrorSnackbar(err.message));
-                    } else {
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                    }
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
                     setIsBusy(false);

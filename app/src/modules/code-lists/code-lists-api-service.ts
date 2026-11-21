@@ -81,10 +81,11 @@ export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, 
         });
     }
 
-    public async updateItem(codeListKey: string, itemId: number, columns: string[]): Promise<CodeListItem> {
+    public async updateItem(codeListKey: string, itemId: number, columns: string[], lockVersion: number | null | undefined): Promise<CodeListItem> {
         return await this.put<Partial<CodeListItem>, CodeListItem>(`${this.buildPath(codeListKey)}items/${itemId}/`, {
             id: itemId,
             columns,
+            lockVersion,
         });
     }
 

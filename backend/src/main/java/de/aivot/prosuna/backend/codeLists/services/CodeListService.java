@@ -30,6 +30,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -72,6 +73,9 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         this.assetService = assetService;
         this.storageService = storageService;
         this.transaction = new TransactionTemplate(transactionManager);
+        // Recording a sync locks the list after the source was read; under REPEATABLE READ a list saved meanwhile would
+        // fail it with a serialization error, while the run ownership check already detects a superseded run.
+        this.transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     @Nonnull

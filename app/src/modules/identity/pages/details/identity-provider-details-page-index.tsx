@@ -9,7 +9,7 @@ import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar, showLockConflictSnackbar} from '../../../../slices/snackbar-slice';
 import {isLockVersionConflictError} from '../../../../models/api-error';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -340,7 +340,7 @@ export function IdentityProviderDetailsPageIndex() {
                 })
                 .catch(err => {
                     if (isLockVersionConflictError(err)) {
-                        dispatch(showErrorSnackbar(err.message));
+                        dispatch(showLockConflictSnackbar(err.message));
                     } else if (err.status === 409) {
                         dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
                     } else {
