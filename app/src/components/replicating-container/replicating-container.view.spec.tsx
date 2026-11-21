@@ -84,6 +84,33 @@ describe('ReplicatingContainerView', () => {
         expect(props.setValue).toHaveBeenCalledWith(null, ['addresses', 'street']);
     });
 
+    it('allows removing the first entry of a required collection while another entry remains', async () => {
+        const user = userEvent.setup();
+        const second = {id: 'address-2', values: {street: literalAuthoredValue('Musterweg 2')}};
+        const props = renderView({
+            element: {...element, required: true},
+            value: [{id: 'address-1', values: {street: literalAuthoredValue('Musterstraße 1')}}, second],
+        });
+
+        expect(within(screen.getByRole('group', {name: 'Adresse 2'})).getByRole('button', {name: 'Datensatz löschen'})).toBeEnabled();
+        await user.click(within(screen.getByRole('group', {name: 'Adresse 1'})).getByRole('button', {name: 'Datensatz löschen'}));
+        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Löschen'}));
+        expect(props.setValue).toHaveBeenCalledWith([second], ['addresses', 'street']);
+    });
+
+    it.each([
+        {minimumRequiredSets: null, entries: 1, removable: false},
+        {minimumRequiredSets: 2, entries: 2, removable: false},
+        {minimumRequiredSets: 2, entries: 3, removable: true},
+    ])('offers removal for every entry of a required collection only above its minimum ($entries entries, minimum $minimumRequiredSets)', ({minimumRequiredSets, entries, removable}) => {
+        renderView({
+            element: {...element, required: true, minimumRequiredSets},
+            value: Array.from({length: entries}, (_, i) => ({id: `address-${i + 1}`, values: {}})),
+        });
+
+        expect(screen.queryAllByRole('button', {name: 'Datensatz löschen'})).toHaveLength(removable ? entries : 0);
+    });
+
     it('explains that an optional minimum applies only when entries are provided', () => {
         renderView({element: {...element, minimumRequiredSets: 3}, value: null});
         expect(screen.getByText(/Bei Eingabe mindestens 3 Datensätze erforderlich/)).toBeVisible();

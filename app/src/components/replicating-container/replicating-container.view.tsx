@@ -69,6 +69,8 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     const minRequiredSets = element.required === true ? Math.max(1, minimumSets) : 0;
     const displayedMinimumSets = Math.max(minimumSets, minRequiredSets);
     const hasEntries = (value?.length ?? 0) > 0;
+    // Any entry may be removed, including the first, as long as the required minimum remains.
+    const canRemoveEntries = (value?.length ?? 0) > minRequiredSets;
     const isAddDisabled = isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets);
     const shouldShowEmptyState = !hasEntries;
     const isContainerBusy = isDeriving && hasDerivableAspects(element);
@@ -188,7 +190,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                             }}
                                         />
 
-                                        {(minRequiredSets === 0 || valueIndex >= minRequiredSets) && (
+                                        {canRemoveEntries && (
                                             <Box
                                                 sx={{
                                                     ml: 'auto',
@@ -203,7 +205,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                     onClick={() => {
                                                         setConfirmDelete(() => () => handleDelete(val, valueIndex));
                                                     }}
-                                                    disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
+                                                    disabled={isDisabled}
                                                     sx={{
                                                         minHeight: 24,
                                                         px: 0.75,
