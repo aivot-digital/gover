@@ -142,7 +142,7 @@ public record ProcessNodeDefinitionMetadata(
                                                                     ProcessNodeEntity origin,
                                                                     @Nullable
                                                                     List<ForwardedProcessDataKey.ValueOption> valueOptions) {
-        return addForwardedProcessDataKey(new ForwardedProcessDataKey(processDataKey, label, subLabel, origin, valueOptions, null, null));
+        return addForwardedProcessDataKey(new ForwardedProcessDataKey(processDataKey, label, subLabel, origin, valueOptions, null, null, null, null));
     }
 
     public ProcessNodeDefinitionMetadata addForwardedProcessDataKey(ForwardedProcessDataKey forwardedProcessDataKey) {
@@ -217,6 +217,8 @@ public record ProcessNodeDefinitionMetadata(
                         origin,
                         valueOptions,
                         codeListKey,
+                        codeListKey == null ? null : getCodeListValueColumnKey(i),
+                        codeListKey == null ? null : getCodeListLabelColumnKey(i),
                         getCodeListValueMode(i, codeListKey),
                         i instanceof RichTextInputElement
                 ));
@@ -321,6 +323,25 @@ public record ProcessNodeDefinitionMetadata(
         };
 
         return StringUtils.toNullableTrimmedString(codeListKey);
+    }
+
+    private static @Nullable String getCodeListValueColumnKey(@Nonnull BaseInputElement<?> i) {
+        return switch (i) {
+            case SelectInputElement s -> StringUtils.toNullableTrimmedString(s.getCodeListValueColumnKey());
+            case MultiCheckboxInputElement m -> StringUtils.toNullableTrimmedString(m.getCodeListValueColumnKey());
+            // Chip inputs store the text of their suggestion column.
+            case ChipInputElement c -> StringUtils.toNullableTrimmedString(c.getCodeListLabelColumnKey());
+            default -> null;
+        };
+    }
+
+    private static @Nullable String getCodeListLabelColumnKey(@Nonnull BaseInputElement<?> i) {
+        return switch (i) {
+            case SelectInputElement s -> StringUtils.toNullableTrimmedString(s.getCodeListLabelColumnKey());
+            case MultiCheckboxInputElement m -> StringUtils.toNullableTrimmedString(m.getCodeListLabelColumnKey());
+            case ChipInputElement c -> StringUtils.toNullableTrimmedString(c.getCodeListLabelColumnKey());
+            default -> null;
+        };
     }
 
     private static @Nullable ForwardedProcessDataKey.CodeListValueMode getCodeListValueMode(@Nonnull BaseInputElement<?> i,
@@ -499,10 +520,14 @@ public record ProcessNodeDefinitionMetadata(
             ProcessNodeEntity origin,
             @Nullable
             List<ValueOption> valueOptions,
-            // Set instead of valueOptions when the options come from a code list. Clients load the options themselves
-            // and use codeListValueMode to determine which item field the process data contains.
+            // Set instead of valueOptions when the options come from a code list. Clients load the options of the
+            // given columns themselves and use codeListValueMode to determine what the process data contains.
             @Nullable
             String codeListKey,
+            @Nullable
+            String codeListValueColumnKey,
+            @Nullable
+            String codeListLabelColumnKey,
             @Nullable
             CodeListValueMode codeListValueMode,
             // Values of Markdown inputs, which the variable picker inserts as plain text unless they keep their formatting.
@@ -512,7 +537,7 @@ public record ProcessNodeDefinitionMetadata(
                                        @Nonnull String label,
                                        @Nullable String subLabel,
                                        @Nonnull ProcessNodeEntity origin) {
-            this(processDataKey, label, subLabel, origin, null, null, null, false);
+            this(processDataKey, label, subLabel, origin, null, null, null, null, null, false);
         }
 
         public ForwardedProcessDataKey(@Nonnull String processDataKey,
@@ -521,8 +546,11 @@ public record ProcessNodeDefinitionMetadata(
                                        @Nonnull ProcessNodeEntity origin,
                                        @Nullable List<ValueOption> valueOptions,
                                        @Nullable String codeListKey,
+                                       @Nullable String codeListValueColumnKey,
+                                       @Nullable String codeListLabelColumnKey,
                                        @Nullable CodeListValueMode codeListValueMode) {
-            this(processDataKey, label, subLabel, origin, valueOptions, codeListKey, codeListValueMode, false);
+            this(processDataKey, label, subLabel, origin, valueOptions, codeListKey, codeListValueColumnKey,
+                    codeListLabelColumnKey, codeListValueMode, false);
         }
 
         public record ValueOption(
@@ -534,9 +562,9 @@ public record ProcessNodeDefinitionMetadata(
         }
 
         public enum CodeListValueMode {
-            // The process data contains the item value; the item label is used for display.
+            // The process data contains the cell of the value column; the label column is used for display.
             ValueAndLabel,
-            // The process data contains the item label itself.
+            // The process data contains the cell of the label column itself.
             LabelOnly
         }
     }

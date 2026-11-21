@@ -917,6 +917,7 @@ public class ElementDerivationService {
             var sanitizedValue = sanitizeSelectEffectiveValue(
                     inputElement,
                     authoredEffectiveValue,
+                    true,
                     scope,
                     selectDependencies,
                     elementState,
@@ -953,6 +954,7 @@ public class ElementDerivationService {
                 var sanitizedValue = sanitizeSelectEffectiveValue(
                         inputElement,
                         res.asObject(),
+                        false,
                         scope,
                         selectDependencies,
                         elementState,
@@ -980,6 +982,7 @@ public class ElementDerivationService {
                 var sanitizedValue = sanitizeSelectEffectiveValue(
                         inputElement,
                         derivedValue,
+                        false,
                         scope,
                         selectDependencies,
                         elementState,
@@ -1212,11 +1215,12 @@ public class ElementDerivationService {
     }
 
     /**
-     * Removes stale values from dependent select elements before they enter the effective runtime state.
+     * Checks the values of dependent select elements before they enter the effective runtime state.
      * <p>
      * Dependent selects are valid only relative to the currently selected option of another select. A previously chosen option may stop belonging to the active group after the
-     * referenced select changes. Returning {@code null} in that case forces the runtime state to reflect the currently available option set instead of silently preserving an
-     * impossible selection.
+     * referenced select changes. An authored value of such an option is kept and rejected with an error, so a stale or manipulated submission fails instead of silently losing the
+     * selection. Derived values and inputs that report no errors, such as technical inputs, cannot be corrected by a person; returning {@code null} for them forces the runtime
+     * state to reflect the currently available option set.
      * <p>
      * A referenced select that is placed after the dependent select is not derived yet. Its check runs once the whole tree is derived, see
      * {@link #checkDeferredSelectDependencies(SelectDependencies)}.
@@ -1225,6 +1229,7 @@ public class ElementDerivationService {
     private Object sanitizeSelectEffectiveValue(
             @Nonnull InputElement<?> inputElement,
             @Nullable Object effectiveValue,
+            boolean authored,
             @Nonnull ValueScope scope,
             @Nonnull SelectDependencies selectDependencies,
             @Nonnull ComputedElementState elementState,
@@ -1267,7 +1272,13 @@ public class ElementDerivationService {
             return selectedValue;
         }
 
-        return null;
+        if (!authored || !reportsErrors(inputElement, options)) {
+            return null;
+        }
+
+        // The value is still one of the options, so the regular validation keeps this error.
+        elementState.setError(formatDependentSelectMismatchError(referencedSelectField));
+        return selectedValue;
     }
 
     /**
@@ -1300,11 +1311,16 @@ public class ElementDerivationService {
                 continue;
             }
 
-            var referencedLabel = check.referencedSelect().getLabel();
-            check.dependentState().setError(StringUtils.isNullOrEmpty(referencedLabel)
-                    ? "Die ausgewählte Option passt nicht zur Auswahl im übergeordneten Auswahlfeld. Wählen Sie eine passende Option aus."
-                    : "Die ausgewählte Option passt nicht zur Auswahl im Feld " + StringUtils.quote(referencedLabel.trim()) + ". Wählen Sie eine passende Option aus.");
+            check.dependentState().setError(formatDependentSelectMismatchError(check.referencedSelect()));
         }
+    }
+
+    @Nonnull
+    private static String formatDependentSelectMismatchError(@Nonnull SelectInputElement referencedSelect) {
+        var referencedLabel = referencedSelect.getLabel();
+        return StringUtils.isNullOrEmpty(referencedLabel)
+                ? "Die ausgewählte Option passt nicht zur Auswahl im übergeordneten Auswahlfeld. Wählen Sie eine passende Option aus."
+                : "Die ausgewählte Option passt nicht zur Auswahl im Feld " + StringUtils.quote(referencedLabel.trim()) + ". Wählen Sie eine passende Option aus.";
     }
 
     /** Errors follow {@link #deriveError}: technical inputs are not shown to people, so they never report errors. */

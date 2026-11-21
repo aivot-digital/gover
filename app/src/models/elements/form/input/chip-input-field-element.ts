@@ -7,6 +7,8 @@ export interface ChipInputFieldElement extends BaseInputElement<ElementType.Chip
     suggestions: string[] | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;
     codeListKey: string | null | undefined;
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    codeListLabelColumnKey?: string | null;
     minItems: number | null | undefined;
     maxItems: number | null | undefined;
     maxItemLength?: number | null;
