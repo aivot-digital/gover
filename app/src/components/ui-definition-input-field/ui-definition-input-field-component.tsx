@@ -263,10 +263,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
     const handleClose = useCallback(() => {
         setShowDraftDialog(false);
-        setTimeout(() => {
-            resetDraftDialogState();
-        }, 300);
-    }, [resetDraftDialogState]);
+    }, []);
 
     const handlePatchDraftValue = useCallback((nextDraftValue: UiDefinitionInputFieldElementItem) => {
         const currentDraftValue = draftValueRef.current;
@@ -631,7 +628,11 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 }}
                 fullWidth
                 maxWidth="xl"
-                slotProps={{paper: {id: dialogId}}}
+                slotProps={{
+                    paper: {id: dialogId},
+                    // Follow the transition lifecycle so unmounting or reopening cancels the pending reset.
+                    transition: {onExited: resetDraftDialogState},
+                }}
             >
                 <DialogTitleWithClose
                     onClose={() => {
