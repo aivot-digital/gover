@@ -6,6 +6,7 @@ import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRi
 import Expand from '@aivot/mui-material-symbols-400-n25-outlined/Expand';
 import CollapseAll from '@aivot/mui-material-symbols-400-n25-outlined/CollapseAll';
 import {isArraySegment, type ProcessDataStructureTreeNode} from '../../../utils/process-data-structure';
+import {pluralize} from '../../../../../utils/humanization-utils';
 
 interface StructureItem {
     id: string;
@@ -86,8 +87,8 @@ export function ProcessDataStructureTree(props: {
                             color="textSecondary"
                             role="status"
                             sx={{mt: 0.5}}>
-                    {searching ? `${visiblePathCount} von ${props.pathCount} ${props.pathCount === 1 ? 'Pfad' : 'Pfaden'} angezeigt`
-                        : `${props.pathCount} ${props.pathCount === 1 ? 'definierter Pfad' : 'definierte Pfade'}`}
+                    {searching ? `${visiblePathCount} von ${props.pathCount} ${pluralize(props.pathCount, 'Pfad', 'Pfaden')} angezeigt`
+                        : `${props.pathCount} ${pluralize(props.pathCount, 'definierter Pfad', 'definierte Pfade')}`}
                 </Typography>
             </Box>
             <Tooltip title={expandLabel}

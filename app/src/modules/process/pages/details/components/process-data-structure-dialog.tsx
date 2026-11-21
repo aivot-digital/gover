@@ -26,6 +26,7 @@ import {
 import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {ProcessDefinitionVersionApiService} from '../../../services/process-definition-version-api-service';
 import {ProcessDataStructureIssueKind, type ProcessDataStructure} from '../../../entities/process-data-structure';
+import {humanizeNumber, pluralize} from '../../../../../utils/humanization-utils';
 import {
     buildProcessDataStructureTree,
     filterProcessDataStructureTree,
@@ -98,7 +99,7 @@ export function ProcessDataStructureDialog(props: ProcessDataStructureDialogProp
         (category === ProcessDataStructureCategory.ElementData && selected.path === entry.origin.dataKey) ||
         (category === 'ElementMetadata' && selected.path === entry.origin.dataKey)
     ))?.origin : null;
-    const childCountText = selected == null ? '' : `Enthält ${selected.children.size} direkt ${selected.children.size === 1 ? 'untergeordneten Pfad' : 'untergeordnete Pfade'}.`;
+    const childCountText = selected == null ? '' : `Enthält ${humanizeNumber(selected.children.size, {1: 'einen'})} direkt ${pluralize(selected.children.size, 'untergeordneten Pfad', 'untergeordnete Pfade')}.`;
     const structureNotes: string[] = [];
     const notes: string[] = [];
     if (selected != null) {
@@ -114,7 +115,7 @@ export function ProcessDataStructureDialog(props: ProcessDataStructureDialogProp
             notes.push('Unterstruktur nicht aufgeschlüsselt: Mögliche Felder oder Listeneinträge innerhalb dieses Werts sind hier nicht aufgeführt.');
         }
         if (category === ProcessDataStructureCategory.ProcessData && originCount > 1) {
-            notes.push(`Dieser Pfad ist in ${originCount} Prozesselementen definiert. Diese können aufeinanderfolgen oder zu unterschiedlichen Prozesspfaden gehören.`);
+            notes.push(`Dieser Pfad ist in ${humanizeNumber(originCount)} Prozesselementen definiert. Diese können aufeinanderfolgen oder zu unterschiedlichen Prozesspfaden gehören.`);
         }
         if (originGroups.length > 1) notes.push('Die Angaben sind nach Bezeichnung und Beschreibung gruppiert.');
         if (category === 'ElementMetadata') notes.push('Vom System bei der Ausführung des jeweiligen Prozesselements bereitgestellt.');

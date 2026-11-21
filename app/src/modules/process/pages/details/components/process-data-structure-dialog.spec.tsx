@@ -66,7 +66,7 @@ describe('ProcessDataStructureDialog', () => {
         })).toBeVisible();
         expect(search).not.toHaveAccessibleName(/optional/);
         expect(screen.getByText('1 von 1 Pfad angezeigt')).toBeVisible();
-        expect(screen.getByText(/Dieser Pfad ist in 2 Prozesselementen definiert/)).toBeVisible();
+        expect(screen.getByText(/Dieser Pfad ist in zwei Prozesselementen definiert/)).toBeVisible();
         expect(screen.getByText('Definiert in')).toBeVisible();
         expect(screen.queryByRole('button', {name: /Aktualisieren/})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button', {name: 'Schließen'})).toHaveLength(1);
@@ -180,7 +180,7 @@ describe('ProcessDataStructureDialog', () => {
         fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'finished'}});
         await user.click(within(await screen.findByRole('treeitem', {name: '$$.taskMetadata.form1'})).getByText('form1'));
         expect(screen.getByRole('heading', {name: 'Elementmetadaten'})).toBeVisible();
-        expect(screen.getAllByText('Enthält 2 direkt untergeordnete Pfade.')).toHaveLength(1);
+        expect(screen.getAllByText('Enthält zwei direkt untergeordnete Pfade.')).toHaveLength(1);
         expect(screen.queryByText(/ergibt sich aus/)).not.toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: 'Bereitstellung durch das System'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'Zum Prozesselement Formular 1'}));
@@ -211,7 +211,7 @@ describe('ProcessDataStructureDialog', () => {
         expect(screen.getByRole('treeitem', {name: '$.person'})).toHaveAttribute('aria-checked', 'true');
         expect(parent).toHaveAttribute('aria-expanded', 'false');
         expect(screen.getByRole('heading', {name: '$.person'})).toBeInTheDocument();
-        expect(screen.getByText('Enthält 1 direkt untergeordneten Pfad.')).toBeVisible();
+        expect(screen.getByText('Enthält einen direkt untergeordneten Pfad.')).toBeVisible();
         expect(screen.getByRole('heading', {name: 'Untergeordnete Pfade'})).toBeVisible();
         expect(screen.queryByRole('button', {name: /^Zum Prozesselement/})).not.toBeInTheDocument();
         await user.keyboard('{ArrowRight}{ArrowDown}{Enter}');
@@ -270,7 +270,7 @@ describe('ProcessDataStructureDialog', () => {
             await user.click(within(await screen.findByRole('treeitem', {name: `$.${path}`})).getByText(label));
             expect(screen.getAllByText(hint)).toHaveLength(1);
             expect(screen.queryByText(hint === listHint ? listItemHint : listHint)).not.toBeInTheDocument();
-            expect(screen.getByText(hint).compareDocumentPosition(screen.getByText('Enthält 1 direkt untergeordneten Pfad.')))
+            expect(screen.getByText(hint).compareDocumentPosition(screen.getByText('Enthält einen direkt untergeordneten Pfad.')))
                 .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
             if (hasOwnDefinitions) expect(screen.getAllByRole('button', {name: /^Zum Prozesselement/})).toHaveLength(2);
         }
@@ -294,11 +294,11 @@ describe('ProcessDataStructureDialog', () => {
         await user.click(within(screen.getByRole('treeitem', {name: '$.people[*].children[*]'})).getByText('[*]'));
         expect(screen.getAllByText(listItemHint)).toHaveLength(1);
         expect(screen.queryByText(listHint)).not.toBeInTheDocument();
-        expect(screen.queryByText(/Enthält \d+ direkt untergeordnet/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Enthält .+ direkt untergeordnet/)).not.toBeInTheDocument();
 
         fireEvent.change(search, {target: {value: 'matrix'}});
         await user.click(within(await screen.findByRole('treeitem', {name: '$.matrix[*]'})).getAllByText('[*]')[0]);
-        const count = screen.getByText('Enthält 1 direkt untergeordneten Pfad.');
+        const count = screen.getByText('Enthält einen direkt untergeordneten Pfad.');
         for (const hint of [listItemHint, listHint]) {
             expect(screen.getAllByText(hint)).toHaveLength(1);
             expect(screen.getByText(hint).compareDocumentPosition(count)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -332,7 +332,7 @@ describe('ProcessDataStructureDialog', () => {
         const search = screen.getByRole('searchbox');
         for (const query of ['', 'special']) {
             fireEvent.change(search, {target: {value: query}});
-            expect(screen.getByText('Enthält 2 direkt untergeordnete Pfade.')).toBeVisible();
+            expect(screen.getByText('Enthält zwei direkt untergeordnete Pfade.')).toBeVisible();
             if (mixed) {
                 expect(screen.queryByText(listHint)).not.toBeInTheDocument();
                 expect(screen.getByRole('alert')).toHaveTextContent('Mögliche Strukturabweichung');
@@ -368,6 +368,40 @@ describe('ProcessDataStructureDialog', () => {
             await user.click(screen.getByRole('button', {name: 'Pfad kopieren'}));
             expect(copyToClipboardText).toHaveBeenLastCalledWith(`${path}[*]`);
         }
+    });
+
+    it.each<[number, string]>([[12, 'zwölf'], [13, '13']])('humanizes %i child paths while keeping the tree count numeric', async (count, expected) => {
+        const user = userEvent.setup();
+        load.mockResolvedValue({
+            entries: Array.from({length: count}, (_, index) => ({...data.entries[0], path: `person.field${index}`})),
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        await user.click(within(await screen.findByRole('treeitem', {name: '$.person'})).getByText('person'));
+        expect(screen.getByText(`Enthält ${expected} direkt untergeordnete Pfade.`)).toBeVisible();
+        expect(screen.getByRole('status')).toHaveTextContent(`${count} definierte Pfade`);
+    });
+
+    it.each<[number, string | null]>([[1, null], [2, 'zwei'], [12, 'zwölf'], [13, '13']])('counts %i distinct origins across repeated definitions', async (count, expected) => {
+        const user = userEvent.setup();
+        const entries = Array.from({length: count}, (_, index) => ({
+            ...data.entries[0],
+            origin: {nodeId: index + 1, name: 'Formular', dataKey: `form${index + 1}`},
+        }));
+        load.mockResolvedValue({
+            entries: [...entries, {...entries[0], label: 'Weitere Bezeichnung'}],
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        fireEvent.change(await screen.findByRole('searchbox'), {target: {value: 'name'}});
+        await user.click(within(await screen.findByRole('treeitem', {name: '$.person.name'})).getByText('name'));
+        if (expected == null) {
+            expect(screen.queryByText(/Dieser Pfad ist in/)).not.toBeInTheDocument();
+        } else {
+            expect(screen.getByText(`Dieser Pfad ist in ${expected} Prozesselementen definiert. Diese können aufeinanderfolgen oder zu unterschiedlichen Prozesspfaden gehören.`)).toBeVisible();
+        }
+        expect(screen.getAllByRole('button', {name: 'Zum Prozesselement Formular'})).toHaveLength(count + 1);
+        expect(screen.getByRole('status')).toHaveTextContent('1 von 1 Pfad angezeigt');
     });
 
     it('shows partial results with actionable diagnostics', async () => {
