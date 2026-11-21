@@ -103,7 +103,9 @@ public class ProcessTaskMailService {
 
         var theme = departmentService.getDepartmentTheme(department);
         var subjectPrefix = "[Prosuna] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "");
-        mailService.sendMailToUser(theme, assignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskAssigned, mailData);
+        if (!isTriggeringUser(triggeringUser, assignedUser)) {
+            mailService.sendMailToUser(theme, assignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskAssigned, mailData);
+        }
 
         var deputyTitle = isReassignment ? "In Vertretung: Aufgabe neu zugewiesen" : "In Vertretung: Aufgabe zugewiesen";
         var deputyIntro = assignedUser.getFullName() + (isReassignment
@@ -145,7 +147,9 @@ public class ProcessTaskMailService {
 
         var theme = departmentService.getDepartmentTheme(department);
         var subjectPrefix = "[Prosuna] " + (processInstance.getCreatedForTestClaimId() != null ? "[Test] " : "");
-        mailService.sendMailToUser(theme, previouslyAssignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskUnassigned, mailData);
+        if (!isTriggeringUser(triggeringUser, previouslyAssignedUser)) {
+            mailService.sendMailToUser(theme, previouslyAssignedUser.getId(), subjectPrefix + title, MailTemplate.ProcessTaskUnassigned, mailData);
+        }
 
         var deputyTitle = "In Vertretung: " + title;
         var deputyIntro = "Die " + previouslyAssignedUser.getFullName() + " zugewiesene Aufgabe wurde einer anderen Person zugewiesen. "
@@ -157,6 +161,14 @@ public class ProcessTaskMailService {
     @Nonnull
     static String deputyNotice(@Nonnull UserEntity representedUser) {
         return "Sie erhalten diese Benachrichtigung, weil Sie " + representedUser.getFullName() + " derzeit vertreten.";
+    }
+
+    /**
+     * People are not notified about changes they made themselves. This applies to each recipient on its own: when the
+     * assignee changes their own assignment, their deputies are still notified.
+     */
+    private static boolean isTriggeringUser(@Nullable UserEntity triggeringUser, @Nonnull UserEntity recipient) {
+        return triggeringUser != null && recipient.getId().equals(triggeringUser.getId());
     }
 
     /**
@@ -174,7 +186,7 @@ public class ProcessTaskMailService {
         var deputies = deputyService.findActiveDeputies(Set.of(representedUser.getId()))
                 .getOrDefault(representedUser.getId(), List.of());
         for (var deputy : deputies) {
-            if (triggeringUser != null && deputy.getId().equals(triggeringUser.getId())) {
+            if (isTriggeringUser(triggeringUser, deputy)) {
                 continue;
             }
             var data = new HashMap<>(mailData);

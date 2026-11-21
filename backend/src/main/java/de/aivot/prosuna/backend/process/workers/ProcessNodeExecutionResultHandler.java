@@ -798,28 +798,26 @@ public class ProcessNodeExecutionResultHandler {
             return;
         }
 
-        if (context.triggeringUser == null || !assignedUser.getId().equals(context.triggeringUser.getId())) {
-            try {
-                processTaskMailService.sendAssigned(
-                        context.triggeringUser,
-                        assignedUser,
-                        context.processInstance,
-                        context.processInstanceTask,
-                        context.currentNode,
-                        context.provider,
-                        previousAssignedUserId != null
-                );
-            } catch (Exception e) {
-                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
-                        e,
-                        "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
-                        ProcessHistoryLabels.quotedUser(assignedUser)
-                ));
-            }
+        // The mail service skips the triggering user but still notifies their deputies, so always call it.
+        try {
+            processTaskMailService.sendAssigned(
+                    context.triggeringUser,
+                    assignedUser,
+                    context.processInstance,
+                    context.processInstanceTask,
+                    context.currentNode,
+                    context.provider,
+                    previousAssignedUserId != null
+            );
+        } catch (Exception e) {
+            context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
+                    ProcessHistoryLabels.quotedUser(assignedUser)
+            ));
         }
 
-        if (previousAssignedUser != null && (context.triggeringUser == null
-                || !previousAssignedUser.getId().equals(context.triggeringUser.getId()))) {
+        if (previousAssignedUser != null) {
             try {
                 processTaskMailService.sendUnassigned(
                         context.triggeringUser,
