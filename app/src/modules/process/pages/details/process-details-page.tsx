@@ -86,7 +86,11 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
-import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {
+    useHasProcessPermission,
+    useHasSystemPermission,
+    useRefreshPermissionSet,
+} from '../../../permissions/hooks/use-permissions';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
@@ -95,6 +99,8 @@ import {
 import {ProcessInstanceIdentityList} from '../../components/process-instance-identity-list';
 import {SearchItemService} from '../../../search/search-item-service';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import {ProcessDataStructureDialog} from './components/process-data-structure-dialog';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
 import {Permission} from '../../../../data/permissions/permission';
@@ -488,7 +494,10 @@ export function getProcessNodeEditURL(processId: number, processVersion: number,
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-    const {pathname, state} = useLocation();
+    const {
+        pathname,
+        state,
+    } = useLocation();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
@@ -501,6 +510,8 @@ export function ProcessDetailsPage(): ReactNode {
     const revokeProcessVersion = useRevokeProcessVersion();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
+    const canReadDataStructure = useHasProcessPermission(processFlow?.definition.id, Permission.PROCESS_DEFINITION_READ);
+    const [showDataStructure, setShowDataStructure] = useState(false);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
     const [flowNodeProviderCache, setFlowNodeProviderCache] = useState<Record<string, ProcessNodeProvider>>({});
@@ -1177,9 +1188,17 @@ export function ProcessDetailsPage(): ReactNode {
     }, []);
 
     const requireCandidatePorts = async (node: ProcessNodeEntity, useInitialConfiguration = false, forImport = false): Promise<ProcessNodePort[]> => {
-        const resolution = await new ProcessNodeApiService().resolvePorts(node, {useInitialConfiguration, forImport});
+        const resolution = await new ProcessNodeApiService().resolvePorts(node, {
+            useInitialConfiguration,
+            forImport,
+        });
         if (resolution.problems.length > 0) {
-            throw {status: 400, message: resolution.problems.join(' '), details: null, displayableToUser: true} satisfies ApiError;
+            throw {
+                status: 400,
+                message: resolution.problems.join(' '),
+                details: null,
+                displayableToUser: true,
+            } satisfies ApiError;
         }
         return resolution.ports;
     };
@@ -1605,7 +1624,8 @@ export function ProcessDetailsPage(): ReactNode {
                             Möchten Sie die Prozessmodellierung testen?
                             Die Prozessversion kann während des Tests nicht veröffentlicht werden.
                             Sie können den Test jederzeit abbrechen.
-                            Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
+                            Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge
+                            gelöscht.
                         </Typography>
                         {
                             (nodeProblems.length > 0 || versionProblems.length > 0) &&
@@ -1995,7 +2015,11 @@ export function ProcessDetailsPage(): ReactNode {
             title: 'Prozesselement ersetzen',
             confirmButtonText: 'Ersetzen',
             children: (
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                }}>
                     <Typography>
                         Möchten Sie das Prozesselement <strong>{getNodeName(node, currentProvider)}</strong> wirklich
                         durch <strong>{replacementProvider.name}</strong> ersetzen?
@@ -2146,6 +2170,13 @@ export function ProcessDetailsPage(): ReactNode {
                 'separator' as const,
             ] : []),
             {
+                tooltip: 'Datenstruktur anzeigen',
+                ariaLabel: 'Datenstruktur anzeigen',
+                icon: <DataObject/>,
+                visible: canReadDataStructure,
+                onClick: () => setShowDataStructure(true),
+            },
+            {
                 tooltip: 'Versionen',
                 ariaLabel: 'Versionen',
                 icon: <HomeStorage/>,
@@ -2204,6 +2235,7 @@ export function ProcessDetailsPage(): ReactNode {
         ];
     }, [
         processFlow,
+        canReadDataStructure,
         activeTestClaimId,
         currentTestClaim,
         instanceId,
@@ -2532,7 +2564,7 @@ export function ProcessDetailsPage(): ReactNode {
                                             }}
                                         >
                                             <Typography sx={{
-                                                color: "text.secondary"
+                                                color: 'text.secondary',
                                             }}>
                                                 {
                                                     hasFlowNodeProviderLoadError ?
@@ -2760,6 +2792,20 @@ export function ProcessDetailsPage(): ReactNode {
                 onMenuEvent={handleMenuEvent}
             />
 
+            {showDataStructure && canReadDataStructure && <ProcessDataStructureDialog
+                processId={processFlow.definition.id}
+                processVersion={processFlow.version.processVersion}
+                savedRevision={processFlow}
+                onClose={() => setShowDataStructure(false)}
+                onSelectNode={nodeId => {
+                    const node = processFlow.nodes.find(candidate => candidate.id === nodeId);
+                    if (node != null) {
+                        setShowDataStructure(false);
+                        handleSelectNode(node);
+                    }
+                }}
+            />}
+
             <ProcessNotesOverviewDialog
                 open={showProcessNotesOverviewDialog}
                 nodes={processFlow.nodes}
@@ -2822,7 +2868,10 @@ export function ProcessDetailsPage(): ReactNode {
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}
-                onNewDraft={({process, version}) => {
+                onNewDraft={({
+                                 process,
+                                 version,
+                             }) => {
                     return handleAddDraft(process.id, version.processVersion);
                 }}
                 onDeleteVersion={(process, version) => {
