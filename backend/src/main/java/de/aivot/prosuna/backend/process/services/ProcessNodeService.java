@@ -691,7 +691,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     var mappedPath = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
                     if (mappedPath != null) {
                         addDataStructureEntry(entries, issues, Category.ProcessData,
-                                mappedPath, output.label(), output.description(), node, false);
+                                mappedPath, output.label(), output.description(), node, !primitive);
                     }
                 }
             } catch (ResponseException | RuntimeException exception) {
@@ -760,7 +760,23 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 }
             }
         }
-        return new ProcessDataStructureResponseDTO(List.copyOf(entries), List.copyOf(issues));
+        // Forwarded hints do not retain output types. Restore the flag after path canonicalization
+        // and merge duplicate hints so their collection order cannot hide an open mapped output.
+        var unexpandedProcessPaths = new HashMap<Integer, Set<String>>();
+        for (var entry : entries) {
+            if (entry.category() == Category.ProcessData && entry.unexpandedStructure() && entry.origin() != null) {
+                unexpandedProcessPaths.computeIfAbsent(entry.origin().nodeId(), ignored -> new HashSet<>()).add(entry.path());
+            }
+        }
+        var normalizedEntries = entries.stream().map(entry -> {
+            if (entry.category() == Category.ProcessData && entry.origin() != null &&
+                    unexpandedProcessPaths.getOrDefault(entry.origin().nodeId(), Set.of()).contains(entry.path())) {
+                return new ProcessDataStructureResponseDTO.Entry(entry.category(), entry.path(), entry.label(),
+                        entry.description(), entry.origin(), true);
+            }
+            return entry;
+        }).distinct().toList();
+        return new ProcessDataStructureResponseDTO(normalizedEntries, List.copyOf(issues));
     }
 
     private static void addDataStructureEntry(@Nonnull Set<ProcessDataStructureResponseDTO.Entry> entries,

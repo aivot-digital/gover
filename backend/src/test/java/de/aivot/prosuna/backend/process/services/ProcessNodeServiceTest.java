@@ -332,6 +332,46 @@ class ProcessNodeServiceTest {
         assertEquals(outputs.size(), outputs.stream().map(entry -> entry.path()).distinct().count());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"unknown", "Record<string, unknown>", "{ id: number }", "Array<string>"})
+    void dataStructurePreservesOpenMappedOutputsAcrossForwardedHints(String outputType) throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public List<ProcessNodeOutput> getOutputs() {
+                return List.of(new ProcessNodeOutput("response", "Antwort", null, outputType),
+                        new ProcessNodeOutput("status", "Status", null, "number | null"));
+            }
+
+            @Override
+            public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity node,
+                                                             @Nonnull TestNodeConfig configuration,
+                                                             @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+                if (node.getId() == 3) throw new IllegalStateException("Unavailable metadata");
+                return super.getMetadata(node, configuration, previousMetadata);
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        var open = createNode(1, "http");
+        open.getOutputMappings().put("response", " result . response ");
+        var scalar = createNode(2, "scalar");
+        scalar.getOutputMappings().put("status", "result.response");
+        var broken = createNode(3, "broken");
+        broken.getOutputMappings().put("response", "result.response");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(open, scalar, broken));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+        var mappings = result.entries().stream().filter(entry -> entry.category() == Category.ProcessData
+                && entry.path().equals("result.response")).toList();
+
+        assertEquals(3, mappings.size(), "Forwarded hints must not create conflicting duplicate entries");
+        assertEquals(Map.of(1, true, 2, false, 3, true), mappings.stream().collect(Collectors.toMap(
+                entry -> entry.origin().nodeId(), entry -> entry.unexpandedStructure())));
+        assertTrue(result.issues().stream().anyMatch(issue -> issue.origin().nodeId() == 3));
+    }
+
     @Test
     void dataStructureRejectsUnauthorizedAccessBeforeReadingTheGraph() throws Exception {
         doThrow(ResponseException.forbidden()).when(permissionService).requireProcessPermission(
