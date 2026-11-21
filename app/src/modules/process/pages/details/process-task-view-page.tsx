@@ -29,6 +29,7 @@ export type ProcessTaskDetailsPageItem = ProcessTaskDetails;
 export function createEmptyProcessTaskDetailsPageItem(): ProcessTaskDetailsPageItem {
     return {
         task: new ProcessInstanceTaskApiService().initialize(),
+        assignedUserDeputies: [],
         instance: null,
         process: null,
         node: null,

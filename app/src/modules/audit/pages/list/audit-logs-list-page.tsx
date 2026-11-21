@@ -7,6 +7,7 @@ import {
     type GenericListPagePermissionConfig,
 } from '../../../../components/generic-list-page/generic-list-page';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {listCellSecondaryTextSx} from '../../../../components/generic-list/generic-list-cell-styles';
 import {AuditLogEntity} from '../../models/audit-log-entity';
 import {AuditLogFilter, AuditLogFilterOptions, AuditLogsApiService} from '../../audit-logs-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
@@ -229,16 +230,10 @@ export function AuditLogsListPage(): ReactNode {
                 <CellContentWrapper>
                     <Tooltip title={formatDateTime(params.row.timestamp)} arrow>
                         <Box>
-                            <Typography variant="body2"
-                                        sx={{
-                                            fontWeight: 500
-                                        }}>
+                            <Typography variant="body2">
                                 {formatRelative(params.row.timestamp)}
                             </Typography>
-                            <Typography variant="caption"
-                                        sx={{
-                                            color: "text.secondary"
-                                        }}>
+                            <Typography component="span" sx={listCellSecondaryTextSx}>
                                 {formatDateTime(params.row.timestamp)}
                             </Typography>
                         </Box>

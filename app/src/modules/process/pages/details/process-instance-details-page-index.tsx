@@ -281,7 +281,7 @@ export function ProcessInstanceDetailsPageIndex() {
                                         {
                                             label: 'Aufgabe zugewiesen an',
                                             icon: <AssignmentInd />,
-                                            children: <ProcessAssignee userId={task.assignedUserId} />,
+                                            children: <ProcessAssignee userId={task.assignedUserId} deputies={task.assignedUserDeputies} />,
                                         },
                                         {
                                             label: 'Fälligkeit (spätestens)',

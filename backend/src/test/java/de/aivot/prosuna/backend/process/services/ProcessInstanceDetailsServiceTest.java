@@ -8,10 +8,15 @@ import de.aivot.prosuna.backend.process.entities.*;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.*;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -24,8 +29,9 @@ class ProcessInstanceDetailsServiceTest {
     private final ProcessNodeRepository nodes = mock(ProcessNodeRepository.class);
     private final ProcessInstanceTaskRepository tasks = mock(ProcessInstanceTaskRepository.class);
     private final ProcessNodeDefinitionService definitions = mock(ProcessNodeDefinitionService.class);
+    private final UserDeputyService deputies = mock(UserDeputyService.class);
     private final ProcessInstanceDetailsService service = new ProcessInstanceDetailsService(
-            permissions, instances, processes, departments, nodes, tasks, definitions);
+            permissions, instances, processes, departments, nodes, tasks, definitions, deputies);
 
     @Test
     void taskDetailsRequireReadAccessToTheActualOwningInstance() throws ResponseException {
@@ -64,6 +70,24 @@ class ProcessInstanceDetailsServiceTest {
     }
 
     @Test
+    void taskDetailsNameTheCurrentDeputiesOfTheAssigneeOnlyWhileTheTaskIsOpen() throws ResponseException {
+        var task = new ProcessInstanceTaskEntity().setId(8L).setProcessInstanceId(17L).setProcessId(3).setProcessNodeId(4)
+                .setAssignedUserId("assignee").setStatus(ProcessTaskStatus.InProgress);
+        when(tasks.findById(8L)).thenReturn(Optional.of(task));
+        when(instances.findById(17L)).thenReturn(Optional.of(new ProcessInstanceEntity().setId(17L)));
+        when(processes.findById(3)).thenReturn(Optional.of(new ProcessEntity().setId(3).setInternalTitle("Prüfung")));
+        when(deputies.findActiveDeputies(Set.of("assignee")))
+                .thenReturn(Map.of("assignee", List.of(new UserEntity().setId("deputy").setFullName("Daniel Müller"))));
+
+        var deputy = service.retrieveTask("user", 8L).assignedUserDeputies().getFirst();
+        assertEquals("deputy", deputy.id());
+        assertEquals("Daniel Müller", deputy.name());
+
+        task.setStatus(ProcessTaskStatus.Completed);
+        assertTrue(service.retrieveTask("user", 8L).assignedUserDeputies().isEmpty());
+    }
+
+    @Test
     void rejectsAnotherInstanceBeforeReadingItsData() throws ResponseException {
         doThrow(ResponseException.forbidden()).when(permissions).requireProcessInstancePermission(
                 "user", 18L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
@@ -86,6 +110,8 @@ class ProcessInstanceDetailsServiceTest {
                         .setProcessNodeId(4).setStatus(status).setStatusOverride("Unterlagen angefordert")
                         .setAssignedCustomerIdentityId(status == ProcessTaskStatus.AwaitingCustomer ? "applicant" : null)
                         .setAssignedUserId("task-assignee").setDeadline(java.time.Instant.parse("2026-10-01T08:00:00Z"))).toList());
+        when(deputies.findActiveDeputies(Set.of("task-assignee")))
+                .thenReturn(Map.of("task-assignee", List.of(new UserEntity().setId("deputy").setFullName("Daniel Müller"))));
 
         var result = service.retrieve("user", 17L);
 
@@ -107,6 +133,8 @@ class ProcessInstanceDetailsServiceTest {
         assertEquals("Vorgang wird geprüft", result.instance().getStatusOverride());
         assertTrue(result.activeTasks().stream().allMatch(task -> "Unterlagen angefordert".equals(task.statusOverride())
                 && "task-assignee".equals(task.assignedUserId())));
+        assertTrue(result.activeTasks().stream().allMatch(task -> task.assignedUserDeputies().size() == 1
+                && "Daniel Müller".equals(task.assignedUserDeputies().getFirst().name())));
         assertTrue(result.activeTasks().stream().noneMatch(task -> task.status() == ProcessTaskStatus.Completed
                 || task.status() == ProcessTaskStatus.Failed || task.status() == ProcessTaskStatus.Restarted));
         verify(permissions).requireProcessInstancePermission("user", 17L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);

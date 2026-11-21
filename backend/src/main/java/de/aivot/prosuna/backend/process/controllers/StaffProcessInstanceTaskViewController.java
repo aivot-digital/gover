@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.TaskViewEvent;
@@ -115,7 +116,7 @@ public class StaffProcessInstanceTaskViewController {
         );
 
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
+                .createForStaffTask(taskViewData.instance().getId(), taskViewData.task(), user.getId());
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
@@ -192,7 +193,7 @@ public class StaffProcessInstanceTaskViewController {
 
         // The history names the staff member; the identity session ID of the browser is a secret and is not logged.
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), null);
+                .createForStaffTask(taskViewData.instance().getId(), taskViewData.task(), user.getId());
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
@@ -225,12 +226,6 @@ public class StaffProcessInstanceTaskViewController {
             throw ResponseException.internalServerError("Die Aufgabenansicht muss ein Basis-Element sein.");
         }
 
-        var cleanEvent = resolveValidStaffEvent(rootLayout, staffView.events(), rawEvent);
-
-        if (rawEvent != null && cleanEvent == null) {
-            throw ResponseException.badRequest("Ungültige Aktion: " + rawEvent);
-        }
-
         AuthoredElementValues inputs;
         try {
             inputs = JsonMapperFactory
@@ -238,6 +233,11 @@ public class StaffProcessInstanceTaskViewController {
                     .readValue(rawInputs, AuthoredElementValues.class);
         } catch (JacksonException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
+        }
+
+        var cleanEvent = resolveValidStaffEvent(rootLayout, staffView.events(), rawEvent);
+        if (rawEvent != null && cleanEvent == null) {
+            throw taskViewData.provider.unavailableStaffTaskEvent(rawEvent, inputs);
         }
         // Derive before storing the uploaded files, so only upload fields whose value the derivation takes store theirs.
         // Auto-saves keep incomplete drafts, so only events are validated.
@@ -299,6 +299,9 @@ public class StaffProcessInstanceTaskViewController {
                         );
             } catch (ProcessNodeExecutionException e) {
                 failureLog.set(() -> logger.logException(e));
+                if (e.getCause() instanceof ManualAssignmentRecipientUnavailableException unavailable) {
+                    throw unavailable;
+                }
                 throw ResponseException.internalServerError(e);
             }
         }
@@ -388,7 +391,7 @@ public class StaffProcessInstanceTaskViewController {
         );
 
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), taskViewData.user.getId(), null);
+                .createForStaffTask(taskViewData.instance().getId(), taskViewData.task(), taskViewData.user.getId());
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,

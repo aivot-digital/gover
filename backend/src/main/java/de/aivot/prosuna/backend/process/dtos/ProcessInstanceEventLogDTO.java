@@ -47,6 +47,8 @@ public record ProcessInstanceEventLogDTO(
             @Nonnull Instant timestamp,
             @Nullable String triggeringUserId,
             @Nullable String triggeringUserName,
+            @Nullable String representedUserId,
+            @Nullable String representedUserName,
             @Nullable String concernedUserId,
             @Nullable String concernedUserName,
             @Nullable String concernedIdentityId,

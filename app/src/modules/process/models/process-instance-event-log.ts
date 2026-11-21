@@ -33,6 +33,9 @@ export interface ProcessInstanceEventLogEntry {
     timestamp: string;
     triggeringUserId: string | null;
     triggeringUserName: string | null;
+    /** Set when a deputy acted on a task of the person they represent. */
+    representedUserId: string | null;
+    representedUserName: string | null;
     concernedUserId: string | null;
     concernedUserName: string | null;
     concernedIdentityId: string | null;

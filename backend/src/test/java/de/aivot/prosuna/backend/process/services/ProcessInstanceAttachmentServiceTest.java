@@ -72,7 +72,7 @@ class ProcessInstanceAttachmentServiceTest {
     private final UUID processAccessKey = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private final ProcessInstanceAttachmentService service = new ProcessInstanceAttachmentService(
             attachmentRepository, storageService, systemConfigRepository, processInstanceRepository,
-            new ProcessNodeExecutionLoggerFactory(eventRepository), attachmentSetRepository, transactionManager
+            new ProcessNodeExecutionLoggerFactory(eventRepository, null), attachmentSetRepository, transactionManager
     );
 
     @Test

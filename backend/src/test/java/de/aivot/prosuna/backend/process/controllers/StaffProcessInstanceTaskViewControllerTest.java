@@ -37,6 +37,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.models.*;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
+import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
@@ -481,7 +483,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         doThrow(failure).when(handler).handleResult(any(), any(), any(), any(), any(), any(), any(), any(), any());
         var logger = mock(ProcessNodeExecutionLogger.class);
         var loggerFactory = mock(ProcessNodeExecutionLoggerFactory.class);
-        when(loggerFactory.create(any(), any(), any(), any())).thenReturn(logger);
+        when(loggerFactory.createForStaffTask(any(), any(), any())).thenReturn(logger);
         var loggedInsideTransaction = new AtomicBoolean();
         var execution = mock(ProcessTaskExecutionService.class, invocation -> {
             ((ProcessTaskExecutionService.Authorization) invocation.getArgument(2)).run();
@@ -502,6 +504,20 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
         assertFalse(loggedInsideTransaction.get());
         verify(logger).logException(failure);
+    }
+
+    @Test
+    void recipientRevokedAtPersistenceReturnsTheRecoverableAssignmentError() throws Exception {
+        var provider = new InlineStaffTaskProcessNodeDefinition(null, new ProcessNodeExecutionResultInstanceCompleted());
+        var handler = mock(ProcessNodeExecutionResultHandler.class);
+        var unavailable = new ManualAssignmentRecipientUnavailableException("withdrawn");
+        doThrow(new ProcessNodeExecutionExceptionInvalidAssignment(unavailable, "Zuweisung fehlgeschlagen"))
+                .when(handler).handleResult(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        var fixture = createFixture(provider, new TestElementDerivationService(), handler);
+
+        var response = assertThrows(ResponseException.class, () -> fixture.controller().update(fixture.jwt(),
+                fixture.instance().getId(), fixture.task().getId(), "{}", null, null, "inline-complete", null));
+        assertSame(unavailable, response);
     }
 
     private static List<String> visibilityReferencesOf(StaffProcessInstanceTaskViewController.TaskViewResponse response,
@@ -717,7 +733,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private ApplyingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -753,7 +769,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class TestProcessNodeExecutionLoggerFactory extends ProcessNodeExecutionLoggerFactory {
         private TestProcessNodeExecutionLoggerFactory() {
-            super(null);
+            super(null, null);
         }
 
         @Override
@@ -762,6 +778,13 @@ class StaffProcessInstanceTaskViewControllerTest {
                                                  String userId,
                                                  String identityId) {
             return new NoOpProcessNodeExecutionLogger(processInstanceId, processInstanceTaskId, userId, identityId);
+        }
+
+        @Override
+        public ProcessNodeExecutionLogger createForStaffTask(Long processInstanceId,
+                                                             ProcessInstanceTaskEntity task,
+                                                             String userId) {
+            return create(processInstanceId, task.getId(), userId, null);
         }
     }
 

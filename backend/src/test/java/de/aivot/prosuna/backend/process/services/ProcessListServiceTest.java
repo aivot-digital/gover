@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,8 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ;
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,6 +51,7 @@ public class ProcessListServiceTest {
     @Autowired
     JsonMapper jsonMapper;
     private PermissionService permissions;
+    private UserDeputyService deputies;
     private ProcessListService service;
 
     @BeforeEach
@@ -60,7 +64,8 @@ public class ProcessListServiceTest {
         when(person.getId()).thenReturn("someone");
         when(person.getFullName()).thenReturn("Andere Person");
         when(users.findAllById(any())).thenReturn(List.of(person));
-        service = new ProcessListService(em, permissions, users, definitions);
+        deputies = mock(UserDeputyService.class);
+        service = new ProcessListService(em, permissions, users, definitions, deputies);
         when(permissions.getProcessInstancesWithPermission("me", PROCESS_INSTANCE_READ)).thenReturn(List.of(1L, 2L));
         sql("create alias if not exists compact_case_number_search_key for 'de.aivot.prosuna.backend.process.services.ProcessListServiceTest.compactKey'");
         sql("drop table if exists process_instance_tasks");
@@ -166,6 +171,34 @@ public class ProcessListServiceTest {
         assertEquals(1, service.tasks("me", page, filter("overdue", "all", null)).getTotalElements());
         assertEquals(ProcessTaskStatus.Completed, service.tasks("me", page, filter("all", "unassigned", null)).getContent().getFirst().status());
         assertEquals(1, service.tasks("me", page, filter("all", "someone", null)).getTotalElements());
+    }
+
+    @Test
+    void mineIncludesTasksOfRepresentedUsersButNotTheirCases() throws Exception {
+        when(deputies.findActivelyRepresentedUserIds("me")).thenReturn(List.of("someone"));
+        var page = PageRequest.of(0, 12);
+
+        var mine = service.tasks("me", page, filter("open", "mine", null));
+
+        assertEquals(Set.of(11L, 12L, 15L, 16L), mine.getContent().stream().map(row -> row.id()).collect(Collectors.toSet()));
+        assertEquals(4, service.countOpenAssignedTasks("me"));
+        assertEquals(4L, service.counts("me", null, "mine", true).get("open"));
+        // Instance 2 is assigned to the represented user, but deputies take over tasks only.
+        assertEquals(0, service.instances("me", page, filter("all", "mine", null)).getTotalElements());
+    }
+
+    @Test
+    void namesTheCurrentDeputiesOfTheAssigneeOnlyForOpenTasks() throws Exception {
+        sql("update process_instance_tasks set assigned_user_id = 'someone' where id = 13");
+        when(deputies.findActiveDeputies(Set.of("someone")))
+                .thenReturn(Map.of("someone", List.of(new UserEntity().setId("deputy").setFullName("Daniel Müller"))));
+
+        var rows = service.tasks("me", PageRequest.of(0, 12), filter("all", "someone", null)).getContent();
+
+        var open = rows.stream().filter(row -> row.id() == 12L).findFirst().orElseThrow();
+        assertEquals(List.of("Daniel Müller"), open.assignedUserDeputies().stream().map(deputy -> deputy.name()).toList());
+        var completed = rows.stream().filter(row -> row.id() == 13L).findFirst().orElseThrow();
+        assertTrue(completed.assignedUserDeputies().isEmpty());
     }
 
     @Test

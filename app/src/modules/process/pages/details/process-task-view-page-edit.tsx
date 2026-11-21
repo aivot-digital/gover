@@ -55,6 +55,18 @@ import {
 } from '../../utils/task-view-file-uploads';
 import type {FileUploadElementItem} from '../../../../models/elements/form/input/file-upload-element';
 import {RemovableFileUploadAttachmentsProvider} from '../../../../components/file-upload-field/removable-file-upload-attachments-context';
+import {
+    clearRecipient,
+    getRecipientLabel,
+    getRecipientOptions,
+    getRejectedRecipient,
+    getSelectedRecipient,
+    hasRecipientOption,
+    MANUAL_ASSIGNMENT_PROVIDER,
+    RECIPIENT_FIELD,
+    removeRecipientOption,
+    unavailableRecipientMessage,
+} from '../../utils/manual-assignment-recipient';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -68,12 +80,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     const pushUpdateTimeoutRef = useRef<number | null>(null);
     const taskSessionRef = useRef(0);
+    const recipientRefreshRef = useRef(0);
+    const rejectedRecipientRef = useRef<string | null>(null);
     const inFlightSavePromiseRef = useRef<Promise<boolean> | null>(null);
     const latestTaskInputDataRef = useRef<AuthoredElementValues>({});
     const lastPersistedTaskInputDataRef = useRef<AuthoredElementValues>({});
     const pendingOfflineRetryRef = useRef(false);
     const isResolvingBlockedNavigationRef = useRef(false);
-    const ignoreAuthoredValuesChangeRef = useRef(false);
+    const [submittingEvent, setSubmittingEvent] = useState(false);
     const skipChangeBlockerRef = useRef(false);
     const deadlineExceededRef = useRef(false);
     const [deadlineExceeded, setDeadlineExceeded] = useState(false);
@@ -86,6 +100,15 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     );
     const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
+    const [unavailableRecipient, setUnavailableRecipient] = useState<{name?: string} | null>(null);
+    const manualAssignment = item?.provider?.key === MANUAL_ASSIGNMENT_PROVIDER;
+    const computedErrors = useMemo(() => {
+        if (unavailableRecipient == null || taskView == null) return derivedErrors?.elementStates;
+        return {
+            ...derivedErrors?.elementStates,
+            [RECIPIENT_FIELD]: {error: unavailableRecipientMessage(unavailableRecipient.name, getRecipientOptions(taskView).length > 0)},
+        };
+    }, [derivedErrors, taskView, unavailableRecipient]);
     const [pendingBlockedNavigation, setPendingBlockedNavigation] = useState<Blocker | null>(null);
     const [taskAttachments, setTaskAttachments] = useState<ProcessInstanceAttachmentEntity[]>([]);
     const [taskAttachmentSets, setTaskAttachmentSets] = useState<ProcessInstanceAttachmentSetEntity[]>([]);
@@ -100,13 +123,22 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return !deepEquals(taskInputData, lastPersistedTaskInputData);
     }, [lastPersistedTaskInputData, taskInputData]);
 
+    const hasUnsavedUserInput = useCallback(() => {
+        const latest = latestTaskInputDataRef.current;
+        const persisted = lastPersistedTaskInputDataRef.current;
+        if (deepEquals(latest, persisted)) return false;
+        // An unavailable saved choice will be cleaned again on reopen. Other draft edits still need protection.
+        return rejectedRecipientRef.current == null || getSelectedRecipient(persisted) !== rejectedRecipientRef.current ||
+            !deepEquals(latest, clearRecipient(persisted));
+    }, []);
+
     const hasPendingUnloadChanges = useCallback(() => {
         if (skipChangeBlockerRef.current || !AuthService.isAuthenticated()) {
             return false;
         }
 
-        return !deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current);
-    }, []);
+        return hasUnsavedUserInput();
+    }, [hasUnsavedUserInput]);
 
     useBeforeUnload(
         useCallback(
@@ -148,6 +180,41 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         ));
     }, [item, taskView]);
 
+    const clearUnavailableRecipient = useCallback((recipient: string, previousView: TaskView) => {
+        if (getSelectedRecipient(latestTaskInputDataRef.current) !== recipient) return false;
+        const cleaned = clearRecipient(latestTaskInputDataRef.current);
+        rejectedRecipientRef.current = recipient;
+        latestTaskInputDataRef.current = cleaned;
+        setTaskInputData(cleaned);
+        setUnavailableRecipient({name: getRecipientLabel(previousView, recipient)});
+        setTaskInputDataSaveState(deepEquals(cleaned, lastPersistedTaskInputDataRef.current)
+            ? ProcessTaskInputSaveState.Saved : ProcessTaskInputSaveState.Waiting);
+        return true;
+    }, []);
+
+    const handleUnavailableRecipient = (
+        details: unknown, submitted: AuthoredElementValues, session: number,
+    ): boolean => {
+        const rejected = getRejectedRecipient(details);
+        if (!manualAssignment || taskView == null || item == null || rejected == null ||
+            rejected !== getSelectedRecipient(submitted)) return false;
+        if (session !== taskSessionRef.current || !clearUnavailableRecipient(rejected, taskView)) return true;
+
+        // Use the previously displayed label for the error and the latest authorized list for the next choice.
+        setTaskView(current => current && removeRecipientOption(current, rejected));
+        const request = ++recipientRefreshRef.current;
+        void new ProcessInstanceTaskApiService().getStaffTaskView(item.task.processInstanceId, item.task.id)
+            .then(freshView => {
+                if (session === taskSessionRef.current && request === recipientRefreshRef.current) setTaskView(freshView);
+            })
+            .catch(error => {
+                if (session === taskSessionRef.current && request === recipientRefreshRef.current) {
+                    dispatch(showApiErrorSnackbar(error, 'Die Aufgabenansicht konnte nicht geladen werden.'));
+                }
+            });
+        return true;
+    };
+
     // Saves and events queued during a save still hold the transient items of the files that it stored.
     const adoptStoredFileItems = useCallback((values: AuthoredElementValues): AuthoredElementValues => {
         if (taskView == null) {
@@ -159,7 +226,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     // Each update stores the files it sends, so later updates must reference the stored attachments instead of
     // sending the files again. Inputs changed during the update keep their other values.
-    const adoptSavedTaskView = useCallback((payload: AuthoredElementValues, updatedTaskView: TaskView): AuthoredElementValues => {
+    const adoptSavedTaskView = useCallback((payload: AuthoredElementValues, updatedTaskView: TaskView, recipientRevision?: number): AuthoredElementValues => {
         let persistedPayload = payload;
         if (taskView != null) {
             const storedFileItems = collectStoredTaskViewFileUploadItems(taskView.layout, payload, updatedTaskView.data);
@@ -178,6 +245,22 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             if (haveTaskViewFileUploadItemsChanged(taskView.layout, lastPersistedTaskInputDataRef.current, persistedPayload)) {
                 setTaskAttachmentsReloadCount((count) => count + 1);
             }
+
+            if (manualAssignment && recipientRevision != null) {
+                // This node sanitizes a revoked recipient on autosave. The returned draft is authoritative;
+                // a newer local selection may already have replaced the one that the server removed.
+                const submitted = getSelectedRecipient(payload);
+                persistedPayload = updatedTaskView.data;
+                if (recipientRevision === recipientRefreshRef.current) {
+                    if (submitted != null && (getSelectedRecipient(persistedPayload) == null || !hasRecipientOption(updatedTaskView, submitted))) {
+                        clearUnavailableRecipient(submitted, taskView);
+                    }
+                    recipientRefreshRef.current++;
+                    // An unchanged layout would otherwise re-derive and briefly disable the form after every save.
+                    setTaskView(current => current && deepEquals(current.layout, updatedTaskView.layout)
+                        ? {...updatedTaskView, layout: current.layout} : updatedTaskView);
+                }
+            }
         }
 
         setRemovableAttachmentKeys(new Set(updatedTaskView.removableAttachmentKeys));
@@ -185,14 +268,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         setLastPersistedTaskInputData(persistedPayload);
 
         return persistedPayload;
-    }, [taskView]);
+    }, [clearUnavailableRecipient, manualAssignment, taskView]);
 
     const saveTaskInputData = useCallback(
         async (requestedPayload: AuthoredElementValues): Promise<boolean> => {
             if (item == null || deadlineExceededRef.current) {
                 return false;
             }
-
+            const currentTaskSession = taskSessionRef.current;
             let payload = adoptStoredFileItems(requestedPayload);
 
             if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
@@ -209,9 +292,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             if (inFlightSavePromiseRef.current != null) {
                 await inFlightSavePromiseRef.current;
 
-                if (deadlineExceededRef.current) return false;
+                if (deadlineExceededRef.current || currentTaskSession !== taskSessionRef.current) return false;
 
-                payload = adoptStoredFileItems(payload);
+                // The preceding save may have sanitized the selected recipient while this save waited.
+                payload = adoptStoredFileItems(manualAssignment ? latestTaskInputDataRef.current : payload);
                 if (deepEquals(payload, lastPersistedTaskInputDataRef.current)) {
                     return true;
                 }
@@ -223,7 +307,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 return false;
             }
 
-            const currentTaskSession = taskSessionRef.current;
+            const recipientRevision = recipientRefreshRef.current;
             setTaskInputDataSaveState(ProcessTaskInputSaveState.Saving);
 
             const savePromise = withDelay(
@@ -240,7 +324,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         return false;
                     }
 
-                    const persistedPayload = adoptSavedTaskView(payload, updatedTaskView);
+                    const persistedPayload = adoptSavedTaskView(payload, updatedTaskView, recipientRevision);
                     pendingOfflineRetryRef.current = false;
                     setLastSavedAt(new Date());
 
@@ -283,7 +367,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             return await savePromise;
         },
-        [adoptSavedTaskView, adoptStoredFileItems, collectFileUploads, dispatch, handleDeadlineExceeded, item, refresh],
+        [adoptSavedTaskView, adoptStoredFileItems, collectFileUploads, dispatch, handleDeadlineExceeded, item, manualAssignment, refresh],
     );
 
     const flushCurrentTaskInputData = useCallback(async (): Promise<boolean> => {
@@ -309,11 +393,28 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return true;
     }, [saveTaskInputData]);
 
+    useEffect(() => {
+        if (!hasUnsavedChanges || taskInputDataSaveState !== ProcessTaskInputSaveState.Waiting || submittingEvent) return;
+        if (!navigator.onLine) {
+            pendingOfflineRetryRef.current = true;
+            setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
+            return;
+        }
+        const timer = window.setTimeout(() => {
+            pushUpdateTimeoutRef.current = null;
+            void saveTaskInputData(latestTaskInputDataRef.current);
+        }, TASK_INPUT_DATA_PUSH_DELAY_MS);
+        pushUpdateTimeoutRef.current = timer;
+        return () => {
+            window.clearTimeout(timer);
+            if (pushUpdateTimeoutRef.current === timer) pushUpdateTimeoutRef.current = null;
+        };
+    }, [hasUnsavedChanges, saveTaskInputData, submittingEvent, taskInputData, taskInputDataSaveState]);
+
     // Clear
     useEffect(() => {
         return () => {
             taskSessionRef.current += 1;
-            ignoreAuthoredValuesChangeRef.current = false;
             skipChangeBlockerRef.current = false;
             if (pushUpdateTimeoutRef.current != null) {
                 clearTimeout(pushUpdateTimeoutRef.current);
@@ -332,10 +433,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         inFlightSavePromiseRef.current = null;
         storedFileItemsRef.current = new Map();
         isResolvingBlockedNavigationRef.current = false;
-        ignoreAuthoredValuesChangeRef.current = false;
+        setSubmittingEvent(false);
         skipChangeBlockerRef.current = false;
         setPendingBlockedNavigation(null);
         setDerivedErrors(null);
+        rejectedRecipientRef.current = null;
+        setUnavailableRecipient(null);
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
             pushUpdateTimeoutRef.current = null;
@@ -389,6 +492,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 setLastPersistedTaskInputData(view.data);
                 latestTaskInputDataRef.current = view.data;
                 lastPersistedTaskInputDataRef.current = view.data;
+                const savedRecipient = getSelectedRecipient(view.data);
+                if (manualAssignment && savedRecipient != null && !hasRecipientOption(view, savedRecipient)) {
+                    clearUnavailableRecipient(savedRecipient, view);
+                }
             })
             .catch((err) => {
                 if (cancelled || currentTaskSession !== taskSessionRef.current) {
@@ -410,7 +517,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, item?.task.id, item?.task.processInstanceId, item?.task.status === ProcessTaskStatus.DeadlineExceeded,
+    }, [clearUnavailableRecipient, dispatch, manualAssignment, item?.task.id, item?.task.processInstanceId, item?.task.status === ProcessTaskStatus.DeadlineExceeded,
         isProcessTaskEditableByStaff(item?.task.status)]);
 
     useEffect(() => {
@@ -600,7 +707,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         }
 
         let shouldNavigateAway = false;
-        ignoreAuthoredValuesChangeRef.current = true;
+        const session = taskSessionRef.current;
+        setSubmittingEvent(true);
 
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
@@ -611,9 +719,14 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             await inFlightSavePromiseRef.current;
         }
 
-        if (deadlineExceededRef.current) return;
+        if (deadlineExceededRef.current || session !== taskSessionRef.current) return;
 
         const eventPayload = adoptStoredFileItems(requestedEventPayload);
+        if (manualAssignment && getSelectedRecipient(requestedEventPayload) !== getSelectedRecipient(latestTaskInputDataRef.current)) {
+            // A save that the event waited for may already have cleared this revoked selection.
+            setSubmittingEvent(false);
+            return;
+        }
 
         dispatch(
             setLoadingMessage({
@@ -667,9 +780,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }, 1);
             })
             .catch((err) => {
-                if (handleDeadlineExceeded(err)) {
+                if (session !== taskSessionRef.current || handleDeadlineExceeded(err)) {
                     return;
                 }
+                if (isApiError(err) && handleUnavailableRecipient(err.details, eventPayload, session)) return;
                 if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
                     dispatch(showErrorSnackbar(err.message));
                     setDerivedErrors(err.details);
@@ -678,7 +792,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
             })
             .finally(() => {
-                ignoreAuthoredValuesChangeRef.current = false;
+                if (session === taskSessionRef.current) setSubmittingEvent(false);
                 if (!shouldNavigateAway && !deadlineExceededRef.current) {
                     skipChangeBlockerRef.current = false;
                 }
@@ -704,7 +818,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return;
         }
 
-        if (ignoreAuthoredValuesChangeRef.current || deadlineExceededRef.current) {
+        if (submittingEvent || deadlineExceededRef.current) {
             return;
         }
 
@@ -714,25 +828,12 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         latestTaskInputDataRef.current = authoredValues;
         setTaskInputData(authoredValues);
-
-        if (pushUpdateTimeoutRef.current != null) {
-            window.clearTimeout(pushUpdateTimeoutRef.current);
-            pushUpdateTimeoutRef.current = null;
+        if (unavailableRecipient != null && getSelectedRecipient(authoredValues) != null) {
+            rejectedRecipientRef.current = null;
+            setUnavailableRecipient(null);
         }
-
-        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-            pendingOfflineRetryRef.current = true;
-            setTaskInputDataSaveState(ProcessTaskInputSaveState.RetryQueued);
-            return;
-        }
-
-        pushUpdateTimeoutRef.current = window.setTimeout(() => {
-            pushUpdateTimeoutRef.current = null;
-
-            void saveTaskInputData(authoredValues);
-        }, TASK_INPUT_DATA_PUSH_DELAY_MS);
-
-        setTaskInputDataSaveState(ProcessTaskInputSaveState.Waiting);
+        setTaskInputDataSaveState(deepEquals(authoredValues, lastPersistedTaskInputDataRef.current)
+            ? ProcessTaskInputSaveState.Saved : ProcessTaskInputSaveState.Waiting);
     };
 
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
@@ -744,7 +845,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return false;
         }
 
-        return hasUnsavedChanges;
+        if (!navigator.onLine || taskInputDataSaveState === ProcessTaskInputSaveState.Failed) return hasUnsavedUserInput();
+        return !deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current);
     });
 
     const shouldAutoResolveBlockedNavigation = useMemo(() => {
@@ -778,24 +880,38 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }),
             );
 
-            const shouldProceed = await flushCurrentTaskInputData();
+            await flushCurrentTaskInputData();
 
             dispatch(clearLoadingMessage());
-            isResolvingBlockedNavigationRef.current = false;
 
             // After a deadline expiry only the expiry notice is rendered, so the confirmation dialog could never resolve it.
-            if (deadlineExceededRef.current || (shouldProceed && deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current))) {
+            if (deadlineExceededRef.current || !hasUnsavedUserInput()) {
                 blockedNavigation.proceed?.();
                 return;
             }
 
+            isResolvingBlockedNavigationRef.current = false;
             setPendingBlockedNavigation(blockedNavigation);
         },
-        [dispatch, flushCurrentTaskInputData, item],
+        [dispatch, flushCurrentTaskInputData, hasUnsavedUserInput, item],
     );
 
     useEffect(() => {
-        if (blocker.state !== 'blocked' || isResolvingBlockedNavigationRef.current) {
+        if (blocker.state !== 'blocked') {
+            isResolvingBlockedNavigationRef.current = false;
+            setPendingBlockedNavigation(null);
+            return;
+        }
+
+        // A successful flush can render before the router finishes proceeding. Resolve each blocked navigation once.
+        if (isResolvingBlockedNavigationRef.current) {
+            return;
+        }
+
+        if (deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current) ||
+            (!shouldAutoResolveBlockedNavigation && !hasUnsavedUserInput())) {
+            isResolvingBlockedNavigationRef.current = true;
+            blocker.proceed();
             return;
         }
 
@@ -805,7 +921,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         }
 
         setPendingBlockedNavigation(blocker);
-    }, [blocker, handleBlockedNavigation, shouldAutoResolveBlockedNavigation]);
+    }, [blocker, handleBlockedNavigation, hasUnsavedUserInput, shouldAutoResolveBlockedNavigation]);
 
     const handleConfirmBlockedNavigation = useCallback(() => {
         pendingBlockedNavigation?.proceed?.();
@@ -871,7 +987,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 element={taskView.layout}
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
-                                computedErrors={derivedErrors?.elementStates}
+                                computedErrors={computedErrors}
                                 onEvent={handleInlineEvent}
                                 taskViewMode="staff"
                                 showErrorSummary
@@ -883,12 +999,23 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                         });
                                     }
 
+                                    const session = taskSessionRef.current;
                                     return new ProcessInstanceTaskApiService().deriveStaffTaskView(
                                         item.instance.id,
                                         item.task.id,
                                         aev,
                                         derivationOptions.skipErrorsForElementIds,
-                                    );
+                                    ).then(result => {
+                                        if (!handleUnavailableRecipient(result, aev, session)) return result;
+                                        // The page retains the person-specific message until a replacement is selected.
+                                        return {
+                                            ...result,
+                                            effectiveValues: {...result.effectiveValues, [RECIPIENT_FIELD]: null},
+                                            elementStates: {...result.elementStates, [RECIPIENT_FIELD]: {
+                                                ...result.elementStates[RECIPIENT_FIELD], error: null, errorDetails: null,
+                                            }},
+                                        };
+                                    });
                                 }}
                             />
                         </RemovableFileUploadAttachmentsProvider>
@@ -913,7 +1040,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 </ProcessTaskViewAttachmentProvider>
             )}
 
-            {pendingBlockedNavigation != null && (
+            {blocker.state === 'blocked' && pendingBlockedNavigation != null && hasUnsavedUserInput() && (
                 <ConfirmDialog
                     confirmButtonColor="error"
                     title="Ungespeicherte Eingaben"

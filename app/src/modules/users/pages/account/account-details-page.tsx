@@ -40,6 +40,10 @@ export function AccountDetailsPage() {
                         label: 'Organisationseinheiten und Rollen',
                     },
                     {
+                        path: '/account/deputies',
+                        label: 'Stellvertretung',
+                    },
+                    {
                         path: '/account/notifications',
                         label: 'Benachrichtigungen',
                     },

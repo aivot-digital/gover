@@ -13,7 +13,7 @@
                     <p>
                         Hallo,
                         <br/>
-                        Die Ihnen zugewiesene Aufgabe wurde einer anderen Person zugewiesen.
+                        <span th:text="${intro}">Die Ihnen zugewiesene Aufgabe wurde einer anderen Person zugewiesen.</span>
                         <br/>
                         <br/>
                         Prozess: <b th:text="${process.internalTitle}">Beispielprozess</b> - Version

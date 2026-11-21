@@ -8,6 +8,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships} from '../../../../slices/user-slice';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {listCellSecondaryTextSx} from '../../../../components/generic-list/generic-list-cell-styles';
 import Typography from '@mui/material/Typography';
 import {GridColDef} from '@mui/x-data-grid';
 import {Link} from 'react-router-dom';
@@ -96,11 +97,9 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     }}
                 >
                     <Typography
-                        variant="h5"
-                        sx={{
-                            mb: 0.5,
-                            fontSize: '1rem',
-                        }}
+                        variant="h6"
+                        component="h5"
+                        sx={{mb: 0.5}}
                     >
                         <Link
                             style={{
@@ -117,11 +116,10 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     <Typography
                         variant="body2"
                         sx={{
+                            ...listCellSecondaryTextSx,
                             mt: -0.5,
-                            fontSize: '0.875rem',
                             lineHeight: '1.5rem',
                         }}
-                        color="textSecondary"
                     >
                         {
                             isPublished ?
@@ -138,14 +136,13 @@ const columns: GridColDef<ProcessListEntry>[] = [
                         variant="body2"
                         title={`Verwaltet von: ${params.row.managingDepartmentName ?? 'Unbekannt'}`}
                         sx={{
+                            ...listCellSecondaryTextSx,
                             mt: -0.5,
-                            fontSize: '0.875rem',
                             lineHeight: '1.5rem',
                             textOverflow: 'ellipsis',
                             overflow: 'hidden',
                             whiteSpace: 'nowrap',
                         }}
-                        color="textSecondary"
                     >
                         Verwaltet von: {params.row.managingDepartmentName ?? 'Unbekannt'}
                     </Typography>
@@ -168,14 +165,12 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     }}
                 >
                     <Typography
-                        sx={{fontSize: '0.875rem'}}
                         title={formatted != null ? `${formatted} Uhr` : undefined}
                     >
                         {formatted != null ? `${formatted} Uhr` : '—'}
                     </Typography>
                     <Typography
-                        color="textSecondary"
-                        sx={{fontSize: '0.875rem'}}
+                        sx={listCellSecondaryTextSx}
                         title={params.row.lastEditorName ?? 'Unbekannte Person'}
                     >
                         {params.row.lastEditorName ?? 'Unbekannte Person'}

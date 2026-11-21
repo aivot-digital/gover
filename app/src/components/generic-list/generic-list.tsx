@@ -9,7 +9,6 @@ import {
 import {
     Box,
     Button,
-    CircularProgress,
     Menu,
     MenuItem,
     styled,
@@ -45,6 +44,7 @@ import ViewColumn from '@aivot/mui-material-symbols-400-n25-outlined/ViewColumn'
 import FitPageWidth from '@aivot/mui-material-symbols-400-n25-outlined/FitPageWidth';
 import {useListFilterCounts} from './use-list-filter-counts';
 import {GenericListFilterLabel} from './generic-list-filter-label';
+import {EmptyDataListPlaceholder} from '../empty-data-list-placeholder/empty-data-list-placeholder';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
 
 const UrlParamKeys = {
@@ -62,6 +62,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     const {
         columnDefinitions: originalColumnDefinitions,
         defaultSortField,
+        loadingPlaceholder,
         noSearchResultsPlaceholder,
         noDataPlaceholder,
         dynamicRowHeight,
@@ -398,8 +399,13 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
         props.hasActiveAdditionalFilters === true ||
         (currentFilter != null && currentFilter !== defaultFilter);
 
-    const NoRowsOverlay = useMemo(
-        () => () => (
+    const NoRowsOverlay = useMemo(() => {
+        const emptyContent = noDataPlaceholder ?? 'Keine Daten vorhanden.';
+        const emptyState = typeof emptyContent === 'string'
+            ? <EmptyDataListPlaceholder title={emptyContent} />
+            : emptyContent;
+
+        return () => (
             <StyledGridOverlay>
                 <Box
                     sx={{
@@ -409,12 +415,11 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 >
                     {hasActiveFilters
                         ? (noSearchResultsPlaceholder ?? 'Keine Suchergebnisse gefunden.')
-                        : (noDataPlaceholder ?? 'Keine Daten vorhanden.')}
+                        : emptyState}
                 </Box>
             </StyledGridOverlay>
-        ),
-        [hasActiveFilters, noSearchResultsPlaceholder, noDataPlaceholder],
-    );
+        );
+    }, [hasActiveFilters, noSearchResultsPlaceholder, noDataPlaceholder]);
 
     const lastColIndex = columnDefinitions.length - 1;
     const hasEmptyRows = (items?.content.length ?? 0) === 0;
@@ -649,6 +654,9 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     flexDirection: 'column',
                 }}
             >
+                <div className="visually-hidden" role="status">
+                    {isBusy ? (loadingPlaceholder ?? 'Einträge werden geladen…') : null}
+                </div>
                 <DataGrid
                     key={`${props.columnSettingsStorageKey ?? 'list'}-${columnResetCount}`}
                     apiRef={gridApiRef}
@@ -735,16 +743,3 @@ const StyledGridOverlay = styled('div')(({theme}) => ({
     height: '100%',
     backgroundColor: theme.palette.background.paper,
 }));
-
-const LoadingOverlay = () => (
-    <StyledGridOverlay>
-        <Box
-            sx={{
-                position: 'relative',
-                display: 'inline-flex',
-            }}
-        >
-            <CircularProgress />
-        </Box>
-    </StyledGridOverlay>
-);

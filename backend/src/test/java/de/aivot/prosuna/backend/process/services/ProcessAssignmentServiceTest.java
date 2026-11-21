@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.audit.models.AuditLogPayload;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -57,7 +58,7 @@ class ProcessAssignmentServiceTest {
         when(auditService.createScopedAuditService(any(), anyString())).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
         service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService,
-                new ProcessNodeExecutionLoggerFactory(events), userService, mock(AbstractConfigurableTemplateResolver.class));
+                new ProcessNodeExecutionLoggerFactory(events, null), userService, mock(AbstractConfigurableTemplateResolver.class));
         when(userService.retrieve("previous")).thenReturn(Optional.of(user("previous")));
         when(userService.retrieve("recipient")).thenReturn(Optional.of(recipient));
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
@@ -146,7 +147,10 @@ class ProcessAssignmentServiceTest {
         assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
         assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
         assertThrows(ResponseException.class, () -> service.instanceOptions("actor", 17L));
+        assertThrows(ResponseException.class, () -> service.manualInstanceOptions("actor", 17L));
+        assertThrows(ResponseException.class, () -> service.requireManualInstanceAssignee("actor", 17L, "recipient"));
         assertThrows(ResponseException.class, () -> service.taskOptions("actor", 5L));
+        verify(instances, never()).findManualInstanceAssignmentOptions(anyLong(), anyString(), any());
         verifyNoInteractions(users, audit);
         verify(instances, never()).saveAndFlush(any());
         verify(tasks, never()).saveAndFlush(any());
@@ -231,6 +235,27 @@ class ProcessAssignmentServiceTest {
         when(instances.hasPermissionWithoutDeputies("recipient", 17L, PROCESS_INSTANCE_READ)).thenReturn(false);
         assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, "recipient"));
         verifyNoInteractions(audit);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void manualAssignmentUsesActorsEffectiveAccessAndRechecksRecipientsMembership(boolean systemAccess) throws ResponseException {
+        if (systemAccess) {
+            when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_REASSIGN)).thenReturn(true);
+        } else {
+            when(instances.hasPermission("actor", 17L, PROCESS_INSTANCE_REASSIGN)).thenReturn(true);
+        }
+        var options = List.of(new ProcessAssignmentOptionDTO("recipient", "Recipient", null));
+        when(instances.findManualInstanceAssignmentOptions(17L, PROCESS_INSTANCE_READ, null)).thenReturn(options);
+        when(instances.findManualInstanceAssignmentOptions(17L, PROCESS_INSTANCE_READ, "recipient"))
+                .thenReturn(options).thenReturn(List.of());
+
+        assertEquals(options, service.manualInstanceOptions("actor", 17L));
+        service.requireManualInstanceAssignee("actor", 17L, "recipient");
+        var error = assertThrows(ResponseException.class,
+                () -> service.requireManualInstanceAssignee("actor", 17L, "recipient"));
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertThrows(ResponseException.class, () -> service.requireManualInstanceAssignee(17L, "recipient"));
     }
 
     @Test
@@ -329,6 +354,9 @@ class ProcessAssignmentServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
         assertThrows(ResponseException.class, () -> service.reassignInstance(actor, 17L, null));
         assertThrows(ResponseException.class, () -> service.instanceOptions("actor", 17L));
+        assertThrows(ResponseException.class, () -> service.manualInstanceOptions("actor", 17L));
+        assertThrows(ResponseException.class, () -> service.requireManualInstanceAssignee("actor", 17L, "recipient"));
+        verify(instances, never()).findManualInstanceAssignmentOptions(anyLong(), anyString(), any());
         assertEquals("previous", instance.getAssignedUserId());
         assertNull(instance.getUpdated());
         verify(instances, never()).saveAndFlush(any());

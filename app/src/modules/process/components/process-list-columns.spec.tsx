@@ -24,6 +24,7 @@ const instance: ProcessInstanceListEntry = {
     test: false,
 };
 const task: ProcessTaskListEntry = {
+    assignedUserDeputies: [],
     ...instance,
     id: 23,
     processInstanceId: 17,
@@ -136,6 +137,25 @@ describe('Process list columns', () => {
 
             expect(screen.getByText('—')).toBeInTheDocument();
         });
+    });
+
+    it('marks a task whose assignee is represented and names the deputies in the tooltip', async () => {
+        renderCell({
+            ...task,
+            assignedUserDeputies: [{id: 'daniel', name: 'Daniel Müller'}, {id: 'jana', name: 'Jana Beispiel'}],
+        }, 'assignedUserName');
+
+        expect(screen.getByText('Kim Musterperson')).toBeInTheDocument();
+        await hover(screen.getByText('In Vertretung'));
+
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Vertreten durch Daniel Müller und Jana Beispiel');
+    });
+
+    it('does not mark a task without an active deputy', () => {
+        renderCell(task, 'assignedUserName');
+
+        expect(screen.getByText('Kim Musterperson')).toBeInTheDocument();
+        expect(screen.queryByText('In Vertretung')).not.toBeInTheDocument();
     });
 
     it('does not repeat identical task names and types in the link title', () => {

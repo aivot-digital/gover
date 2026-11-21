@@ -21,17 +21,17 @@ public class UserDeputyEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Die ID der vertretenen Mitarbeiter:in darf nicht null sein.")
-    @Size(min = 36, max = 36, message = "Die ID der vertretenen Mitarbeiter:in muss 36 Zeichen lang sein.")
+    @NotNull(message = "Die vertretene Person fehlt.")
+    @Size(min = 36, max = 36, message = "Die Angabe zur vertretenen Person ist ungültig.")
     private String originalUserId;
 
     @Nonnull
-    @NotNull(message = "Die ID der stellvertretenden Mitarbeiter:in darf nicht null sein.")
-    @Size(min = 36, max = 36, message = "Die ID der stellvertretenden Mitarbeiter:in muss 36 Zeichen lang sein.")
+    @NotNull(message = "Wählen Sie eine Person als Stellvertreter:in aus.")
+    @Size(min = 36, max = 36, message = "Die Auswahl im Feld „Stellvertreter:in“ ist ungültig.")
     private String deputyUserId;
 
     @Nonnull
-    @NotNull(message = "Das Startdatum der Vertretung darf nicht null sein.")
+    @NotNull(message = "Geben Sie den Beginn der Stellvertretung an.")
     private LocalDate fromDate;
 
     @Nullable

@@ -93,6 +93,7 @@ async function renderPage(
     vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(permissions);
 
     let details: ProcessTaskDetailsPageItem = {
+        assignedUserDeputies: [],
         task: {
             ...new ProcessInstanceTaskApiService().initialize(),
             id: 20,

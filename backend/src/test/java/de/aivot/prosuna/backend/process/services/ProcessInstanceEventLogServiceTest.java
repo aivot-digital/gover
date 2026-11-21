@@ -118,6 +118,33 @@ class ProcessInstanceEventLogServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void eventsOfADeputyNameTheRepresentedPerson() throws Exception {
+        var events = mock(ProcessInstanceHistoryEventRepository.class);
+        var instances = mock(ProcessInstanceRepository.class);
+        var users = mock(UserRepository.class);
+        var service = new ProcessInstanceEventLogService(events, instances, mock(ProcessInstanceTaskRepository.class),
+                mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), users);
+        when(instances.findById(12L)).thenReturn(Optional.of(new ProcessInstanceEntity()
+                .setId(12L).setCaseNumber("V-12").setStarted(Instant.now())));
+        var event = new ProcessInstanceEventEntity().setId(1L).setProcessInstanceId(12L)
+                .setLevel(ProcessNodeExecutionLogLevel.Info).setTitle("Event").setMessage("Message")
+                .setDetails(Map.of("representedUserId", "philipp")).setTimestamp(Instant.now())
+                .setTriggeringUserId("daniel");
+        when(events.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event)));
+        when(users.findAllById(Set.of("daniel", "philipp"))).thenReturn(List.of(
+                new UserEntity().setId("daniel").setFullName("Daniel Müller").setEnabled(true).setDeletedInIdp(false),
+                new UserEntity().setId("philipp").setFullName("Philipp Schröder").setEnabled(true).setDeletedInIdp(false)));
+
+        var entry = service.getEventLog(12L, null, false, null, false, null, null, null, null,
+                PageRequest.of(0, 50)).events().getContent().getFirst();
+
+        assertEquals("Daniel Müller", entry.triggeringUserName());
+        assertEquals("philipp", entry.representedUserId());
+        assertEquals("Philipp Schröder", entry.representedUserName());
+    }
+
+    @Test
     void getEventLog_ResolvesDisplayDataInBatches() throws ResponseException {
         var eventRepository = mock(ProcessInstanceHistoryEventRepository.class);
         var instanceRepository = mock(ProcessInstanceRepository.class);

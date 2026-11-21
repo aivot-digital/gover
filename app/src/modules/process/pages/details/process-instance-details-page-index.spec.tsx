@@ -77,6 +77,7 @@ describe('Process instance information', () => {
             },
         };
         item.activeTasks = [{
+            assignedUserDeputies: [],
             id: 8, name: 'Unterlagen prüfen', status: ProcessTaskStatus.AwaitingCustomer,
             statusOverride, assignedUserId: null, assignedCustomerIdentityId: 'applicant',
         }];
@@ -157,6 +158,7 @@ describe('Process instance information', () => {
         item.instance.finished = '2026-09-22T10:00:00Z';
         item.activeTasks = [
             {
+                assignedUserDeputies: [],
                 id: 1,
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
@@ -164,6 +166,7 @@ describe('Process instance information', () => {
                 assignedCustomerIdentityId: null,
             },
             {
+                assignedUserDeputies: [],
                 id: 2,
                 name: 'Zahlung',
                 status: ProcessTaskStatus.AwaitingPayment,
@@ -218,6 +221,7 @@ describe('Process instance information', () => {
         item.instance.assignedUserId = 'Vorgangsverantwortung';
         item.activeTasks = [
             {
+                assignedUserDeputies: [],
                 id: 8,
                 name: 'Unterlagen prüfen',
                 status: ProcessTaskStatus.AwaitingCustomer,
@@ -253,6 +257,7 @@ describe('Process instance information', () => {
         const item = createItem();
         item.activeTasks = [
             {
+                assignedUserDeputies: [],
                 id: 1,
                 name: 'Später',
                 status: ProcessTaskStatus.Running,
@@ -261,6 +266,7 @@ describe('Process instance information', () => {
                 deadline: '2026-10-02T10:00:00Z',
             },
             {
+                assignedUserDeputies: [],
                 id: 2,
                 name: 'Überfällig',
                 status: ProcessTaskStatus.Paused,
@@ -269,6 +275,7 @@ describe('Process instance information', () => {
                 deadline: '2026-09-01T10:00:00Z',
             },
             {
+                assignedUserDeputies: [],
                 id: 3,
                 name: 'Ohne Frist',
                 status: ProcessTaskStatus.Running,
