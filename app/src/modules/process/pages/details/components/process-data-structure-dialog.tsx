@@ -99,8 +99,16 @@ export function ProcessDataStructureDialog(props: ProcessDataStructureDialogProp
         (category === 'ElementMetadata' && selected.path === entry.origin.dataKey)
     ))?.origin : null;
     const childCountText = selected == null ? '' : `Enthält ${selected.children.size} direkt ${selected.children.size === 1 ? 'untergeordneten Pfad' : 'untergeordnete Pfade'}.`;
+    const structureNotes: string[] = [];
     const notes: string[] = [];
     if (selected != null) {
+        if (selected.segment === '*') {
+            structureNotes.push('[*] ist ein Platzhalter für die einzelnen Einträge dieser Liste.');
+        }
+        if (selected.children.has('*') && !hasMixedStructure(selected)) {
+            structureNotes.push('Dieser Datenpfad bezeichnet die gesamte Liste. Unter [*] sehen Sie den Aufbau der einzelnen Listeneinträge.');
+        }
+        if (originGroups.length > 0) notes.push(...structureNotes);
         if (selected.entries.length > 0 && selected.children.size > 0) notes.push(childCountText);
         if (selected.entries.some(entry => entry.unexpandedStructure)) {
             notes.push('Unterstruktur nicht aufgeschlüsselt: Mögliche Felder oder Listeneinträge innerhalb dieses Werts sind hier nicht aufgeführt.');
@@ -307,6 +315,9 @@ export function ProcessDataStructureDialog(props: ProcessDataStructureDialogProp
                                         {containerOrigin == null ? 'Untergeordnete Pfade'
                                             : category === ProcessDataStructureCategory.ElementData ? 'Elementdaten' : 'Elementmetadaten'}
                                     </Typography>
+                                    {structureNotes.map(note => <Typography key={note}
+                                                                           variant="body2"
+                                                                           sx={{mt: 1}}>{note}</Typography>)}
                                     <Typography variant="body2"
                                                 sx={{mt: 1}}>{childCountText}</Typography>
                                     {containerOrigin != null && <DataStructureOrigins label="Prozesselement"

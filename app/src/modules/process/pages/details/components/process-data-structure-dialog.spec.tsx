@@ -14,6 +14,8 @@ vi.mock('../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => v
 vi.mock('../../../services/process-definition-version-api-service', () => ({ProcessDefinitionVersionApiService: vi.fn()}));
 vi.mock('../../../../../utils/copy-to-clipboard', () => ({copyToClipboardText: vi.fn().mockResolvedValue(true)}));
 const load = vi.fn();
+const listHint = 'Dieser Datenpfad bezeichnet die gesamte Liste. Unter [*] sehen Sie den Aufbau der einzelnen Listeneinträge.';
+const listItemHint = '[*] ist ein Platzhalter für die einzelnen Einträge dieser Liste.';
 const data: ProcessDataStructure = {
     entries: [1, 2].map(nodeId => ({
         category: ProcessDataStructureCategory.ProcessData,
@@ -247,6 +249,125 @@ describe('ProcessDataStructureDialog', () => {
         expect(search).toHaveValue('');
         expect(screen.getByRole('status')).toHaveTextContent('2 definierte Pfade');
         expect(await screen.findByRole('treeitem', {name: '$.person'})).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it.each([false, true])('explains lists and their entries before the child count with own definitions: %s', async (hasOwnDefinitions) => {
+        const user = userEvent.setup();
+        load.mockResolvedValue({
+            entries: data.entries.flatMap(entry => [
+                ...(hasOwnDefinitions ? ['people', 'people[*]'].map(path => ({...entry, path})) : []),
+                {...entry, path: 'people[*].name'},
+            ]),
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        fireEvent.change(await screen.findByRole('searchbox'), {target: {value: 'people'}});
+
+        for (const [path, label, hint] of [
+            ['people', 'people', listHint],
+            ['people[*]', '[*]', listItemHint],
+        ]) {
+            await user.click(within(await screen.findByRole('treeitem', {name: `$.${path}`})).getByText(label));
+            expect(screen.getAllByText(hint)).toHaveLength(1);
+            expect(screen.queryByText(hint === listHint ? listItemHint : listHint)).not.toBeInTheDocument();
+            expect(screen.getByText(hint).compareDocumentPosition(screen.getByText('Enthält 1 direkt untergeordneten Pfad.')))
+                .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+            if (hasOwnDefinitions) expect(screen.getAllByRole('button', {name: /^Zum Prozesselement/})).toHaveLength(2);
+        }
+        await user.click(screen.getByRole('button', {name: 'Pfad kopieren'}));
+        expect(copyToClipboardText).toHaveBeenLastCalledWith('$.people[*]');
+    });
+
+    it('explains nested lists, wildcard leaves and entries that are themselves lists', async () => {
+        const user = userEvent.setup();
+        load.mockResolvedValue({
+            entries: ['people[*].children[*]', 'matrix[*][*].value'].map(path => ({...data.entries[0], path})),
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        const search = await screen.findByRole('searchbox');
+        fireEvent.change(search, {target: {value: 'children'}});
+        await user.click(within(await screen.findByRole('treeitem', {name: '$.people[*].children'})).getByText('children'));
+        expect(screen.getAllByText(listHint)).toHaveLength(1);
+        expect(screen.queryByText(listItemHint)).not.toBeInTheDocument();
+
+        await user.click(within(screen.getByRole('treeitem', {name: '$.people[*].children[*]'})).getByText('[*]'));
+        expect(screen.getAllByText(listItemHint)).toHaveLength(1);
+        expect(screen.queryByText(listHint)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Enthält \d+ direkt untergeordnet/)).not.toBeInTheDocument();
+
+        fireEvent.change(search, {target: {value: 'matrix'}});
+        await user.click(within(await screen.findByRole('treeitem', {name: '$.matrix[*]'})).getAllByText('[*]')[0]);
+        const count = screen.getByText('Enthält 1 direkt untergeordneten Pfad.');
+        for (const hint of [listItemHint, listHint]) {
+            expect(screen.getAllByText(hint)).toHaveLength(1);
+            expect(screen.getByText(hint).compareDocumentPosition(count)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+        }
+    });
+
+    it('does not add wildcard explanations to ordinary objects or concrete list indices', async () => {
+        const user = userEvent.setup();
+        load.mockResolvedValue({
+            entries: ['person.name', 'people[1].name'].map(path => ({...data.entries[0], path})),
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        fireEvent.change(await screen.findByRole('searchbox'), {target: {value: 'name'}});
+        for (const [path, label] of [['person', 'person'], ['people', 'people'], ['people[1]', '[1]']]) {
+            await user.click(within(await screen.findByRole('treeitem', {name: `$.${path}`})).getByText(label));
+            expect(screen.queryByText(listHint)).not.toBeInTheDocument();
+            expect(screen.queryByText(listItemHint)).not.toBeInTheDocument();
+        }
+    });
+
+    it.each([false, true])('keeps list hints and mixed-structure warnings stable while searching with mixed structure: %s', async (mixed) => {
+        const user = userEvent.setup();
+        load.mockResolvedValue({
+            entries: ['people[*].name', mixed ? 'people.special' : 'people[1].special']
+                .map(path => ({...data.entries[0], path})),
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        await user.click(within(await screen.findByRole('treeitem', {name: '$.people'})).getByText('people'));
+        const search = screen.getByRole('searchbox');
+        for (const query of ['', 'special']) {
+            fireEvent.change(search, {target: {value: query}});
+            expect(screen.getByText('Enthält 2 direkt untergeordnete Pfade.')).toBeVisible();
+            if (mixed) {
+                expect(screen.queryByText(listHint)).not.toBeInTheDocument();
+                expect(screen.getByRole('alert')).toHaveTextContent('Mögliche Strukturabweichung');
+            } else {
+                expect(screen.getAllByText(listHint)).toHaveLength(1);
+                expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            }
+        }
+    });
+
+    it('explains list paths across element data, protected process data and element metadata', async () => {
+        const user = userEvent.setup();
+        load.mockResolvedValue({
+            entries: [
+                {...data.entries[0], category: ProcessDataStructureCategory.ElementData, path: 'form1.people[*].name'},
+                {...data.entries[0], category: ProcessDataStructureCategory.ProtectedProcessData, path: 'people[*].name'},
+                {...data.entries[0], category: ProcessDataStructureCategory.ProtectedProcessData, path: 'taskMetadata.form1.people[*].name'},
+            ],
+            issues: [],
+        });
+        render(<ProcessDataStructureDialog {...props}/>);
+        for (const [tab, path] of [
+            ['Elementdaten (_)', '_.form1.people'],
+            ['Geschützte Vorgangsdaten ($$)', '$$.people'],
+            ['Elementmetadaten ($$.taskMetadata)', '$$.taskMetadata.form1.people'],
+        ]) {
+            await user.click(screen.getByRole('tab', {name: tab}));
+            fireEvent.change(await screen.findByRole('searchbox'), {target: {value: 'name'}});
+            await user.click(within(await screen.findByRole('treeitem', {name: path})).getByText('people'));
+            expect(screen.getAllByText(listHint)).toHaveLength(1);
+            await user.click(within(screen.getByRole('treeitem', {name: `${path}[*]`})).getByText('[*]'));
+            expect(screen.getAllByText(listItemHint)).toHaveLength(1);
+            await user.click(screen.getByRole('button', {name: 'Pfad kopieren'}));
+            expect(copyToClipboardText).toHaveBeenLastCalledWith(`${path}[*]`);
+        }
     });
 
     it('shows partial results with actionable diagnostics', async () => {
