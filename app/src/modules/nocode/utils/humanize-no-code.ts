@@ -84,32 +84,3 @@ export function humanizeNoCode(operand: NoCodeOperand | null, allElements: Eleme
 
     return describe(operand);
 }
-
-/** Continue the editor's sentence without repeating the operator that is already visible in its pill. */
-export function summarizeNoCodeParameters(operand: NoCodeOperand, allElements: ElementWithParents[], allOperators: NoCodeOperatorDetailsDTO[], context: NoCodePresentationContext = {}): string {
-    if (operand.type !== 'NoCodeExpression') return humanizeNoCode(operand, allElements, allOperators, context);
-    const operator = allOperators.find(candidate => candidate.identifier === operand.operatorIdentifier);
-    const operands = operand.operands ?? [];
-    const parameters = operator ? resolveNoCodeSignature(operator, {operandCount: operands.length}).parameters : [];
-    const referenceOptions = operands.map(child => {
-        if (child?.type === 'NoCodeProcessDataReference') return context.processOptions?.get(child.path ?? '') ?? [];
-        const element = child?.type === 'NoCodeReference' ? allElements.find(({element}) => element.id === child.elementId)?.element : undefined;
-        return element ? getReferencedElementOptions(element, context.codeListOptions ?? new Map()) : [];
-    });
-    const suggestions = getNoCodeParameterSuggestions(parameters, referenceOptions);
-    return Array.from({length: Math.max(operands.length, parameters.length)}, (_, i) => {
-        const parameter = parameters[i];
-        const child = operands[i];
-        const label = parameter?.label ?? `Parameter ${i + 1}`;
-        let description: string;
-        if (!child) description = `Fehlender Parameter „${label}“`;
-        else if (child.type === 'NoCodeExpression') {
-            const childOperator = allOperators.find(candidate => candidate.identifier === child.operatorIdentifier);
-            description = `(${[childOperator?.label ?? (child.operatorIdentifier ? 'Unbekannte Funktion' : 'Keine Funktion ausgewählt'), childOperator?.sentenceLead,
-                summarizeNoCodeParameters(child, allElements, allOperators, context)].filter(Boolean).join(' ')})`;
-        } else if (child.type === 'NoCodeStaticValue') {
-            description = formatNoCodeValue(child.value, parameter?.type, parameter?.options.length ? parameter.options : suggestions[i]);
-        } else description = humanizeNoCode(child, allElements, allOperators, context);
-        return [parameter?.sentencePhrase ?? `${label}:`, description, parameter?.sentenceSuffix].filter(Boolean).join(' ');
-    }).join(' ');
-}

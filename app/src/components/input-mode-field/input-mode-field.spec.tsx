@@ -4,7 +4,7 @@ import {useState} from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import {ThemeProvider} from '@mui/material';
 import userEvent from '@testing-library/user-event';
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {
     InputModeField,
     type InputModeValue,
@@ -17,10 +17,17 @@ import {type DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
 import {BaseTheme} from '../../theming/base-theme';
 import {createDefaultAppTheme} from '../../theming/themes';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {NoCodeDataType} from '../../data/no-code-data-type';
+import {type NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-details-dto';
+import {type NoCodeOperand} from '../../models/functions/no-code-expression';
+import {createDerivedRuntimeElementData} from '../../models/element-data';
+import {ViewDispatcherContextProvider, ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
+
+const noCodeApi = vi.hoisted(() => ({getNoCodeOperators: vi.fn()}));
 
 vi.mock('../../services/no-code-api-service', () => ({
     NoCodeApiService: class {
-        getNoCodeOperators = async () => [];
+        getNoCodeOperators = noCodeApi.getNoCodeOperators;
     },
 }));
 
@@ -159,6 +166,10 @@ async function selectMode(user: ReturnType<typeof userEvent.setup>, mode: string
 }
 
 describe('InputModeField', () => {
+    beforeEach(() => {
+        noCodeApi.getNoCodeOperators.mockReset().mockResolvedValue([]);
+    });
+
     it.each([
         ['Variable', 'Keine Variable referenziert'],
         ['Skript (Low-Code)', 'Kein Skript definiert'],
@@ -255,6 +266,70 @@ describe('InputModeField', () => {
         expect(preview).toHaveAttribute('title', 'Vorgangsdaten → warenkorb.anzahl');
         expect(summary).toHaveAccessibleDescription('Vorgangsdaten → warenkorb.anzahl');
         expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
+    });
+
+    it('uses the readable nested sentence and context labels in its preview and accessible description', async () => {
+        const equals: NoCodeOperatorDetailsDTO = {
+            identifier: 'equals',
+            packageName: 'core',
+            label: 'Ist gleich',
+            abstractDescription: '',
+            description: '',
+            tags: [],
+            sentenceLead: 'ergibt wahr',
+            humanReadableTemplate: '„#0“ ist gleich „#1“',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [
+                    {label: 'Wert 1', type: NoCodeDataType.Runtime, description: null, options: []},
+                    {label: 'Wert 2', type: NoCodeDataType.Runtime, description: null, options: [{label: 'Ja', value: 'ja'}]},
+                ],
+            }],
+        };
+        noCodeApi.getNoCodeOperators.mockResolvedValue([equals, {
+            ...equals,
+            identifier: 'not',
+            label: 'Nicht',
+            humanReadableTemplate: 'nicht „#0“',
+            signatures: [{returnType: NoCodeDataType.Boolean, parameters: equals.signatures[0].parameters.slice(0, 1)}],
+        }]);
+        const operand: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'not',
+            operands: [{
+                type: 'NoCodeExpression',
+                operatorIdentifier: 'equals',
+                operands: [
+                    {type: 'NoCodeProcessDataReference', path: 'befreiung.beantragt'},
+                    {type: 'NoCodeStaticValue', value: 'ja'},
+                ],
+            }],
+        };
+        const rootElement = generateElementWithDefaultValues(ElementType.FormLayout);
+        const onChange = vi.fn();
+        render(<ViewDispatcherContextProvider value={{
+            mode: ViewDispatcherMode.Viewer,
+            rootElement,
+            allElements: [rootElement],
+            rootAuthoredElementValues: {},
+            rootDerivedData: createDerivedRuntimeElementData(),
+            inputModeVariables: [{source: InputVariableSource.ProcessData, path: 'befreiung.beantragt', label: 'Befreiung beantragt'}],
+        }}>
+            <Harness initialValue={{type: InputMode.NoCode, operand}} onChange={onChange}/>
+        </ViewDispatcherContextProvider>);
+
+        const text = 'nicht („Befreiung beantragt“ ist gleich „Ja“)';
+        const preview = await screen.findByText(text);
+        const summary = screen.getByRole('button', {name: /Inkrement: Ausdruck definiert/});
+        expect(summary).toContainElement(preview);
+        expect(preview).toHaveAttribute('title', text);
+        expect(summary).toHaveAccessibleDescription(text);
+        expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
+        expect(summary).not.toHaveTextContent('$.befreiung.beantragt');
+        expect(summary).not.toHaveTextContent('„ja“');
+        expect(summary).not.toHaveTextContent('ergibt wahr');
+        expect(screen.queryByRole('button', {name: 'Technische Details'})).not.toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('does not repeat a custom reference when no suggestion supplies a label', () => {

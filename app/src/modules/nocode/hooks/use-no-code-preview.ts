@@ -8,7 +8,7 @@ import {isNoCodeExpression, type NoCodeOperand} from '../../../models/functions/
 import {type AnyElement} from '../../../models/elements/any-element';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {flattenElementsWithParents} from '../../../utils/flatten-elements';
-import {humanizeNoCode} from '../utils/humanize-no-code';
+import {summarizeNoCode} from '../utils/no-code-summary';
 
 export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: AnyElement, type?: NoCodeDataType): string | undefined {
     const api = useApi();
@@ -47,11 +47,10 @@ export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: An
         if (needsOperators && operators == null) return 'Vorschau wird geladen …';
 
         try {
-            // Humanization describes the definition; it does not evaluate the expression or predict its result.
-            return humanizeNoCode(operand, allElements, operators ?? [], {
+            return summarizeNoCode(operand, allElements, operators ?? [], {
                 ...presentation,
                 type,
-            });
+            }).text;
         } catch {
             return 'Vorschau nicht verfügbar';
         }

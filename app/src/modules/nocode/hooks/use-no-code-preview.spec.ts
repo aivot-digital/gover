@@ -1,4 +1,5 @@
 import {act, renderHook, waitFor} from '@testing-library/react';
+import {createElement, type ReactNode} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {useNoCodePreview} from './use-no-code-preview';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
@@ -6,6 +7,10 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {InputVariableSource, type InputVariableSuggestion} from '../../../models/input-mode';
+import {createDerivedRuntimeElementData} from '../../../models/element-data';
+import {ViewDispatcherContextProvider, ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
+import {summarizeNoCode} from '../utils/no-code-summary';
 
 const api = vi.hoisted(() => ({get: vi.fn()}));
 vi.mock('../../../hooks/use-api', () => ({useApi: () => api}));
@@ -44,6 +49,20 @@ const expression: NoCodeOperand = {
     ],
 };
 
+function withVariables(variables: InputVariableSuggestion[]) {
+    const rootElement = generateElementWithDefaultValues(ElementType.GroupLayout);
+    return ({children}: {children: ReactNode}) => createElement(ViewDispatcherContextProvider, {
+        value: {
+            mode: ViewDispatcherMode.Viewer,
+            rootElement,
+            allElements: [rootElement],
+            rootAuthoredElementValues: {},
+            rootDerivedData: createDerivedRuntimeElementData(),
+            inputModeVariables: variables,
+        },
+    }, children);
+}
+
 describe('useNoCodePreview', () => {
     beforeEach(() => {
         api.get.mockReset().mockResolvedValue(operators);
@@ -71,6 +90,91 @@ describe('useNoCodePreview', () => {
         expect(result.current).toBe('Addiere 2 und (Addiere Vorgangsdaten → warenkorb.anzahl und 1)');
         expect(api.get).toHaveBeenCalledTimes(1);
         expect(api.get).toHaveBeenCalledWith('no-code/operators', {queryParams: undefined});
+    });
+
+    it('uses available process variable labels without adding their reference paths', async () => {
+        const {result} = renderHook(() => useNoCodePreview(expression), {
+            wrapper: withVariables([{
+                source: InputVariableSource.ProcessData,
+                path: 'warenkorb.anzahl',
+                label: 'Anzahl der Positionen',
+            }]),
+        });
+
+        await waitFor(() => expect(result.current).toBe('Addiere „Anzahl der Positionen“ und 1'));
+    });
+
+    it('matches the collapsed reading text for nested expressions and selection labels', async () => {
+        const comparison: NoCodeOperatorDetailsDTO = {
+            ...operators[0],
+            identifier: 'equals',
+            label: 'Ist gleich',
+            sentenceLead: 'ergibt wahr',
+            humanReadableTemplate: '„#0“ ist gleich „#1“',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: operators[0].signatures[0].parameters.map(parameter => ({
+                    ...parameter,
+                    type: NoCodeDataType.String,
+                    options: [{label: 'Ja', value: 'ja'}],
+                })),
+            }],
+        };
+        const not: NoCodeOperatorDetailsDTO = {
+            ...comparison,
+            identifier: 'not',
+            label: 'Nicht',
+            humanReadableTemplate: 'nicht „#0“',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [{...comparison.signatures[0].parameters[0], type: NoCodeDataType.Boolean, options: []}],
+            }],
+        };
+        const nested: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'not',
+            operands: [{
+                type: 'NoCodeExpression',
+                operatorIdentifier: 'equals',
+                operands: [
+                    {type: 'NoCodeProcessDataReference', path: 'befreiung.beantragt'},
+                    {type: 'NoCodeStaticValue', value: 'ja'},
+                ],
+            }],
+        };
+        const variables: InputVariableSuggestion[] = [{
+            source: InputVariableSource.ProcessData,
+            path: 'befreiung.beantragt',
+            label: 'Befreiung beantragt',
+        }];
+        api.get.mockResolvedValue([comparison, not]);
+        const {result} = renderHook(() => useNoCodePreview(nested), {wrapper: withVariables(variables)});
+
+        await waitFor(() => expect(result.current).toBe('nicht („Befreiung beantragt“ ist gleich „Ja“)'));
+        expect(result.current).toBe(summarizeNoCode(nested, [], [comparison, not], {variables}).text);
+    });
+
+    it('keeps the collapsed editor disambiguation when multiple variables share a label', async () => {
+        const {result} = renderHook(() => useNoCodePreview(expression), {
+            wrapper: withVariables(['warenkorb.anzahl', 'bestellung.anzahl'].map(path => ({
+                source: InputVariableSource.ProcessData,
+                path,
+                label: 'Anzahl',
+            }))),
+        });
+
+        await waitFor(() => expect(result.current).toBe('Addiere „Anzahl“ ($.warenkorb.anzahl) und 1'));
+    });
+
+    it('uses the complete collapsed fallback instead of a partial template for extra operands', async () => {
+        const operand: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'add',
+            operands: ['1', '2', '3'].map(value => ({type: 'NoCodeStaticValue', value})),
+        };
+        const {result} = renderHook(() => useNoCodePreview(operand));
+
+        await waitFor(() => expect(result.current).toBe('Addiere: Wert 1: 1; Wert 2: 2; Wert 3: 3'));
     });
 
     it('renders literals and references without fetching operator metadata', () => {

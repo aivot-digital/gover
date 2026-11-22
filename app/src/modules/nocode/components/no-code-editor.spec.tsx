@@ -1340,20 +1340,95 @@ describe('operator sentences and descriptions', () => {
         expect(nestedItem).toHaveTextContent(/ist$/);
     });
 
-    it('collapses into a sentence continuation without repeating the operator template', () => {
-        render(<Harness onChange={vi.fn()}
+    it('shows a complete readable sentence below the collapsed header', () => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
                         operators={[{
                             ...sentenceEquals,
-                            humanReadableTemplate: 'vergleiche #0 mit #1',
+                            humanReadableTemplate: '#0 ist gleich #1',
                         }]}/>);
         fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich: zuklappen'}));
         const root = screen.getByRole('treeitem', {name: operatorItemName});
-        expect(root).toHaveTextContent('ergibt wahr');
-        expect(root).not.toHaveTextContent('vergleiche');
-        expect(root).toHaveTextContent('wenn „a“ gleich „b“ ist');
+        expect(root.firstElementChild).toHaveTextContent('Ist Gleich');
+        expect(root.firstElementChild).not.toHaveTextContent('„a“');
+        expect(root).not.toHaveTextContent('ergibt wahr');
+        expect(root).toHaveAccessibleDescription('„a“ ist gleich „b“');
+        expect(screen.getByText('„a“ ist gleich „b“')).toBeInTheDocument();
         expect(screen.queryByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'})).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich: aufklappen'}));
         expect(screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'})).toBeInTheDocument();
+        expect(root).not.toHaveAttribute('aria-describedby');
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('also summarizes an individually collapsed nested expression without changing its parent', () => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        operators={[sentenceEquals, {...not, humanReadableTemplate: 'nicht #0'}]}
+                        initial={nested}/>);
+        const root = screen.getByRole('treeitem', {name: operatorItemName});
+        const child = screen.getByRole('treeitem', {name: 'Wert 2: Funktion Nicht, Wahrheitswert'});
+        fireEvent.click(screen.getByRole('button', {name: 'Nicht: zuklappen'}));
+
+        expect(root).toHaveAttribute('aria-expanded', 'true');
+        expect(child).toHaveAttribute('aria-expanded', 'false');
+        expect(child).toHaveAccessibleDescription('nicht Fehlender Parameter „Wert“');
+        expect(screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])('reveals technical details by keyboard without expanding or editing the expression (readOnly: %s)', async (readOnly) => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        readOnly={readOnly}
+                        operators={[{...dateComparison, humanReadableTemplate: '#0 #1 #2'}]}
+                        initial={{
+                            ...incompleteComparison,
+                            operands: [
+                                {type: 'NoCodeStaticValue', value: '2000-01-01'},
+                                {type: 'NoCodeStaticValue', value: 'vor-oder-gleich'},
+                                {type: 'NoCodeStaticValue', value: '2025-01-01'},
+                            ],
+                        } as NoCodeOperand}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Datumswerte vergleichen: zuklappen'}));
+        const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Datumswerte vergleichen, Wahrheitswert'});
+        expect(root).toHaveTextContent('ist davor oder gleich');
+        expect(screen.getByText('vor-oder-gleich')).not.toBeVisible();
+
+        const details = screen.getByRole('button', {name: 'Technische Details'});
+        details.focus();
+        await user.keyboard('{ArrowRight}{Home}{End}');
+        expect(details).toHaveFocus();
+        expect(root).toHaveAttribute('aria-expanded', 'false');
+        await user.keyboard('{Enter}');
+        expect(details).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByText('vor-oder-gleich')).toBeVisible();
+        await user.keyboard(' ');
+        expect(details).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByText('vor-oder-gleich')).not.toBeVisible();
+        expect(root).toHaveAttribute('aria-expanded', 'false');
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('expands only the reading text and keeps the expression collapsed', async () => {
+        vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(100);
+        vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(60);
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        operators={[{...sentenceEquals, humanReadableTemplate: '#0 ist gleich #1'}]}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich: zuklappen'}));
+        const root = screen.getByRole('treeitem', {name: operatorItemName});
+        const expand = screen.getByRole('button', {name: 'Vollständig anzeigen'});
+        expand.focus();
+        await user.keyboard('{Enter}');
+        expect(screen.getByRole('button', {name: 'Weniger anzeigen'})).toHaveAttribute('aria-expanded', 'true');
+        expect(root).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'})).not.toBeInTheDocument();
+        await user.keyboard(' ');
+        expect(screen.getByRole('button', {name: 'Vollständig anzeigen'})).toHaveAttribute('aria-expanded', 'false');
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('shows the parameter label when an operator has no sentence parts', () => {

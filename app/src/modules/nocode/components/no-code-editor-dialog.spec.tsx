@@ -31,6 +31,41 @@ const props = {
 beforeEach(() => api.get.mockReset().mockResolvedValue([]));
 
 describe('NoCodeEditorDialog', () => {
+    it('closes an unchanged dialog with Escape from the reading controls', async () => {
+        api.get.mockResolvedValue([{
+            identifier: 'choice',
+            packageName: 'core',
+            label: 'Auswahl',
+            abstractDescription: '',
+            description: '',
+            tags: [],
+            humanReadableTemplate: '#0',
+            signatures: [{
+                returnType: NoCodeDataType.String,
+                parameters: [{
+                    type: NoCodeDataType.String,
+                    label: 'Wert',
+                    description: null,
+                    options: [{label: 'Ja', value: 'ja'}],
+                }],
+            }],
+        }]);
+        const user = userEvent.setup();
+        const onClose = vi.fn();
+        const onApply = vi.fn();
+        render(<NoCodeEditorDialog {...props}
+                                   value={{type: 'NoCodeExpression', operatorIdentifier: 'choice', operands: [{type: 'NoCodeStaticValue', value: 'ja'}]}}
+                                   onApply={onApply}
+                                   onClose={onClose}/>);
+        await user.click(await screen.findByRole('button', {name: 'Auswahl: zuklappen'}));
+        await user.click(screen.getByRole('button', {name: 'Technische Details'}));
+        await user.keyboard('{Escape}');
+
+        expect(onClose).toHaveBeenCalledOnce();
+        expect(onApply).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog', {name: 'Änderungen verwerfen?'})).not.toBeInTheDocument();
+    });
+
     it('scrolls the padded dialog content to the test area while keeping title and actions outside', async () => {
         render(<NoCodeEditorDialog {...props} value={{
             type: 'NoCodeStaticValue',

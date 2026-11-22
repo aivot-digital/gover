@@ -69,7 +69,9 @@ import {MarkdownContent} from '../../../components/markdown-content/markdown-con
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
 import {NoCodeDryRunResultDTO} from '../../../models/dtos/no-code-dry-run-dto';
 import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
-import {humanizeNoCode, summarizeNoCodeParameters} from '../utils/humanize-no-code';
+import {humanizeNoCode} from '../utils/humanize-no-code';
+import {NoCodeSummary, summarizeNoCode} from '../utils/no-code-summary';
+import {NoCodeExpressionSummary} from './no-code-expression-summary';
 import {NoCodeOperandKindHelp} from '../data/no-code-operand-kind-help';
 import {useNoCodeEditorStore} from '../hooks/use-no-code-editor-store';
 import {
@@ -624,6 +626,10 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
         if (tree == null || !tree.contains(target) || event.defaultPrevented) {
             return;
         }
+        // Reading controls manage their own focus and must not navigate or expand the editor tree.
+        if (target.closest('[data-no-code-summary]') != null) {
+            return;
+        }
 
         const currentGrab = grabRef.current;
         if (currentGrab != null) {
@@ -1094,7 +1100,7 @@ interface NoCodeEditorTreeItemProps {
     parameter: NoCodeParameter;
     /** Only the first three levels add horizontal indentation. */
     depth?: number;
-    summary?: string;
+    summary?: NoCodeSummary;
     lead?: string | null;
     resultType?: NoCodeDataType;
     invalid?: boolean;
@@ -1137,7 +1143,8 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
     const isNode = name != null;
     const result = showResult ? ctx.results?.get(itemKey) : undefined;
     const resultId = result == null ? undefined : `no-code-editor-result-${itemKey}`;
-    const descriptionIds = [...describedBy, resultId].filter((id) => id != null).join(' ');
+    const summaryId = isCollapsed && props.summary != null ? `no-code-editor-summary-${itemKey}` : undefined;
+    const descriptionIds = [...describedBy, resultId, summaryId].filter((id) => id != null).join(' ');
 
     const {
         dropProps,
@@ -1256,21 +1263,9 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
                                               overflowWrap: 'anywhere',
                                           }}>{phrase}</Typography>}
                 {children}
-                {!isStringNullOrEmpty(props.lead) && <Typography variant="body2"
+                {!isCollapsed && !isStringNullOrEmpty(props.lead) && <Typography variant="body2"
                                                                  color="text.secondary"
                                                                  aria-hidden>{props.lead}</Typography>}
-                {group != null && isCollapsed && <Tooltip arrow
-                                                          title={props.summary}><Typography variant="body2"
-                                                                                            color="text.secondary"
-                                                                                            sx={{
-                                                                                                flex: '1 1 240px',
-                                                                                                minWidth: 0,
-                                                                                                overflowWrap: 'anywhere',
-                                                                                                display: '-webkit-box',
-                                                                                                WebkitLineClamp: 2,
-                                                                                                WebkitBoxOrient: 'vertical',
-                                                                                                overflow: 'hidden',
-                                                                                            }}>{props.summary}</Typography></Tooltip>}
                 {group == null && !isStringNullOrEmpty(suffix) && <Typography variant="body2"
                                                                               color="text.secondary"
                                                                               aria-hidden>{suffix}</Typography>}
@@ -1291,6 +1286,7 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
                         sx={{
                             p: 0.25,
                             mt: 0.25,
+                            ml: isCollapsed ? 'auto' : undefined,
                             color: 'text.secondary',
                         }}
                     >
@@ -1298,6 +1294,11 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
                     </IconButton>
                 }
             </Box>
+
+            {summaryId != null && props.summary != null &&
+                <Box data-no-code-summary sx={{px: 1, pb: 0.75, minWidth: 0}}>
+                    <NoCodeExpressionSummary id={summaryId} summary={props.summary}/>
+                </Box>}
 
             {
                 group != null && !isCollapsed &&
@@ -1578,7 +1579,9 @@ function NoCodeEditorExpressionView(props: SlotProps & {
             depth={props.depth}
             resultType={dataType}
             lead={operator?.sentenceLead}
-            summary={summarizeNoCodeParameters(toNoCodeOperand(node)!, ctx.allElements, ctx.allOperators, ctx.presentation)}
+            summary={ctx.collapsed.has(node.id)
+                ? summarizeNoCode(toNoCodeOperand(node), ctx.allElements, ctx.allOperators, ctx.presentation)
+                : undefined}
             invalid={errorId != null}
             ariaLabel={`Funktion ${name}, ${NoCodeDataTypeLabels[dataType]}`}
             describedBy={[errorId, warningId]}

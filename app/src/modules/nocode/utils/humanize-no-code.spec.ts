@@ -5,7 +5,7 @@ import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {ElementType} from '../../../data/element-type/element-type';
 import {InputVariableSource} from '../../../models/input-mode';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
-import {humanizeNoCode, summarizeNoCodeParameters} from './humanize-no-code';
+import {humanizeNoCode} from './humanize-no-code';
 
 const operator: NoCodeOperatorDetailsDTO = {
     identifier: 'compare',
@@ -131,46 +131,5 @@ describe('humanizeNoCode', () => {
             }],
         }))
             .toBe('„Name“ (_.form.name)');
-    });
-});
-
-
-describe('collapsed operator sentence', () => {
-    const sentenceOperator = {
-        ...operator,
-        humanReadableTemplate: 'THIS MUST NOT BE REPEATED',
-        sentenceLead: 'ergibt wahr',
-        signatures: [{
-            returnType: NoCodeDataType.Boolean,
-            parameters: [
-                {
-                    ...operator.signatures[0].parameters[0],
-                    sentencePhrase: 'wenn',
-                },
-                {
-                    ...operator.signatures[0].parameters[1],
-                    sentencePhrase: 'gleich',
-                    sentenceSuffix: 'ist',
-                },
-            ],
-        }],
-    };
-    it('continues with parameters and suffixes without repeating the current operator', () => {
-        expect(summarizeNoCodeParameters(expr(literal('a'), literal('b')), [], [sentenceOperator]))
-            .toBe('wenn „a“ gleich „b“ ist');
-    });
-    it('preserves grouping, nested sentence leads and missing values', () => {
-        expect(summarizeNoCodeParameters(expr(expr(literal('a'), null), literal('b')), [], [sentenceOperator]))
-            .toBe('wenn (Vergleich ergibt wahr wenn „a“ gleich Fehlender Parameter „Wert 2“ ist) gleich „b“ ist');
-    });
-    it('keeps unknown operators and parameter-label fallbacks understandable', () => {
-        expect(summarizeNoCodeParameters(expr(literal('a'), literal('b')), [], [operator]))
-            .toBe('Wert 1: „a“ Wert 2: „b“');
-        expect(summarizeNoCodeParameters({
-            type: 'NoCodeExpression',
-            operands: [literal('a')],
-            operatorIdentifier: 'unknown',
-        }, [], []))
-            .toBe('Parameter 1: „a“');
     });
 });
