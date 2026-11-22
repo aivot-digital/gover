@@ -206,6 +206,7 @@ describe('NoCodeEditor', () => {
             shiftKey: true,
         });
         expect(await screen.findByRole('menuitem', {name: 'Übergeordnete Funktion hinzufügen'})).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('menuitem', {name: 'An andere Stelle verschieben'})).toHaveAttribute('aria-disabled', 'true');
         fireEvent.click(screen.getByRole('menuitem', {name: 'An andere Stelle verschieben'}));
         expect(onChange).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('menuitem', {name: 'Beschreibung anzeigen'}));
@@ -777,7 +778,7 @@ describe('NoCodeEditor', () => {
             expect(screen.queryByText(/wird verschoben/)).not.toBeInTheDocument();
         });
 
-        it.each([undefined, {notes: 'Interne Notiz'}])('announces when a node has no target with metadata %j', (editorMetadata) => {
+        it.each([undefined, {notes: 'Interne Notiz'}])('disables the move menu and announces keyboard attempts without targets with metadata %j', async (editorMetadata) => {
             render(<Harness initial={{
                 ...expression,
                 editorMetadata,
@@ -789,6 +790,73 @@ describe('NoCodeEditor', () => {
             fireEvent.keyDown(root, {key: ' '});
 
             expect(screen.getByRole('status')).toHaveTextContent('Für „Ist Gleich“ ist kein Ziel zum Verschieben verfügbar.');
+            fireEvent.keyDown(root, {key: 'F10', shiftKey: true});
+            expect(await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'})).toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it.each([null, expression.operands![1]])('enables the move menu for a valid empty or occupied target %j', async (target) => {
+            render(<Harness initial={{...expression, operands: [a, target]}}
+                            onChange={vi.fn()}/>);
+
+            fireEvent.click(screen.getByRole('button', {name: 'Aktionen für „a“'}));
+
+            expect(await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'})).not.toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it.each([
+            {
+                name: 'the moved value does not fit any target',
+                types: [NoCodeDataType.Boolean, NoCodeDataType.Number],
+                source: 'Immer wahr',
+                operands: [{type: 'NoCodeExpression', operatorIdentifier: 'always-true', operands: []}, null],
+            },
+            {
+                name: 'the swapped occupant does not fit the source',
+                types: [NoCodeDataType.Number, NoCodeDataType.Runtime],
+                source: '1',
+                operands: [{type: 'NoCodeStaticValue', value: '1'}, {type: 'NoCodeExpression', operatorIdentifier: 'always-true', operands: []}],
+            },
+        ])('disables the move menu when $name', async ({types, source, operands}) => {
+            const typedEquals: NoCodeOperatorDetailsDTO = {
+                ...equals,
+                signatures: [{
+                    returnType: NoCodeDataType.Boolean,
+                    parameters: equals.signatures[0].parameters.map((parameter, index) => ({...parameter, type: types[index]})),
+                }],
+            };
+            render(<Harness initial={{...expression, operands: operands as (NoCodeOperand | null)[]}}
+                            operators={[typedEquals, alwaysTrue]}
+                            onChange={vi.fn()}/>);
+
+            fireEvent.click(screen.getByRole('button', {name: `Aktionen für „${source}“`}));
+
+            expect(await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'})).toHaveAttribute('aria-disabled', 'true');
+        });
+
+        it('enables the move menu after expanding its only valid target', async () => {
+            const typedEquals: NoCodeOperatorDetailsDTO = {
+                ...equals,
+                signatures: [{
+                    returnType: NoCodeDataType.Boolean,
+                    parameters: equals.signatures[0].parameters.map((parameter, index) => ({
+                        ...parameter,
+                        type: index === 0 ? NoCodeDataType.Number : NoCodeDataType.Runtime,
+                    })),
+                }],
+            };
+            render(<Harness initial={{...nested, operands: [{type: 'NoCodeStaticValue', value: '1'}, nested.operands![1]]}}
+                            operators={[typedEquals, not]}
+                            onChange={vi.fn()}/>);
+            fireEvent.click(screen.getByRole('button', {name: 'Nicht: zuklappen'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Aktionen für „1“'}));
+            expect(await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'})).toHaveAttribute('aria-disabled', 'true');
+
+            fireEvent.keyDown(screen.getByRole('menu'), {key: 'Escape'});
+            await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+            fireEvent.click(screen.getByRole('button', {name: 'Nicht: aufklappen'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Aktionen für „1“'}));
+
+            expect(await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'})).not.toHaveAttribute('aria-disabled', 'true');
         });
 
         it('moves a node down with the context menu and returns focus to it', async () => {

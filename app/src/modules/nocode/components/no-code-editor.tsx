@@ -126,6 +126,7 @@ interface MenuState {
     anchor: HTMLElement;
     up: NoCodeEditorSlot | null;
     down: NoCodeEditorSlot | null;
+    canMoveElsewhere: boolean;
 }
 
 interface EditorContext {
@@ -423,11 +424,13 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
 
     const findItem = (key: string) => getTreeItems(treeRef.current).find((item) => item.dataset.key === key);
 
+    const getMoveTargets = (nodeId: string) => getTreeItems(treeRef.current)
+        .filter((item) => item.dataset.key !== nodeId && canMove(nodeId, slotOf(item)));
+
     const startGrab = (nodeId: string, name: string) => {
         if (locked) return;
-        const items = getTreeItems(treeRef.current);
-        const grabbed = items.find((item) => item.dataset.key === nodeId);
-        const targets = items.filter((item) => item !== grabbed && canMove(nodeId, slotOf(item)));
+        const grabbed = findItem(nodeId);
+        const targets = getMoveTargets(nodeId);
         if (grabbed == null || targets.length === 0) {
             announce(`Für „${name}“ ist kein Ziel zum Verschieben verfügbar.`);
             return;
@@ -586,6 +589,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                 anchor,
                 up: sibling(item?.previousElementSibling),
                 down: sibling(item?.nextElementSibling),
+                canMoveElsewhere: getMoveTargets(nodeId).length > 0,
             });
         },
         startPointerDrag: (nodeId, name) => setPointerDrag({
@@ -972,7 +976,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                     <ListItemIcon><ArrowDownward/></ListItemIcon>
                     <ListItemText>Nach unten verschieben</ListItemText>
                 </MenuItem>
-                <MenuItem disabled={locked}
+                <MenuItem disabled={locked || !menu?.canMoveElsewhere}
                           onClick={() => runMenuAction((current) => startGrab(current.nodeId, current.name))}>
                     <ListItemIcon><OpenWith/></ListItemIcon>
                     <ListItemText>An andere Stelle verschieben</ListItemText>
