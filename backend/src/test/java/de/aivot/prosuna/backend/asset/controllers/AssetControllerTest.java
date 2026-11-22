@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.asset.services.VStorageIndexItemWithAssetService
 import de.aivot.prosuna.backend.audit.services.AuditLogService;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.storage.models.StorageDocument;
 import de.aivot.prosuna.backend.storage.models.StorageItemMetadata;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -32,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.mock.web.MockMultipartFile;
@@ -48,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -221,7 +225,7 @@ class AssetControllerTest {
 
         var responseException = assertThrows(
                 ResponseException.class,
-                () -> assetController.updateFile(jwt, 42, replacementFile, new AssetRequestDTO(true, null), request)
+                () -> assetController.updateFile(jwt, 42, replacementFile, new AssetRequestDTO(true, null), null, request)
         );
 
         assertEquals("Der Dateiinhalt kann nur durch eine Datei mit derselben Dateiendung ersetzt werden.", responseException.getTitle());
@@ -263,10 +267,83 @@ class AssetControllerTest {
                 .thenReturn(Optional.of(updatedIndexItem));
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/files/images/existing.pdf"));
 
-        var result = assetController.updateFile(jwt, 42, replacementFile, new AssetRequestDTO(true, null), request);
+        var result = assetController.updateFile(jwt, 42, replacementFile, new AssetRequestDTO(true, null), null, request);
 
         assertEquals(updatedIndexItem, result);
         verify(storageService).storeDocument(eq(42), eq("/images/existing.pdf"), any(InputStream.class), eq(StorageItemMetadata.empty()));
+    }
+
+    @Test
+    void updateFile_RejectsAReplacementBasedOnAnOutdatedFile() throws Exception {
+        var replacementFile = mockStoredPdf(Instant.parse("2030-05-01T12:00:00.000123Z"));
+
+        var exception = assertThrows(ResponseException.class, () -> assetController.updateFile(
+                jwt, 42, replacementFile, new AssetRequestDTO(true, null), "2030-05-01T11:00:00Z", request));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals(LockVersioned.CONFLICT_DETAILS, exception.getDetails());
+        verify(storageService, never()).storeDocument(anyInt(), anyString(), any(InputStream.class), any(StorageItemMetadata.class));
+        verify(assetRepository, never()).save(any());
+    }
+
+    @Test
+    void updateFile_ReplacesAFileBasedOnItsCurrentState() throws Exception {
+        var replacementFile = mockStoredPdf(Instant.parse("2030-05-01T12:00:00.000123Z"));
+
+        assetController.updateFile(jwt, 42, replacementFile, new AssetRequestDTO(true, null), "2030-05-01T12:00:00.000123Z", request);
+
+        verify(storageService).storeDocument(eq(42), eq("/images/existing.pdf"), any(InputStream.class), eq(StorageItemMetadata.empty()));
+    }
+
+    @Test
+    void updateFileMetadata_RejectsMetadataBasedOnAnOutdatedFile() throws Exception {
+        mockStoredPdf(Instant.parse("2030-05-01T12:00:00Z"));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/files-metadata/images/existing.pdf"));
+
+        var exception = assertThrows(ResponseException.class, () -> assetController.updateFileMetadata(
+                jwt, 42, StorageItemMetadata.empty(), "2030-05-01T11:00:00Z", request));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(storageService, never()).updateDocumentMetadata(anyInt(), anyString(), any());
+    }
+
+    @Test
+    void updateFile_RejectsAMalformedState() throws Exception {
+        var replacementFile = mockStoredPdf(Instant.parse("2030-05-01T12:00:00Z"));
+
+        var exception = assertThrows(ResponseException.class, () -> assetController.updateFile(
+                jwt, 42, replacementFile, new AssetRequestDTO(true, null), "yesterday", request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(storageService, never()).storeDocument(anyInt(), anyString(), any(InputStream.class), any(StorageItemMetadata.class));
+    }
+
+    private MultipartFile mockStoredPdf(Instant updated) throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets)
+                .setReadOnlyStorage(false);
+        var asset = new AssetEntity()
+                .setKey(UUID.randomUUID())
+                .setStorageProviderId(42)
+                .setStoragePathFromRoot("/images/existing.pdf")
+                .setPrivate(false);
+        var indexItem = new VStorageIndexItemWithAssetEntity()
+                .setStorageProviderId(42)
+                .setPathFromRoot("/images/existing.pdf")
+                .setFilename("existing.pdf")
+                .setMimeType("application/pdf")
+                .setMetadata(StorageItemMetadata.empty())
+                .setUpdated(updated);
+
+        when(userService.fromJWT(jwt)).thenReturn(Optional.of(new UserEntity().setId("user-1").setFullName("Jane Doe")));
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(assetRepository.findByStorageProviderIdAndStoragePathFromRoot(42, "/images/existing.pdf"))
+                .thenReturn(Optional.of(asset));
+        when(storageIndexItemWithAssetRepository.findById(VStorageIndexItemWithAssetEntityId.of(42, "/images/existing.pdf")))
+                .thenReturn(Optional.of(indexItem));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/files/images/existing.pdf"));
+        return new MockMultipartFile("file", "replacement.pdf", "application/pdf", "updated-content".getBytes());
     }
 
     @Test
@@ -341,7 +418,7 @@ class AssetControllerTest {
                 ));
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/files-metadata/images/existing.pdf"));
 
-        var result = assetController.updateFileMetadata(jwt, 42, updatedMetadata, request);
+        var result = assetController.updateFileMetadata(jwt, 42, updatedMetadata, null, request);
 
         assertEquals(updatedIndexItem, result);
         verify(storageService).updateDocumentMetadata(42, "/images/existing.pdf", updatedMetadata);

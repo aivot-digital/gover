@@ -33,6 +33,7 @@ export class VTeamMembershipWithDetailsService extends BaseCrudApiService<
 
     public static initialize(): VTeamMembershipWithDetailsEntity {
         return {
+            lockVersion: 0,
             membershipDeputies: [],
             membershipHasDeputies: false,
             userEmail: null,

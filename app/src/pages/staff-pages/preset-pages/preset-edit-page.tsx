@@ -7,12 +7,7 @@ import {useNavigate, useParams} from 'react-router-dom';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {
-    removeLoadingSnackbar,
-    showErrorSnackbar,
-    showLoadingSnackbar,
-    showSuccessSnackbar,
-} from '../../../slices/snackbar-slice';
+import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSuccessSnackbar, showLockConflictSnackbar} from '../../../slices/snackbar-slice';
 import {isLockVersionConflictError} from '../../../models/api-error';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
@@ -193,23 +188,6 @@ export function PresetEditPage() {
             });
     }, [preset, presetVersion]);
 
-    // The legacy editor syncs preset metadata from local state; read-only access must not trigger that write on load.
-    useEffect(() => {
-        if (preset == null || !canUpdatePreset) {
-            return;
-        }
-
-        presetsApiService
-            .update(preset.key, {
-                title: preset.title,
-                rootElement: {} as any,
-            })
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Vorlage konnte nicht gespeichert werden'));
-            });
-    }, [canUpdatePreset, preset]);
-
     const handleDelete = () => {
         if (preset == null || presetVersion == null || !canDeletePreset) {
             return;
@@ -311,7 +289,7 @@ export function PresetEditPage() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Vorlage konnte nicht gespeichert werden'));
+                dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Vorlage konnte nicht gespeichert werden'));
             })
             .finally(() => {
                 setIsDeriving(false);

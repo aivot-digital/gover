@@ -47,6 +47,7 @@ export function CustomLinkDialog(props: CustomLinkDialogProps) {
             icon: props.link.icon ?? 'link',
             type: props.link.type,
             enabled: props.link.enabled,
+            lockVersion: props.link.lockVersion,
         });
         setAttemptedSubmit(false);
     }, [props.link, props.open]);

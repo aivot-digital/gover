@@ -40,7 +40,8 @@ import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
 interface UserRolesAssignmentDialogProps {
     open: boolean;
     onClose: () => void;
-    onSave: (roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => void;
+    /** Receives the complete role set and the lock version of the membership it was loaded from (`null` for a new member). */
+    onSave: (roleIds: number[], lockVersion: number | null) => void;
     userId?: string;
     userLabel?: string;
     parentId?: number;
@@ -257,40 +258,13 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     };
 
     const handleSave = useCallback(() => {
-        if (memberships == null) {
+        if (memberships == null || activeRoleIds == null) {
             return;
         }
 
-        const roleIdsToAdd: number[] = [];
-        const userRoleAssignmentIdsToRemove: number[] = [];
-
-        if (roles != null && activeRoleIds != null) {
-            roles.forEach((role) => {
-                const isActive = activeRoleIds.has(role.id);
-
-                const isCurrentlyAssigned = memberships
-                    .flatMap((m) => m.domainRoles)
-                    .some((r) => r.id === role.id);
-
-                if (isActive && !isCurrentlyAssigned) {
-                    roleIdsToAdd.push(role.id);
-                } else if (!isActive && isCurrentlyAssigned) {
-                    const membership = memberships.find((m) => m.domainRoles.some((r) => r.id === role.id));
-                    if (membership != null) {
-                        const domainRoleAssignment = membership
-                            .domainRoleAssignments
-                            .find((dra) => dra.domain_role_id === role.id);
-
-                        if (domainRoleAssignment != null) {
-                            userRoleAssignmentIdsToRemove.push(domainRoleAssignment.id);
-                        }
-                    }
-                }
-            });
-        }
-
-        onSave(roleIdsToAdd, userRoleAssignmentIdsToRemove);
-    }, [onSave, roles, activeRoleIds, memberships]);
+        // The dialog loads the membership of this user in the parent, if any, so the role set and lock version belong together.
+        onSave([...activeRoleIds], memberships[0]?.lockVersion ?? null);
+    }, [onSave, activeRoleIds, memberships]);
 
     const handleClose = () => {
         onClose();

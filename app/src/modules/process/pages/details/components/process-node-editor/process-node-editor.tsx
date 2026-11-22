@@ -97,6 +97,8 @@ export function ProcessNodeEditor(): ReactNode {
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [isProviderDetailsDialogOpen, setIsProviderDetailsDialogOpen] = useState(false);
     const [isNodeLoading, setIsNodeLoading] = useState(false);
+    // A second save before the first returns would send the same lock version and fail as a conflict.
+    const [isSaving, setIsSaving] = useState(false);
     const [showNodeLoadedFeedback, setShowNodeLoadedFeedback] = useState(false);
     const [problems, setProblems] = useState<ProcessNodeProblems | null>(null);
 
@@ -296,7 +298,7 @@ export function ProcessNodeEditor(): ReactNode {
     }, [location]);
 
     const handleSaveSelected = (): void => {
-        if (!editable || !hasChanged || editedNode == null) {
+        if (!editable || !hasChanged || editedNode == null || isSaving) {
             return;
         }
 
@@ -315,6 +317,7 @@ export function ProcessNodeEditor(): ReactNode {
             .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
             .map((e) => e.id);
 
+        setIsSaving(true);
         onSave(editedNode, {
             query: {
                 omitConfigSave: fieldsToOmit,
@@ -350,6 +353,9 @@ export function ProcessNodeEditor(): ReactNode {
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
                 }
+            })
+            .finally(() => {
+                setIsSaving(false);
             });
     };
 
@@ -634,7 +640,7 @@ export function ProcessNodeEditor(): ReactNode {
                         onClick={handleSaveSelected}
                         variant="contained"
                         startIcon={<Save/>}
-                        disabled={!editable || !hasChanged || isNodeLoading}
+                        disabled={!editable || !hasChanged || isNodeLoading || isSaving}
                     >
                         Konfiguration speichern
                     </Button>

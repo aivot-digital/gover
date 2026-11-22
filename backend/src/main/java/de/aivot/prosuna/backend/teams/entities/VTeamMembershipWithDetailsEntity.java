@@ -33,6 +33,7 @@ public class VTeamMembershipWithDetailsEntity {
     @Convert(converter = JsonArrayConverter.class)
     private List<Map<String, Object>> domainRoleAssignments;
     private List<String> domainRolePermissions;
+    private Long lockVersion;
 
     public Integer getMembershipId() {
         return membershipId;
@@ -184,6 +185,15 @@ public class VTeamMembershipWithDetailsEntity {
 
     public VTeamMembershipWithDetailsEntity setDomainRoleAssignments(List<Map<String, Object>> domainRoleAssignments) {
         this.domainRoleAssignments = domainRoleAssignments;
+        return this;
+    }
+
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public VTeamMembershipWithDetailsEntity setLockVersion(Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

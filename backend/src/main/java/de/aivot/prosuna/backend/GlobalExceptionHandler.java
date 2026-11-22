@@ -9,7 +9,7 @@ import de.aivot.prosuna.backend.mail.services.ExceptionMailService;
 import io.sentry.Sentry;
 import jakarta.persistence.OptimisticLockException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
@@ -77,8 +77,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     // Another transaction updated the entity between loading and saving it. This is an expected conflict, not a server error.
+    // ConcurrencyFailureException also covers what Postgres reports at REPEATABLE READ (serialization failure 40001,
+    // deadlock), which Spring translates to CannotAcquireLockException rather than an optimistic locking failure.
     // Spring translates the JPA exception only for repository calls and commits, not for a direct EntityManager flush.
-    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+    @ExceptionHandler({ConcurrencyFailureException.class, OptimisticLockException.class})
     public ResponseEntity<Object> handleOptimisticLockingFailure() {
         var apiError = new ApiErrorDto(
                 HttpStatus.CONFLICT,

@@ -22,15 +22,18 @@ public class PresetEntity implements LockVersioned {
     @Length(min = 3, max = 255)
     private String title;
 
+    // Maintained by database triggers on the preset versions, which do not raise the lock version. Never written by updates,
+    // so saving a copy loaded before a publish or a new draft cannot revert them.
     @Nullable
-    @Column(columnDefinition = "int2")
+    @Column(columnDefinition = "int2", updatable = false)
     private Integer publishedVersion;
 
     @Nullable
-    @Column(columnDefinition = "int2")
+    @Column(columnDefinition = "int2", updatable = false)
     private Integer draftedVersion;
 
     @Nonnull
+    @Column(updatable = false)
     private Integer versionCount;
 
     @Nullable
