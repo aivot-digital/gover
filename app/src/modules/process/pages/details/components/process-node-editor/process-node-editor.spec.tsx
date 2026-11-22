@@ -180,7 +180,8 @@ describe('ProcessNodeEditor metadata loading', () => {
         vi.mocked(ProcessNodeApiService.prototype.getIncomingMetadata).mockRejectedValue(error);
         renderEditor();
 
-        expect(await screen.findByRole('alert')).toHaveTextContent(`${warning} Sie können die Konfiguration weiterhin bearbeiten.`);
+        // The editing hint is only added once draft recovery has finished, after the alert itself appears.
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(`${warning} Sie können die Konfiguration weiterhin bearbeiten.`));
         expect(logError).toHaveBeenCalledWith(error);
         expect(screen.getByRole('textbox', {name: /Gespeicherter Pfad/})).toHaveValue('name');
         expect(screen.queryByRole('button', {name: 'Vorgangsdatenpfad auswählen'})).not.toBeInTheDocument();
