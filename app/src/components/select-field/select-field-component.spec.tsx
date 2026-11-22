@@ -1,10 +1,24 @@
-import {describe, expect, it, vi} from 'vitest';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import {SelectFieldComponent} from './select-field-component';
 import {SelectFieldPresentation} from '../../models/elements/form/input/select-field-presentation';
 import {createTheme, ThemeProvider} from '@mui/material';
 
+function mockTextWidth(element: HTMLElement, scrollWidth: number, clientWidth: number) {
+    Object.defineProperties(element, {
+        scrollWidth: {configurable: true, value: scrollWidth},
+        clientWidth: {configurable: true, value: clientWidth},
+    });
+}
+
+function advanceTooltipTimers() {
+    act(() => vi.advanceTimersByTime(300));
+    act(() => vi.advanceTimersByTime(300));
+}
+
 describe('SelectFieldComponent', () => {
+    afterEach(() => vi.useRealTimers());
+
     it.each(['light', 'dark'] as const)('renders a muted prompt without selecting an answer in %s mode', mode => {
         const onChange = vi.fn();
         const theme = createTheme({palette: {mode}});
@@ -258,5 +272,172 @@ describe('SelectFieldComponent', () => {
         fireEvent.click(screen.getByRole('option', {name: /Freigabe/}));
 
         expect(onChange).toHaveBeenCalledWith('approval');
+    });
+
+    it('shows the full selected label on hover only while it is truncated', () => {
+        vi.useFakeTimers();
+        const label = 'Eine besonders lange ausgewählte Kategorie';
+        render(<SelectFieldComponent label="Kategorie" value="request" onChange={vi.fn()}
+            options={[{value: 'request', label}]}/>);
+        const selectedLabel = screen.getByText(label);
+
+        mockTextWidth(selectedLabel, 120, 120);
+        fireEvent.mouseOver(selectedLabel);
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        expect(selectedLabel).not.toHaveAttribute('title');
+        fireEvent.focus(screen.getByRole('combobox'));
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        fireEvent.blur(screen.getByRole('combobox'));
+
+        fireEvent.mouseLeave(selectedLabel);
+        advanceTooltipTimers();
+        mockTextWidth(selectedLabel, 240, 120);
+        fireEvent.mouseOver(selectedLabel);
+        advanceTooltipTimers();
+        expect(screen.getByRole('tooltip')).toHaveTextContent(label);
+
+        fireEvent.mouseLeave(selectedLabel);
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it.each([{}, {readOnly: true}, {busy: true}])('reveals a truncated selection on combobox focus without changing its accessible name for %j', flags => {
+        vi.useFakeTimers();
+        const label = 'Eine besonders lange ausgewählte Kategorie';
+        render(<SelectFieldComponent label="Kategorie" hint="Wählen Sie eine Kategorie."
+            value="request" onChange={vi.fn()} options={[{value: 'request', label}]} {...flags}/>);
+        const control = screen.getByRole('combobox', {name: 'Kategorie – optional'});
+        const selectedLabel = screen.getByText(label);
+        mockTextWidth(selectedLabel, 240, 120);
+
+        fireEvent.focus(control);
+        advanceTooltipTimers();
+        expect(screen.getByRole('tooltip')).toHaveTextContent(label);
+        expect(control).toHaveAccessibleName('Kategorie – optional');
+        expect(control).toHaveAccessibleDescription('Wählen Sie eine Kategorie.');
+        expect(selectedLabel).not.toHaveAttribute('tabindex');
+
+        fireEvent.keyDown(document, {key: 'Escape'});
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        fireEvent.focus(control);
+        advanceTooltipTimers();
+        expect(screen.getByRole('tooltip')).toHaveTextContent(label);
+
+        fireEvent.blur(control);
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    });
+
+    it('closes the selected-label tooltip when the menu opens and preserves pass-through callbacks', () => {
+        vi.useFakeTimers();
+        const onFocus = vi.fn();
+        const onBlur = vi.fn();
+        const onOpen = vi.fn();
+        const label = 'Eine besonders lange ausgewählte Kategorie';
+        render(<SelectFieldComponent label="Kategorie" value="request" onChange={vi.fn()}
+            options={[{value: 'request', label}]}
+            muiPassTroughProps={{slotProps: {select: {onFocus, onBlur, onOpen}}}}/>);
+        const control = screen.getByRole('combobox');
+        mockTextWidth(screen.getByText(label), 240, 120);
+
+        fireEvent.focus(control);
+        advanceTooltipTimers();
+        expect(screen.getByRole('tooltip')).toHaveTextContent(label);
+        expect(onFocus).toHaveBeenCalledOnce();
+
+        fireEvent.blur(control);
+        advanceTooltipTimers();
+        expect(onBlur).toHaveBeenCalledOnce();
+        fireEvent.focus(control);
+        advanceTooltipTimers();
+        fireEvent.mouseDown(control);
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+        expect(onOpen).toHaveBeenCalledOnce();
+    });
+
+    it('closes an old selected-label tooltip after the selected value changes', () => {
+        vi.useFakeTimers();
+        const label = 'Eine besonders lange ausgewählte Kategorie';
+        const props = {
+            label: 'Kategorie', onChange: vi.fn(),
+            options: [{value: 'request', label}, {value: 'approval', label: 'Freigabe'}],
+        };
+        const {rerender} = render(<SelectFieldComponent {...props} value="request"/>);
+        mockTextWidth(screen.getByText(label), 240, 120);
+        fireEvent.focus(screen.getByRole('combobox'));
+        advanceTooltipTimers();
+        expect(screen.getByRole('tooltip')).toHaveTextContent(label);
+
+        rerender(<SelectFieldComponent {...props} value="approval"/>);
+        advanceTooltipTimers();
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toHaveTextContent('Freigabe');
+    });
+
+    it.each(['textfield', 'input', 'select'] as const)('preserves %s focus and blur callbacks with the existing slot precedence', layer => {
+        const fieldOnFocus = vi.fn();
+        const fieldOnBlur = vi.fn();
+        const inputOnFocus = vi.fn();
+        const inputOnBlur = vi.fn();
+        const selectOnFocus = vi.fn();
+        const selectOnBlur = vi.fn();
+        render(<SelectFieldComponent label="Kategorie" value="request" onChange={vi.fn()}
+            options={[{value: 'request', label: 'Antrag'}]}
+            muiPassTroughProps={{
+                onFocus: fieldOnFocus,
+                onBlur: fieldOnBlur,
+                slotProps: {
+                    input: layer === 'textfield' ? undefined : {onFocus: inputOnFocus, onBlur: inputOnBlur},
+                    select: layer === 'select' ? {onFocus: selectOnFocus, onBlur: selectOnBlur} : undefined,
+                },
+            }}/>
+        );
+
+        fireEvent.focus(screen.getByRole('combobox'));
+        fireEvent.blur(screen.getByRole('combobox'));
+
+        expect(fieldOnFocus).toHaveBeenCalledTimes(layer === 'textfield' ? 1 : 0);
+        expect(fieldOnBlur).toHaveBeenCalledTimes(layer === 'textfield' ? 1 : 0);
+        expect(inputOnFocus).toHaveBeenCalledTimes(layer === 'input' ? 1 : 0);
+        expect(inputOnBlur).toHaveBeenCalledTimes(layer === 'input' ? 1 : 0);
+        expect(selectOnFocus).toHaveBeenCalledTimes(layer === 'select' ? 1 : 0);
+        expect(selectOnBlur).toHaveBeenCalledTimes(layer === 'select' ? 1 : 0);
+    });
+
+    it('keeps end actions and their tooltips independent from the selected label and option selection', () => {
+        vi.useFakeTimers();
+        const onChange = vi.fn();
+        const onAction = vi.fn();
+        const label = 'Eine besonders lange ausgewählte Kategorie';
+        render(<SelectFieldComponent label="Kategorie" value="request" onChange={onChange}
+            options={[{value: 'request', label}, {value: 'approval', label: 'Freigabe'}]}
+            endAction={{icon: <span aria-hidden="true">+</span>, tooltip: 'Details anzeigen', onClick: onAction}}/>);
+        mockTextWidth(screen.getByText(label), 240, 120);
+        const action = screen.getByRole('button', {name: 'Details anzeigen'});
+
+        fireEvent.mouseOver(action);
+        advanceTooltipTimers();
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Details anzeigen');
+        fireEvent.click(action);
+        expect(onAction).toHaveBeenCalledOnce();
+        expect(onChange).not.toHaveBeenCalled();
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+        fireEvent.mouseLeave(action);
+        advanceTooltipTimers();
+        fireEvent.mouseDown(screen.getByRole('combobox'));
+        fireEvent.click(screen.getByRole('option', {name: 'Freigabe'}));
+        expect(onChange).toHaveBeenCalledExactlyOnceWith('approval');
+    });
+
+    it('does not reserve an end-adornment area for an empty action array', () => {
+        const {container} = render(<SelectFieldComponent label="Kategorie" value="request" onChange={vi.fn()}
+            options={[{value: 'request', label: 'Antrag'}]} endAction={[]}/>);
+        expect(container.querySelector('.MuiInputAdornment-positionEnd')).not.toBeInTheDocument();
     });
 });
