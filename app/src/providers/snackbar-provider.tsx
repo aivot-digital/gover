@@ -4,6 +4,7 @@ import {useAppSelector} from '../hooks/use-app-selector';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {removeSnackbar} from '../slices/snackbar-slice';
 import {AppInfo} from '../app-info';
+import {reloadPage} from '../services/page-reload';
 import {Alert, Box, Button, CircularProgress, Fade, GlobalStyles, ThemeProvider, type Theme, type AlertProps} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarAction, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
@@ -138,7 +139,7 @@ const SnackbarConsumer = () => {
                                         size="small"
                                         variant="outlined"
                                         color="inherit"
-                                        onClick={() => window.location.reload()}
+                                        onClick={() => void reloadPage()}
                                     >
                                         Neu laden
                                     </Button>

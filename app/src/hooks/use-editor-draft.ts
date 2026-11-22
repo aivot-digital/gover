@@ -3,6 +3,7 @@ import {useAppSelector} from './use-app-selector';
 import {selectUser} from '../slices/user-slice';
 import {getEditorDraftReturnId, registerEditorDraftLoginHandler} from '../services/editor-draft-login';
 import {type EditorDraft, EditorDraftStorage} from '../services/editor-draft-storage';
+import {registerPageReloadPreparation} from '../services/page-reload';
 import {createEditorDraftAccess, type EditorDraftManualSave} from './editor-draft-access';
 
 export type {EditorDraftManualSave} from './editor-draft-access';
@@ -42,12 +43,15 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     let leaving = false;
     let mounted = false;
     let revision = 0;
+    // The revision of the snapshot this visit last wrote, so a backup is known to contain the current edits.
+    let storedRevision: number | undefined;
     let preparingSave: AbortController | undefined;
     let contextRevision: number | undefined;
     let revokedContextRevision: number | undefined;
     const access = createEditorDraftAccess(userId, () => {
         cancelPending();
         stored = false;
+        storedRevision = undefined;
         hadContext = false;
         revokedContextRevision = contextRevision;
     });
@@ -74,13 +78,17 @@ function createDraftSession<T, Context>(userId: string, key: string) {
     function flush() {
         const signal = access.signal();
         const snapshot = pending;
+        const snapshotRevision = revision;
         cancelPending();
         if (snapshot != null) {
             return inOrder(async () => {
                 const generation = await access.current(signal);
                 if (readFailed || generation == null) return;
                 await EditorDraftStorage.save({...snapshot, userId, key, savedAt: Date.now()}, generation);
-                if (access.active(signal)) stored = true;
+                if (access.active(signal)) {
+                    stored = true;
+                    storedRevision = snapshotRevision;
+                }
             });
         }
     }
@@ -114,6 +122,7 @@ function createDraftSession<T, Context>(userId: string, key: string) {
                 await EditorDraftStorage.remove(userId, key, generation);
                 if (access.active(signal)) {
                     stored = false;
+                    storedRevision = undefined;
                     readFailed = false;
                 }
             } catch (error) {
@@ -251,6 +260,23 @@ function createDraftSession<T, Context>(userId: string, key: string) {
                 }
             }
         },
+        /** Stores pending edits now and reports whether this browser holds a backup of the current edits. */
+        async backUp(): Promise<boolean> {
+            const signal = access.signal();
+            if (!mounted || leaving || !access.active(signal)) return false;
+            try {
+                // The render after a failed save can schedule a newer snapshot while the previous one is written.
+                for (;;) {
+                    const backingUpRevision = revision;
+                    await (flush() ?? lastOperation);
+                    if (revision === backingUpRevision) break;
+                }
+            } catch (error) {
+                console.error(error);
+                return false;
+            }
+            return mounted && !leaving && !readFailed && access.active(signal) && storedRevision === revision;
+        },
         async stopForLogout(id?: string) {
             if (access.revoke(id)) cancelSavePreparation();
             await lastOperation?.catch(console.error);
@@ -273,9 +299,11 @@ export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, 
         if (session != null) {
             const leave = session.register();
             const unregister = registerEditorDraftLoginHandler(session.reserve, session.stopForLogout);
+            const unregisterReload = registerPageReloadPreparation(session.backUp);
             return () => {
                 leave();
                 unregister();
+                unregisterReload();
             };
         }
     }, [session]);
@@ -316,6 +344,7 @@ export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, 
     }, [session]);
 
     const beginManualSave = useCallback(() => session?.beginManualSave() ?? Promise.resolve(null), [session]);
+    const backUpDraft = useCallback(() => session?.backUp() ?? Promise.resolve(false), [session]);
     const isDraftRecoveryCurrent = useCallback(() => session?.isRecoveryCurrent() ?? Promise.resolve(false), [session]);
     const confirmManualSave = useCallback(async (token: EditorDraftManualSave) => {
         if (await session?.confirmManualSave(token)) onResume();
@@ -329,6 +358,7 @@ export function useEditorDraft<T, Context = unknown>(props: EditorDraftProps<T, 
         isDraftRecoveryCurrent,
         beginManualSave,
         confirmManualSave,
+        backUpDraft,
         isReady: userId != null,
     };
 }

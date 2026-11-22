@@ -38,7 +38,7 @@ import {
 } from '../../../../../../utils/editor-save-rebase';
 import {editorValuesEqual} from '../../../../../../utils/variable-reference-merge';
 import {useCurrentState} from '../../../../../../hooks/use-current-state';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showEditorSaveErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
@@ -310,7 +310,7 @@ export function ProcessNodeEditor(): ReactNode {
         loadDraft,
         clearDraft,
         discardForNavigation,
-        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave,
+        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave, backUpDraft,
         isReady: isDraftStorageReady,
     } = useEditorDraft<ProcessNodeEntity>({
         draftKey: visitKey != null ? `process-node/${nodeId}/configuration` : null,
@@ -535,7 +535,7 @@ export function ProcessNodeEditor(): ReactNode {
                     dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
                 }
             } else {
-                dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
+                void showEditorSaveErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.', backUpDraft).then(dispatch);
             }
         } finally {
             if (activeSave.current === controller) {

@@ -27,12 +27,13 @@ import {generateElementWithDefaultValues} from '../../../../../../utils/generate
 import {ElementType} from '../../../../../../data/element-type/element-type';
 import {InputMode, InputVariableSource} from '../../../../../../models/input-mode';
 import {type DerivedRuntimeElementData} from '../../../../../../models/element-data';
+import {SnackbarAction} from '../../../../../../slices/shell-slice';
 
 const testState = vi.hoisted(() => ({
     userId: 'user', dispatch: vi.fn(), save: vi.fn(), stored: vi.fn(), confirm: vi.fn(),
     remove: vi.fn(), replace: vi.fn(), loadDraft: vi.fn(), clearDraft: vi.fn(), trackDraft: vi.fn(), realDraft: false,
     beginManualSave: vi.fn(async () => ({signal: new AbortController().signal, generation: 'current', resumesDrafts: false})),
-    confirmManualSave: vi.fn(), isDraftRecoveryCurrent: vi.fn().mockResolvedValue(true),
+    confirmManualSave: vi.fn(), isDraftRecoveryCurrent: vi.fn().mockResolvedValue(true), backUpDraft: vi.fn(),
 }));
 
 vi.mock('../../../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => testState.dispatch}));
@@ -49,6 +50,7 @@ vi.mock('../../../../../../hooks/use-editor-draft', async (importOriginal) => {
                 loadDraft: testState.loadDraft, clearDraft: testState.clearDraft, discardForNavigation: testState.clearDraft, isReady: true,
                 draftLogoutSignal: undefined, isDraftRecoveryCurrent: testState.isDraftRecoveryCurrent,
                 beginManualSave: testState.beginManualSave, confirmManualSave: testState.confirmManualSave,
+                backUpDraft: testState.backUpDraft,
             };
         },
     };
@@ -409,6 +411,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         testState.confirm.mockReset().mockResolvedValue(true);
         testState.loadDraft.mockReset().mockResolvedValue(null);
         testState.clearDraft.mockReset().mockResolvedValue(undefined);
+        testState.backUpDraft.mockReset().mockResolvedValue(false);
         vi.spyOn(ProcessNodeApiService.prototype, 'retrieve').mockImplementation(async (id) => ({...createNode(id), lockVersion: 1}));
         vi.spyOn(ProcessNodeApiService.prototype, 'getConfigurationLayout')
             .mockResolvedValue(generateElementWithDefaultValues(ElementType.GroupLayout));
@@ -1108,6 +1111,26 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
             payload: expect.objectContaining({message: expect.stringContaining(lockConflict.message)}),
         })));
         expect(testState.save).toHaveBeenCalledTimes(3);
+        expect(testState.backUpDraft).toHaveBeenCalledOnce();
+    });
+
+    it('offers to restore the stored changes after reloading when a persistent conflict leaves them backed up', async () => {
+        testState.save.mockRejectedValue(lockConflict);
+        testState.backUpDraft.mockResolvedValue(true);
+        renderEditor();
+        await editName('Mein Name');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
+
+        await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({
+                message: expect.stringContaining('Ihre Änderungen sind in diesem Browser zwischengespeichert'),
+                action: SnackbarAction.ReloadPage,
+            }),
+        })));
+        expect(testState.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: expect.stringContaining(lockConflict.message)}),
+        }));
     });
 
     it('keeps the server preview locked across tabs until the draft is restored', async () => {

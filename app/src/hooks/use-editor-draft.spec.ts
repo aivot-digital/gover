@@ -421,4 +421,39 @@ describe('useEditorDraft', () => {
         await vi.advanceTimersByTimeAsync(1_000);
         expect(EditorDraftStorage.save).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({mine: {label: 'Neue Änderung'}}), 'second');
     });
+
+    it('backs up the current edits immediately, including a snapshot scheduled while the previous one is written', async () => {
+        const commit = Promise.withResolvers<void>();
+        vi.mocked(EditorDraftStorage.save).mockReturnValueOnce(commit.promise);
+        const {result, rerender} = renderHook((current) => useEditorDraft(current), {initialProps: props});
+
+        const backup = result.current.backUpDraft();
+        rerender({...props, edited: {label: 'Nach dem Fehlschlag'}});
+        commit.resolve();
+
+        await expect(backup).resolves.toBe(true);
+        expect(EditorDraftStorage.save).toHaveBeenCalledTimes(2);
+        expect(EditorDraftStorage.save).toHaveBeenLastCalledWith(expect.objectContaining({mine: {label: 'Nach dem Fehlschlag'}}), 'first');
+    });
+
+    it('reports no backup when the browser cannot store the edits or there are no unsaved changes', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.mocked(EditorDraftStorage.save).mockRejectedValueOnce(new Error('Quota exceeded'));
+        const {result, rerender} = renderHook((current) => useEditorDraft(current), {initialProps: props});
+        await expect(result.current.backUpDraft()).resolves.toBe(false);
+
+        await expect(result.current.backUpDraft()).resolves.toBe(false);
+        rerender({...props, edited: props.base, hasChanged: false});
+        await expect(result.current.backUpDraft()).resolves.toBe(false);
+        expect(EditorDraftStorage.remove).toHaveBeenCalled();
+    });
+
+    it('reports no backup once a logout stopped storing the edits of this visit', async () => {
+        const {result} = renderHook(() => useEditorDraft(props));
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(EditorDraftStorage.save).toHaveBeenCalledOnce();
+
+        await logout('second');
+        await expect(result.current.backUpDraft()).resolves.toBe(false);
+    });
 });

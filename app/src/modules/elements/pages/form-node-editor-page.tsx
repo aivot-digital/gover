@@ -27,6 +27,7 @@ import RemoveDoneOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined
 import DoneAllOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
 import {
     showApiErrorSnackbar,
+    showEditorSaveErrorSnackbar,
     showErrorSnackbar,
     showSuccessSnackbar,
     showWarningSnackbar,
@@ -625,7 +626,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
         loadDraft,
         clearDraft,
         discardForNavigation,
-        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave,
+        draftLogoutSignal, isDraftRecoveryCurrent, beginManualSave, confirmManualSave, backUpDraft,
     } = useEditorDraft<FormLayoutElement | null, ElementPanelDraft>({
         draftKey: visitKey == null ? null : `process-node/${nodeId}/form-layout`,
         base: storedFormLayout,
@@ -872,7 +873,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
         try {
             await saveForm();
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
+            void showEditorSaveErrorSnackbar(err, 'Fehler beim Speichern der Änderungen', backUpDraft).then(dispatch);
         }
     };
 
@@ -1031,7 +1032,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                     confirmed = saved;
                 } catch (err) {
                     console.error(err);
-                    dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
+                    void showEditorSaveErrorSnackbar(err, 'Fehler beim Speichern der Änderungen', backUpDraft).then(dispatch);
                     return;
                 }
             } else {
@@ -1533,7 +1534,8 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                 paymentRequired: paymentRequired,
             });
         } catch (err) {
-            if (!signal.aborted) dispatch(showApiErrorSnackbar(err, errorMessage));
+            // Of the requests above, only saving the form layout is checked against a lock version.
+            if (!signal.aborted) void showEditorSaveErrorSnackbar(err, errorMessage, backUpDraft).then(dispatch);
         } finally {
             stopLoading?.();
         }

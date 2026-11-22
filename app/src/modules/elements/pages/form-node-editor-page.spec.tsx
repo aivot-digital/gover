@@ -25,6 +25,7 @@ import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ProcessStatus} from '../../process/enums/process-status';
 import {literalAuthoredValue} from '../../../models/element-data';
+import {SnackbarAction} from '../../../slices/shell-slice';
 
 const StaffAccount = React.createContext<string | undefined>('staff-user');
 
@@ -660,6 +661,21 @@ describe('FormNodeEditorPage', () => {
             name: 'Anderswo gespeichert',
             lockVersion: 2,
         }));
+    });
+
+    it('offers to restore the backed-up changes after reloading when a lock conflict persists', async () => {
+        vi.mocked(ProcessNodeApiService.prototype.update).mockRejectedValue(lockConflict);
+        await renderModifiedEditor();
+        vi.mocked(ProcessNodeApiService.prototype.retrieve).mockResolvedValue({...createNode(), name: 'Anderswo gespeichert', lockVersion: 2});
+
+        fireEvent.click(formSaveButton());
+
+        await waitFor(() => expectDispatchedAction('shell/addSnackbarMessage', expect.objectContaining({
+            message: expect.stringContaining('Ihre Änderungen sind in diesem Browser zwischengespeichert'),
+            action: SnackbarAction.ReloadPage,
+        })));
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledTimes(3);
+        expect(vi.mocked(EditorDraftStorage.save).mock.lastCall?.[0].mine).toMatchObject({publicTitle: 'Bearbeitet'});
     });
 
     describe('moving and deleting the same form field', () => {
