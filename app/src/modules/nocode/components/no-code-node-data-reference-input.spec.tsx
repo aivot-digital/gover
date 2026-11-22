@@ -33,6 +33,18 @@ const initial: NoCodeNodeDataReference = {
 };
 
 describe('No-Code element data reference', () => {
+    it.each(['', null, undefined].flatMap(nodeDataKey => ['', null, undefined].map(path => ({nodeDataKey, path}))))
+    ('renders an empty input for node key $nodeDataKey and path $path without changing the reference', ({nodeDataKey, path}) => {
+        const onChange = vi.fn();
+        render(<Editor initial={{...initial, nodeDataKey, path}}
+                       onChange={onChange}/>);
+
+        const input = screen.getByRole('textbox', {name: /^Ergebnis/});
+        expect(input).toHaveValue('');
+        expect(input.parentElement).toHaveTextContent('_.');
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('edits a combined path without storing the display prefix and preserves incomplete input', async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();

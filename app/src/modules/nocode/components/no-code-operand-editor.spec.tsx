@@ -7,7 +7,64 @@ import {type NoCodeParameter} from '../../../models/dtos/no-code-operator-detail
 import {type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {NoCodeOperandEditor} from './no-code-operand-editor';
 
+vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
 describe('NoCodeOperandEditor', () => {
+    it('opens an empty element-data input and supports entering, clearing and reentering a reference', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        function Editor() {
+            const [operand, setOperand] = useState<NoCodeOperand | null | undefined>(null);
+            return <NoCodeOperandEditor
+                parameter={{type: NoCodeDataType.String, label: 'Ergebnis', description: null, options: []}}
+                operand={operand}
+                onChange={(value) => {
+                    onChange(value);
+                    setOperand(value);
+                }}
+                allOperators={[]}
+                allElements={[]}
+                contextType="PROCESS"
+            />;
+        }
+        render(<Editor/>);
+
+        await user.click(screen.getByRole('button', {name: 'Elementdaten'}));
+        const input = screen.getByRole('textbox', {name: /^Ergebnis/});
+        expect(input).toHaveValue('');
+        expect(input.parentElement).toHaveTextContent('_.');
+        expect(onChange).toHaveBeenCalledExactlyOnceWith({
+            type: 'NoCodeNodeDataReference',
+            nodeDataKey: '',
+            path: '',
+        });
+
+        await user.type(input, 'formular.');
+        expect(input).toHaveValue('formular.');
+        await user.type(input, 'person.name');
+        expect(input).toHaveValue('formular.person.name');
+        expect(onChange).toHaveBeenLastCalledWith({
+            type: 'NoCodeNodeDataReference',
+            nodeDataKey: 'formular',
+            path: 'person.name',
+        });
+
+        await user.clear(input);
+        expect(input).toHaveValue('');
+        expect(onChange).toHaveBeenLastCalledWith({
+            type: 'NoCodeNodeDataReference',
+            nodeDataKey: '',
+            path: undefined,
+        });
+        await user.type(input, 'pruefung.ergebnis');
+        expect(input).toHaveValue('pruefung.ergebnis');
+        expect(onChange).toHaveBeenLastCalledWith({
+            type: 'NoCodeNodeDataReference',
+            nodeDataKey: 'pruefung',
+            path: 'ergebnis',
+        });
+    });
+
     it('stores the same technical value from direct options and the existing fixed-value editor', async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();

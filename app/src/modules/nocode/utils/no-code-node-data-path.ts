@@ -7,6 +7,9 @@ export function formatNoCodeNodeDataPath({
                                              nodeDataKey,
                                              path,
                                          }: NodeDataPath): string {
+    if (!nodeDataKey && !path) {
+        return '';
+    }
     return `${nodeDataKey ?? ''}${path == null ? '' : path.startsWith('[') ? path : `.${path}`}`;
 }
 
