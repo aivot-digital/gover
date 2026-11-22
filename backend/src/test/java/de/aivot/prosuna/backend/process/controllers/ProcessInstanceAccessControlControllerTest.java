@@ -127,16 +127,16 @@ class ProcessInstanceAccessControlControllerTest {
     @Test
     void replacesRulesThroughTheAuthenticatedServiceWithoutSeparateCrudCalls() throws Exception {
         var rules = List.of(new de.aivot.prosuna.backend.process.dtos.ProcessInstanceAccessRuleDTO(null, 8, List.of(ProcessPermissionProvider.PROCESS_INSTANCE_READ)));
-        when(accessControlService.replace(user, 17L, rules)).thenReturn(List.of());
-        assertEquals(List.of(), controller.replace(jwt, 17L, rules));
-        verify(accessControlService).replace(user, 17L, rules);
+        when(accessControlService.replace(user, 17L, rules, "3:1")).thenReturn(List.of());
+        assertEquals(List.of(), controller.replace(jwt, 17L, rules, "3:1"));
+        verify(accessControlService).replace(user, 17L, rules, "3:1");
         verifyNoMoreInteractions(accessControlService);
     }
 
     @Test
     void replacementRequiresAuthentication() throws Exception {
         when(userService.fromJWT(jwt)).thenReturn(Optional.empty());
-        assertThrows(ResponseException.class, () -> controller.replace(jwt, 17L, List.of()));
+        assertThrows(ResponseException.class, () -> controller.replace(jwt, 17L, List.of(), null));
         verifyNoInteractions(accessControlService);
     }
 

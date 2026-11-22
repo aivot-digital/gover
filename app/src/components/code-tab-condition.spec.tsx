@@ -24,6 +24,8 @@ describe('CodeTabCondition', () => {
             label: 'Bundesland',
             optionsSource: OptionsSourceType.CodeList,
             codeListKey: 'states',
+            codeListValueColumnKey: 'code',
+            codeListLabelColumnKey: 'name',
             options: [{label: 'Veraltet', value: 'old'}],
         };
 

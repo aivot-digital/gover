@@ -110,7 +110,7 @@ function InstancePermissions({item}: {item: ProcessInstanceDetails}) {
         setSaving(true);
         setConflict(null);
         try {
-            const saved = await new ProcessInstanceAccessControlApiService().replace(instanceId, draft.map(toEntity));
+            const saved = await new ProcessInstanceAccessControlApiService().replace(instanceId, draft.map(toEntity), persisted);
             setPersisted(saved);
             setDraft(saved.map(toDraft));
             dispatch(showSuccessSnackbar('Die Berechtigungen des Vorgangs wurden gespeichert.'));

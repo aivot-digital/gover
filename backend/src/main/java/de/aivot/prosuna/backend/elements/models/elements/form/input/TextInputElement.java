@@ -60,6 +60,10 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     @Nullable
     private String codeListKey;
 
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    @Nullable
+    private String codeListLabelColumnKey;
+
     public TextInputElement() {
         super(ElementType.Text);
     }
@@ -192,6 +196,7 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
                 && Objects.equals(copyValueTemplate, textField.copyValueTemplate)
                 && optionsSource == textField.optionsSource
                 && Objects.equals(codeListKey, textField.codeListKey)
+                && Objects.equals(codeListLabelColumnKey, textField.codeListLabelColumnKey)
                 && Objects.equals(suggestions, textField.suggestions)
                 && Objects.equals(dynamicTextPolicy, textField.dynamicTextPolicy);
     }
@@ -210,6 +215,7 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         result = 31 * result + Objects.hashCode(suggestions);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
         result = 31 * result + Objects.hashCode(dynamicTextPolicy);
         return result;
     }
@@ -341,6 +347,17 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     @Nonnull
     public TextInputElement setCodeListKey(@Nullable String codeListKey) {
         this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    @Nonnull
+    public TextInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
         return this;
     }
 

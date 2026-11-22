@@ -443,8 +443,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
 
             <Typography sx={{mt: 2}}>
-                Achten Sie darauf, Überschriften semantisch korrekt zu benutzen, wenn diese direkt aufeinander folgen.
-                Eine kleine Überschrift steht somit immer unter einer großen Überschrift.
+                Sie können zwischen einer regulären und einer kompakten Darstellung wählen.
+                Die kompakte Variante verwendet eine kleinere Schriftgröße und weniger Abstand.
+                Beide Varianten sind semantisch gleichrangig und werden auch von Screenreadern als Überschriften derselben Ebene erkannt.
             </Typography>
 
             <Divider sx={{my: 4}}>

@@ -1,5 +1,5 @@
 import {configureStore} from '@reduxjs/toolkit';
-import {act, fireEvent, render, screen, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {Provider} from 'react-redux';
 import {MemoryRouter} from 'react-router-dom';
 import {expect, it, vi} from 'vitest';
@@ -47,6 +47,7 @@ const relation = {
     deputyUserId: deputy.id,
     deputyUserFullName: deputy.fullName,
     fromDate: parseLocalDateIso('2026-05-01'),
+    lockVersion: 3,
 };
 
 function renderProfile(fullName = relation.originalUserFullName) {
@@ -128,6 +129,25 @@ it('names the represented person while updating and shows the API error in the d
     await act(async () => rejectSave({status: 409, displayableToUser: true, message: 'Der gewählte Zeitraum ist ungültig.'}));
     expect(await screen.findByText('Der gewählte Zeitraum ist ungültig.')).toBeVisible();
     expect(dialog).toBeVisible();
+});
+
+it('offers a page reload after an edit conflict and keeps the dialog open for another attempt', async () => {
+    renderProfile();
+    const message = 'Der Datensatz wurde zwischenzeitlich geändert. Laden Sie ihn bitte neu, bevor Sie Ihre Änderungen erneut speichern.';
+    const update = vi.spyOn(UserDeputyApiService.prototype, 'update').mockRejectedValue({
+        status: 409, message, details: {reason: 'lock_version_conflict'}, displayableToUser: true,
+    });
+    fireEvent.click(await screen.findByRole('button', {name: 'Stellvertretung bearbeiten'}));
+    const dialog = screen.getByRole('dialog', {name: 'Stellvertretung bearbeiten'});
+    fireEvent.click(within(dialog).getByRole('button', {name: 'Speichern'}));
+
+    expect(await screen.findByText(`${message} Beim Neuladen gehen nicht gespeicherte Änderungen auf dieser Seite verloren.`)).toBeVisible();
+    expect(dialog).toBeVisible();
+    expect(refreshPermissions).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', {name: 'Speichern'}));
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+    expect(update).toHaveBeenLastCalledWith(relation.id, expect.objectContaining({deputyUserId: deputy.id, lockVersion: 3}));
 });
 
 it('shows the people and period before deletion and supports cancelling and confirming', async () => {

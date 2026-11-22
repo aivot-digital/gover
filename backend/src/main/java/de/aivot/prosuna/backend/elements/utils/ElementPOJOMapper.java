@@ -524,7 +524,8 @@ public class ElementPOJOMapper {
      * @return An instance of the target class.
      * @throws ElementDataConversionException If there is an error during instantiation.
      */
-    private static <T> @Nonnull T instantiateTargetClass(Class<T> targetClass) throws ElementDataConversionException {
+    @Nonnull
+    private static <T> T instantiateTargetClass(Class<T> targetClass) throws ElementDataConversionException {
         Constructor<T> targetClassConstructor;
         try {
             targetClassConstructor = targetClass.getConstructor();

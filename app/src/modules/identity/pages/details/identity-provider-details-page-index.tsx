@@ -9,7 +9,7 @@ import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar, showLockConflictSnackbar} from '../../../../slices/snackbar-slice';
 import {isLockVersionConflictError} from '../../../../models/api-error';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -340,7 +340,7 @@ export function IdentityProviderDetailsPageIndex() {
                 })
                 .catch(err => {
                     if (isLockVersionConflictError(err)) {
-                        dispatch(showErrorSnackbar(err.message));
+                        dispatch(showLockConflictSnackbar(err.message));
                     } else if (err.status === 409) {
                         dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
                     } else {
@@ -724,7 +724,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zur Autorisierung"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         required
                         value={identityProvider.authorizationEndpoint}
                         onChange={handleInputChange('authorizationEndpoint')}
@@ -738,7 +738,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Erstellen des Tokens"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         required
                         value={identityProvider.tokenEndpoint}
                         onChange={handleInputChange('tokenEndpoint')}
@@ -752,7 +752,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt für Nutzerinformationen"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         value={identityProvider.userinfoEndpoint ?? undefined}
                         onChange={val => {
                             handleInputChange('userinfoEndpoint')(val == null || val.length === 0 ? undefined : val);
@@ -767,7 +767,7 @@ export function IdentityProviderDetailsPageIndex() {
                 <Grid size={12}>
                     <TextFieldComponent
                         label="Endpunkt zum Beenden der Sitzung"
-                        placeholder="https://auth.example.com/xyz oder /idp/xyz"
+                        placeholder="https://auth.example.com/xyz oder /pfad/xyz"
                         value={identityProvider.endSessionEndpoint ?? undefined}
                         onChange={val => {
                             handleInputChange('endSessionEndpoint')(val == null || val.length === 0 ? undefined : val);

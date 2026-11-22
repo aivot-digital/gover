@@ -34,6 +34,7 @@ public class VUserDeputyWithDetailsEntity {
     private Boolean deputyUserDeletedInIdp;
     private Integer deputyUserSystemRoleId;
     private String deputyUserFullName;
+    private Long lockVersion;
 
     public Integer getId() {
         return id;
@@ -230,6 +231,15 @@ public class VUserDeputyWithDetailsEntity {
 
     public VUserDeputyWithDetailsEntity setActive(Boolean active) {
         this.active = active;
+        return this;
+    }
+
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public VUserDeputyWithDetailsEntity setLockVersion(Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 }

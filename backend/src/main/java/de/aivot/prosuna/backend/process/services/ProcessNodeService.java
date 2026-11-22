@@ -834,6 +834,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     output.markdown()
             ));
         }
@@ -875,6 +877,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     forwardedKey.origin(),
                     forwardedKey.valueOptions(),
                     forwardedKey.codeListKey(),
+                    forwardedKey.codeListValueColumnKey(),
+                    forwardedKey.codeListLabelColumnKey(),
                     forwardedKey.codeListValueMode(),
                     forwardedKey.markdown()
             ));

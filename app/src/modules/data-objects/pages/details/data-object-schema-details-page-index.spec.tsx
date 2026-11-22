@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -12,7 +12,9 @@ import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service
 import {type DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_UUID} from '../../models/data-object-schema';
 import {DataObjectSchemaDetailsPageIndex, YupSchema} from './data-object-schema-details-page-index';
 
-vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+const testState = vi.hoisted(() => ({dispatch: vi.fn()}));
+
+vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => testState.dispatch}));
 vi.mock('../../../../hooks/use-api', () => ({useApi: () => ({})}));
 vi.mock('../../../../hooks/use-change-blocker', () => ({useChangeBlocker: () => ({dialog: null})}));
 vi.mock('../../../../providers/confirm-provider', () => ({useConfirm: () => vi.fn()}));
@@ -56,21 +58,73 @@ function model(schema: GroupLayout = group()): DataObjectSchema {
 function renderPage(item = model(), isNewItem = true) {
     const create = vi.spyOn(DataObjectSchemasApiService.prototype, 'create').mockImplementation(() => new Promise(() => {}));
     const update = vi.spyOn(DataObjectSchemasApiService.prototype, 'update').mockImplementation(() => new Promise(() => {}));
+    const setItem = vi.fn();
     render(
         <MemoryRouter>
             <GenericDetailsPageContext.Provider value={{
                 item, isNewItem, isEditable: true, isBusy: false,
-                setItem: vi.fn(), setIsBusy: vi.fn(), setAdditionalData: vi.fn(), refresh: vi.fn(),
+                setItem, setIsBusy: vi.fn(), setAdditionalData: vi.fn(), refresh: vi.fn(),
                 subscribeEvent: vi.fn(() => vi.fn()),
             }}>
                 <DataObjectSchemaDetailsPageIndex/>
             </GenericDetailsPageContext.Provider>
         </MemoryRouter>,
     );
-    return {create, update};
+    return {create, update, setItem};
 }
 
 describe('DataObjectSchemaDetailsPageIndex', () => {
+    it.each([
+        {
+            description: 'offers to reload after a lock version conflict',
+            error: {
+                status: 409,
+                message: 'Der Datensatz wurde zwischenzeitlich geändert.',
+                details: {reason: 'lock_version_conflict'},
+                displayableToUser: true,
+            },
+            expectedMessage: 'Der Datensatz wurde zwischenzeitlich geändert. Beim Neuladen gehen nicht gespeicherte Änderungen auf dieser Seite verloren.',
+            canReload: true,
+        },
+        {
+            description: 'shows other conflicts without offering to reload',
+            error: {
+                status: 409,
+                message: 'Das Datenmodell kann nicht gespeichert werden.',
+                details: null,
+                displayableToUser: true,
+            },
+            expectedMessage: 'Das Datenmodell kann nicht gespeichert werden.',
+            canReload: false,
+        },
+        {
+            description: 'keeps the fallback message for unexpected errors',
+            error: new Error('Unexpected save failure'),
+            expectedMessage: 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+            canReload: false,
+        },
+    ])('$description and preserves the edited data model', async ({error, expectedMessage, canReload}) => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const {update, setItem} = renderPage(model(group(textField('name'))), false);
+        update.mockRejectedValue(error);
+        fireEvent.change(screen.getByRole('textbox', {name: 'Name'}), {target: {value: 'Geänderter Name'}});
+
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'shell/addSnackbarMessage',
+            payload: expect.objectContaining({message: expectedMessage, severity: 'error'}),
+        })));
+        const notification = testState.dispatch.mock.lastCall![0].payload;
+        if (canReload) {
+            expect(notification).toMatchObject({action: 'reloadPage', type: 'dismissable'});
+        } else {
+            expect(notification).not.toHaveProperty('action');
+        }
+        expect(screen.getByRole('textbox', {name: 'Name'})).toHaveValue('Geänderter Name');
+        expect(setItem).not.toHaveBeenCalled();
+    });
+
     it.each(['UUID', 'Seriell fortlaufend', 'Formatvorlage'])('removes only the unchanged generated ID field when switching to %s', alternative => {
         const original = model(group(textField('name')));
         const {create} = renderPage(original);

@@ -1,6 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
 import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
@@ -57,6 +60,15 @@ class NoCodeActionNodeV1Test {
         originalZone = ApplicationTimeZone.getZoneId();
         ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
         node = new NoCodeActionNodeV1(new NoCodeEvaluationService(List.of()));
+    }
+
+    @Test
+    void configurationLayout_VariablesAreSortableBecauseTheyRunInOrder() throws Exception {
+        ConfigLayoutElement layout = ElementPOJOMapper.createFromPOJO(NoCodeActionNodeV1.NoCodeActionNodeConfiguration.class);
+
+        var variables = layout.findChild("variables", ReplicatingContainerLayoutElement.class).orElseThrow();
+
+        assertEquals(Boolean.TRUE, variables.getSortable());
     }
 
     @Test
