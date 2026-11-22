@@ -45,8 +45,11 @@ class CounterActionNodeV1Test {
     void setUp() {
         previousIterationTask = null;
         processInstanceTaskRepository = proxy(ProcessInstanceTaskRepository.class, (methodName, args) -> switch (methodName) {
-            case "findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc",
-                 "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> Optional.ofNullable(previousIterationTask);
+            // Like the worker, the current task is already saved as running and is the most recently started one.
+            case "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> Optional.of(task());
+            case "findFirstByProcessInstanceIdAndProcessNodeIdAndStatusOrderByStartedDescIdDesc" -> ProcessTaskStatus.Completed.equals(args[2])
+                    ? Optional.ofNullable(previousIterationTask)
+                    : Optional.of(task());
             default -> unsupported(methodName);
         });
         node = new CounterActionNodeV1(processInstanceTaskRepository);

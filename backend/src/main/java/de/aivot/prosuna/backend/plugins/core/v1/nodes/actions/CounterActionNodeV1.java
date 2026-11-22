@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
@@ -314,11 +315,13 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      * @return The last counter value or 0 if no previous instantiation exists.
      */
     private long getLastCounterValueFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterActionNodeV1Configuration> context) {
-        // Find the last instantiation of this process node.
+        // Find the last completed instantiation of this process node. The current task is already saved as running,
+        // and failed or restarted attempts carry no counter value, so only completed tasks hold the previous value.
         Optional<ProcessInstanceTaskEntity> lastIterationTask = processInstanceTaskRepository
-                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
+                .findFirstByProcessInstanceIdAndProcessNodeIdAndStatusOrderByStartedDescIdDesc(
                         context.getThisProcessInstance().getId(),
-                        context.getThisNode().getId()
+                        context.getThisNode().getId(),
+                        ProcessTaskStatus.Completed
                 );
 
         // Extract the last iteration counter value or 0 if none exists.
