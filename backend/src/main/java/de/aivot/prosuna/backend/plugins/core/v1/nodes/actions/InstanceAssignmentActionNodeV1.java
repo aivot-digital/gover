@@ -91,6 +91,12 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
             ProcessInstancePermissionProvider.PROCESS_INSTANCE_REASSIGN
     );
 
+    private static final List<String> ASSIGNMENT_CONTEXT_TYPES = List.of(
+            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
+            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
+            AssignmentContextInputElement.ALLOWED_TYPE_USER
+    );
+
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ProcessAssignmentService assignmentService;
 
@@ -193,11 +199,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         layout
                 .findChild(Config.AUTOMATIC_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
                 .ifPresent(field -> {
-                    field.setAllowedTypes(List.of(
-                            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
-                            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
-                            AssignmentContextInputElement.ALLOWED_TYPE_USER
-                    ));
+                    field.setAllowedTypes(ASSIGNMENT_CONTEXT_TYPES);
                     field.setDisableProcessInstanceAssigneeOption(true);
                     field.setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
 
@@ -216,11 +218,9 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         layout
                 .findChild(Config.MANUAL_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
                 .ifPresent(field -> {
-                    field.setAllowedTypes(List.of(
-                            AssignmentContextInputElement.ALLOWED_TYPE_ORG_UNIT,
-                            AssignmentContextInputElement.ALLOWED_TYPE_TEAM,
-                            AssignmentContextInputElement.ALLOWED_TYPE_USER
-                    ));
+                    field.setAllowedTypes(ASSIGNMENT_CONTEXT_TYPES);
+                    field.setDisableProcessInstanceAssigneeOption(true);
+                    field.setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
 
                     field.setProcessAccessConstraint(new DomainAndUserSelectProcessAccessConstraint()
                             .setProcessId(context.processDefinition().getId())
@@ -463,10 +463,11 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         return value;
     }
 
+    // Must allow the same entries as both context fields in getConfigurationLayout.
     @Nonnull
     private static AssignmentContextInputElement restrictedAssignmentContextElement() {
         return new AssignmentContextInputElement()
-                .setAllowedTypes(List.of(AssignmentContextInputElement.ALLOWED_TYPE_USER))
+                .setAllowedTypes(ASSIGNMENT_CONTEXT_TYPES)
                 .setDisableProcessInstanceAssigneeOption(true)
                 .setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
     }

@@ -790,8 +790,22 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
         }
     };
 
+    const runningSave = useRef<Promise<ProcessNodeEntity | null> | null>(null);
+
     /** The return value is the confirmed server version used by export and test submission. */
-    const saveForm = async (): Promise<ProcessNodeEntity | null> => {
+    const saveForm = (): Promise<ProcessNodeEntity | null> => {
+        // A second PUT would carry the same lock version and conflict, so export and test wait for the running
+        // save of this visit instead. A save that left with an earlier visit is no longer shared.
+        if (activeSave.current == null || runningSave.current == null) {
+            const save: Promise<ProcessNodeEntity | null> = performSaveForm().finally(() => {
+                if (runningSave.current === save) runningSave.current = null;
+            });
+            runningSave.current = save;
+        }
+        return runningSave.current;
+    };
+
+    const performSaveForm = async (): Promise<ProcessNodeEntity | null> => {
         const submitted = currentLayout.current;
         const original = currentNode.current;
         if (!canEdit() || original == null || submitted == null || activeSave.current != null) {

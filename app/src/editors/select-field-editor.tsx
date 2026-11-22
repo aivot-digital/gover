@@ -15,6 +15,10 @@ import {type SelectFieldComponentOption} from '../components/select-field/select
 import Grid from '@mui/material/Grid';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+import {CodeListColumnSelectField} from '../modules/code-lists/components/code-list-column-select-field';
+import {useCodeListColumnOptions} from '../modules/code-lists/hooks/use-code-list-column-options';
+import {useCodeListElementOptions} from '../modules/code-lists/hooks/use-code-list-element-options';
+import {type AnyElement} from '../models/elements/any-element';
 import {SelectFieldPresentation} from '../models/elements/form/input/select-field-presentation';
 
 const optionsSourceOptions = [
@@ -58,6 +62,8 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
     const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
     const presentation = element.presentation ?? SelectFieldPresentation.Dropdown;
     const usesManualOptions = optionsSource === OptionsSourceType.Manual;
+    const hasDependency = !hasSummaryLayoutParent && element.dependsOnSelectFieldId != null;
+    const codeListColumns = useCodeListColumnOptions(usesManualOptions ? null : element.codeListKey);
 
     const options = useMemo(() => {
         return (element.options ?? [])
@@ -89,7 +95,11 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
             }));
     }, [element.id, allElements]);
 
-    const hasDependency = usesManualOptions && !hasSummaryLayoutParent && element.dependsOnSelectFieldId != null;
+    const groupOptions = useReferencedSelectValues(
+        usesManualOptions && hasDependency
+            ? allElements.find(({element: candidate}) => candidate.id === element.dependsOnSelectFieldId)?.element
+            : undefined,
+    );
 
     return (
         <Grid
@@ -128,10 +138,13 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                     onChange={(value) => {
                         const nextSource = value ?? OptionsSourceType.Manual;
 
+                        const usesCodeList = nextSource === OptionsSourceType.CodeList;
                         onPatch({
                             optionsSource: nextSource,
-                            codeListKey: nextSource === OptionsSourceType.CodeList ? element.codeListKey : undefined,
-                            dependsOnSelectFieldId: nextSource === OptionsSourceType.CodeList ? undefined : element.dependsOnSelectFieldId,
+                            codeListKey: usesCodeList ? element.codeListKey : undefined,
+                            codeListValueColumnKey: usesCodeList ? element.codeListValueColumnKey : undefined,
+                            codeListLabelColumnKey: usesCodeList ? element.codeListLabelColumnKey : undefined,
+                            codeListGroupColumnKey: usesCodeList ? element.codeListGroupColumnKey : undefined,
                         });
                     }}
                     options={optionsSourceOptions}
@@ -141,7 +154,6 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
             </Grid>
 
             {
-                usesManualOptions &&
                 !hasSummaryLayoutParent &&
                 <Grid
                     size={{
@@ -151,11 +163,14 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 >
                     <SelectFieldComponent
                         label="Abhängiges Auswahlfeld (optional)"
-                        hint="Wählen Sie ein vorheriges Auswahlfeld aus, wenn diese Auswahl von dessen Wert abhängen soll. Dann können die Optionen über Gruppenwerte gezielt zugeordnet werden."
+                        hint={usesManualOptions
+                            ? 'Wählen Sie ein vorheriges Auswahlfeld aus, wenn diese Auswahl von dessen Wert abhängen soll. Dann können die Optionen über Gruppenwerte gezielt zugeordnet werden.'
+                            : 'Wählen Sie ein vorheriges Auswahlfeld aus, wenn diese Auswahl von dessen Wert abhängen soll. Dann werden nur Einträge angezeigt, deren Gruppenwert dem gewählten Wert entspricht.'}
                         value={element.dependsOnSelectFieldId ?? undefined}
                         onChange={(dependsOnSelectFieldId) => {
                             onPatch({
                                 dependsOnSelectFieldId,
+                                codeListGroupColumnKey: dependsOnSelectFieldId == null ? undefined : element.codeListGroupColumnKey,
                             });
                         }}
                         options={dependencyOptions}
@@ -176,10 +191,78 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                     <CodeListSelectField
                         value={element.codeListKey}
                         onChange={(codeListKey) => {
-                            onPatch({
+                            // Column keys belong to one code list, so they do not carry over to another one.
+                            onPatch(codeListKey === element.codeListKey ? {codeListKey} : {
                                 codeListKey,
+                                codeListValueColumnKey: undefined,
+                                codeListLabelColumnKey: undefined,
+                                codeListGroupColumnKey: undefined,
                             });
                         }}
+                        disabled={!editable}
+                        required
+                    />
+                </Grid>
+            }
+
+            {
+                !usesManualOptions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <CodeListColumnSelectField
+                        label="Wert-Spalte"
+                        hint="Die Werte dieser Spalte werden gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben."
+                        value={element.codeListValueColumnKey}
+                        onChange={(codeListValueColumnKey) => onPatch({codeListValueColumnKey})}
+                        columnOptions={codeListColumns.options}
+                        columnOptionsLoaded={codeListColumns.loaded}
+                        disabled={!editable}
+                        required
+                    />
+                </Grid>
+            }
+
+            {
+                !usesManualOptions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <CodeListColumnSelectField
+                        label="Beschriftungs-Spalte"
+                        hint="Die Werte dieser Spalte werden als Beschriftung der Optionen angezeigt. Einträge mit demselben Wert werden zu einer Option zusammengefasst."
+                        value={element.codeListLabelColumnKey}
+                        onChange={(codeListLabelColumnKey) => onPatch({codeListLabelColumnKey})}
+                        columnOptions={codeListColumns.options}
+                        columnOptionsLoaded={codeListColumns.loaded}
+                        disabled={!editable}
+                        required
+                    />
+                </Grid>
+            }
+
+            {
+                !usesManualOptions &&
+                hasDependency &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <CodeListColumnSelectField
+                        label="Gruppenwert-Spalte"
+                        hint="Es werden nur Einträge angezeigt, deren Wert in dieser Spalte dem gewählten Wert des abhängigen Auswahlfelds entspricht. Einträge ohne Gruppenwert werden nicht angezeigt."
+                        value={element.codeListGroupColumnKey}
+                        onChange={(codeListGroupColumnKey) => onPatch({codeListGroupColumnKey})}
+                        columnOptions={codeListColumns.options}
+                        columnOptionsLoaded={codeListColumns.loaded}
                         disabled={!editable}
                         required
                     />
@@ -211,6 +294,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                         variant="outlined"
                         showGroupField={hasDependency}
                         groupLabel="Gruppenwert"
+                        groupOptions={groupOptions}
                     />
                 </Grid>
             }
@@ -247,4 +331,38 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
             }
         </Grid>
     );
+}
+
+const NO_ELEMENTS: AnyElement[] = [];
+
+/** Lists the values of a referenced select, which the group values of a dependent select refer to. */
+function useReferencedSelectValues(referencedElement: AnyElement | undefined): Array<{value: string; label: string}> {
+    const isCodeListSelect = referencedElement?.type === ElementType.Select &&
+        referencedElement.optionsSource === OptionsSourceType.CodeList;
+    const codeListElements = useMemo(
+        () => isCodeListSelect && referencedElement != null ? [referencedElement] : NO_ELEMENTS,
+        [isCodeListSelect, referencedElement],
+    );
+    const codeListOptions = useCodeListElementOptions(codeListElements);
+
+    return useMemo(() => {
+        if (referencedElement?.type !== ElementType.Select) {
+            return [];
+        }
+
+        const options = isCodeListSelect
+            ? codeListOptions.get(referencedElement.id) ?? []
+            : (referencedElement.options ?? []).map((option) => typeof option === 'string'
+                ? {value: option, label: option}
+                : {value: option.value, label: option.label});
+
+        // A dependent code list select offers a value once per group, but a group value is needed only once.
+        const optionsByValue = new Map<string, {value: string; label: string}>();
+        for (const option of options) {
+            if (option.value.length > 0 && !optionsByValue.has(option.value)) {
+                optionsByValue.set(option.value, {value: option.value, label: option.label});
+            }
+        }
+        return Array.from(optionsByValue.values());
+    }, [codeListOptions, isCodeListSelect, referencedElement]);
 }

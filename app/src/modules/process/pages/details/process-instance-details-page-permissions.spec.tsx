@@ -35,6 +35,7 @@ const entry = {
     permissions: [Permission.PROCESS_INSTANCE_READ],
     created: '',
     updated: '',
+    lockVersion: 2,
 };
 
 function renderPermissions() {
@@ -123,7 +124,7 @@ describe('Instance permissions', () => {
                     ...entry,
                     permissions: [Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_INSTANCE_UPDATE],
                 },
-            ]),
+            ], [entry]),
         );
         expect(access.refresh).toHaveBeenCalledWith({broadcast: true});
         expect(screen.getByRole('button', {name: 'Berechtigungen speichern'})).toBeDisabled();

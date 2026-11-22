@@ -43,14 +43,19 @@ public class ProcessEntity implements LockVersioned {
     @Length(min = 3, max = 128, message = "Der URL-Namespace des Prozesses muss zwischen 3 und 128 Zeichen lang sein.")
     private String slug;
 
+    // Maintained by database triggers on the process versions, which do not raise the lock version. Never written by updates,
+    // so saving a copy loaded before a publish or a new draft cannot revert them.
     @Nonnull
     @NotNull(message = "Die Versionsanzahl darf nicht null sein.")
+    @Column(updatable = false)
     private Integer versionCount;
 
     @Nullable
+    @Column(updatable = false)
     private Integer draftedVersion;
 
     @Nullable
+    @Column(updatable = false)
     private Integer publishedVersion;
 
     @Nonnull

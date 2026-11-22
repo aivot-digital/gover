@@ -11,6 +11,8 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
 public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigDefinition<String> {
     // Needs to be changed also in the frontend, see storage-provider-details-page-index.tsx
@@ -36,6 +38,7 @@ public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigD
                         storageProviderRepository
                                 .findAllByType(StorageProviderType.Assets)
                                 .stream()
+                                .filter((sp) -> !sp.getReadOnlyStorage())
                                 .map((sp) -> SelectInputElementOption.of(sp.getId().toString(), sp.getName()))
                                 .toList()
                 )
@@ -83,5 +86,21 @@ public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigD
             throw ResponseException.internalServerError("Ungültiger Wert für " + getKey() + ": " + value);
         }
         return value;
+    }
+
+    @Override
+    public void validateChange(@Nullable String oldValue,
+                               @Nullable String newValue,
+                               boolean changeConfirmed) throws ResponseException {
+        // Only a new selection is checked, so an existing value does not block saving unrelated settings.
+        if (Objects.equals(oldValue, newValue) || newValue == null) {
+            return;
+        }
+
+        if (storageProviderRepository.existsByIdAndReadOnlyStorageTrue(Integer.parseInt(newValue))) {
+            throw ResponseException.badRequest(
+                    "Der ausgewählte Speicheranbieter ist schreibgeschützt und kann nicht als zentraler Speicheranbieter für Assets verwendet werden. Bitte wählen Sie einen anderen Speicheranbieter aus."
+            );
+        }
     }
 }

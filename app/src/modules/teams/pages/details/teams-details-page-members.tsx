@@ -270,7 +270,7 @@ export function TeamsDetailsPageMembers() {
             });
     }, [dispatch, item, listControlRef, refreshPermissionsAfterMembershipChange]);
 
-    const handleUpdateMembership = useCallback((membership: VTeamMembershipWithDetailsEntity | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+    const handleUpdateMembership = useCallback((membership: VTeamMembershipWithDetailsEntity | null, roleIds: number[], lockVersion: number | null) => {
         if (membership == null) {
             return;
         }
@@ -281,28 +281,9 @@ export function TeamsDetailsPageMembers() {
             estimatedTime: 5000,
         }));
 
-        const apiService = new VTeamUserRoleAssignmentWithDetailsApiService();
-
-        const addPromises = roleIdsToAdd
-            .map((roleId) => apiService.create({
-                id: 0,
-                departmentMembershipId: null,
-                teamMembershipId: membership.membershipId,
-                userRoleId: roleId,
-                created: new Date().toISOString(),
-            }));
-
-        const removePromises = userRoleAssignmentIdsToRemove
-            .map((assignmentId) => apiService.destroy(assignmentId));
-
-        Promise
-            .all([
-                ...addPromises,
-                ...removePromises,
-            ])
+        new VTeamUserRoleAssignmentWithDetailsApiService()
+            .updateRoles(membership.membershipId, lockVersion ?? membership.lockVersion, roleIds)
             .then(() => {
-                // Refresh list
-                listControlRef.current?.refresh();
                 refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
@@ -314,6 +295,8 @@ export function TeamsDetailsPageMembers() {
                 }
             })
             .finally(() => {
+                // After a conflict the list shows the roles saved in the meantime instead of this dialog's state.
+                listControlRef.current?.refresh();
                 dispatch(setLoadingMessage(undefined));
             });
     }, [dispatch, listControlRef, refreshPermissionsAfterMembershipChange]);
@@ -411,8 +394,8 @@ export function TeamsDetailsPageMembers() {
                 onClose={() => {
                     setShowSelectRolesDialogForMembership(null);
                 }}
-                onSave={(roleIdsToAdd, userRoleAssignmentIdsToRemove) => {
-                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIdsToAdd, userRoleAssignmentIdsToRemove);
+                onSave={(roleIds, lockVersion) => {
+                    handleUpdateMembership(showSelectRolesDialogForMembership, roleIds, lockVersion);
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}

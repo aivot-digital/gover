@@ -3,23 +3,23 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {type NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {type AnyElement} from '../../../models/elements/any-element';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
-import {BaseApiService} from '../../../services/base-api-service';
-import {CodeListValueMode} from '../enums/code-list-value-mode';
-
-type CodeListOptionsResponseType = 'options' | 'suggestions';
+import {CodeListsApiService} from '../code-lists-api-service';
 
 interface CodeListOptionsRequest {
     ids: string[];
     key: string;
-    path: string;
-    responseType: CodeListOptionsResponseType;
+    codeListKey: string;
+    valueColumnKey: string;
+    labelColumnKey: string;
 }
 
 export interface CodeListOptionsSource {
     // Key of the loaded options in the returned map.
     id: string;
     codeListKey: string | null | undefined;
-    valueMode: CodeListValueMode;
+    valueColumnKey: string | null | undefined;
+    // Inputs that store the text itself, such as chip inputs, use the same column for value and label.
+    labelColumnKey: string | null | undefined;
 }
 
 interface LoadedCodeListOptionsState {
@@ -110,17 +110,7 @@ function collectSourceRequests(sources: readonly CodeListOptionsSource[]): CodeL
     const requestsByKey = new Map<string, CodeListOptionsRequest>();
 
     for (const source of sources) {
-        const codeListKey = source.codeListKey?.trim();
-        if (codeListKey == null || codeListKey.length === 0) {
-            continue;
-        }
-
-        // Select, radio, and multi-checkbox endpoints map items identically, so select serves every value-based input.
-        if (source.valueMode === CodeListValueMode.LabelOnly) {
-            addRequest(requestsByKey, source.id, codeListKey, 'chip-input', 'suggestions');
-        } else {
-            addRequest(requestsByKey, source.id, codeListKey, 'select', 'options');
-        }
+        addRequest(requestsByKey, source);
     }
 
     return Array.from(requestsByKey.values());
@@ -130,27 +120,24 @@ function collectElementRequests(elements: readonly AnyElement[]): CodeListOption
     const requestsByKey = new Map<string, CodeListOptionsRequest>();
 
     for (const element of elements) {
-        if (!isCodeListBackedElement(element)) {
-            continue;
+        if (element.type === ElementType.Select || element.type === ElementType.MultiCheckbox) {
+            if (element.optionsSource === OptionsSourceType.CodeList) {
+                addRequest(requestsByKey, {
+                    id: element.id,
+                    codeListKey: element.codeListKey,
+                    valueColumnKey: element.codeListValueColumnKey,
+                    labelColumnKey: element.codeListLabelColumnKey,
+                });
+            }
+        } else if (element.type === ElementType.ChipInput && element.optionsSource === OptionsSourceType.CodeList) {
+            // Chip inputs store the text of their suggestion column.
+            addRequest(requestsByKey, {
+                id: element.id,
+                codeListKey: element.codeListKey,
+                valueColumnKey: element.codeListLabelColumnKey,
+                labelColumnKey: element.codeListLabelColumnKey,
+            });
         }
-
-        const codeListKey = element.codeListKey?.trim();
-        if (codeListKey == null || codeListKey.length === 0) {
-            continue;
-        }
-
-        const endpoint = getEndpoint(element.type);
-        if (endpoint == null) {
-            continue;
-        }
-
-        addRequest(
-            requestsByKey,
-            element.id,
-            codeListKey,
-            endpoint,
-            element.type === ElementType.ChipInput ? 'suggestions' : 'options',
-        );
     }
 
     return Array.from(requestsByKey.values());
@@ -158,51 +145,29 @@ function collectElementRequests(elements: readonly AnyElement[]): CodeListOption
 
 function addRequest(
     requestsByKey: Map<string, CodeListOptionsRequest>,
-    id: string,
-    codeListKey: string,
-    endpoint: string,
-    responseType: CodeListOptionsResponseType,
+    source: CodeListOptionsSource,
 ): void {
-    const requestKey = `${endpoint}:${codeListKey}`;
+    const codeListKey = source.codeListKey?.trim();
+    const valueColumnKey = source.valueColumnKey?.trim();
+    const labelColumnKey = source.labelColumnKey?.trim();
+    if (!codeListKey || !valueColumnKey || !labelColumnKey) {
+        return;
+    }
+
+    const requestKey = JSON.stringify([codeListKey, valueColumnKey, labelColumnKey]);
     const existingRequest = requestsByKey.get(requestKey);
     if (existingRequest != null) {
-        existingRequest.ids.push(id);
+        existingRequest.ids.push(source.id);
         return;
     }
 
     requestsByKey.set(requestKey, {
-        ids: [id],
+        ids: [source.id],
         key: requestKey,
-        path: `/api/public/code-lists/${encodeURIComponent(codeListKey)}/${endpoint}/`,
-        responseType,
+        codeListKey,
+        valueColumnKey,
+        labelColumnKey,
     });
-}
-
-function isCodeListBackedElement(element: AnyElement): element is AnyElement & {
-    codeListKey: string | null | undefined;
-    optionsSource: OptionsSourceType | null | undefined;
-} {
-    return (
-        (
-            element.type === ElementType.Select ||
-            element.type === ElementType.MultiCheckbox ||
-            element.type === ElementType.ChipInput
-        ) &&
-        element.optionsSource === OptionsSourceType.CodeList
-    );
-}
-
-function getEndpoint(type: ElementType): string | undefined {
-    switch (type) {
-        case ElementType.Select:
-            return 'select';
-        case ElementType.MultiCheckbox:
-            return 'multi-checkbox';
-        case ElementType.ChipInput:
-            return 'chip-input';
-        default:
-            return undefined;
-    }
 }
 
 function loadOptions(request: CodeListOptionsRequest): Promise<NoCodeParameterOption[]> {
@@ -211,19 +176,15 @@ function loadOptions(request: CodeListOptionsRequest): Promise<NoCodeParameterOp
         return pendingRequest;
     }
 
-    const api = new BaseApiService();
-    const requestPromise = request.responseType === 'suggestions'
-        ? api
-            .get<string[]>(request.path, {skipAuthCheck: true})
-            .then((suggestions) => suggestions.map((suggestion) => ({
-                label: suggestion,
-                value: suggestion,
-            })))
-        : api.get<NoCodeParameterOption[]>(request.path, {skipAuthCheck: true});
-
-    const trackedRequest = requestPromise.finally(() => {
-        pendingRequests.delete(request.key);
-    });
+    const trackedRequest = new CodeListsApiService()
+        .listOptions(request.codeListKey, request.valueColumnKey, request.labelColumnKey)
+        .then((options) => options.map((option) => ({
+            label: option.label,
+            value: option.value,
+        })))
+        .finally(() => {
+            pendingRequests.delete(request.key);
+        });
     pendingRequests.set(request.key, trackedRequest);
     return trackedRequest;
 }

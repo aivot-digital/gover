@@ -4,4 +4,5 @@ export interface TeamMembershipEntity {
     userId: string;
     created: string;
     updated: string;
+    lockVersion?: number | null;
 }

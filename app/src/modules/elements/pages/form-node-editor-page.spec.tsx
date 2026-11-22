@@ -1123,6 +1123,23 @@ describe('FormNodeEditorPage', () => {
         expect(formSaveButton()).toBeEnabled();
     });
 
+    it('sends only one save while a save is running and lets the export wait for it', async () => {
+        await renderModifiedEditor();
+        const download = vi.spyOn(FormTriggerApiService.prototype, 'downloadPrintablePdf').mockResolvedValue(new Blob(['PDF']));
+        const put = pendingFormSave();
+
+        fireEvent.click(formSaveButton());
+        fireEvent.click(formSaveButton());
+        await waitFor(() => expect(formSaveButton()).toBeDisabled());
+        chooseMoreOption('Vordruck exportieren (.pdf)');
+        await waitFor(() => expect(mocks.confirm).toHaveBeenCalledOnce());
+
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce();
+        await act(async () => put.resolve(createNode({...createFormLayout(), publicTitle: 'Bearbeitet'})));
+        expect(download).toHaveBeenCalledExactlyOnceWith(1);
+        expect(ProcessNodeApiService.prototype.update).toHaveBeenCalledOnce();
+    });
+
     it('aborts submission when saving pending editor changes fails', async () => {
         vi.mocked(ProcessNodeApiService.prototype.update).mockRejectedValue(new Error('save failed'));
         await renderModifiedEditor();

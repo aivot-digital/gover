@@ -6,9 +6,9 @@ with updated_code_list as (
             source_ref = '',
             name = 'Kita-Betreuungsumfang',
             description = 'Beispielhafte manuelle Codeliste für Betreuungsmodelle in Kindertagesstätten.',
-            columns = array ['Beschriftung', 'Wert']::text[],
-            value_column_index = 1,
-            label_column_index = 0,
+            columns = array ['Wert', 'Beschriftung']::text[],
+            column_mappings = '[{"key": "Wert", "name": "Wert", "index": 1}, {"key": "Beschriftung", "name": "Beschriftung", "index": 2}]'::jsonb,
+            key_column_key = 'Wert',
             status = 2,
             status_message = null,
             last_sync = null,
@@ -24,8 +24,8 @@ inserted_code_list as (
         name,
         description,
         columns,
-        value_column_index,
-        label_column_index,
+        column_mappings,
+        key_column_key,
         status,
         status_message,
         last_sync
@@ -35,9 +35,9 @@ inserted_code_list as (
            '',
            'Kita-Betreuungsumfang',
            'Beispielhafte manuelle Codeliste für Betreuungsmodelle in Kindertagesstätten.',
-           array ['Beschriftung', 'Wert']::text[],
-           1,
-           0,
+           array ['Wert', 'Beschriftung']::text[],
+           '[{"key": "Wert", "name": "Wert", "index": 1}, {"key": "Beschriftung", "name": "Beschriftung", "index": 2}]'::jsonb,
+           'Wert',
            2,
            null,
            null
@@ -58,10 +58,10 @@ select example_code_list.id,
        item.columns
 from example_code_list
          cross join (values
-                         (array ['Ganztagsbetreuung', 'ganztags']::text[]),
-                         (array ['Halbtagsbetreuung', 'halbtags']::text[]),
-                         (array ['Vormittagsbetreuung', 'vormittags']::text[]),
-                         (array ['Nachmittagsbetreuung', 'nachmittags']::text[])
+                         (array ['ganztags', 'Ganztagsbetreuung']::text[]),
+                         (array ['halbtags', 'Halbtagsbetreuung']::text[]),
+                         (array ['vormittags', 'Vormittagsbetreuung']::text[]),
+                         (array ['nachmittags', 'Nachmittagsbetreuung']::text[])
                     ) as item(columns);
 
 with updated_code_list as (
@@ -72,8 +72,8 @@ with updated_code_list as (
             name = 'Familienstand',
             description = 'Beschreibt den Familienstand einer Person.',
             columns = array ['Schluessel', 'Wert']::text[],
-            value_column_index = 0,
-            label_column_index = 1,
+            column_mappings = '[{"key": "Schluessel", "name": "Schlüssel", "index": 1}, {"key": "Wert", "name": "Wert", "index": 2}]'::jsonb,
+            key_column_key = 'Schluessel',
             status = 2,
             status_message = null,
             last_sync = timestamp with time zone '2026-07-19T00:00:00+02:00',
@@ -89,8 +89,8 @@ inserted_code_list as (
         name,
         description,
         columns,
-        value_column_index,
-        label_column_index,
+        column_mappings,
+        key_column_key,
         status,
         status_message,
         last_sync
@@ -101,8 +101,8 @@ inserted_code_list as (
            'Familienstand',
            'Beschreibt den Familienstand einer Person.',
            array ['Schluessel', 'Wert']::text[],
-           0,
-           1,
+           '[{"key": "Schluessel", "name": "Schlüssel", "index": 1}, {"key": "Wert", "name": "Wert", "index": 2}]'::jsonb,
+           'Schluessel',
            2,
            null,
            timestamp with time zone '2026-07-19T00:00:00+02:00'

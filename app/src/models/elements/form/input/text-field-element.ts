@@ -15,5 +15,7 @@ export interface TextFieldElement extends BaseInputElement<ElementType.Text> {
     copyValueTemplate: string | null | undefined;
     optionsSource?: OptionsSourceType | null;
     codeListKey?: string | null;
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    codeListLabelColumnKey?: string | null;
     suggestions: string[] | null | undefined;
 }

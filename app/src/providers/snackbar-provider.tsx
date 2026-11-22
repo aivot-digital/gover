@@ -4,9 +4,9 @@ import {useAppSelector} from '../hooks/use-app-selector';
 import {useAppDispatch} from '../hooks/use-app-dispatch';
 import {removeSnackbar} from '../slices/snackbar-slice';
 import {AppInfo} from '../app-info';
-import {Alert, CircularProgress, Fade, GlobalStyles, ThemeProvider, type Theme, type AlertProps} from '@mui/material';
+import {Alert, Box, Button, CircularProgress, Fade, GlobalStyles, ThemeProvider, type Theme, type AlertProps} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
-import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
+import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarAction, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 
 const FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET = 52;
 const SnackbarThemeContext = createContext<{
@@ -71,7 +71,7 @@ const SnackbarConsumer = () => {
     }, [snackbarMessages, dispatch, closeSnackbar]);
 
     useEffect(() => {
-        snackbarMessages.forEach(({key, message, severity, type}) => {
+        snackbarMessages.forEach(({key, message, severity, type, action}) => {
             if (displayedMessages.current.has(key)) {
                 return;
             }
@@ -131,6 +131,19 @@ const SnackbarConsumer = () => {
                             })}
                         >
                             {formattedMessage}
+                            {
+                                action === SnackbarAction.ReloadPage &&
+                                <Box sx={{mt: 1}}>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="inherit"
+                                        onClick={() => window.location.reload()}
+                                    >
+                                        Neu laden
+                                    </Button>
+                                </Box>
+                            }
                         </SnackbarAlert>
                     );
                 },

@@ -6,4 +6,5 @@ export interface UserDeputyEntity {
     deputyUserId: string;
     fromDate: LocalDateIso;
     untilDate: LocalDateIso | null;
+    lockVersion?: number | null;
 }

@@ -16,11 +16,17 @@ export enum SnackbarType {
     Permanent = 'permanent',
 }
 
+/** Actions are named rather than passed as callbacks, because snackbar messages are kept in the Redux store. */
+export enum SnackbarAction {
+    ReloadPage = 'reloadPage',
+}
+
 interface SnackbarMessage {
     key: string; // Einzigartiger Schlüssel für jede Nachricht
     message: string;
     severity: SnackbarSeverity;
     type: SnackbarType;
+    action?: SnackbarAction;
 }
 
 interface LoadingMessage {

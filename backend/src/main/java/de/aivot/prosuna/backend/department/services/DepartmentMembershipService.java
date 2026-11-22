@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.department.repositories.DepartmentMembershipRepo
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,6 +49,7 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
     @Override
     public DepartmentMembershipEntity create(@Nonnull DepartmentMembershipEntity entity) throws ResponseException {
         entity.setId(null);
+        entity.setLockVersion(null);
 
         var targetUser = userService
                 .retrieve(entity.getUserId())
@@ -144,6 +147,26 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
      */
     public boolean checkUserNotInDepartment(UserEntity user, Integer departmentId) {
         return !checkUserInDepartment(user, departmentId);
+    }
+
+    /**
+     * Replaces the roles of a membership if the request is based on its current lock version. The membership's lock
+     * version is raised as well, so a role dialog that loaded the previous state can no longer save over this change.
+     */
+    @Nonnull
+    @Transactional(rollbackFor = ResponseException.class)
+    public UserRoleAssignmentService.RoleChanges updateRoles(@Nonnull Integer id,
+                                                             @Nonnull Long lockVersion,
+                                                             @Nonnull List<Integer> roleIds) throws ResponseException {
+        var membership = repository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent((LockVersioned) () -> lockVersion, membership);
+
+        membership.setUpdated(Instant.now());
+        repository.saveAndFlush(membership);
+
+        return userRoleAssignmentService.replaceDepartmentMembershipRoles(id, roleIds);
     }
 
     @Nonnull

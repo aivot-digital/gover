@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.teams.entities;
 
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,7 +16,7 @@ import java.time.Instant;
                 "user_id",
         })
 })
-public class TeamMembershipEntity {
+public class TeamMembershipEntity implements LockVersioned {
     @Id
     @Nonnull
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "team_memberships_id_seq")
@@ -39,6 +41,11 @@ public class TeamMembershipEntity {
     @Nonnull
     @Column(nullable = false)
     private Instant updated;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
 
     // region Signales
 
@@ -104,6 +111,17 @@ public class TeamMembershipEntity {
 
     public TeamMembershipEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public TeamMembershipEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
         return this;
     }
 

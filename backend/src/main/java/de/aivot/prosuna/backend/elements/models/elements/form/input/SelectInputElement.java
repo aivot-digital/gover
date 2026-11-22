@@ -30,6 +30,16 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
     @Nullable
     private String codeListKey;
 
+    // Keys of the code list columns that provide the values, labels and, for a dependent select, the group values.
+    @Nullable
+    private String codeListValueColumnKey;
+
+    @Nullable
+    private String codeListLabelColumnKey;
+
+    @Nullable
+    private String codeListGroupColumnKey;
+
     @Nullable
     private String dependsOnSelectFieldId;
 
@@ -175,6 +185,9 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
                 && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
+                && Objects.equals(codeListValueColumnKey, that.codeListValueColumnKey)
+                && Objects.equals(codeListLabelColumnKey, that.codeListLabelColumnKey)
+                && Objects.equals(codeListGroupColumnKey, that.codeListGroupColumnKey)
                 && Objects.equals(dependsOnSelectFieldId, that.dependsOnSelectFieldId)
                 && presentation == that.presentation;
     }
@@ -189,6 +202,9 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         result = 31 * result + Objects.hashCode(toggleButtons);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListValueColumnKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
+        result = 31 * result + Objects.hashCode(codeListGroupColumnKey);
         result = 31 * result + Objects.hashCode(dependsOnSelectFieldId);
         result = 31 * result + Objects.hashCode(presentation);
         return result;
@@ -245,6 +261,36 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
 
     public SelectInputElement setCodeListKey(@Nullable String codeListKey) {
         this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListValueColumnKey() {
+        return codeListValueColumnKey;
+    }
+
+    public SelectInputElement setCodeListValueColumnKey(@Nullable String codeListValueColumnKey) {
+        this.codeListValueColumnKey = codeListValueColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    public SelectInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListGroupColumnKey() {
+        return codeListGroupColumnKey;
+    }
+
+    public SelectInputElement setCodeListGroupColumnKey(@Nullable String codeListGroupColumnKey) {
+        this.codeListGroupColumnKey = codeListGroupColumnKey;
         return this;
     }
 

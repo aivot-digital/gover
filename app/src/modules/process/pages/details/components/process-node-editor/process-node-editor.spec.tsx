@@ -196,6 +196,22 @@ describe('ProcessNodeEditor metadata loading', () => {
         await waitFor(() => expect(screen.getByRole('button', {name: 'Konfiguration speichern'})).toBeDisabled());
     });
 
+    it('sends only one save while a save is running', async () => {
+        const pending = Promise.withResolvers<ProcessNodeEntity>();
+        testState.save.mockReturnValueOnce(pending.promise);
+        renderEditor();
+        fireEvent.change(await findReadyTextbox('Name bearbeiten'), {target: {value: 'Geändert'}});
+
+        const saveButton = screen.getByRole('button', {name: 'Konfiguration speichern'});
+        fireEvent.click(saveButton);
+        fireEvent.click(saveButton);
+
+        await waitFor(() => expect(saveButton).toBeDisabled());
+        await waitFor(() => expect(testState.save).toHaveBeenCalledOnce());
+        await act(async () => pending.resolve({...createNode(1), name: 'Geändert'}));
+        expect(testState.save).toHaveBeenCalledOnce();
+    });
+
     it('preserves the unlocked state across tabs and failed saves, and relocks after a successful save', async () => {
         vi.spyOn(AuthService, 'isAuthenticated').mockReturnValue(true);
         const user = userEvent.setup();
@@ -1088,7 +1104,7 @@ describe('ProcessNodeEditor drafts and save conflicts', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Konfiguration speichern'}));
 
         await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
-            payload: expect.objectContaining({message: lockConflict.message}),
+            payload: expect.objectContaining({message: expect.stringContaining(lockConflict.message)}),
         })));
         expect(testState.save).toHaveBeenCalledTimes(3);
     });

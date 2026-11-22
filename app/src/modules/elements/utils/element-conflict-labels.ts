@@ -23,7 +23,10 @@ const ElementPropertyLabels = {
     centerLatitude: 'Start-Breitengrad',
     centerLongitude: 'Start-Längengrad',
     children: 'Elemente',
+    codeListGroupColumnKey: 'Gruppenwert-Spalte',
     codeListKey: 'System-Codeliste',
+    codeListLabelColumnKey: 'Beschriftungs-Spalte',
+    codeListValueColumnKey: 'Wert-Spalte',
     color: 'Farbe',
     content: 'Anzuzeigender Text',
     copyValueTemplate: 'Vorlage für den kopierten Wert',
@@ -203,7 +206,10 @@ function elementSchema(element?: AnyElement): PropertySchema {
     if (element?.type === ElementType.Step) labels.title = 'Titel des Abschnitts';
     if (element?.type === ElementType.Spacer) labels.height = 'Abstand';
     if (element?.type === ElementType.Date || element?.type === ElementType.DateRange) labels.mode = 'Datums-Format';
-    if (element?.type === ElementType.Text || element?.type === ElementType.ChipInput) labels.optionsSource = 'Vorschläge definieren über';
+    if (element?.type === ElementType.Text || element?.type === ElementType.ChipInput) {
+        labels.optionsSource = 'Vorschläge definieren über';
+        labels.codeListLabelColumnKey = 'Vorschlagsspalte';
+    }
     if (element?.type === ElementType.AssignmentContext) labels.text = 'Beschreibungstext';
     return {
         labels,

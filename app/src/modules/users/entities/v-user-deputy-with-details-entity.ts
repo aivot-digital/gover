@@ -25,4 +25,6 @@ export interface VUserDeputyWithDetailsEntity {
     deputyUserDeletedInIdp: boolean;
     deputyUserSystemRoleId: number;
     deputyUserFullName: string;
+
+    lockVersion: number;
 }

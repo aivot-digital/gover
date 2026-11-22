@@ -15,6 +15,7 @@ import de.aivot.prosuna.backend.audit.enums.AuditAction;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -30,6 +31,7 @@ import de.aivot.prosuna.backend.storage.utils.StoragePathUtils;
 import de.aivot.prosuna.backend.user.services.UserService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -49,6 +51,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -61,6 +65,8 @@ import java.util.UUID;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class AssetController {
+    private static final String BASED_ON_UPDATED_DESCRIPTION = "The `updated` timestamp of the file as the client loaded it (ISO 8601). Omitted, the last save wins.";
+
     private static final String MODULE_NAME = "Dateien und Medien";
 
     private final ScopedAuditService auditService;
@@ -375,13 +381,16 @@ public class AssetController {
     @Operation(
             summary = "Update an asset",
             description = "Update the details of an existing asset. " +
-                    "Note that the filename cannot be changed by this endpoint, because this needs a move."
+                    "Note that the filename cannot be changed by this endpoint, because this needs a move. " +
+                    "With `basedOnUpdated`, rejects the update with 409 when the file changed after the client loaded it."
     )
     public VStorageIndexItemWithAssetEntity updateFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer storageProviderId,
             @Nullable @RequestPart(value = "file", required = false) MultipartFile newAssetFile,
             @Nonnull @Valid @RequestPart(value = "data", required = true) AssetRequestDTO updatedAsset,
+            @Parameter(description = BASED_ON_UPDATED_DESCRIPTION)
+            @Nullable @RequestParam(required = false) String basedOnUpdated,
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         var execUser = userService
@@ -398,6 +407,12 @@ public class AssetController {
         var asset = assetRepository
                 .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), filePath)
                 .orElseThrow(ResponseException::notFound);
+
+        if (basedOnUpdated != null) {
+            requireBasedOnCurrentFile(basedOnUpdated, storageIndexItemWithAssetRepository
+                    .findById(VStorageIndexItemWithAssetEntityId.of(storageProvider.getId(), filePath))
+                    .orElse(null));
+        }
 
         if (newAssetFile != null && !newAssetFile.isEmpty()) {
             if (storageProvider.getReadOnlyStorage()) {
@@ -465,12 +480,15 @@ public class AssetController {
     )
     @Operation(
             summary = "Update asset metadata",
-            description = "Update only the storage metadata of an existing asset without replacing the file content."
+            description = "Update only the storage metadata of an existing asset without replacing the file content. " +
+                    "With `basedOnUpdated`, rejects the update with 409 when the file changed after the client loaded it."
     )
     public VStorageIndexItemWithAssetEntity updateFileMetadata(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer storageProviderId,
             @Nullable @RequestBody StorageItemMetadata metadata,
+            @Parameter(description = BASED_ON_UPDATED_DESCRIPTION)
+            @Nullable @RequestParam(required = false) String basedOnUpdated,
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         var execUser = userService
@@ -493,6 +511,10 @@ public class AssetController {
                         filePath
                 ))
                 .orElse(null);
+
+        if (basedOnUpdated != null) {
+            requireBasedOnCurrentFile(basedOnUpdated, existingIndexItem);
+        }
 
         var updatedMetadata = metadata != null ? metadata : StorageItemMetadata.empty();
 
@@ -1010,4 +1032,23 @@ public class AssetController {
     }
 
     // endregion
+
+    /**
+     * Files have no lock version, but every content or metadata write changes the `updated` timestamp of their index
+     * item, so a client that states the timestamp it loaded gets the usual conflict instead of overwriting a newer file.
+     * shortcut: check and write are not atomic, so two writes in the same instant can still overwrite each other; lock
+     * the index item if concurrent replacements become common.
+     */
+    private static void requireBasedOnCurrentFile(@Nonnull String basedOnUpdated,
+                                                  @Nullable VStorageIndexItemWithAssetEntity current) throws ResponseException {
+        Instant expected;
+        try {
+            expected = Instant.parse(basedOnUpdated);
+        } catch (DateTimeParseException e) {
+            throw ResponseException.badRequest("Der Bearbeitungsstand der Datei ist ungültig.");
+        }
+        if (current == null || !expected.equals(current.getUpdated())) {
+            throw ResponseException.conflictWithDetails(LockVersioned.CONFLICT_MESSAGE, LockVersioned.CONFLICT_DETAILS);
+        }
+    }
 }

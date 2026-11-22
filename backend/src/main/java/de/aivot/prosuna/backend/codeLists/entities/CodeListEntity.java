@@ -1,8 +1,10 @@
 package de.aivot.prosuna.backend.codeLists.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.prosuna.backend.codeLists.converters.CodeListColumnMappingsConverter;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
+import de.aivot.prosuna.backend.codeLists.models.CodeListColumnMapping;
 import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -15,6 +17,7 @@ import org.hibernate.annotations.OptimisticLock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -38,13 +41,19 @@ public class CodeListEntity implements LockVersioned {
     private String name;
     @Nonnull
     private String description;
+    // The source column identifiers (CSV header or XRepository column IDs) in the order of the item cells. A
+    // synchronization matches source columns through them, so they are managed by the server.
     @Nonnull
     @Column(columnDefinition = "varchar(96)[]")
     private List<String> columns;
     @Nonnull
-    private Integer valueColumnIndex;
-    @Nonnull
-    private Integer labelColumnIndex;
+    @Convert(converter = CodeListColumnMappingsConverter.class)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private List<CodeListColumnMapping> columnMappings;
+    // The key of the column whose values identify a row, e.g. to keep outdated rows during a synchronization.
+    @Nullable
+    @Column(columnDefinition = "text")
+    private String keyColumnKey;
     // Sync bookkeeping and the update timestamp do not raise the lock version, so a finished sync
     // does not make open edit forms outdated. Content changes by a sync still do.
     @OptimisticLock(excluded = true)
@@ -95,11 +104,8 @@ public class CodeListEntity implements LockVersioned {
         if (columns == null) {
             columns = List.of();
         }
-        if (valueColumnIndex == null) {
-            valueColumnIndex = 0;
-        }
-        if (labelColumnIndex == null) {
-            labelColumnIndex = 0;
+        if (columnMappings == null) {
+            columnMappings = List.of();
         }
         if (status == null) {
             status = CodeListStatus.SyncPending;
@@ -123,7 +129,7 @@ public class CodeListEntity implements LockVersioned {
         CodeListEntity that = (CodeListEntity) o;
         return Objects.equals(key, that.key) && Objects.equals(id, that.id) && sourceType == that.sourceType && Objects.equals(sourceRef, that.sourceRef) &&
                 Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(columns, that.columns) &&
-                Objects.equals(valueColumnIndex, that.valueColumnIndex) && Objects.equals(labelColumnIndex, that.labelColumnIndex) && status == that.status &&
+                Objects.equals(columnMappings, that.columnMappings) && Objects.equals(keyColumnKey, that.keyColumnKey) && status == that.status &&
                 Objects.equals(statusMessage, that.statusMessage) && Objects.equals(syncKeepOutdated, that.syncKeepOutdated) && Objects.equals(syncRunId, that.syncRunId) &&
                 Objects.equals(syncStarted, that.syncStarted) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
                 Objects.equals(updated, that.updated);
@@ -131,7 +137,7 @@ public class CodeListEntity implements LockVersioned {
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, syncKeepOutdated, syncRunId, syncStarted, lastSync, created, updated);
+        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, columnMappings, keyColumnKey, status, statusMessage, syncKeepOutdated, syncRunId, syncStarted, lastSync, created, updated);
     }
 
     @Nonnull
@@ -205,22 +211,30 @@ public class CodeListEntity implements LockVersioned {
     }
 
     @Nonnull
-    public Integer getValueColumnIndex() {
-        return valueColumnIndex;
+    public List<CodeListColumnMapping> getColumnMappings() {
+        return columnMappings;
     }
 
-    public CodeListEntity setValueColumnIndex(@Nonnull Integer valueColumnIndex) {
-        this.valueColumnIndex = valueColumnIndex;
+    public CodeListEntity setColumnMappings(@Nonnull List<CodeListColumnMapping> columnMappings) {
+        this.columnMappings = columnMappings;
         return this;
     }
 
     @Nonnull
-    public Integer getLabelColumnIndex() {
-        return labelColumnIndex;
+    public Optional<CodeListColumnMapping> findColumnMapping(@Nullable String columnKey) {
+        return columnMappings
+                .stream()
+                .filter(mapping -> mapping.key().equals(columnKey))
+                .findFirst();
     }
 
-    public CodeListEntity setLabelColumnIndex(@Nonnull Integer labelColumnIndex) {
-        this.labelColumnIndex = labelColumnIndex;
+    @Nullable
+    public String getKeyColumnKey() {
+        return keyColumnKey;
+    }
+
+    public CodeListEntity setKeyColumnKey(@Nullable String keyColumnKey) {
+        this.keyColumnKey = keyColumnKey;
         return this;
     }
 

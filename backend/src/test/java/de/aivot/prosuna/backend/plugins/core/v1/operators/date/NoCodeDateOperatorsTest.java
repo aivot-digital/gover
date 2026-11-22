@@ -1,6 +1,9 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DateInputElement;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeLessThanOperator;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
@@ -18,6 +21,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,7 +87,9 @@ class NoCodeDateOperatorsTest {
                 "format-time",
                 "compare-date",
                 "compare-time",
-                "compare-datetime"
+                "compare-datetime",
+                "add-to-datetime",
+                "subtract-from-datetime"
         )));
     }
 
@@ -324,5 +330,80 @@ class NoCodeDateOperatorsTest {
                 NoCodeException.class,
                 () -> operator.evaluate(data, "09:15:30", "hh:mm a")
         );
+    }
+
+    @Test
+    void addToDateTimeShouldKeepLocalTimeInApplicationZone() throws NoCodeException {
+        var operator = new NoCodeAdjustDateTimeOperator(NoCodeAdjustDateTimeOperator.Direction.ADD);
+        var data = runtime();
+
+        // 12:00 in Berlin before and after the switch to daylight saving time on 2026-03-29.
+        assertEquals(
+                Instant.parse("2026-03-29T10:00:00Z"),
+                operator.evaluate(data, Instant.parse("2026-03-28T11:00:00Z"), 1, "tage").getValue()
+        );
+        assertEquals(
+                Instant.parse("2026-02-28T10:00:00Z"),
+                operator.evaluate(data, "2026-01-31T10:00:00Z", 1, " Monate ").getValue()
+        );
+        assertEquals(
+                Instant.parse("2026-08-12T07:15:30Z"),
+                operator.evaluate(data, FIXED_NOW, 2, "wochen").getValue()
+        );
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, FIXED_NOW, 1, "stunden"));
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, "2026-07-29", 1, "tage"));
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, FIXED_NOW, 1.5, "tage"));
+    }
+
+    /**
+     * Legacy YearsInPast on a date-time field compares against now minus N years with second precision.
+     */
+    @Test
+    void subtractFromDateTimeShouldReplaceLegacyRelativeDateTimeConditions() throws NoCodeException {
+        var subtract = new NoCodeAdjustDateTimeOperator(NoCodeAdjustDateTimeOperator.Direction.SUBTRACT);
+        var compare = new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATETIME);
+        var data = runtime();
+
+        var target = subtract.evaluate(data, new NoCodeCreateNowOperator(businessTime).evaluate(data).getValue(), 18, "jahre").getValue();
+
+        assertEquals(Instant.parse("2008-07-29T07:15:30Z"), target);
+        assertTrue(compare.evaluate(data, "2008-07-29T07:15:30Z", "vor-oder-gleich", target).getValueAsBoolean());
+        assertFalse(compare.evaluate(data, "2008-07-29T07:15:31Z", "vor-oder-gleich", target).getValueAsBoolean());
+    }
+
+    /**
+     * Legacy date conditions derive the precision from the compared text (MM.yyyy, yyyy, dd.MM.). The no-code
+     * recipe formats the field to the same precision first.
+     */
+    @Test
+    void formatDateRecipesShouldReplaceLegacyPartialDateConditions() throws NoCodeException {
+        var element = new DateInputElement();
+        var format = new NoCodeFormatDateOperator(businessTime);
+        var compare = new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATE);
+        var lessThan = new NoCodeLessThanOperator();
+        var data = runtime();
+
+        for (var value : List.of("2026-02-28", "2026-03-15", "2026-04-01", "2025-12-31")) {
+            var month = format.evaluate(data, value, "yyyy-MM").getValue();
+            assertEquals(
+                    element.evaluate(ConditionOperator.LessThan, value, "03.2026"),
+                    compare.evaluate(data, month, "vor", "2026-03").getValueAsBoolean(),
+                    "month " + value
+            );
+
+            var year = format.evaluate(data, value, "yyyy").getValue();
+            assertEquals(
+                    element.evaluate(ConditionOperator.Equals, value, "2026"),
+                    compare.evaluate(data, year, "gleich", "2026").getValueAsBoolean(),
+                    "year " + value
+            );
+
+            var dayAndMonth = format.evaluate(data, value, "MMdd").getValue();
+            assertEquals(
+                    element.evaluate(ConditionOperator.LessThan, value, "15.03."),
+                    lessThan.evaluate(data, dayAndMonth, 315).getValueAsBoolean(),
+                    "any year " + value
+            );
+        }
     }
 }

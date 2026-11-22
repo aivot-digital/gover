@@ -56,13 +56,13 @@ export function CodeListsListPage() {
                         Codelisten bündeln wiederverwendbare Auswahlwerte für Formulare, Prozesse und Schnittstellen.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Jede Codeliste legt fest, welche Beschriftung ausfüllenden Personen angezeigt wird und welcher technische Wert gespeichert oder weitergegeben wird.
+                        Im Auswahlfeld legen Sie fest, welche Spalte die sichtbare Beschriftung liefert und aus welcher Spalte der gespeicherte Wert stammt.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Einträge können manuell gepflegt oder aus XRepository bzw. einer CSV-Datei synchronisiert werden.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Da Codelisten in öffentlichen Formularen genutzt und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden können,
+                        Da die Einträge von Codelisten in öffentlichen Formularen angezeigt werden können,
                         dürfen sie keine vertraulichen Informationen enthalten.
                     </Typography>
                 </>
@@ -123,6 +123,7 @@ export function CodeListsListPage() {
                 <CellContentWrapper>
                     <CodeListStatusChip
                         status={params.row.status}
+                        columnMappings={params.row.columnMappings}
                         sourceType={params.row.sourceType}
                         statusMessage={params.row.statusMessage}
                         lastSync={params.row.lastSync}
