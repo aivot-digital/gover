@@ -3,6 +3,7 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {NumberFieldComponent} from '../number-field/number-field-component';
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {Grid} from '@mui/material';
 
 export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
@@ -103,6 +104,23 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     onChange={(val) => {
                         props.onPatch({
                             maximumSets: val,
+                        });
+                    }}
+                    disabled={!props.editable}
+                />
+            </Grid>
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
+                <CheckboxFieldComponent
+                    label="Sortieren der Datensätze erlauben"
+                    hint="Bei der Eingabe lassen sich die Datensätze per Drag-and-drop oder über das Verschieben-Symbol neben der Überschrift neu anordnen. Ohne diese Option bleiben sie in der Reihenfolge, in der sie hinzugefügt wurden."
+                    value={props.element.sortable ?? undefined}
+                    onChange={(checked) => {
+                        props.onPatch({
+                            sortable: checked,
                         });
                     }}
                     disabled={!props.editable}

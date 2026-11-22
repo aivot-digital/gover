@@ -1,4 +1,4 @@
-import {render, screen, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
@@ -9,6 +9,7 @@ import {
 } from '../../models/element-data';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {type BaseViewProps} from '../../views/base-view';
+import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
 import {ReplicatingContainerView} from './replicating-container.view';
 
 vi.mock('../view-dispatcher/view-dispatcher.component', () => ({
@@ -48,7 +49,10 @@ const element = {
     children: [{id: 'street', label: 'Straße'}],
 } as ReplicatingContainerLayout;
 
-function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>> = {}) {
+function renderView(
+    overrides: Partial<BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>> = {},
+    wrapper?: typeof DragAndDropProvider,
+) {
     const props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues> = {
         element,
         value: [{id: 'address-1', values: {street: literalAuthoredValue('Musterstraße 1')}}],
@@ -70,14 +74,83 @@ function renderView(overrides: Partial<BaseViewProps<ReplicatingContainerLayout,
         ...overrides,
     };
 
-    render(<ReplicatingContainerView {...props}/>);
-    return props;
+    const {rerender} = render(<ReplicatingContainerView {...props}/>, {wrapper});
+    return {props, rerender};
 }
 
+const threeAddresses: ReplicatingContainerElementValues = [
+    {id: 'address-1', values: {street: literalAuthoredValue('Musterstraße 1')}},
+    {id: 'address-2', values: {street: literalAuthoredValue('Musterstraße 2')}},
+    {id: 'address-3', values: {street: literalAuthoredValue('Musterstraße 3')}},
+];
+
+const dragEvent = {dataTransfer: {types: [], setData: vi.fn()}, clientX: 0, clientY: 1};
+
 describe('ReplicatingContainerView', () => {
+    it.each([undefined, null, false])('keeps the order fixed when sortable is %s', sortable => {
+        // Rendering without a drag-and-drop provider also proves that unsortable containers do not need one.
+        renderView({element: {...element, sortable}, value: threeAddresses});
+
+        expect(screen.queryByRole('button', {name: /verschieben$/})).not.toBeInTheDocument();
+    });
+
+    it('offers no reordering while the collection is disabled', () => {
+        renderView({element: {...element, sortable: true, disabled: true}, value: threeAddresses}, DragAndDropProvider);
+
+        expect(screen.queryByRole('button', {name: /verschieben$/})).not.toBeInTheDocument();
+    });
+
+    it('places each handle directly after its row label when a second data set is added', () => {
+        const {props, rerender} = renderView({element: {...element, sortable: true}}, DragAndDropProvider);
+        expect(screen.queryByRole('button', {name: 'Adresse 1 verschieben'})).not.toBeInTheDocument();
+
+        rerender(<ReplicatingContainerView {...props} value={threeAddresses.slice(0, 2)}/>);
+
+        for (const label of ['Adresse 1', 'Adresse 2']) {
+            const row = screen.getByRole('group', {name: label});
+            const handle = within(row).getByRole('button', {name: `${label} verschieben`});
+            expect(handle.previousElementSibling).toHaveTextContent(label);
+        }
+    });
+
+    it('moves a data set by one position through the menu of its handle', async () => {
+        const user = userEvent.setup();
+        const {props} = renderView({element: {...element, sortable: true}, value: threeAddresses}, DragAndDropProvider);
+
+        await user.click(screen.getByRole('button', {name: 'Adresse 1 verschieben'}));
+        const menu = screen.getByRole('menu', {name: 'Adresse 1 verschieben'});
+        expect(within(menu).getByRole('menuitem', {name: 'Nach oben verschieben'})).toHaveAttribute('aria-disabled', 'true');
+        await user.click(within(menu).getByRole('menuitem', {name: 'Nach unten verschieben'}));
+
+        expect(props.setValue).toHaveBeenCalledWith(
+            [threeAddresses[1], threeAddresses[0], threeAddresses[2]],
+            ['addresses', 'street'],
+        );
+    });
+
+    it('moves a dragged data set to the position of the data set it is dropped on', async () => {
+        const {props} = renderView({element: {...element, sortable: true}, value: threeAddresses}, DragAndDropProvider);
+        const handle = screen.getByRole('button', {name: 'Adresse 1 verschieben'});
+        const target = screen.getByRole('group', {name: 'Adresse 3'});
+
+        expect(handle).toHaveAttribute('draggable', 'true');
+        fireEvent.dragStart(handle, dragEvent);
+        fireEvent.dragEnter(target, dragEvent);
+        fireEvent.dragOver(target, dragEvent);
+        fireEvent.drop(target, dragEvent);
+        fireEvent.dragEnd(handle, dragEvent);
+        await act(async () => {});
+
+        expect(props.setValue).toHaveBeenCalledOnce();
+        expect(props.setValue).toHaveBeenCalledWith(
+            [threeAddresses[1], threeAddresses[2], threeAddresses[0]],
+            ['addresses', 'street'],
+        );
+    });
+
     it('allows clearing an optional collection below its minimum', async () => {
         const user = userEvent.setup();
-        const props = renderView({element: {...element, minimumRequiredSets: 3}});
+        const {props} = renderView({element: {...element, minimumRequiredSets: 3}});
         await user.click(screen.getByRole('button', {name: 'Datensatz löschen'}));
         expect(props.setValue).not.toHaveBeenCalled();
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: 'Löschen'}));

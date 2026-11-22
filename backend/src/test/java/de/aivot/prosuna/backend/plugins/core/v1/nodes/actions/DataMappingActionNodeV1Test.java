@@ -3,7 +3,9 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -44,6 +46,15 @@ class DataMappingActionNodeV1Test {
     @BeforeEach
     void setUp() {
         node = new DataMappingActionNodeV1();
+    }
+
+    @Test
+    void configurationLayout_RulesAreSortableBecauseTheyRunInOrder() throws Exception {
+        ConfigLayoutElement layout = ElementPOJOMapper.createFromPOJO(DataMappingActionNodeV1.DataMappingActionNodeV1Config.class);
+
+        var rules = layout.findChild("rules", ReplicatingContainerLayoutElement.class).orElseThrow();
+
+        assertEquals(Boolean.TRUE, rules.getSortable());
     }
 
     @Test
