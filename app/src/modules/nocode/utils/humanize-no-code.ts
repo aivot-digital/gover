@@ -11,6 +11,7 @@ import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {getInputVariableReference, InputVariableSuggestion, InputVariableSource} from '../../../models/input-mode';
 import {formatNoCodeValue} from './format-no-code-value';
 import {getNoCodeParameterSuggestions, getReferencedElementOptions} from './no-code-options';
+import {getNoCodeReadableTemplate} from './no-code-parameter-presentation';
 
 export interface NoCodePresentationContext {
     variables?: InputVariableSuggestion[];
@@ -65,11 +66,12 @@ export function humanizeNoCode(operand: NoCodeOperand | null, allElements: Eleme
                     }, suggestions[index]);
                     return isNoCodeExpression(operands[index]) ? `(${text})` : text;
                 };
-                if (operator.humanReadableTemplate != null) {
+                const template = getNoCodeReadableTemplate(operator, operands.length);
+                if (template != null) {
                     // Replace once, including legacy quotes around a placeholder. Inserted values are never parsed again.
-                    const text = operator.humanReadableTemplate.replace(/„#(\d+)“|“#(\d+)”|"#(\d+)"|'#(\d+)'|#(\d+)/g,
+                    const text = template.replace(/„#(\d+)“|“#(\d+)”|"#(\d+)"|'#(\d+)'|#(\d+)/g,
                         (_match, ...groups) => argument(Number(groups.slice(0, 5).find((group) => group != null))));
-                    const used = new Set(Array.from(operator.humanReadableTemplate.matchAll(/#(\d+)/g), (match) => Number(match[1])));
+                    const used = new Set(Array.from(template.matchAll(/#(\d+)/g), (match) => Number(match[1])));
                     const remaining = Array.from({length: Math.max(parameters.length, operands.length)}, (_, i) => i).filter((i) => !used.has(i));
                     return text + (remaining.length ? ` [Weitere Parameter: ${remaining.map(argument).join('; ')}]` : '');
                 }

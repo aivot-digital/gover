@@ -23,27 +23,27 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Zieht eine Zahl von einer anderen ab.";
+        return "Zieht eine oder mehrere Zahlen von einer Ausgangszahl ab.";
     }
 
     @Override
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Ziehen Sie eine Zahl von einer anderen ab, etwa einen bereits gezahlten Betrag von einer Gesamtsumme.
+                Berechnen Sie einen Restbetrag, indem Sie bereits gezahlte Beträge von der Gesamtsumme abziehen.
 
                 # Welche Werte werden benötigt?
-                „Ausgangszahl“ und „Abzuziehende Zahl“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+                Sie benötigen eine „Ausgangszahl“ und mindestens eine Zahl, die Sie davon abziehen möchten. Jede Zahl können Sie frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                Die Ausgangszahl abzüglich der abzuziehenden Zahl.
+                Die Ausgangszahl abzüglich aller weiteren Zahlen. Jede weitere Zahl wird vom bisherigen Ergebnis abgezogen.
 
                 # Beispiel im No-Code-Editor
                 1. Wählen Sie „Subtrahieren“ als Funktion für einen Zahlenwert.
-                2. Tragen Sie bei „Ausgangszahl“ `10` und bei „Abzuziehende Zahl“ `3` ein.
-                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+                2. Tragen Sie bei „Ausgangszahl“ `20` und bei „Abzuziehende Zahl 1“ `5` ein.
+                3. Wählen Sie „Weitere Zahl hinzufügen“ und geben Sie bei „Abzuziehende Zahl 2“ `3` ein.
 
-                Der Ausdruck `10 minus 3` ergibt `7`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+                Der Ausdruck `20 minus 5 minus 3` ergibt `12`. Verwenden Sie das Ergebnis beispielsweise als offenen Restbetrag.
 
                 # Was ist zu beachten?
                 Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Die Reihenfolge der Zahlen beeinflusst das Ergebnis.
@@ -63,12 +63,12 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Ausgangszahl",
-                                "Die Zahl, von der die andere Zahl abgezogen wird."
+                                "Die Zahl, von der die weiteren Zahlen abgezogen werden."
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Abzuziehende Zahl",
-                                "Die Zahl, die von der Ausgangszahl abgezogen wird."
+                                "Abzuziehende Zahl 1",
+                                "Die Zahl, die vom bisherigen Ergebnis abgezogen wird."
                         ).withSentence("minus")
                 )
         );

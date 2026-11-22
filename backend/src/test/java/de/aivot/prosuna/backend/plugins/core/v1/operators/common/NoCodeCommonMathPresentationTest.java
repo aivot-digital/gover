@@ -2,24 +2,30 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.common;
 
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeAddOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeDivideOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeMultiplyOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeRoundDownOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeRoundUpOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeSubtractOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static de.aivot.prosuna.backend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -76,6 +82,43 @@ class NoCodeCommonMathPresentationTest {
     void divisionShouldRoundNonTerminatingResultsToEightDecimalPlaces() throws NoCodeException {
         assertEquals(new BigDecimal("0.33333333"), new NoCodeDivideOperator().evaluate(runtime(), 1, 3).getValue());
         assertEquals(new BigDecimal("0.16666667"), new NoCodeDivideOperator().evaluate(runtime(), 1, 3, 2).getValue());
+        assertEquals(new BigDecimal("3.33333330"), new NoCodeDivideOperator().evaluate(runtime(), 1, 3, "0.1").getValue());
+        assertEquals(new BigDecimal("3.33333333"), new NoCodeDivideOperator().evaluate(runtime(), 1, "0.1", 3).getValue());
+        assertThrows(NoCodeException.class, () -> new NoCodeDivideOperator().evaluate(runtime(), 24, 3, 0));
+    }
+
+    @Test
+    void subtractionShouldUseTheFirstOperandAsTheStartingNumber() throws NoCodeException {
+        var operator = new NoCodeSubtractOperator();
+        assertEquals(new BigDecimal("12.00000000"), operator.evaluate(runtime(), 20, 5, 3).getValue());
+        assertEquals(new BigDecimal("-18.00000000"), operator.evaluate(runtime(), 5, 20, 3).getValue());
+    }
+
+    static Stream<Arguments> arithmeticExamples() {
+        return Stream.of(
+                Arguments.of(new NoCodeAddOperator(), "Zahl 2", "Zahl 3", 5, 3, 2, 10),
+                Arguments.of(new NoCodeMultiplyOperator(), "Zahl 2", "Zahl 3", 5, 3, 2, 30),
+                Arguments.of(new NoCodeSubtractOperator(), "Abzuziehende Zahl 1", "Abzuziehende Zahl 2", 20, 5, 3, 12),
+                Arguments.of(new NoCodeDivideOperator(), "Teiler 1", "Teiler 2", 24, 3, 2, 4)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("arithmeticExamples")
+    void arithmeticExamplesShouldDescribeAndEvaluateTheAdditionalOperand(
+            NoCodeOperator operator, String repeatedLabel, String thirdLabel, int first, int second, int third, int expected
+    ) throws NoCodeException {
+        var parameters = operator.getSignatures()[0].parameters();
+        assertTrue(operator.hasVariableArgumentCount());
+        assertEquals(2, parameters.length);
+        assertEquals(repeatedLabel, parameters[1].label());
+        var phrase = parameters[1].sentencePhrase();
+        var expression = first + " " + phrase + " " + second + " " + phrase + " " + third;
+        assertTrue(operator.getDescription().contains("„Weitere Zahl hinzufügen“"));
+        assertTrue(operator.getDescription().contains("„" + thirdLabel + "“"));
+        assertTrue(operator.getDescription().contains("`" + expression + "` ergibt `" + expected + "`"));
+        var result = (BigDecimal) operator.evaluate(runtime(), first, second, third).getValue();
+        assertEquals(0, BigDecimal.valueOf(expected).compareTo(result));
     }
 
     @Test

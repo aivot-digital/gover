@@ -25,27 +25,27 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Multipliziert zwei Zahlen.";
+        return "Multipliziert zwei oder mehr Zahlen miteinander.";
     }
 
     @Override
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Berechnen Sie das Produkt zweier Zahlen, etwa einen Gesamtbetrag aus Menge und Einzelpreis.
+                Berechnen Sie ein Produkt, etwa das Volumen eines Quaders aus Länge, Breite und Höhe.
 
                 # Welche Werte werden benötigt?
-                „Zahl 1“ und „Zahl 2“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+                Sie benötigen mindestens zwei Zahlen. Jede Zahl können Sie frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                Das Produkt beider Zahlen.
+                Das Produkt aller angegebenen Zahlen.
 
                 # Beispiel im No-Code-Editor
                 1. Wählen Sie „Multiplizieren“ als Funktion für einen Zahlenwert.
                 2. Tragen Sie bei „Zahl 1“ `5` und bei „Zahl 2“ `3` ein.
-                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+                3. Wählen Sie „Weitere Zahl hinzufügen“ und geben Sie bei „Zahl 3“ `2` ein.
 
-                Der Ausdruck `5 mal 3` ergibt `15`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+                Der Ausdruck `5 mal 3 mal 2` ergibt `30`. Sind die Maße in Metern angegeben, entspricht das einem Volumen von 30 Kubikmetern.
 
                 # Was ist zu beachten?
                 Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt.
@@ -65,12 +65,12 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Zahl 1",
-                                "Die erste der beiden Zahlen, die miteinander multipliziert werden."
+                                "Die erste Zahl für das Produkt."
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Zahl 2",
-                                "Die zweite der beiden Zahlen, die miteinander multipliziert werden."
+                                "Die Zahl, mit der das bisherige Ergebnis multipliziert wird."
                         ).withSentence("mal")
                 )
         );

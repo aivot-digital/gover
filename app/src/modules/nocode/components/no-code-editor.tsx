@@ -11,6 +11,7 @@ import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
 import Redo from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
 import Science from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
 import {NoCodeOperatorDeleteDialog} from './no-code-operator-delete-dialog';
@@ -55,6 +56,7 @@ import {
 } from '../../../models/functions/no-code-expression';
 import {
     findMatchingNoCodeSignature,
+    getNoCodeVariadicInputKind,
     NoCodeOperatorDetailsDTO,
     NoCodeParameter,
     NoCodeParameterOption,
@@ -66,6 +68,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
+import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
 import {MarkdownContent} from '../../../components/markdown-content/markdown-content';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
@@ -148,6 +151,8 @@ interface EditorContext {
     insert: (parentId: string | null, index: number, operand: NoCodeOperand, editAfterInsert?: boolean) => void;
     /** Removes a node and moves focus to the socket it leaves behind. */
     remove: (nodeId: string) => void;
+    appendOperand: (parentId: string) => void;
+    removeOperand: (parentId: string, index: number, label: string) => void;
     /** An incomplete leaf inserted into an empty slot opens its value editor right away. */
     autoEditId: string | null;
     /** Key of the single tree item in the tab sequence (roving tab index). */
@@ -180,10 +185,12 @@ interface SlotProps {
     index: number;
     parameter: NoCodeParameter;
     error: NoCodeOperandError | null | undefined;
+    onRemoveOperand?: () => void;
     ctx: EditorContext;
 }
 
 const TREE_ITEM_SELECTOR = '[role="treeitem"]';
+const MIN_VARIADIC_OPERANDS = 2;
 const DRAG_TYPE = 'application/x-prosuna-no-code-node';
 
 const focusRing = {
@@ -263,6 +270,14 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
     const [focusError, setFocusError] = useState(false);
     const [removeTarget, setRemoveTarget] = useState<{ node: NoCodeEditorNode; hasNotes: boolean; open: boolean } | null>(null);
     const removeFocus = useRef<string | null>(null);
+    const [operandRemoval, setOperandRemoval] = useState<{
+        parentId: string;
+        index: number;
+        label: string;
+        nodeId: string;
+        open: boolean;
+        focusKey: string;
+    } | null>(null);
     const validation = operandError ?? validateNoCode(toNoCodeOperand(root), allOperators, allElements, true, parameter);
     const [autoEditId, setAutoEditId] = useState<string | null>(null);
     const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -496,6 +511,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
             setPointerDrag(null);
             setWrapTarget(null);
             setAutoEditId(null);
+            setOperandRemoval(current => current?.open ? {...current, open: false} : current);
             afterMenuRef.current = null;
             closeMenu();
         }
@@ -509,6 +525,32 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
         });
         return slot == null ? nodeId : socketKey(slot.parentId, slot.index);
     };
+
+    const findEditableVariadicParent = (parentId: string): NoCodeEditorExpressionNode | null => {
+        if (locked || grabRef.current != null || pointerDrag != null) return null;
+        const parent = findNoCodeEditorNode(root, parentId);
+        if (parent?.type !== 'NoCodeExpression') return null;
+        const operator = allOperators.find(op => op.identifier === parent.operatorIdentifier);
+        return operator != null && getNoCodeVariadicInputKind(operator) != null ? parent : null;
+    };
+
+    const removeOperandAt = (parent: NoCodeEditorExpressionNode, index: number): string => {
+        const operands = parent.operands.filter((_, i) => i !== index);
+        dispatch({type: 'replaceNode', nodeId: parent.id, node: {...parent, operands}});
+        // Empty slots are identified by position. Keep their validation state with the remaining slots.
+        setValidated(current => {
+            const next = new Set(current);
+            for (let i = index; i < parent.operands.length; i++) {
+                const key = socketKey(parent.id, i);
+                if (i < operands.length && current.has(socketKey(parent.id, i + 1))) next.add(key);
+                else next.delete(key);
+            }
+            return next;
+        });
+        const adjacentIndex = Math.min(index, operands.length - 1);
+        return operands[adjacentIndex]?.id ?? socketKey(parent.id, adjacentIndex);
+    };
+
     const ctx: EditorContext = {
         collapsed,
         toggleCollapsed: (id) => {
@@ -569,6 +611,28 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                 });
             } else requestFocus(removeImmediately(nodeId));
         },
+        appendOperand: (parentId) => {
+            const parent = findEditableVariadicParent(parentId);
+            if (parent == null) return;
+            const index = Math.max(MIN_VARIADIC_OPERANDS, parent.operands.length);
+            const operands = Array.from({length: index + 1}, (_, i) => parent.operands[i] ?? null);
+            dispatch({type: 'replaceNode', nodeId: parentId, node: {...parent, operands}});
+            const key = socketKey(parentId, index);
+            setValidated(current => {
+                if (!current.has(key)) return current;
+                const next = new Set(current);
+                next.delete(key);
+                return next;
+            });
+            requestFocus(key);
+        },
+        removeOperand: (parentId, index, label) => {
+            const parent = findEditableVariadicParent(parentId);
+            if (parent == null || index < MIN_VARIADIC_OPERANDS || index >= parent.operands.length) return;
+            const child = parent.operands[index];
+            if (child == null) requestFocus(removeOperandAt(parent, index));
+            else setOperandRemoval({parentId, index, label, nodeId: child.id, open: true, focusKey: child.id});
+        },
         openMenu: (nodeId, name, anchor) => {
             const item = findItem(nodeId);
             // Siblings in the same group are the neighbouring parameters of the same operator.
@@ -628,8 +692,8 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
         if (tree == null || !tree.contains(target) || event.defaultPrevented) {
             return;
         }
-        // Reading controls manage their own focus and must not navigate or expand the editor tree.
-        if (target.closest('[data-no-code-summary]') != null) {
+        // Summary controls and input actions handle their own keys outside tree navigation.
+        if (target.closest('[data-no-code-summary], [data-no-code-tree-action]') != null) {
             return;
         }
 
@@ -885,6 +949,27 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                                        onResults={setResults}/>
                 </Box>
             </Box>
+            {operandRemoval != null && <ConfirmDialog
+                title="Eingabe entfernen?"
+                isDestructive
+                disableRestoreFocus
+                confirmButtonText="Eingabe entfernen"
+                onCancel={() => setOperandRemoval({...operandRemoval, open: false})}
+                onConfirm={operandRemoval.open && !locked ? () => {
+                    const {parentId, index, nodeId} = operandRemoval;
+                    const parent = findEditableVariadicParent(parentId);
+                    const focusKey = parent?.operands[index]?.id === nodeId
+                        ? removeOperandAt(parent, index)
+                        : parentId;
+                    setOperandRemoval({...operandRemoval, focusKey, open: false});
+                } : undefined}
+                onExited={() => {
+                    requestFocus(operandRemoval.focusKey);
+                    setOperandRemoval(null);
+                }}
+            >
+                <Typography>Die Eingabe „{operandRemoval.label}“ wird mit ihrem Inhalt aus dem Ausdruck entfernt.</Typography>
+            </ConfirmDialog>}
             {removeTarget != null && <NoCodeOperatorDeleteDialog key={removeTarget.node.id}
                                                                  open={removeTarget.open && !locked}
                                                                  name={removeOperator?.label ?? 'Unbekannte Funktion'}
@@ -1114,10 +1199,12 @@ interface NoCodeEditorTreeItemProps {
     ctx: EditorContext;
     onActivate: () => void;
     onRemove?: () => void;
+    onRemoveOperand?: () => void;
     /** The pill or socket shown next to the parameter label. */
     children: ReactNode;
     /** Child tree items of an operator, rendered as an indented group. */
     group?: ReactNode;
+    groupAction?: ReactNode;
 }
 
 function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
@@ -1132,8 +1219,10 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
         ctx,
         onActivate,
         onRemove,
+        onRemoveOperand,
         children,
         group,
+        groupAction,
     } = props;
     const parameterLabel = parameter.label;
     const phrase = parameter.sentencePhrase ?? parameterLabel;
@@ -1276,6 +1365,17 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
                 {result != null && resultId != null && <NoCodeTestResult id={resultId}
                                                                          result={result}
                                                                          compact/>}
+                {onRemoveOperand != null && ctx.grab == null && <Tooltip title="Eingabe entfernen">
+                    <IconButton
+                        data-no-code-tree-action
+                        size="small"
+                        color="error"
+                        aria-label={`Eingabe „${parameterLabel}“ entfernen`}
+                        onClick={onRemoveOperand}
+                    >
+                        <Remove fontSize="small"/>
+                    </IconButton>
+                </Tooltip>}
                 {
                     isNode &&
                     <IconButton
@@ -1321,6 +1421,8 @@ function NoCodeEditorTreeItem(props: NoCodeEditorTreeItemProps) {
                     {group}
                 </Box>
             }
+
+            {!isCollapsed && groupAction != null && <Box sx={{px: 1, pb: 0.75}}>{groupAction}</Box>}
 
             {group != null && !isStringNullOrEmpty(suffix) && <Typography variant="body2"
                                                                           color="text.secondary"
@@ -1475,6 +1577,7 @@ function NoCodeEditorSocketView(props: SlotProps) {
                                  ariaLabel={`leer, ${NoCodeDataTypeLabels[parameter.type]}`}
                                  describedBy={[errorId]}
                                  ctx={ctx}
+                                 onRemoveOperand={props.onRemoveOperand}
                                  onActivate={openSelector}>
         <PillHint parameter={parameter}>
             <ButtonBase ref={socketRef}
@@ -1542,6 +1645,8 @@ function NoCodeEditorExpressionView(props: SlotProps & {
     };
 
     const operator = ctx.allOperators.find((op) => op.identifier === node.operatorIdentifier);
+    const variadicInputKind = operator == null ? undefined : getNoCodeVariadicInputKind(operator);
+    const canResize = variadicInputKind != null && !ctx.readOnly;
     const signature = operator == null ? undefined : resolveNoCodeSignature(operator, {
         operandCount: node.operands.length,
     });
@@ -1581,7 +1686,7 @@ function NoCodeEditorExpressionView(props: SlotProps & {
             parameter={slotParameter}
             depth={props.depth}
             resultType={dataType}
-            lead={useSentence ? operator?.sentenceLead : null}
+            lead={useSentence && variadicInputKind == null ? operator?.sentenceLead : null}
             summary={ctx.collapsed.has(node.id)
                 ? summarizeNoCode(toNoCodeOperand(node), ctx.allElements, ctx.allOperators, ctx.presentation)
                 : undefined}
@@ -1597,19 +1702,31 @@ function NoCodeEditorExpressionView(props: SlotProps & {
                 } else setShowOperatorPicker(true);
             }}
             onRemove={() => ctx.remove(node.id)}
+            onRemoveOperand={props.onRemoveOperand}
             group={parameters.length > 0 ? parameters.map((parameter, operandIndex) => (
                 <NoCodeEditorSlotView
                     key={node.operands[operandIndex]?.id ?? socketKey(node.id, operandIndex)}
                     node={node.operands[operandIndex] ?? null}
                     parentId={node.id}
                     index={operandIndex}
-                    parameter={parameter}
+                    parameter={variadicInputKind == null ? parameter : {...parameter, sentencePhrase: null}}
                     suggestions={suggestions[operandIndex]}
                     depth={(props.depth ?? 0) + 1}
                     error={props.childErrors?.[operandIndex]}
+                    onRemoveOperand={canResize && operandIndex >= MIN_VARIADIC_OPERANDS
+                        ? () => ctx.removeOperand(node.id, operandIndex, parameter.label)
+                        : undefined}
                     ctx={ctx}
                 />
             )) : undefined}
+            groupAction={canResize && ctx.grab == null ? <Button
+                data-no-code-tree-action
+                size="small"
+                startIcon={<Add/>}
+                onClick={() => ctx.appendOperand(node.id)}
+            >
+                {variadicInputKind === 'text' ? 'Weiteren Wert hinzufügen' : 'Weitere Zahl hinzufügen'}
+            </Button> : undefined}
         >
             <PillHint
                 summary={operator?.abstractDescription}
@@ -1729,6 +1846,7 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
                 ? ctx.showDescription(node.id, getNodeDetails(node, ctx.allOperators)!)
                 : setAnchor(pillRef.current)}
             onRemove={() => ctx.remove(node.id)}
+            onRemoveOperand={props.onRemoveOperand}
         >
             <PillHint
                 summary={summary}

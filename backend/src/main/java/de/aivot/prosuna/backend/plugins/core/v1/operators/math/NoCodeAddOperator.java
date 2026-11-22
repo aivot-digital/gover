@@ -25,7 +25,7 @@ public class NoCodeAddOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Addiert zwei Zahlen.";
+        return "Bildet die Summe aus zwei oder mehr Zahlen.";
     }
 
     @Nullable
@@ -38,20 +38,20 @@ public class NoCodeAddOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Berechnen Sie die Summe zweier Zahlen, etwa einen Gesamtbetrag aus zwei Einzelbeträgen.
+                Berechnen Sie einen Gesamtwert, etwa die Summe mehrerer Einzelbeträge.
 
                 # Welche Werte werden benötigt?
-                „Zahl 1“ und „Zahl 2“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+                Sie benötigen mindestens zwei Zahlen. Jede Zahl können Sie frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                Die Summe beider Zahlen.
+                Die Summe aller angegebenen Zahlen.
 
                 # Beispiel im No-Code-Editor
                 1. Wählen Sie „Addieren“ als Funktion für einen Zahlenwert.
                 2. Tragen Sie bei „Zahl 1“ `5` und bei „Zahl 2“ `3` ein.
-                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+                3. Wählen Sie „Weitere Zahl hinzufügen“ und geben Sie bei „Zahl 3“ `2` ein.
 
-                Der Ausdruck `5 plus 3` ergibt `8`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+                Der Ausdruck `5 plus 3 plus 2` ergibt `10`. Verwenden Sie die Summe beispielsweise als berechneten Wert eines Formularelements.
 
                 # Was ist zu beachten?
                 Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt.
@@ -76,7 +76,7 @@ public class NoCodeAddOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Zahl 2",
-                                "Die Zahl, die zur ersten Zahl addiert wird."
+                                "Die Zahl, die zur bisherigen Summe hinzukommt."
                         ).withSentence("plus")
                 )
         );

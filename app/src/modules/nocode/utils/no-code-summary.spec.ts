@@ -1,13 +1,14 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
-import {NoCodeOperatorDetailsDTO, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {getNoCodeVariadicInputKind, NoCodeOperatorDetailsDTO, NoCodeParameterOption, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
 import {NoCodeExpression, NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {InputVariableSource} from '../../../models/input-mode';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {summarizeNoCode} from './no-code-summary';
+import {humanizeNoCode} from './humanize-no-code';
 
 function operator(identifier: string, template: string | null, count = 2): NoCodeOperatorDetailsDTO {
     return {
@@ -421,6 +422,48 @@ describe('summarizeNoCode', () => {
     it('does not omit a third operand from a two-placeholder template', () => {
         expect(summary(expression('Oder', literal(true), literal(false), literal(true))).text)
             .toBe('Oder: Wert 1: Wahr; Wert 2: Falsch; Wert 3: Wahr');
+    });
+
+    it.each([
+        ['add', 'plus', 'Zahl 2', 'Zahl 3'],
+        ['subtract', 'minus', 'Abzuziehende Zahl 1', 'Abzuziehende Zahl 2'],
+        ['multiply', 'mal', 'Zahl 2', 'Zahl 3'],
+        ['divide', 'geteilt durch', 'Teiler 1', 'Teiler 2'],
+    ])('reads every %s input in sequence and preserves nested grouping', (id, phrase, secondLabel, thirdLabel) => {
+        const op = operator(id, `#0 ${phrase} #1`);
+        op.variableArgumentCount = true;
+        Object.assign(op.signatures[0].parameters[1], {label: secondLabel, sentencePhrase: phrase});
+        const operand = expression(id, literal(96), expression(id, literal(8), literal(2)), literal(3), null);
+        const fourthLabel = resolveNoCodeSignature(op, {operandCount: 4}).parameters[3].label;
+        expect(resolveNoCodeSignature(op, {operandCount: 3}).parameters[2].label).toBe(thirdLabel);
+        expect(fourthLabel).toBe(thirdLabel.replace(/\d+$/, value => String(Number(value) + 1)));
+        const expected = `96 ${phrase} (8 ${phrase} 2) ${phrase} 3 ${phrase} Fehlender Parameter „${fourthLabel}“`;
+        expect(summary(operand, [op]).text).toBe(expected);
+        expect(humanizeNoCode(operand, [], [op])).toBe(expected);
+    });
+
+    it('lists three or more concat values while preserving the existing two-value template', () => {
+        const concat = {...operator('concat', 'Text aus #0 gefolgt von #1'), variableArgumentCount: true};
+        const first = literal('AZ-');
+        const second = literal('Kennung');
+        const third = literal('-A');
+        for (const [operand, expected] of [
+            [expression('concat', first, second), 'Text aus „AZ-“ gefolgt von „Kennung“'],
+            [expression('concat', first, second, third), 'Text aus „AZ-“, „Kennung“ und „-A“'],
+            [expression('concat', first, null, literal('#0'), third), 'Text aus „AZ-“, Fehlender Parameter „Wert 2“, „#0“ und „-A“'],
+        ] as const) {
+            expect(summary(operand, [concat]).text).toBe(expected);
+            expect(humanizeNoCode(operand, [], [concat])).toBe(expected);
+        }
+    });
+
+    it('only enables repeated input authoring for the five core functions with their variadic two-input signature', () => {
+        const add = {...operator('add', '#0 plus #1'), variableArgumentCount: true};
+        expect(getNoCodeVariadicInputKind(add)).toBe('number');
+        expect(getNoCodeVariadicInputKind({...add, identifier: 'concat'})).toBe('text');
+        expect(getNoCodeVariadicInputKind({...add, identifier: 'other'})).toBeUndefined();
+        expect(getNoCodeVariadicInputKind({...add, variableArgumentCount: false})).toBeUndefined();
+        expect(getNoCodeVariadicInputKind({...add, signatures: [operator('add', null, 3).signatures[0]]})).toBeUndefined();
     });
 
     it('selects the matching signature before validating template coverage', () => {

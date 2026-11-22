@@ -86,6 +86,22 @@ class NoCodeTextOperatorsTest {
     }
 
     @Test
+    void concatShouldDescribeItsThirdOperandAndProduceTheExampleText() throws NoCodeException {
+        var operator = new NoCodeConcatOperator();
+        var parameters = operator.getSignatures()[0].parameters();
+        assertEquals(2, parameters.length);
+        assertTrue(operator.hasVariableArgumentCount());
+        assertEquals("Wert 1", parameters[0].label());
+        assertEquals("Wert 2", parameters[1].label());
+        assertTrue(operator.getDescription().contains("„Weiteren Wert hinzufügen“"));
+        assertTrue(operator.getDescription().contains("„Wert 3“"));
+        assertTrue(operator.getDescription().contains("Text aus „AZ-“, „Kennung“ und „-A“"));
+        var result = operator.evaluate(runtime(), "AZ-", "2026-17", "-A").getValue();
+        assertEquals("AZ-2026-17-A", result);
+        assertTrue(operator.getDescription().contains("`" + result + "`"));
+    }
+
+    @Test
     void splitShouldUseLiteralSeparatorsAndKeepOnlyInternalEmptyParts() throws NoCodeException {
         var operator = new NoCodeSplitOperator();
 

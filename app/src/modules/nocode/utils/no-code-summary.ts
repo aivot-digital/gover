@@ -12,7 +12,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {formatNoCodeValue} from './format-no-code-value';
 import {humanizeNoCode, NoCodePresentationContext} from './humanize-no-code';
 import {getNoCodeParameterSuggestions, getReferencedElementOptions} from './no-code-options';
-import {resolveNoCodeExpressionPresentation} from './no-code-parameter-presentation';
+import {getNoCodeReadableTemplate, resolveNoCodeExpressionPresentation} from './no-code-parameter-presentation';
 
 export interface NoCodeSummaryDetail {
     label: string;
@@ -153,7 +153,7 @@ export function summarizeNoCode(
                     const text = describe(operands[index], parameters[index], options[index]);
                     return operands[index]?.type === 'NoCodeExpression' ? `(${text})` : text;
                 };
-                const template = operator?.humanReadableTemplate;
+                const template = operator == null ? null : getNoCodeReadableTemplate(operator, operands.length);
                 const used = new Set(Array.from(template?.matchAll(/#(\d+)/g) ?? [], match => Number(match[1])));
                 // A partial template can misstate a variadic operation; use one complete fallback instead.
                 const completeTemplate = useSentence && template != null && template.trim() !== '' && used.size === parameters.length

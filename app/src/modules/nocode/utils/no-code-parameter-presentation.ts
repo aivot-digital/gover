@@ -1,6 +1,19 @@
-import {NoCodeParameter} from '../../../models/dtos/no-code-operator-details-dto';
+import {getNoCodeVariadicInputKind, NoCodeOperatorDetailsDTO, NoCodeParameter} from '../../../models/dtos/no-code-operator-details-dto';
 import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {getNoCodeNumberValidationError} from './no-code-number-validation';
+
+export function getNoCodeReadableTemplate(operator: NoCodeOperatorDetailsDTO, operandCount: number): string | null {
+    const template = operator.humanReadableTemplate;
+    if (operandCount <= 2 || !template) return template;
+    const kind = getNoCodeVariadicInputKind(operator);
+    if (kind == null) return template;
+    const slots = Array.from({length: operandCount}, (_, i) => `#${i}`);
+    if (kind === 'text') {
+        return `Text aus ${new Intl.ListFormat('de').format(slots)}`;
+    }
+    const phrase = operator.signatures[0].parameters[1].sentencePhrase;
+    return phrase ? slots.join(` ${phrase} `) : template;
+}
 
 /** A relationship supplied at runtime cannot describe a known sentence while authoring. */
 export function resolveNoCodeExpressionPresentation(

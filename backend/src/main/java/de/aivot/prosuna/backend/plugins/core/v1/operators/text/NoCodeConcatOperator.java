@@ -23,27 +23,27 @@ public class NoCodeConcatOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Fügt Werte ohne zusätzliche Trennzeichen zu einem Text zusammen.";
+        return "Fügt zwei oder mehr Werte in der angegebenen Reihenfolge zu einem Text zusammen.";
     }
 
     @Override
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Setzen Sie einen Text aus einzelnen Werten zusammen, beispielsweise eine Kennung aus einem festen Präfix und einem vorhandenen Wert.
+                Setzen Sie einen Text aus einzelnen Werten zusammen, beispielsweise eine Kennung mit einem festen Präfix und einem Zusatz.
 
                 # Welche Werte werden benötigt?
-                **Erster Wert** und **Zweiter Wert:** Die Werte, die hintereinander stehen sollen. Texte und Zahlen werden zu Text umgewandelt.
-
-                Sie können die Werte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+                Sie benötigen mindestens zwei Werte in der gewünschten Reihenfolge. Sie können jeden Wert frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
                 Ein Text, der die Werte in ihrer angegebenen Reihenfolge direkt aneinanderfügt.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Werte zu Text zusammenfügen“**. Geben Sie als **Erster Wert** `AZ-` ein und verwenden Sie als **Zweiter Wert** die Variable „Kennung“, die `2026-17` liefert.
+                1. Wählen Sie **„Werte zu Text zusammenfügen“**.
+                2. Geben Sie bei „Wert 1“ `AZ-` ein. Verwenden Sie bei „Wert 2“ die Variable „Kennung“, die `2026-17` liefert.
+                3. Wählen Sie „Weiteren Wert hinzufügen“ und geben Sie bei „Wert 3“ `-A` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `Text aus „AZ-“ gefolgt von „Kennung“`. Das Ergebnis ist `AZ-2026-17`. Für weitere Bausteine können Sie das Ergebnis in eine weitere Funktion **„Werte zu Text zusammenfügen“** einsetzen.
+                Zugeklappt und in der Vorschau lesen Sie `Text aus „AZ-“, „Kennung“ und „-A“`. Das Ergebnis ist `AZ-2026-17-A`.
 
                 # Was ist zu beachten?
                 Leerzeichen und Trennzeichen werden nicht automatisch ergänzt. Bei selbst festgelegten Texten werden Leerzeichen am Anfang und Ende beim Verlassen des Eingabefeldes entfernt. Benötigen Sie dort Leerzeichen, übernehmen Sie den Text aus einer Wertquelle oder Funktion. Fehlende Werte werden als leerer Text eingefügt.
@@ -62,13 +62,13 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                         NoCodeDataType.String,
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
-                                "Erster Wert",
+                                "Wert 1",
                                 "Der erste Wert des Ergebnistextes, beispielsweise ein festes Präfix wie AZ-."
                         ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
-                                "Zweiter Wert",
-                                "Der Wert, der direkt auf den ersten Wert folgen soll."
+                                "Wert 2",
+                                "Der Wert, der direkt an den bisherigen Text angefügt wird."
                         ).withSentence("gefolgt von")
                 )
         );

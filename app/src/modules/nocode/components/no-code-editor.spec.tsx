@@ -599,6 +599,201 @@ describe('NoCodeEditor', () => {
         expect(onChange).toHaveBeenLastCalledWith({...stored, operatorIdentifier: 'subtract'});
     });
 
+    describe('editing variadic inputs', () => {
+        const removeInputName = /^Eingabe „.+“ entfernen$/;
+        const literal = (value: string): NoCodeOperand => ({type: 'NoCodeStaticValue', value});
+
+        it.each([
+            ['concat', 'Werte zu Text zusammenfügen', 'Wert 1', 'Wert 2', ['AZ', '-', '42'], 'AZ-42'],
+            ['add', 'Addieren', 'Zahl 1', 'Zahl 2', ['24', '3', '2'], 29],
+            ['subtract', 'Subtrahieren', 'Ausgangszahl', 'Abzuziehende Zahl 1', ['24', '3', '2'], 19],
+            ['multiply', 'Multiplizieren', 'Zahl 1', 'Zahl 2', ['24', '3', '2'], 144],
+            ['divide', 'Dividieren', 'Ausgangszahl', 'Teiler 1', ['24', '3', '2'], 4],
+        ] as const)('creates, reopens and tests all three authored inputs of %s in order', async (
+            identifier, label, firstLabel, secondLabel, values, result,
+        ) => {
+            const isText = identifier === 'concat';
+            const returnType = isText ? NoCodeDataType.String : NoCodeDataType.Number;
+            const operator: NoCodeOperatorDetailsDTO = {
+                ...add, identifier, label,
+                signatures: [{returnType, parameters: [firstLabel, secondLabel].map(parameterLabel => ({
+                    type: isText ? NoCodeDataType.Runtime : NoCodeDataType.Number,
+                    label: parameterLabel, description: null, options: [],
+                }))}],
+            };
+            const onChange = vi.fn();
+            const editorProps = {onChange, operators: [operator], returnType};
+            const view = render(<Harness {...editorProps} initial={null}/>);
+            fireEvent.click(screen.getByRole('button', {name: 'Ausdruck hinzufügen'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Mit Funktion ermitteln'}));
+            const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
+            fireEvent.click(within(picker).getByRole('button', {name: `${label}: Hinzufügen`}));
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+            const root = {type: 'NoCodeExpression', operatorIdentifier: identifier};
+            expect(onChange).toHaveBeenLastCalledWith({...root, operands: [null, null]});
+            expect(screen.queryAllByRole('button', {name: removeInputName})).toHaveLength(0);
+            fireEvent.click(screen.getByRole('button', {name: isText ? 'Weiteren Wert hinzufügen' : 'Weitere Zahl hinzufügen'}));
+            expect(onChange).toHaveBeenLastCalledWith({...root, operands: [null, null, null]});
+            const sockets = screen.getAllByRole('treeitem', {name: /: leer,/});
+            expect(sockets).toHaveLength(3);
+            expect(sockets[2]).toHaveFocus();
+            for (const [index, value] of values.entries()) {
+                fireEvent.keyDown(sockets[index], {key: 'Enter'});
+                fireEvent.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
+                const input = await screen.findByRole('textbox');
+                fireEvent.change(input, {target: {value}});
+                fireEvent.keyDown(input, {key: 'Escape'});
+                await waitFor(() => expect(screen.queryByRole('textbox')).not.toBeInTheDocument());
+            }
+
+            const saved: NoCodeOperand = JSON.parse(JSON.stringify(onChange.mock.lastCall![0]));
+            expect(saved).toEqual({...root, operands: values.map(literal)});
+            view.unmount();
+            onChange.mockClear();
+            render(<Harness {...editorProps} initial={saved}/>);
+            for (const value of values) {
+                const type = isText ? 'Beliebiger Wert' : 'Zahlenwert';
+                expect(screen.getByRole('button', {name: `${value}, ${type}`})).toBeInTheDocument();
+            }
+            expect(onChange).not.toHaveBeenCalled();
+
+            api.post.mockResolvedValueOnce({status: NoCodeDryRunStatus.Evaluated, value: result, operands: []});
+            fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+            await waitFor(() => expect(api.post).toHaveBeenCalledWith('no-code/dry-run/',
+                expect.objectContaining({expression: saved}), {abortController: expect.any(AbortController)}));
+        });
+
+        it('confirms removal of an occupied extra position and preserves the following subtree and history', async () => {
+            const onChange = vi.fn();
+            const firstTwo = [literal('24'), literal('3')];
+            const nestedValue: NoCodeOperand = {type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [literal('1'), literal('2')]};
+            const stored: NoCodeOperand = {
+                type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [...firstTwo, nestedValue, literal('8')],
+            };
+            render(<Harness initial={stored} operators={[add]} returnType={NoCodeDataType.Number} onChange={onChange}/>);
+            const third = screen.getByRole('treeitem', {name: /^Summand 3: Funktion Addiere/});
+            const fourth = screen.getByRole('treeitem', {name: 'Summand 4: 8, Zahlenwert'});
+            const removeThird = within(third).getByRole('button', {name: 'Eingabe „Summand 3“ entfernen'});
+            fireEvent.click(removeThird);
+            let dialog = await screen.findByRole('dialog', {name: 'Eingabe entfernen?'});
+            fireEvent.click(within(dialog).getByRole('button', {name: 'Abbrechen'}));
+            await waitFor(() => expect(third).toHaveFocus());
+            expect(onChange).not.toHaveBeenCalled();
+
+            fireEvent.click(removeThird);
+            dialog = await screen.findByRole('dialog', {name: 'Eingabe entfernen?'});
+            fireEvent.click(within(dialog).getByRole('button', {name: 'Eingabe entfernen'}));
+            const remaining = {...stored, operands: [...firstTwo, literal('8')]};
+            expect(onChange).toHaveBeenCalledExactlyOnceWith(remaining);
+            await waitFor(() => expect(fourth).toHaveFocus());
+            expect(fourth).toHaveAccessibleName('Summand 3: 8, Zahlenwert');
+            expect(third).not.toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: 'Rückgängig'}));
+            expect(onChange).toHaveBeenLastCalledWith(stored);
+            expect(screen.getByRole('treeitem', {name: /^Summand 3: Funktion Addiere/})).toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: 'Wiederholen'}));
+            expect(onChange).toHaveBeenLastCalledWith(remaining);
+        });
+
+        it('removes an empty extra slot immediately and starts a new slot at the same index untouched', () => {
+            const onChange = vi.fn();
+            const stored: NoCodeOperand = {
+                type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [literal('1'), literal('2'), null],
+            };
+            render(<Harness initial={stored} returnType={NoCodeDataType.Number} onChange={onChange}/>);
+            fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+            const empty = screen.getByRole('treeitem', {name: 'Summand 3: leer, Zahlenwert'});
+            expect(empty).toHaveAttribute('aria-invalid', 'true');
+            expect(api.post).not.toHaveBeenCalled();
+            fireEvent.click(within(empty).getByRole('button', {name: 'Eingabe „Summand 3“ entfernen'}));
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(onChange).toHaveBeenLastCalledWith({...stored, operands: [literal('1'), literal('2')]});
+            expect(screen.getByRole('treeitem', {name: 'Summand 2: 2, Zahlenwert'})).toHaveFocus();
+            expect(screen.queryAllByRole('button', {name: removeInputName})).toHaveLength(0);
+            fireEvent.click(screen.getByRole('button', {name: 'Weitere Zahl hinzufügen'}));
+            const added = screen.getByRole('treeitem', {name: 'Summand 3: leer, Zahlenwert'});
+            expect(added).toHaveFocus();
+            expect(added).not.toHaveAttribute('aria-invalid', 'true');
+        });
+
+        it('operates the extra slot by keyboard without treating resize buttons as move targets', async () => {
+            const user = userEvent.setup();
+            const onChange = vi.fn();
+            const stored: NoCodeOperand = {
+                type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [literal('1'), literal('2')],
+            };
+            render(<Harness initial={stored} returnType={NoCodeDataType.Number} onChange={onChange}/>);
+            screen.getByRole('button', {name: 'Weitere Zahl hinzufügen'}).focus();
+            await user.keyboard('{Enter}');
+            const empty = screen.getByRole('treeitem', {name: 'Summand 3: leer, Zahlenwert'});
+            expect(empty).toHaveFocus();
+            await user.tab();
+            expect(within(empty).getByRole('button', {name: 'Eingabe „Summand 3“ entfernen'})).toHaveFocus();
+            await user.keyboard('{Enter}');
+            expect(onChange).toHaveBeenLastCalledWith(stored);
+
+            fireEvent.click(screen.getByRole('button', {name: 'Weitere Zahl hinzufügen'}));
+            screen.getByRole('treeitem', {name: 'Summand 2: 2, Zahlenwert'}).focus();
+            await user.keyboard(' ');
+            expect(screen.queryByRole('button', {name: 'Weitere Zahl hinzufügen'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: removeInputName})).not.toBeInTheDocument();
+            await user.keyboard('{End} ');
+            expect(onChange).toHaveBeenLastCalledWith({...stored, operands: [literal('1'), null, literal('2')]});
+            expect(screen.getByRole('treeitem', {name: 'Summand 3: 2, Zahlenwert'})).toHaveFocus();
+        });
+
+        it('offers the actions only on an expanded supported operator with its variadic signature', () => {
+            const stored: NoCodeOperand = {
+                type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [literal('1'), literal('2'), literal('3')],
+            };
+            const onChange = vi.fn();
+            const props = {initial: stored, returnType: NoCodeDataType.Number, onChange};
+            const view = render(<Harness {...props} operators={[add]}/>);
+            fireEvent.click(screen.getByRole('button', {name: 'Addiere: zuklappen'}));
+            expect(screen.queryByRole('button', {name: 'Weitere Zahl hinzufügen'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: removeInputName})).not.toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', {name: 'Addiere: aufklappen'}));
+            expect(screen.getByRole('button', {name: 'Weitere Zahl hinzufügen'})).toBeVisible();
+
+            view.rerender(<Harness {...props} operators={[{...add, variableArgumentCount: false}]}/>);
+            expect(screen.queryByRole('button', {name: 'Weitere Zahl hinzufügen'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: removeInputName})).not.toBeInTheDocument();
+            expect(screen.getByRole('treeitem', {name: 'Summand 3: 3, Zahlenwert'})).toBeVisible();
+            expect(onChange).not.toHaveBeenCalled();
+        });
+
+        it('closes a pending removal and restores focus when the editor becomes busy', async () => {
+            const onChange = vi.fn();
+            const props = {
+                initial: {type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [literal('1'), literal('2'), literal('3')]} satisfies NoCodeOperand,
+                returnType: NoCodeDataType.Number,
+                onChange,
+            };
+            const view = render(<Harness {...props}/>);
+            fireEvent.click(screen.getByRole('button', {name: 'Eingabe „Summand 3“ entfernen'}));
+            expect(await screen.findByRole('dialog', {name: 'Eingabe entfernen?'})).toBeVisible();
+
+            view.rerender(<Harness {...props} busy/>);
+            await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Summand 3: 3, Zahlenwert'})).toHaveFocus());
+            expect(onChange).not.toHaveBeenCalled();
+        });
+
+        it.each(['readOnly', 'busy'] as const)('hides input-count actions for a %s variadic expression', mode => {
+            const onChange = vi.fn();
+            render(<Harness
+                initial={{type: 'NoCodeExpression', operatorIdentifier: 'add', operands: [literal('1'), literal('2'), literal('3')]}}
+                returnType={NoCodeDataType.Number} onChange={onChange} {...{[mode]: true}}
+            />);
+            expect(screen.queryByRole('button', {name: 'Weitere Zahl hinzufügen'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: removeInputName})).not.toBeInTheDocument();
+            expect(screen.getByRole('treeitem', {name: 'Summand 3: 3, Zahlenwert'})).toBeVisible();
+            expect(onChange).not.toHaveBeenCalled();
+        });
+    });
+
     it('confirms removed operands, leaves cancellation unchanged and can undo a zero-parameter switch', async () => {
         const onChange = vi.fn();
         render(<Harness onChange={onChange}/>);

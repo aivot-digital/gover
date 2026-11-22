@@ -26,30 +26,30 @@ public class NoCodeDivideOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Teilt eine Zahl durch eine andere.";
+        return "Teilt eine Ausgangszahl der Reihe nach durch einen oder mehrere Teiler.";
     }
 
     @Override
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Teilen Sie eine Zahl durch eine andere, etwa einen Gesamtbetrag durch eine Anzahl.
+                Verteilen Sie einen Gesamtbetrag gleichmäßig, beispielsweise zuerst auf mehrere Gruppen und anschließend auf gleich viele Personen je Gruppe.
 
                 # Welche Werte werden benötigt?
-                „Ausgangszahl“ und „Teiler“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+                Sie benötigen eine „Ausgangszahl“ und mindestens einen Teiler. Jeder Teiler muss von null verschieden sein. Jede Zahl können Sie frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                Die Ausgangszahl geteilt durch den Teiler. Das Ergebnis wird auf acht Nachkommastellen gerundet.
+                Die Funktion teilt die Ausgangszahl durch den ersten Teiler und anschließend jedes Zwischenergebnis durch den nächsten Teiler. Nach jedem Schritt rundet sie auf acht Nachkommastellen.
 
                 # Beispiel im No-Code-Editor
                 1. Wählen Sie „Dividieren“ als Funktion für einen Zahlenwert.
-                2. Tragen Sie bei „Ausgangszahl“ `10` und bei „Teiler“ `2` ein.
-                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+                2. Tragen Sie für einen Betrag von 24 Euro bei „Ausgangszahl“ `24` ein. Geben Sie bei „Teiler 1“ für drei Gruppen `3` ein.
+                3. Wählen Sie „Weitere Zahl hinzufügen“ und geben Sie bei „Teiler 2“ für zwei Personen je Gruppe `2` ein.
 
-                Der Ausdruck `10 geteilt durch 2` ergibt `5`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+                Der Ausdruck `24 geteilt durch 3 geteilt durch 2` ergibt `4`. Auf jede Person entfallen 4 Euro.
 
                 # Was ist zu beachten?
-                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Der Teiler darf nicht `0` sein. Bei mehreren bereits vorhandenen Teilern wird der Reihe nach geteilt und nach jedem Schritt gerundet.
+                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Ein fehlender Teiler führt deshalb zu einer Fehlermeldung.
                 """;
     }
 
@@ -70,8 +70,8 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Teiler",
-                                "Die Zahl, durch die geteilt wird. Sie darf nicht 0 sein."
+                                "Teiler 1",
+                                "Die Zahl, durch die das bisherige Ergebnis geteilt wird. Sie darf nicht 0 sein."
                         ).withSentence("geteilt durch")
                 )
         );

@@ -54,6 +54,22 @@ export interface NoCodeParameterOption {
     singularLabel?: string | null;
 }
 
+/** These core functions repeat their second input and allow adding further inputs in the editor. */
+export function getNoCodeVariadicInputKind(operator: NoCodeOperatorDetailsDTO): 'text' | 'number' | undefined {
+    if (!operator.variableArgumentCount || operator.signatures.length !== 1 || operator.signatures[0].parameters.length !== 2) return undefined;
+    switch (operator.identifier) {
+        case 'concat':
+            return 'text';
+        case 'add':
+        case 'subtract':
+        case 'multiply':
+        case 'divide':
+            return 'number';
+        default:
+            return undefined;
+    }
+}
+
 export function matchesDesiredNoCodeReturnType(
     operator: NoCodeOperatorDetailsDTO,
     desiredReturnType: NoCodeDataType,
@@ -120,10 +136,14 @@ export function resolveNoCodeSignature(
 
     const parameters = [...signature.parameters];
     const repeatedTemplate = signature.parameters[signature.parameters.length - 1];
-    for (let i = signature.parameters.length; i < operandCount; i++) {
+    // A second parameter such as „Teiler 1“ numbers only the divisors, excluding the initial number.
+    const numberedFrom = getNoCodeVariadicInputKind(operator) == null ? undefined : repeatedTemplate.label.match(/\d+$/)?.[0];
+    let labelIndex = Number(numberedFrom ?? signature.parameters.length);
+    while (parameters.length < operandCount) {
+        labelIndex++;
         parameters.push({
             ...repeatedTemplate,
-            label: createRepeatedParameterLabel(repeatedTemplate.label, i + 1),
+            label: createRepeatedParameterLabel(repeatedTemplate.label, labelIndex),
             options: [...repeatedTemplate.options],
         });
     }
