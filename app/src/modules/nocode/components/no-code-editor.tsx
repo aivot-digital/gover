@@ -142,10 +142,10 @@ interface EditorContext {
     allElements: ElementWithParents[];
     contextType: NoCodeOperandEditorContextType;
     dispatch: (action: NoCodeEditorAction) => void;
-    insert: (parentId: string | null, index: number, operand: NoCodeOperand) => void;
+    insert: (parentId: string | null, index: number, operand: NoCodeOperand, editAfterInsert?: boolean) => void;
     /** Removes a node and moves focus to the socket it leaves behind. */
     remove: (nodeId: string) => void;
-    /** A leaf inserted into an empty slot opens its value editor right away. */
+    /** An incomplete leaf inserted into an empty slot opens its value editor right away. */
     autoEditId: string | null;
     /** Key of the single tree item in the tab sequence (roving tab index). */
     activeKey: string | null;
@@ -535,7 +535,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
             nodeId,
             open: true,
         }),
-        insert: (parentId, index, inserted) => {
+        insert: (parentId, index, inserted, editAfterInsert = true) => {
             const node = toNoCodeEditorNode(inserted);
             if (node == null) {
                 return;
@@ -546,7 +546,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                 index,
                 node,
             });
-            setAutoEditId(node.type === 'NoCodeExpression' ? null : node.id);
+            setAutoEditId(editAfterInsert && node.type !== 'NoCodeExpression' ? node.id : null);
             requestFocus(node.id);
         },
         remove: (nodeId) => {
@@ -1364,6 +1364,7 @@ function NoCodeEditorSocketView(props: SlotProps) {
     }, [ctx.readOnly]);
     const Icon = NoCodeDataTypeIcons[parameter.type];
     const name = isStringNullOrEmpty(parameter.label) ? 'Ausdruck' : parameter.label;
+    const selectionLabel = parameter.options.length > 0 ? `${name} auswählen` : 'Wert festlegen';
     const openSelector = () => {
         if (!ctx.readOnly) setAnchor(socketRef.current);
     };
@@ -1387,13 +1388,14 @@ function NoCodeEditorSocketView(props: SlotProps) {
         }}
     >
         <NoCodeOperandEditorSelector allOperators={ctx.allOperators}
-                                     label={parentId == null ? 'Ausdruck hinzufügen' : name}
+                                     label={parentId == null && parameter.options.length === 0 ? 'Ausdruck hinzufügen' : name}
                                      hint={parameter.description}
                                      desiredType={parameter.type}
+                                     parameterOptions={parameter.options}
                                      contextType={ctx.contextType}
-                                     onChange={(operand) => {
+                                     onChange={(operand, editAfterInsert) => {
                                          setAnchor(null);
-                                         ctx.insert(parentId, index, operand);
+                                         ctx.insert(parentId, index, operand, editAfterInsert);
                                      }}/>
     </Popover>;
 
@@ -1431,7 +1433,7 @@ function NoCodeEditorSocketView(props: SlotProps) {
                                               mb: 1.5,
                                               maxWidth: 680,
                                           }}>
-                {ctx.emptyDescription ?? 'Vergleichen oder berechnen Sie Werte mit einem Operator, oder verwenden Sie einen festen Wert oder eine Variable.'}
+                {ctx.emptyDescription ?? 'Legen Sie einen Wert selbst fest, ermitteln Sie ihn mit einer Funktion oder übernehmen Sie ihn aus einer verfügbaren Datenquelle.'}
             </Typography>}
             {!ctx.readOnly && <Button ref={socketRef}
                                       tabIndex={-1}
@@ -1467,7 +1469,7 @@ function NoCodeEditorSocketView(props: SlotProps) {
             <ButtonBase ref={socketRef}
                         disabled={ctx.readOnly}
                         tabIndex={-1}
-                        aria-label={`${name} festlegen`}
+                        aria-label={parameter.options.length > 0 ? selectionLabel : `${name} festlegen`}
                         onClick={openSelector}
                         sx={{
                             height: 28,
@@ -1481,7 +1483,7 @@ function NoCodeEditorSocketView(props: SlotProps) {
                         }}>
                 <Icon fontSize="small"
                       aria-hidden/>
-                Wert festlegen
+                {selectionLabel}
             </ButtonBase>
         </PillHint>
         {errorId != null && <Typography id={errorId}

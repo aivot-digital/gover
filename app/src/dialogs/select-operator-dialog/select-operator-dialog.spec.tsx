@@ -44,7 +44,8 @@ describe('operator selection', () => {
         const user = userEvent.setup();
         const {props} = setup();
         expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-        await waitFor(() => expect(screen.getByRole('searchbox', {name: 'Operator suchen'})).toHaveFocus());
+        expect(screen.getByRole('dialog', {name: 'Funktion auswählen'})).toBeVisible();
+        await waitFor(() => expect(screen.getByRole('searchbox', {name: 'Funktion suchen'})).toHaveFocus());
         const row = screen.getByRole('listitem', {name: 'Ist gleich'});
         await user.click(within(row).getByText('Ist gleich'));
         expect(props.onSelect).not.toHaveBeenCalled();
@@ -92,7 +93,7 @@ describe('operator selection', () => {
         const {props} = setup();
         expect(screen.queryByRole('listitem', {name: 'Text verketten'})).not.toBeInTheDocument();
         fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'does-not-exist'}});
-        await screen.findByText('Keine Operatoren gefunden, die zu Ihrem Suchbegriff passen.');
+        await screen.findByText('Keine Funktionen gefunden, die zu Ihrem Suchbegriff passen.');
         fireEvent.change(screen.getByRole('searchbox'), {target: {value: 'equals'}});
         expect(await screen.findByRole('listitem', {name: 'Ist gleich'})).toBeVisible();
         expect(props.onSelect).not.toHaveBeenCalled();
@@ -103,7 +104,7 @@ describe('operator selection', () => {
             props,
             rerender,
         } = setup({operators: [textOperator]});
-        fireEvent.click(screen.getByRole('button', {name: 'Auch unpassende Operatoren anzeigen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Auch unpassende Funktionen anzeigen'}));
         fireEvent.click(screen.getByRole('button', {name: 'Text verketten: Details anzeigen'}));
         rerender(<SelectOperatorDialog {...props} open={false}
                                        operators={[]}/>);
@@ -113,7 +114,7 @@ describe('operator selection', () => {
         })).toHaveTextContent('Beschreibung');
         await waitFor(() => expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument());
         rerender(<SelectOperatorDialog {...props}/>);
-        expect(await screen.findByRole('button', {name: 'Auch unpassende Operatoren anzeigen'})).toBeVisible();
+        expect(await screen.findByRole('button', {name: 'Auch unpassende Funktionen anzeigen'})).toBeVisible();
         expect(screen.queryByRole('listitem', {name: 'Text verketten'})).not.toBeInTheDocument();
     });
 });

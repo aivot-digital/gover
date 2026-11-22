@@ -192,10 +192,6 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
     );
 }
 
-function getStaticValueLabel(label: string): string {
-    return `${label ?? ''} — (Fester Wert)`;
-}
-
 function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: string | null | undefined) {
     props.onChange({
         ...props.value,
@@ -225,7 +221,7 @@ function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TextFieldComponent
             showOptionalIndicator={false}
-            label={getStaticValueLabel(props.label)}
+            label={props.label}
             hint={props.hint}
             value={props.value.value}
             onChange={(val) => {
@@ -316,7 +312,7 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                     <TextFieldComponent
                         showOptionalIndicator={false}
                         muiPassTroughProps={params}
-                        label={getStaticValueLabel(props.label)}
+                        label={props.label}
                         hint={props.hint}
                         value={props.value.value}
                         onChange={(value) => updateStaticValue(props, value)}
@@ -365,7 +361,7 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
     return (
         <SelectFieldComponent
             showOptionalIndicator={false}
-            label={getStaticValueLabel(props.label)}
+            label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(val) => {
@@ -386,7 +382,7 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <DateFieldComponent
             showOptionalIndicator={false}
-            label={getStaticValueLabel(props.label)}
+            label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(val) => {
@@ -406,7 +402,7 @@ function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <DateTimeFieldComponent
             showOptionalIndicator={false}
-            label={getStaticValueLabel(props.label)}
+            label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(value) => {
@@ -423,7 +419,7 @@ function TimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TimeFieldComponent
             showOptionalIndicator={false}
-            label={getStaticValueLabel(props.label)}
+            label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(value) => {

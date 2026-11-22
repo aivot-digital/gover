@@ -1,4 +1,5 @@
 import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -98,6 +99,44 @@ const alwaysTrue: NoCodeOperatorDetailsDTO = {
     }],
 };
 
+const dateComparison: NoCodeOperatorDetailsDTO = {
+    ...equals,
+    identifier: 'date-compare',
+    label: 'Datumswerte vergleichen',
+    signatures: [{
+        returnType: NoCodeDataType.Boolean,
+        parameters: [{
+            type: NoCodeDataType.Date,
+            label: 'Wert 1',
+            description: null,
+            options: [],
+        }, {
+            type: NoCodeDataType.String,
+            label: 'Vergleich',
+            description: null,
+            options: [
+                {label: 'ist gleich', value: 'gleich'},
+                {label: 'ist davor oder gleich', value: 'vor-oder-gleich'},
+            ],
+        }, {
+            type: NoCodeDataType.Date,
+            label: 'Wert 2',
+            description: null,
+            options: [],
+        }],
+    }],
+};
+
+const incompleteComparison: NoCodeOperand = {
+    type: 'NoCodeExpression',
+    operatorIdentifier: dateComparison.identifier,
+    operands: [
+        {type: 'NoCodeStaticValue', value: '2000-01-01'},
+        null,
+        {type: 'NoCodeStaticValue', value: '2025-01-01'},
+    ],
+};
+
 const a: NoCodeOperand = {
     type: 'NoCodeStaticValue',
     value: 'a',
@@ -170,7 +209,7 @@ describe('NoCodeEditor', () => {
         fireEvent.click(screen.getByRole('menuitem', {name: 'An andere Stelle verschieben'}));
         expect(onChange).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('menuitem', {name: 'Beschreibung anzeigen'}));
-        expect(await screen.findByRole('dialog')).toHaveTextContent('Fester Wert');
+        expect(await screen.findByRole('dialog')).toHaveTextContent('Wert selbst festlegen');
         expect(onChange).not.toHaveBeenCalled();
     });
 
@@ -211,8 +250,8 @@ describe('NoCodeEditor', () => {
         expect(screen.getByText('Noch kein Ausdruck festgelegt')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Wert oder Variable'})).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'Ausdruck hinzufügen'}));
-        fireEvent.click(screen.getByRole('button', {name: 'Operator'}));
-        const dialog = await screen.findByRole('dialog', {name: 'Operator auswählen'});
+        fireEvent.click(screen.getByRole('button', {name: 'Mit Funktion ermitteln'}));
+        const dialog = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
         fireEvent.click(within(dialog).getByRole('button', {name: 'Ist Gleich: Hinzufügen'}));
         expect(onChange).toHaveBeenLastCalledWith({
             type: 'NoCodeExpression',
@@ -226,15 +265,82 @@ describe('NoCodeEditor', () => {
         render(<Harness initial={null}
                         onChange={onChange}/>);
         const empty = screen.getByRole('treeitem');
-        expect(empty).toHaveAccessibleDescription(/Vergleichen oder berechnen Sie Werte/);
+        expect(empty).toHaveAccessibleDescription(/Legen Sie einen Wert selbst fest/);
         empty.focus();
         fireEvent.keyDown(empty, {key: 'Enter'});
-        const choice = screen.getByRole('button', {name: 'Fester Wert'});
+        const choice = screen.getByRole('button', {name: 'Wert selbst festlegen'});
         fireEvent.keyDown(choice, {key: 'Escape'});
-        await waitFor(() => expect(screen.queryByRole('button', {name: 'Fester Wert'})).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByRole('button', {name: 'Wert selbst festlegen'})).not.toBeInTheDocument());
         expect(onChange).not.toHaveBeenCalled();
         expect(screen.getByText('Noch kein Ausdruck festgelegt')).toBeInTheDocument();
         expect(empty).toHaveFocus();
+    });
+
+    it('selects a declared option directly, focuses the result and keeps editing and history available', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness initial={incompleteComparison}
+                        operators={[dateComparison]}
+                        onChange={onChange}/>);
+        const empty = screen.getByRole('treeitem', {name: 'Vergleich: leer, Textwert'});
+        empty.focus();
+        await user.keyboard('{Enter}');
+        expect(screen.getByRole('button', {name: 'ist davor oder gleich'})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'ist davor oder gleich'}));
+        const selected = {
+            ...incompleteComparison,
+            operands: [
+                incompleteComparison.operands![0],
+                {type: 'NoCodeStaticValue', value: 'vor-oder-gleich'},
+                incompleteComparison.operands![2],
+            ],
+        };
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(selected);
+        const item = screen.getByRole('treeitem', {name: 'Vergleich: ist davor oder gleich, Textwert'});
+        await waitFor(() => expect(item).toHaveFocus());
+        expect(screen.queryByRole('list', {name: 'Vergleich auswählen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+
+        await user.keyboard('{Enter}');
+        const input = await screen.findByRole('combobox', {name: 'Vergleich'});
+        await user.click(input);
+        await user.click(await screen.findByRole('option', {name: 'ist gleich'}));
+        expect(onChange).toHaveBeenLastCalledWith({
+            ...selected,
+            operands: [selected.operands[0], {type: 'NoCodeStaticValue', value: 'gleich'}, selected.operands[2]],
+        });
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('combobox')).not.toBeInTheDocument());
+        await user.click(screen.getByRole('button', {name: 'Rückgängig'}));
+        expect(onChange).toHaveBeenLastCalledWith(selected);
+        await user.click(screen.getByRole('button', {name: 'Rückgängig'}));
+        expect(onChange).toHaveBeenLastCalledWith(incompleteComparison);
+        await user.click(screen.getByRole('button', {name: 'Wiederholen'}));
+        expect(onChange).toHaveBeenLastCalledWith(selected);
+    });
+
+    it('preserves an empty option slot when navigating sources and canceling nested dialogs', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness initial={incompleteComparison}
+                        operators={[dateComparison, equals]}
+                        onChange={onChange}/>);
+        const empty = screen.getByRole('treeitem', {name: 'Vergleich: leer, Textwert'});
+        empty.focus();
+        await user.keyboard('{Enter}');
+        await user.click(screen.getByRole('button', {name: 'Andere Wertquelle verwenden …'}));
+        await user.click(screen.getByRole('button', {name: 'Mit Funktion ermitteln'}));
+        await screen.findByRole('dialog', {name: 'Funktion auswählen'});
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(screen.getByRole('button', {name: 'Mit Funktion ermitteln'})).toHaveFocus();
+        await user.click(screen.getByRole('button', {name: 'Zurück zur Auswahl'}));
+        expect(screen.getByRole('button', {name: 'ist gleich'})).toHaveFocus();
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('list', {name: 'Vergleich auswählen'})).not.toBeInTheDocument());
+        expect(empty).toHaveFocus();
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('does not offer creation for a read-only empty expression', () => {
@@ -245,7 +351,7 @@ describe('NoCodeEditor', () => {
         fireEvent.keyDown(screen.getByRole('treeitem'), {key: 'Enter'});
         expect(screen.getByText('Noch kein Ausdruck festgelegt')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'Ausdruck hinzufügen'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'Operator'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Mit Funktion ermitteln'})).not.toBeInTheDocument();
         expect(onChange).not.toHaveBeenCalled();
     });
 
@@ -288,7 +394,7 @@ describe('NoCodeEditor', () => {
         render(<Harness onChange={onChange}/>);
         const choose = async () => {
             fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich, Wahrheitswert'}));
-            const picker = await screen.findByRole('dialog', {name: 'Operator auswählen'});
+            const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
             fireEvent.click(within(picker).getByRole('button', {name: 'Immer wahr: Ersetzen'}));
             return screen.findByRole('dialog', {name: 'Operator ändern'});
         };
@@ -329,7 +435,7 @@ describe('NoCodeEditor', () => {
         render(<Harness onChange={onChange}
                         operators={[equals, flexible]}/>);
         fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich, Wahrheitswert'}));
-        const picker = await screen.findByRole('dialog', {name: 'Operator auswählen'});
+        const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
         fireEvent.click(within(picker).getByRole('button', {name: 'Mehrere Varianten: Ersetzen'}));
         const dialog = await screen.findByRole('dialog', {name: 'Operator ändern'});
         expect(within(dialog).getByRole('combobox', {name: /Anzahl der Parameter/})).toHaveTextContent('3');
@@ -466,7 +572,7 @@ describe('NoCodeEditor', () => {
         fireEvent.keyDown(first, {key: 'Delete'});
 
         fireEvent.keyDown(screen.getByRole('treeitem', {name: 'Wert 1: leer, Beliebiger Wert'}), {key: 'Enter'});
-        fireEvent.click(await screen.findByRole('button', {name: 'Fester Wert'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
 
         expect(onChange).toHaveBeenLastCalledWith({
             ...expression,
@@ -506,7 +612,7 @@ describe('NoCodeEditor', () => {
 
         fireEvent.keyDown(root, {key: 'Enter'});
 
-        expect(await screen.findByRole('dialog', {name: 'Operator auswählen'})).toBeInTheDocument();
+        expect(await screen.findByRole('dialog', {name: 'Funktion auswählen'})).toBeInTheDocument();
     });
 
     describe('moving', () => {
@@ -616,7 +722,7 @@ describe('NoCodeEditor', () => {
                 }],
             });
             // The click picked the target instead of opening the socket's type selector.
-            expect(screen.queryByRole('button', {name: 'Fester Wert'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Wert selbst festlegen'})).not.toBeInTheDocument();
         });
 
         it('moves a node by dragging it with a pointer onto a socket', async () => {
@@ -668,7 +774,7 @@ describe('adding a parent operator', () => {
             shiftKey: true,
         });
         fireEvent.click(await screen.findByRole('menuitem', {name: 'Übergeordneten Operator hinzufügen'}));
-        return screen.findByRole('dialog', {name: 'Operator auswählen'});
+        return screen.findByRole('dialog', {name: 'Funktion auswählen'});
     }
 
     it('makes a value the first parameter of the chosen operator and focuses the new operator', async () => {
@@ -1148,8 +1254,9 @@ describe('operator sentences and descriptions', () => {
         expect(tooltip).toHaveTextContent('Wert 1: Der erste Vergleichswert.');
         fireEvent.click(within(tooltip).getByRole('button', {name: 'Mehr...'}));
 
-        const dialog = await screen.findByRole('dialog', {name: 'Fester Wert'});
-        expect(dialog).toHaveTextContent('einen konstanten Wert direkt in den Ausdruck einzufügen');
+        const dialog = await screen.findByRole('dialog', {name: 'Wert selbst festlegen'});
+        expect(dialog).toHaveTextContent('Einen Wert direkt eingeben oder aus verfügbaren Optionen auswählen.');
+        expect(dialog).toHaveTextContent('Der festgelegte Wert wird bei jeder Ausführung unverändert verwendet.');
     });
 
     it.each([[0, '0'], [false, 'Falsch']] as const)('does not describe a backend literal %s as empty', async (value, label) => {
@@ -1208,7 +1315,7 @@ describe('operator sentences and descriptions', () => {
             shiftKey: true,
         });
         fireEvent.click(await screen.findByRole('menuitem', {name: 'Beschreibung anzeigen'}));
-        const dialog = await screen.findByRole('dialog', {name: 'Fester Wert'});
+        const dialog = await screen.findByRole('dialog', {name: 'Wert selbst festlegen'});
         fireEvent.keyDown(dialog, {key: 'Escape'});
 
         await waitFor(() => expect(leaf).toHaveFocus());
@@ -1375,8 +1482,8 @@ it('does not mark newly inserted operator parameters as invalid after an earlier
     fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
     expect(screen.getByRole('treeitem')).toHaveAttribute('aria-invalid', 'true');
     fireEvent.click(screen.getByRole('button', {name: 'Ausdruck hinzufügen'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Operator'}));
-    const picker = await screen.findByRole('dialog', {name: 'Operator auswählen'});
+    fireEvent.click(screen.getByRole('button', {name: 'Mit Funktion ermitteln'}));
+    const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
     fireEvent.click(within(picker).getByRole('button', {name: 'Nicht: Hinzufügen'}));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     const parameter = screen.getByRole('treeitem', {name: 'Wert: leer, Wahrheitswert'});

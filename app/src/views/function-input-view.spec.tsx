@@ -98,8 +98,8 @@ describe('function input conversion', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Umstellung beginnen'}));
         expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeDisabled();
         fireEvent.click(await screen.findByRole('button', {name: 'Ausdruck hinzufügen'}));
-        fireEvent.click(screen.getByRole('button', {name: 'Operator'}));
-        fireEvent.click(within(await screen.findByRole('dialog', {name: 'Operator auswählen'})).getByRole('button', {name: 'Immer wahr: Hinzufügen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Mit Funktion ermitteln'}));
+        fireEvent.click(within(await screen.findByRole('dialog', {name: 'Funktion auswählen'})).getByRole('button', {name: 'Immer wahr: Hinzufügen'}));
         await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
         fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
         expect(onChange).toHaveBeenCalledWith({

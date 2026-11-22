@@ -30,7 +30,7 @@ describe('NoCodeEditorWrapper', () => {
         fireEvent.keyDown(item, {key: 'Delete'});
         expect(onChange).not.toHaveBeenCalled();
         fireEvent.keyDown(item, {key: 'Enter'});
-        expect(await screen.findByRole('dialog')).toHaveTextContent('Fester Wert');
+        expect(await screen.findByRole('dialog')).toHaveTextContent('Wert selbst festlegen');
     });
 });
 

@@ -60,7 +60,8 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     label={parameter.label}
                     hint={parameter.description}
                     desiredType={parameter.type}
-                    onChange={onChange}
+                    parameterOptions={parameter.options}
+                    onChange={(value) => onChange(value)}
                     contextType={contextType}
                 />
             }

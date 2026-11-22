@@ -12,38 +12,28 @@ export interface NoCodeOperandKindHelpEntry {
 /** Explains each kind of operand, both when choosing one and in the hints of the pill editor. */
 export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindHelpEntry> = {
     NoCodeStaticValue: {
-        title: 'Fester Wert',
+        title: 'Wert selbst festlegen',
         details: (
             <>
                 <Typography gutterBottom>
-                    Ein „Fester Wert” ermöglicht es Ihnen, einen konstanten Wert direkt in den Ausdruck einzufügen.
-                    Dies ist nützlich, wenn Sie mit unveränderlichen Daten arbeiten oder Standardwerte festlegen
-                    möchten.
+                    Einen Wert direkt eingeben oder aus verfügbaren Optionen auswählen.
                 </Typography>
                 <Typography>
-                    Nachdem Sie den Wert festgelegt haben, können Sie diesen mit anderen Werten oder Ausdrücken
-                    kombinieren, um komplexere Berechnungen oder Logiken zu erstellen.
+                    Der festgelegte Wert wird bei jeder Ausführung unverändert verwendet.
                 </Typography>
             </>
         ),
     },
     NoCodeReference: {
-        title: 'Wert eines Elements',
+        title: 'Aus Formularelement übernehmen',
         details: (
             <>
                 <Typography gutterBottom>
-                    Mit der Option „Wert eines Elements” können Sie auf Werte zugreifen, die in anderen Feldern
-                    eingegeben oder berechnet wurden.
-                    Dies ist besonders nützlich, um Beziehungen zwischen verschiedenen Datenpunkten herzustellen und
-                    dynamische Ausdrücke zu erstellen.
-                </Typography>
-                <Typography gutterBottom>
-                    Sie können nur Elemente auswählen, die sich im selben Kontext befinden und die oberhalb des
-                    aktuellen Elements liegen.
+                    Den aktuellen eingegebenen oder berechneten Wert eines Formularelements verwenden.
                 </Typography>
                 <Typography>
-                    Nachdem Sie ein Element ausgewählt haben, können Sie dessen Wert in Ihrem Ausdruck verwenden und mit
-                    anderen Werten oder Ausdrücken kombinieren.
+                    Sie können nur Elemente auswählen, die sich im selben Kontext befinden und die oberhalb des
+                    aktuellen Elements liegen.
                 </Typography>
             </>
         ),
@@ -91,11 +81,10 @@ export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindH
         ),
     },
     NoCodeExpression: {
-        title: 'Ausdruck',
+        title: 'Mit Funktion ermitteln',
         details: (
             <Typography gutterBottom>
-                Mit der Option „Ausdruck” können Sie einen benutzerdefinierten Ausdruck erstellen, der verschiedene
-                Werte mit einem Operator kombiniert.
+                Das Ergebnis einer Funktion verwenden. Die Funktion ermittelt den Wert bei der Ausführung.
             </Typography>
         ),
     },

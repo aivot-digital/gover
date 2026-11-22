@@ -135,10 +135,10 @@ function setup(section: LegacyNoCodeSection = 'visibility', editable = true, ove
 
 async function fillDraft() {
     fireEvent.click(await screen.findByRole('button', {name: 'Ausdruck hinzufügen'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Operator'}));
-    const picker = await screen.findByRole('dialog', {name: 'Operator auswählen'});
+    fireEvent.click(screen.getByRole('button', {name: 'Mit Funktion ermitteln'}));
+    const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
     fireEvent.click(within(picker).getByRole('button', {name: 'Immer wahr: Hinzufügen'}));
-    await waitFor(() => expect(screen.queryByRole('dialog', {name: 'Operator auswählen'})).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: 'Funktion auswählen'})).not.toBeInTheDocument());
 }
 
 beforeEach(() => {

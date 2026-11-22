@@ -24,9 +24,9 @@ export function SelectOperatorDialog(props: SelectOperatorDialogProps) {
     const replacing = props.mode === 'replace';
 
     return <SearchSelectionDialog open={props.open}
-                                  title="Operator auswählen"
-                                  searchLabel="Operator suchen"
-                                  detailLabel="Operator"
+                                  title="Funktion auswählen"
+                                  searchLabel="Funktion suchen"
+                                  detailLabel="Funktion"
                                   options={options}
                                   onClose={props.onClose}
                                   onSelect={props.onSelect}
@@ -39,13 +39,13 @@ export function SelectOperatorDialog(props: SelectOperatorDialogProps) {
                                   }}
                                   renderDetails={operator => <OperatorInfo operator={operator}
                                                                            headingBaseLevel={4}/>}
-                                  noSearchResultsMessage="Keine Operatoren gefunden, die zu Ihrem Suchbegriff passen."
+                                  noSearchResultsMessage="Keine Funktionen gefunden, die zu Ihrem Suchbegriff passen."
                                   noOptionsMessage={<Box>
-                                      <Typography>Keine Operatoren für den
+                                      <Typography>Keine Funktionen für den
                                                   Datentyp <strong>{NoCodeDataTypeLabels[props.desiredReturnType]}</strong> verfügbar.</Typography>
                                       {respectDesiredReturnType && <Button sx={{mt: 2}}
                                                                            onClick={() => setRespectDesiredReturnType(false)}>
-                                          Auch unpassende Operatoren anzeigen
+                                          Auch unpassende Funktionen anzeigen
                                       </Button>}
                                   </Box>}/>;
 }

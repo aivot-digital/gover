@@ -203,7 +203,7 @@ describe('InputModeField', () => {
         expect(onChange).not.toHaveBeenCalled();
         expect(within(dialog).getByRole('treeitem')).toHaveFocus();
         await user.click(await screen.findByRole('button', {name: 'Ausdruck hinzufügen'}));
-        await user.click(await screen.findByRole('button', {name: 'Fester Wert'}));
+        await user.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
         const input = await screen.findByRole('textbox', {name: /^Ausdruck/});
         await user.click(input);
         await user.keyboard('{Escape}');
