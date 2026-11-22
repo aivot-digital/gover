@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.nocode.models;
 
+import de.aivot.prosuna.backend.nocode.dtos.NoCodeOperatorDetailsDTO;
 import de.aivot.prosuna.backend.nocode.services.NoCodeOperatorProviderService;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.utils.SpringContext;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.ApplicationContext;
@@ -50,6 +52,20 @@ class NoCodeExpressionTest {
         assertEquals("Alle Parameter des Ausdrucks müssen konfiguriert sein.", error.error());
         assertEquals("Legen Sie einen Ausdruck fest.", error.subErrors().get(1).error());
         assertNull(error.subErrors().get(1).operand());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"add,true", "subtract,true", "multiply,true", "divide,true", "concat,true", "equals,false"})
+    void validatesAdditionalOperandsAccordingToThePublishedOperatorContract(String identifier, boolean acceptsExtra) {
+        var details = NoCodeOperatorDetailsDTO.fromSPI(new CommonOperatorsV1(null, null, null))
+                .filter(operator -> operator.identifier().equals(identifier)).findFirst().orElseThrow();
+        var first = NoCodeStaticValue.of("1");
+        var second = NoCodeStaticValue.of("2");
+
+        assertEquals(acceptsExtra, details.variableArgumentCount());
+        assertEquals(acceptsExtra, NoCodeExpression.of(identifier, first, second, NoCodeStaticValue.of("3")).validate().isValid());
+        assertFalse(NoCodeExpression.of(identifier, first).validate().isValid());
+        assertFalse(NoCodeExpression.of(identifier, first, second, null).validate().isValid());
     }
 
     @ParameterizedTest

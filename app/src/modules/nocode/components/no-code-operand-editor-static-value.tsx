@@ -5,10 +5,10 @@ import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {Autocomplete, Box, createFilterOptions, FormHelperText} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
-import {NoCodeNumberConstraints, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeDateInput, NoCodeNumberConstraints, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
-import {useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {DateFieldComponent} from '../../../components/date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
@@ -19,6 +19,7 @@ import {TimeFieldComponent} from '../../../components/time-field/time-field-comp
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {formFieldHelperTextSx} from '../../../theming/form-field-tokens';
 import {getNoCodeNumberValidationError} from '../utils/no-code-number-validation';
+import {isLocalDateIso, isYearIso, isYearMonthIso} from '../../../utils/temporal-utils';
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
@@ -31,6 +32,7 @@ interface NoCodeOperandEditorStaticValueProps {
     onAddEnclosingExpression: () => void;
     operandError?: NoCodeOperandError;
     numberConstraints?: NoCodeNumberConstraints | null;
+    dateInput?: NoCodeDateInput | null;
 }
 
 export const BOOL_DEFAULT_OPTIONS = NO_CODE_BOOLEAN_OPTIONS;
@@ -333,14 +335,61 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
 }
 
 
+const dateModeOptions = [
+    {value: DateFieldComponentModelMode.Day, label: 'Tag, Monat und Jahr'},
+    {value: DateFieldComponentModelMode.Month, label: 'Monat und Jahr'},
+    {value: DateFieldComponentModelMode.Year, label: 'Jahr'},
+];
+
+function getCalendarDateMode(value: unknown): DateFieldComponentModelMode | null {
+    if (isYearIso(value)) return DateFieldComponentModelMode.Year;
+    if (isYearMonthIso(value)) return DateFieldComponentModelMode.Month;
+    if (isLocalDateIso(value)) return DateFieldComponentModelMode.Day;
+    return null;
+}
+
 function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
-    return (
+    const [draft, setDraft] = useState<{source: NoCodeStaticValue['value']; mode: DateFieldComponentModelMode}>();
+    const value = props.value.value;
+    const savedMode = getCalendarDateMode(value);
+    const draftMode = draft != null && draft.source === value ? draft.mode : null;
+    const mode = props.dateInput == null ? DateFieldComponentModelMode.Day
+        : draftMode ?? savedMode ?? DateFieldComponentModelMode.Day;
+
+    useEffect(() => {
+        setDraft(current => current?.source === value ? current : undefined);
+    }, [value]);
+
+    return <>
+        {props.dateInput != null && <SelectFieldComponent
+            label={`Datumsgenauigkeit für „${props.label}“`}
+            showOptionalIndicator={false}
+            includeEmptyOption={false}
+            margin="none"
+            options={dateModeOptions}
+            value={mode}
+            onChange={(nextMode) => {
+                if (nextMode == null) return;
+                setDraft({source: value, mode: nextMode});
+                if (value == null || savedMode == null || nextMode === savedMode) return;
+                // Coarser ISO dates are prefixes. A finer date stays a draft until its missing parts are entered.
+                if (nextMode === DateFieldComponentModelMode.Year) {
+                    updateStaticValue(props, value.slice(0, 4));
+                } else if (nextMode === DateFieldComponentModelMode.Month && savedMode === DateFieldComponentModelMode.Day) {
+                    updateStaticValue(props, value.slice(0, 7));
+                }
+            }}
+        />}
         <DateFieldComponent
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(val) => {
+                if (val == null) {
+                    if (props.dateInput != null && savedMode != null && savedMode !== mode) return;
+                    setDraft({source: undefined, mode});
+                }
                 updateStaticValue(props, val);
             }}
             startIcon={<Article/>}
@@ -348,9 +397,9 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             muiPassTroughProps={{
                 margin: 'none',
             }}
-            mode={DateFieldComponentModelMode.Day}
+            mode={mode}
         />
-    );
+    </>;
 }
 
 function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
@@ -359,7 +408,8 @@ function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
-            value={props.value.value ?? undefined}
+            allowLegacyLocalValue
+            value={props.value.value}
             onChange={(value) => {
                 updateStaticValue(props, value);
             }}

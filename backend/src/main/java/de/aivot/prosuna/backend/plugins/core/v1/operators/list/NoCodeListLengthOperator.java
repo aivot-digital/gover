@@ -76,6 +76,6 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(castToList(args[0]).size());
+        return new NoCodeResult(listOperandOrEmpty(args[0]).size());
     }
 }

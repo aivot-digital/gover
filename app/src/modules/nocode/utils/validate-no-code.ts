@@ -2,7 +2,7 @@ import {validateNoCodeNodeDataPath} from './no-code-node-data-path';
 import {AnyElement} from '../../../models/elements/any-element';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {NoCodeOperand, NoCodeOperandError} from '../../../models/functions/no-code-expression';
-import {NoCodeOperatorDetailsDTO, NoCodeParameter, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
+import {findMatchingNoCodeSignature, NoCodeOperatorDetailsDTO, NoCodeParameter, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
 import {getNoCodeNumberValidationError} from './no-code-number-validation';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {isValidProcessDataPath} from '../../../utils/process-data-path';
@@ -34,7 +34,7 @@ export function validateNoCode(
                 if (!operand.operatorIdentifier) error = 'Wählen Sie eine Funktion aus.';
                 else if (operator == null) error = 'Die ausgewählte Funktion ist nicht verfügbar.';
                 const operands = operand.operands ?? [];
-                if (operator != null && !operator.signatures.some((signature) => signature.parameters.length === operands.length)) {
+                if (operator != null && findMatchingNoCodeSignature(operator, operands.length) == null) {
                     error = 'Die Anzahl der Parameter passt nicht zur Funktion.';
                 }
                 const parameters = operator == null ? [] : resolveNoCodeSignature(operator, {operandCount: operands.length}).parameters;

@@ -5,6 +5,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Tooltip, Typography} 
 import {NoCodeDryRunResultDTO, NoCodeDryRunStatus} from '../../../models/dtos/no-code-dry-run-dto';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {formatNoCodeValue, noCodeResultType} from '../utils/format-no-code-value';
+import {NoCodeDataTypeLabels} from '../../../data/no-code-data-type';
 
 export function NoCodeTestResult({
                                      result,
@@ -13,7 +14,8 @@ export function NoCodeTestResult({
                                  }: { result: NoCodeDryRunResultDTO; id?: string; compact?: boolean }) {
     const [details, setDetails] = useState(false);
     const evaluated = result.status === NoCodeDryRunStatus.Evaluated;
-    const text = evaluated ? formatNoCodeValue(result.value) : `${result.status === NoCodeDryRunStatus.Failed ? 'Fehler' : 'Nicht ausgewertet'}: ${result.message ?? 'Kein Ergebnis verfügbar.'}`;
+    const text = evaluated ? formatNoCodeValue(result.value, result.valueType) : `${result.status === NoCodeDryRunStatus.Failed ? 'Fehler' : 'Nicht ausgewertet'}: ${result.message ?? 'Kein Ergebnis verfügbar.'}`;
+    const typeLabel = result.valueType == null ? noCodeResultType(result.value) : NoCodeDataTypeLabels[result.valueType];
     const complex = evaluated && result.value != null && typeof result.value === 'object';
     const expandable = evaluated && (text.length > (compact ? 60 : 160) || complex || text.includes('\n'));
     const short = expandable ? `${text.slice(0, compact ? 59 : 159)}${text.length > (compact ? 59 : 159) ? '…' : ''}` : text;
@@ -60,7 +62,7 @@ export function NoCodeTestResult({
                                               sx={{
                                                   display: 'block',
                                                   mt: 0.5,
-                                              }}>Datentyp: {noCodeResultType(result.value)}</Typography>}
+                                              }}>Datentyp: {typeLabel}</Typography>}
         {expandable && <Button size="small"
                                onClick={() => setDetails(true)}
                                aria-haspopup="dialog">{compact ? 'Ergebnis ansehen' : 'Gesamtergebnis ansehen'}</Button>}
@@ -70,7 +72,7 @@ export function NoCodeTestResult({
                             onClose={() => setDetails(false)}>
             <DialogTitleWithClose onClose={() => setDetails(false)}>Testergebnis</DialogTitleWithClose>
             <DialogContent>
-                {evaluated && <Typography>Datentyp: {noCodeResultType(result.value)}</Typography>}
+                {evaluated && <Typography>Datentyp: {typeLabel}</Typography>}
                 <Box component="pre"
                      tabIndex={0}
                      aria-label="Vollständiges Testergebnis"

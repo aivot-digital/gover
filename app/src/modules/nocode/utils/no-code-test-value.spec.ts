@@ -10,7 +10,7 @@ describe('parseNoCodeTestValue', () => {
     ])('parses %s as %s', (text, type, value) => expect(parseNoCodeTestValue(text as string, type as T)).toEqual({value}));
     it.each([
         ['no', T.Number], ['1e999', T.Number], ['maybe', T.Boolean], ['{}', T.List], ['[]', T.Object], ['{', T.Runtime, true],
-        ['2023-02-29', T.Date], ['25:90', T.Time], ['2024-12-31', T.DateTime], ['false', T.String, true],
+        ['2023-02-29', T.Date], ['25:90', T.Time], ['2024-12-31', T.DateTime], ['2026-11-22T13:30:00+00:60', T.DateTime], ['false', T.String, true],
     ])('rejects invalid %s for %s instead of passing through text', (text, type, json = false) => {
         expect(parseNoCodeTestValue(text as string, type as T, json as boolean)).toHaveProperty('error');
     });

@@ -73,7 +73,7 @@ public class NoCodeFormatDurationOperator extends NoCodeOperator {
     @Nonnull
     @Override
     public NoCodeSignatur[] getSignatures() {
-        var duration = new NoCodeParameter(NoCodeDataType.Number, "Zeitdauer in Sekunden", "Die gesamte Zeitdauer als Sekundenwert, zum Beispiel aus einem Zeitdauer-Feld.").withSentence("für die Zeitdauer in Sekunden");
+        var duration = DurationOperatorSupport.numberParameter("Zeitdauer in Sekunden", "Die gesamte Zeitdauer als Sekundenwert, zum Beispiel aus einem Zeitdauer-Feld.").withSentence("für die Zeitdauer in Sekunden");
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(NoCodeDataType.String, duration,
                         new NoCodeParameter(NoCodeDataType.String, "Größte Einheit", "Wählen Sie, ob volle Tage oder die gesamte Anzahl der Stunden angezeigt werden sollen.",
@@ -84,7 +84,7 @@ public class NoCodeFormatDurationOperator extends NoCodeOperator {
     @Nonnull
     @Override
     public NoCodeResult performEvaluation(@Nonnull DerivedRuntimeElementData data, @Nonnull Object... args) throws NoCodeException {
-        var seconds = DurationOperatorSupport.seconds(castToNumber(args[0]));
+        var seconds = DurationOperatorSupport.seconds(DurationOperatorSupport.amount(args[0], "Zeitdauer in Sekunden"));
         var largestUnit = switch (castToString(args[1]).trim().toLowerCase(Locale.ROOT)) {
             case "", "hours" -> DurationLargestUnit.Hour;
             case "days" -> DurationLargestUnit.Day;

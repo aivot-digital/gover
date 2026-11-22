@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.list;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeNumberConstraints;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
@@ -69,6 +70,7 @@ public class NoCodeListGetOperator extends NoCodeOperator {
                                 "Position (ab 0)",
                                 "Ganze Zahl: 0 ist der erste Eintrag, 1 der zweite; -1 ist der letzte Eintrag."
                         ).withSentence("an Position", "(Zählung ab 0)")
+                                .withNumberConstraints(new NoCodeNumberConstraints(true, (double) Integer.MIN_VALUE, (double) Integer.MAX_VALUE))
                 )
         );
     }
@@ -81,14 +83,9 @@ public class NoCodeListGetOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
-        var index = castToNumber(args[1]).intValue();
-
-        if (index < 0) {
-            list = list.reversed();
-            index = Math.abs(index) - 1;
-        }
-
-        return new NoCodeResult(list.stream().skip(index).findFirst().orElse(null));
+        var list = listOperandOrEmpty(args[0]);
+        var position = requireInteger(args[1], "Die Position muss eine ganze Zahl zwischen -2147483648 und 2147483647 sein.");
+        var index = position < 0 ? list.size() + position : position;
+        return new NoCodeResult(index >= 0 && index < list.size() ? list.get(index) : null);
     }
 }

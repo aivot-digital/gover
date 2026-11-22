@@ -78,8 +78,8 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
-        var searched = castToList(args[1]);
+        var list = listOperandOrEmpty(args[0]);
+        var searched = listOperandOrEmpty(args[1]);
 
         for (var value : searched) {
             if (!containsMatchingValue(list, value)) {

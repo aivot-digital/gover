@@ -75,6 +75,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     onChange={onChange}
                     desiredType={parameter.type}
                     numberConstraints={parameter.numberConstraints}
+                    dateInput={parameter.dateInput}
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}

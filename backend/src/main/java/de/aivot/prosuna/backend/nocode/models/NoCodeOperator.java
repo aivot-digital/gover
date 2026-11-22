@@ -122,12 +122,7 @@ public abstract class NoCodeOperator {
         for (var signature : signatures) {
             var expectedParametersLength = signature.parameters().length;
             minimumExpectedParametersLength = Math.min(minimumExpectedParametersLength, expectedParametersLength);
-            if (actualParametersLength == expectedParametersLength) {
-                someMatch = true;
-                break;
-            }
-
-            if (supportsVariableArgumentCount() && actualParametersLength > expectedParametersLength) {
+            if (acceptsArgumentCount(expectedParametersLength, actualParametersLength)) {
                 someMatch = true;
                 break;
             }
@@ -164,6 +159,15 @@ public abstract class NoCodeOperator {
      */
     public String getDeprecatedMessage() {
         return null;
+    }
+
+    boolean acceptsArgumentCount(int declaredCount, int actualCount) {
+        return actualCount == declaredCount || (supportsVariableArgumentCount() && actualCount > declaredCount);
+    }
+
+    /** Exposes the existing plugin hook as operator metadata. */
+    public final boolean hasVariableArgumentCount() {
+        return supportsVariableArgumentCount();
     }
 
     protected boolean supportsVariableArgumentCount() {
@@ -286,6 +290,8 @@ public abstract class NoCodeOperator {
         return switch (value) {
             case Boolean bValue -> bValue;
             case Integer iValue -> iValue != 0;
+            case Short sValue -> sValue != 0;
+            case Byte bValue -> bValue != 0;
             case Float fValue -> fValue != 0;
             case Double dValue -> dValue != 0;
             case Long lValue -> lValue != 0;
@@ -358,12 +364,12 @@ public abstract class NoCodeOperator {
     ) throws NoCodeException {
         try {
             // General no-code number casts intentionally provide permissive fallbacks.
-            // Temporal components must instead reject text lengths, fractions and overflow.
+            // Integer parameters must instead reject text lengths, fractions and overflow.
             var number = switch (value) {
                 case BigDecimal decimal -> decimal;
                 case Number numericValue -> new BigDecimal(numericValue.toString());
                 case String stringValue -> new BigDecimal(stringValue.trim());
-                default -> null;
+                case null, default -> null;
             };
 
             if (number != null) {
@@ -494,6 +500,7 @@ public abstract class NoCodeOperator {
     @Nullable
     protected TemporalAccessor tryCastToCalendarValue(@Nullable Object value) {
         return switch (value) {
+            case null -> null;
             case LocalDate localDate -> localDate;
             case YearMonth yearMonth -> yearMonth;
             case Year year -> year;
@@ -653,35 +660,32 @@ public abstract class NoCodeOperator {
         }
     }
 
-    @Nonnull
+    @Nullable
     public Map<String, Object> castToMap(@Nullable Object value) {
-        if (value == null) {
+        try {
+            return readMap(value);
+        } catch (JacksonException | ClassCastException | IllegalArgumentException e) {
             return Map.of();
         }
+    }
 
+    @Nullable
+    protected Map<String, Object> readMap(@Nullable Object value) {
         return switch (value) {
+            case null -> Map.of();
             case Map<?, ?> mValue -> (Map<String, Object>) mValue;
-            case String sValue -> {
-                try {
-                    yield JsonMapperFactory.getInstance().readValue(sValue, Map.class);
-                } catch (JacksonException e) {
-                    yield Map.of();
-                }
-            }
-            default -> {
-                try {
-                    var res = (Map<String, Object>) JsonMapperFactory
-                            .getInstance()
-                            .convertValue(value, Map.class);
-                    yield Objects.requireNonNullElse(res, Map.of());
-                } catch (ClassCastException | IllegalArgumentException e) {
-                    yield Map.of();
-                }
-            }
+            case String sValue -> JsonMapperFactory.getInstance().readValue(sValue, Map.class);
+            default -> Objects.requireNonNullElse(JsonMapperFactory.getInstance().convertValue(value, Map.class), Map.of());
         };
     }
 
+    /** List functions treat a missing list as empty, including a serialized JSON null. */
     @Nonnull
+    protected List<Object> listOperandOrEmpty(@Nullable Object value) {
+        return Objects.requireNonNullElse(castToList(value), List.of());
+    }
+
+    @Nullable
     public List<Object> castToList(@Nullable Object value) {
         if (value == null) {
             return List.of();

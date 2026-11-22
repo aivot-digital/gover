@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
@@ -105,7 +106,7 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
 
                     Beide Angaben müssen dieselben Bestandteile enthalten: entweder Tag, Monat und Jahr, nur Monat und Jahr oder nur das Jahr. Das gilt für alle Vergleichsarten.
 
-                    Monats- und Jahresangaben können Sie aus anderen Wertquellen übernehmen oder mit Funktionen ermitteln. Das Eingabefeld für selbst festgelegte Werte unterstützt derzeit vollständige Datumsangaben.
+                    Für selbst festgelegte Werte wählen Sie unter „Datumsgenauigkeit“ die benötigten Bestandteile.
                     """;
             case TIME -> """
                     # Wofür verwenden Sie diese Funktion?
@@ -191,6 +192,7 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
 
     @Override
     public NoCodeSignatur[] getSignatures() {
+        var dateInput = temporalType == TemporalType.DATE ? NoCodeDateInput.Calendar : null;
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
                         NoCodeDataType.Boolean,
@@ -198,7 +200,7 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
                                 temporalType.dataType,
                                 getValueLabel(true),
                                 getValueDescription(true)
-                        ).withSentence("wenn"),
+                        ).withSentence("wenn").withDateInput(dateInput),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Vergleichsart",
@@ -214,7 +216,7 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
                                 temporalType.dataType,
                                 getValueLabel(false),
                                 getValueDescription(false)
-                        ).withSentence("", "ist")
+                        ).withSentence("", "ist").withDateInput(dateInput)
                 )
         );
     }

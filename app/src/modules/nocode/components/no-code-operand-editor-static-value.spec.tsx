@@ -5,6 +5,7 @@ import {useState} from 'react';
 import {type NoCodeStaticValue} from '../../../models/functions/no-code-expression';
 import {NoCodeOperandEditorStaticValue} from './no-code-operand-editor-static-value';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
+import {NoCodeDateInput} from '../../../models/dtos/no-code-operator-details-dto';
 
 describe('NoCodeOperandEditorStaticValue', () => {
     it('uses an external label for suggestions and retains selection, free text and control actions', async () => {
@@ -55,6 +56,93 @@ describe('NoCodeOperandEditorStaticValue', () => {
         expect(onAddEnclosingExpression).toHaveBeenCalledOnce();
         await user.click(within(control).getByRole('button', {name: 'Diesen Wert löschen'}));
         expect(onChange).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it('opens calendar values at their saved precision and updates the stored precision on selection', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        function Editor() {
+            const [value, setValue] = useState<NoCodeStaticValue>({type: 'NoCodeStaticValue', value: '2026-08'});
+            return <NoCodeOperandEditorStaticValue
+                label="Ausgangsdatum"
+                desiredType={NoCodeDataType.Date}
+                dateInput={NoCodeDateInput.Calendar}
+                value={value}
+                onChange={next => {
+                    onChange(next);
+                    if (next != null) setValue(next);
+                }}
+                onAddEnclosingExpression={vi.fn()}
+            />;
+        }
+        render(<Editor/>);
+        const precision = screen.getByRole('combobox', {name: 'Datumsgenauigkeit für „Ausgangsdatum“'});
+        const date = screen.getByRole('group', {name: 'Ausgangsdatum'});
+        expect(precision).toHaveTextContent('Monat und Jahr');
+        expect(within(date).getAllByRole('spinbutton').map(section => section.textContent)).toEqual(['08', '2026']);
+        expect(onChange).not.toHaveBeenCalled();
+
+        await user.click(precision);
+        await user.click(screen.getByRole('option', {name: 'Tag, Monat und Jahr'}));
+        await user.click(precision);
+        await user.click(screen.getByRole('option', {name: 'Monat und Jahr'}));
+        expect(within(date).getAllByRole('spinbutton').map(section => section.textContent)).toEqual(['08', '2026']);
+        expect(onChange).not.toHaveBeenCalled();
+
+        await user.click(precision);
+        await user.click(screen.getByRole('option', {name: 'Jahr'}));
+        expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: '2026'});
+        expect(within(date).getAllByRole('spinbutton').map(section => section.textContent)).toEqual(['2026']);
+    });
+
+    it('keeps the stored partial date until a finer value has been entered', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        function Editor() {
+            const [value, setValue] = useState<NoCodeStaticValue>({type: 'NoCodeStaticValue', value: '2026'});
+            return <NoCodeOperandEditorStaticValue
+                label="Ausgangsdatum"
+                desiredType={NoCodeDataType.Date}
+                dateInput={NoCodeDateInput.Calendar}
+                value={value}
+                onChange={next => {
+                    onChange(next);
+                    if (next != null) setValue(next);
+                }}
+                onAddEnclosingExpression={vi.fn()}
+            />;
+        }
+        render(<Editor/>);
+        const precision = screen.getByRole('combobox', {name: 'Datumsgenauigkeit für „Ausgangsdatum“'});
+        const date = screen.getByRole('group', {name: 'Ausgangsdatum'});
+        await user.click(precision);
+        await user.click(screen.getByRole('option', {name: 'Tag, Monat und Jahr'}));
+        expect(within(date).getAllByRole('spinbutton')).toHaveLength(3);
+        await user.click(precision);
+        await user.click(screen.getByRole('option', {name: 'Monat und Jahr'}));
+        const [month, year] = within(date).getAllByRole('spinbutton');
+        expect(onChange).not.toHaveBeenCalled();
+        await user.click(month);
+        await user.keyboard('11');
+        expect(onChange).not.toHaveBeenCalled();
+        await user.click(year);
+        await user.keyboard('2026');
+        expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: '2026-11'});
+    });
+
+    it('opens a legacy timestamp in the application timezone without rewriting the stored value', () => {
+        const onChange = vi.fn();
+        render(<NoCodeOperandEditorStaticValue
+            label="Zeitpunkt"
+            desiredType={NoCodeDataType.DateTime}
+            value={{type: 'NoCodeStaticValue', value: '2026-10-25T02:30:07.123456789'}}
+            onChange={onChange}
+            onAddEnclosingExpression={vi.fn()}
+        />);
+        const time = screen.getByRole('group', {name: 'Zeitpunkt'});
+        expect(within(time).getAllByRole('spinbutton').map(section => section.textContent))
+            .toEqual(['25', '10', '2026', '02', '30', '07']);
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('connects number validation to the input and clears it when the count is corrected', async () => {

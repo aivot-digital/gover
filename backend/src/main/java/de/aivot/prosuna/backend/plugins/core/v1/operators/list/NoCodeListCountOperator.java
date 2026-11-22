@@ -81,7 +81,7 @@ public class NoCodeListCountOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
+        var list = listOperandOrEmpty(args[0]);
         var value = args[1];
 
         var count = 0;

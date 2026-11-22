@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators.common;
 
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeDivideOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeRoundDownOperator;
@@ -18,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NoCodeCommonMathPresentationTest {
@@ -50,6 +53,23 @@ class NoCodeCommonMathPresentationTest {
         assertEquals(new BigDecimal("2"), new NoCodeRoundDownOperator().evaluate(runtime(), "2.5", 0).getValue());
         assertEquals(new BigDecimal("1.3E+2"), new NoCodeRoundUpOperator().evaluate(runtime(), 125, -1).getValue());
         assertEquals(new BigDecimal("1.2E+2"), new NoCodeRoundDownOperator().evaluate(runtime(), 125, -1).getValue());
+        for (var operator : List.of(new NoCodeRoundUpOperator(), new NoCodeRoundDownOperator())) {
+            assertEquals(new BigDecimal("0E+4"), operator.evaluate(runtime(), "-12.3", -4).getValue());
+        }
+    }
+
+    @Test
+    void roundingRequiresAnExactlyRepresentableIntegerForDecimalPlaces() {
+        for (var operator : List.of(new NoCodeRoundUpOperator(), new NoCodeRoundDownOperator())) {
+            var constraints = operator.getSignatures()[0].parameters()[1].numberConstraints();
+            assertTrue(constraints.integerOnly());
+            assertEquals((double) Integer.MIN_VALUE, constraints.minimum());
+            assertEquals((double) Integer.MAX_VALUE, constraints.maximum());
+            for (var invalid : List.of("2.000000001", "2147483648", "-2147483649", "abc")) {
+                var error = assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), 2.345, invalid));
+                assertTrue(error.getMessage().contains("Nachkommastellen"));
+            }
+        }
     }
 
     @Test
@@ -78,6 +98,7 @@ class NoCodeCommonMathPresentationTest {
         var operator = new NoCodeValueOperator();
         var object = Map.of("ort", "Berlin");
 
+        assertEquals(NoCodeDataType.Runtime, operator.getSignatures()[0].parameters()[0].type());
         assertEquals("email", operator.evaluate(runtime("email", "person@example.org"), "email").getValue());
         assertSame(object, operator.evaluate(runtime(), object).getValue());
         assertEquals("#0", operator.getHumanReadableTemplate());
@@ -92,6 +113,13 @@ class NoCodeCommonMathPresentationTest {
         assertEquals("Bonn", operator.evaluate(runtime(), object, "adresse.ort").getValue());
         assertNull(operator.evaluate(runtime(), object, "Ort").getValue());
         assertEquals("Berlin", operator.evaluate(runtime(), "{\"ort\":\"Berlin\"}", "ort").getValue());
+        assertNull(operator.evaluate(runtime(), null, "ort").getValue());
+        assertNull(operator.evaluate(runtime(), "null", "ort").getValue());
+        assertNull(operator.evaluate(runtime(), "{}", "ort").getValue());
+        for (var invalid : List.of("kein JSON", "{} {}", "[]", 42, List.of("Berlin"))) {
+            var error = assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), invalid, "ort"));
+            assertTrue(error.getMessage().contains("Objekt"));
+        }
     }
 
     @Test

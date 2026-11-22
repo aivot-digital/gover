@@ -10,6 +10,7 @@ export interface NoCodeOperatorDetailsDTO {
     /** Text after the operator that starts the sentence its parameters continue, such as „ergibt wahr“. */
     sentenceLead?: string | null;
     tags: string[];
+    variableArgumentCount?: boolean;
     signatures: NoCodeSignature[];
 }
 
@@ -27,6 +28,7 @@ export interface NoCodeParameter {
     /** Text after the operand. */
     sentenceSuffix?: string | null;
     numberConstraints?: NoCodeNumberConstraints | null;
+    dateInput?: NoCodeDateInput | null;
     /** Marks fixed options as units and points to the sibling operand providing their quantity. */
     quantityParameterIndex?: number | null;
     /** A fixed choice supplies a sentence part; unknown choices require a named-input presentation. */
@@ -34,10 +36,16 @@ export interface NoCodeParameter {
     options: NoCodeParameterOption[];
 }
 
+export enum NoCodeDateInput {
+    Calendar = 'Calendar',
+    CalendarOrDateTime = 'CalendarOrDateTime',
+}
+
 export interface NoCodeNumberConstraints {
     integerOnly: boolean;
     minimum?: number | null;
     maximum?: number | null;
+    allowEmpty?: boolean;
 }
 
 export interface NoCodeParameterOption {
@@ -60,6 +68,15 @@ export function matchesDesiredNoCodeReturnType(
     ));
 }
 
+/** Matches arity accepted by the evaluator, independently of fallback signatures used to display invalid data. */
+export function findMatchingNoCodeSignature(operator: NoCodeOperatorDetailsDTO, operandCount: number): NoCodeSignature | undefined {
+    const exact = operator.signatures.find(candidate => candidate.parameters.length === operandCount);
+    if (exact != null || !operator.variableArgumentCount) return exact;
+    return operator.signatures
+        .filter(candidate => candidate.parameters.length < operandCount)
+        .sort((a, b) => b.parameters.length - a.parameters.length)[0];
+}
+
 export function resolveNoCodeSignature(
     operator: NoCodeOperatorDetailsDTO,
     options?: {
@@ -79,7 +96,7 @@ export function resolveNoCodeSignature(
     let signature: NoCodeSignature | undefined;
 
     if (operandCount != null) {
-        signature = signatures.find((candidate) => candidate.parameters.length === operandCount);
+        signature = findMatchingNoCodeSignature(operator, operandCount);
 
         if (signature == null) {
             signature = signatures

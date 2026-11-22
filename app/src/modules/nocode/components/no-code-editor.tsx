@@ -54,6 +54,7 @@ import {
     NoCodeOperandError,
 } from '../../../models/functions/no-code-expression';
 import {
+    findMatchingNoCodeSignature,
     NoCodeOperatorDetailsDTO,
     NoCodeParameter,
     NoCodeParameterOption,
@@ -381,23 +382,23 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
         }
     });
 
-    const slotParameterType = (slot: NoCodeEditorSlot): NoCodeDataType => {
+    const getSlotParameter = (slot: NoCodeEditorSlot): Pick<NoCodeParameter, 'type' | 'dateInput'> => {
         if (slot.parentId == null) {
-            return parameter.type;
+            return parameter;
         }
         const parent = findNoCodeEditorNode(root, slot.parentId);
         const operator = parent?.type === 'NoCodeExpression'
             ? allOperators.find((op) => op.identifier === parent.operatorIdentifier)
             : undefined;
         if (parent?.type !== 'NoCodeExpression' || operator == null) {
-            return NoCodeDataType.Runtime;
+            return {type: NoCodeDataType.Runtime};
         }
         return resolveNoCodeSignature(operator, {operandCount: parent.operands.length || undefined})
-            .parameters[slot.index]?.type ?? NoCodeDataType.Runtime;
+            .parameters[slot.index] ?? {type: NoCodeDataType.Runtime};
     };
 
     const fitsSlot = (node: NoCodeEditorNode | null, slot: NoCodeEditorSlot) => (
-        node == null || getNoCodeEditorTypeConflict(node, slotParameterType(slot), allElements, allOperators) == null
+        node == null || getNoCodeEditorTypeConflict(node, getSlotParameter(slot), allElements, allOperators) == null
     );
 
     // Incompatible types are rejected like structurally impossible moves, for every way of moving.
@@ -891,7 +892,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                                                                  childrenOptions={removeOperands.flatMap((child, index) => child == null ? [] : [{
                                                                      value: child.id,
                                                                      label: `${removeParameters[index]?.label ?? `Parameter ${index + 1}`}: ${humanizeNoCode(toNoCodeOperand(child), allElements, allOperators, presentation)}`,
-                                                                     warning: getNoCodeEditorTypeConflict(child, removeSlot == null ? parameter.type : slotParameterType(removeSlot), allElements, allOperators),
+                                                                     warning: getNoCodeEditorTypeConflict(child, removeSlot == null ? parameter : getSlotParameter(removeSlot), allElements, allOperators),
                                                                  }])}
                                                                  onClose={() => setRemoveTarget({
                                                                      ...removeTarget,
@@ -960,7 +961,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                                 setWrapTarget({
                                     nodeId: after.nodeId,
                                     name: after.name,
-                                    returnType: slotParameterType(slot),
+                                    returnType: getSlotParameter(slot).type,
                                 });
                             } else if (after != null) {
                                 requestFocus(after.nodeId);
@@ -1555,7 +1556,7 @@ function NoCodeEditorExpressionView(props: SlotProps & {
                 options: [],
             }), operands);
     const suggestions = useNoCodeParameterSuggestions(operands, parameters, ctx.allElements);
-    const parameterCountError = operator != null && !operator.signatures.some((candidate) => candidate.parameters.length === node.operands.length)
+    const parameterCountError = operator != null && findMatchingNoCodeSignature(operator, node.operands.length) == null
         ? 'Die Anzahl der Parameter passt nicht zur Funktion. Wählen Sie die Funktion erneut aus, um sie anzupassen.'
         : null;
     const name = operator?.label ?? (
@@ -1566,7 +1567,7 @@ function NoCodeEditorExpressionView(props: SlotProps & {
     const dataType = signature?.returnType ?? NoCodeDataType.Runtime;
     const errorText = error?.error ?? (operator == null && node.operatorIdentifier ? 'Die ausgewählte Funktion ist nicht verfügbar.' : parameterCountError);
     const errorId = errorText != null ? `no-code-editor-error-${node.id}` : undefined;
-    const warning = getNoCodeEditorTypeConflict(node, slotParameter.type, ctx.allElements, ctx.allOperators);
+    const warning = getNoCodeEditorTypeConflict(node, slotParameter, ctx.allElements, ctx.allOperators);
     const warningId = warning != null ? `no-code-editor-warning-${node.id}` : undefined;
 
     return (
@@ -1649,7 +1650,9 @@ function NoCodeEditorExpressionView(props: SlotProps & {
                 onSelect={(op) => {
                     setShowOperatorPicker(false);
                     const counts = [...new Set(op.signatures.map((candidate) => candidate.parameters.length))];
-                    if (counts.length === 1 && !node.operands.slice(counts[0]).some((child) => child != null)) {
+                    if (counts.length === 1 && op.variableArgumentCount && node.operands.length > counts[0]) {
+                        changeOperator(op, node.operands.length);
+                    } else if (counts.length === 1 && !node.operands.slice(counts[0]).some((child) => child != null)) {
                         changeOperator(op, counts[0]);
                     } else if (counts.length > 0) {
                         pendingOperatorRef.current = op;
@@ -1704,7 +1707,7 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
     // number formats that differ from the generic runtime cast checked by the warning.
     const warning = node.type === 'NoCodeStaticValue' && parameter.numberConstraints != null
         ? null
-        : getNoCodeEditorTypeConflict(node, parameter.type, ctx.allElements, ctx.allOperators);
+        : getNoCodeEditorTypeConflict(node, parameter, ctx.allElements, ctx.allOperators);
     const warningId = warning != null ? `no-code-editor-warning-${node.id}` : undefined;
 
     return (

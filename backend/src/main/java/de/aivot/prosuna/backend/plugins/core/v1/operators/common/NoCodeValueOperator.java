@@ -60,7 +60,7 @@ public class NoCodeValueOperator extends NoCodeOperator {
                 NoCodeSignatur.of(
                         NoCodeDataType.Runtime,
                         new NoCodeParameter(
-                                NoCodeDataType.String,
+                                NoCodeDataType.Runtime,
                                 "Wert",
                                 "Der Wert, der unverändert als Ergebnis übernommen wird."
                         ).withSentence("")

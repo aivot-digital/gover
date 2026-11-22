@@ -115,7 +115,7 @@ public class NoCodeExpression extends NoCodeOperand {
         } else {
             var parameterCountMatched = false;
             for (var sig : op.getSignatures()) {
-                if (sig.parameters().length == parameterCount) {
+                if (op.acceptsArgumentCount(sig.parameters().length, parameterCount)) {
                     parameterCountMatched = true;
                     break;
                 }

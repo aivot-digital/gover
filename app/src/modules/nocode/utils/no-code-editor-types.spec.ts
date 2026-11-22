@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
-import {type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeDateInput, type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {toNoCodeEditorNode} from './no-code-editor-store';
@@ -32,9 +32,12 @@ const dateElement = {
     label: 'Geburtstag',
 };
 
-function conflict(operand: NoCodeOperand, expected: NoCodeDataType) {
-    return getNoCodeEditorTypeConflict(toNoCodeEditorNode(operand)!, expected, [{
+function conflict(operand: NoCodeOperand, expected: NoCodeDataType, dateInput?: NoCodeDateInput) {
+    return getNoCodeEditorTypeConflict(toNoCodeEditorNode(operand)!, {type: expected, dateInput}, [{
         element: dateElement,
+        parents: [],
+    }, {
+        element: {...generateElementWithDefaultValues(ElementType.DateTime), id: 'appointment'},
         parents: [],
     }], [isEmpty]);
 }
@@ -73,6 +76,20 @@ describe('getNoCodeEditorTypeConflict', () => {
             operatorIdentifier: 'unknown',
             operands: [],
         }, NoCodeDataType.Date)).toBeNull();
+    });
+
+    it('warns about timestamp literals and sources only for strict calendar parameters', () => {
+        const inputs: NoCodeOperand[] = [
+            {type: 'NoCodeStaticValue', value: '2026-11-22T12:30:00Z'},
+            {type: 'NoCodeReference', elementId: 'appointment'},
+        ];
+        for (const input of inputs) {
+            expect(conflict(input, NoCodeDataType.Date, NoCodeDateInput.Calendar)).not.toBeNull();
+            expect(conflict(input, NoCodeDataType.Date, NoCodeDateInput.CalendarOrDateTime)).toBeNull();
+        }
+        for (const value of ['2026', '2026-11', '2026-11-22']) {
+            expect(conflict({type: 'NoCodeStaticValue', value}, NoCodeDataType.Date, NoCodeDateInput.Calendar)).toBeNull();
+        }
     });
 
     it('checks static text against the formats the backend parses', () => {

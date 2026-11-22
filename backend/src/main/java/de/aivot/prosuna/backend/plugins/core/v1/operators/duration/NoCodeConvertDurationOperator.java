@@ -74,14 +74,14 @@ public class NoCodeConvertDurationOperator extends NoCodeOperator {
     @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(NoCodeSignatur.of(NoCodeDataType.Number,
-                new NoCodeParameter(NoCodeDataType.Number, "Zeitdauer in Sekunden", "Die gesamte Zeitdauer als Sekundenwert, zum Beispiel aus einem Zeitdauer-Feld.").withSentence("aus", "Sekunden"),
+                DurationOperatorSupport.numberParameter("Zeitdauer in Sekunden", "Die gesamte Zeitdauer als Sekundenwert, zum Beispiel aus einem Zeitdauer-Feld.").withSentence("aus", "Sekunden"),
                 DurationOperatorSupport.unitParameter().withSentence("in").withOptionsAsSentencePart()));
     }
 
     @Nonnull
     @Override
     public NoCodeResult performEvaluation(@Nonnull DerivedRuntimeElementData data, @Nonnull Object... args) throws NoCodeException {
-        var seconds = DurationOperatorSupport.seconds(castToNumber(args[0]));
+        var seconds = DurationOperatorSupport.seconds(DurationOperatorSupport.amount(args[0], "Zeitdauer in Sekunden"));
         var factor = DurationOperatorSupport.factor(castToString(args[1]));
         return new NoCodeResult(BigDecimal.valueOf(seconds).divide(factor, 8, RoundingMode.HALF_UP));
     }

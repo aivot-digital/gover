@@ -81,8 +81,8 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list1 = castToList(args[0]);
-        var list2 = castToList(args[1]);
+        var list1 = listOperandOrEmpty(args[0]);
+        var list2 = listOperandOrEmpty(args[1]);
 
         var result = new ArrayList<>(list1);
         result.addAll(list2);

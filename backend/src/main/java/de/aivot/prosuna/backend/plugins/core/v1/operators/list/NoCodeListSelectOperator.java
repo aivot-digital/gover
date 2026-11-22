@@ -58,7 +58,7 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.Runtime,
+                        NoCodeDataType.List,
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Liste",
@@ -81,13 +81,13 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
+        var list = listOperandOrEmpty(args[0]);
         var field = castToString(args[1]);
 
         var result = list
                 .stream()
                 .map(this::castToMap)
-                .map(map -> map.getOrDefault(field, null))
+                .map(map -> map == null ? null : map.get(field))
                 .toList();
 
         return new NoCodeResult(result);

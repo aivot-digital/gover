@@ -4,7 +4,7 @@ import {dateValueToDateTime, isYearIso, localTimeIsoToDateTime} from '../../../u
 import {isNoCodeDecimalLiteral} from './no-code-number-validation';
 import {formatNoCodeDateTimeValue} from './no-code-date-time-value';
 
-/** Formatting describes authored values; only an explicit parameter type permits displaying a string as typed. */
+/** Only an explicit parameter or result type permits displaying a string as a temporal value. */
 export function formatNoCodeValue(value: unknown, type = NoCodeDataType.Runtime, options: NoCodeParameterOption[] = [], compact = false): string {
     if (value == null) return 'Leerer Wert';
     if (value === '') return 'Leerer Text';
@@ -29,7 +29,7 @@ export function formatNoCodeValue(value: unknown, type = NoCodeDataType.Runtime,
         return value === true || value === 'true' ? 'Wahr' : 'Falsch';
     }
     if (typeof value === 'number') return String(value);
-    if (type === NoCodeDataType.Number && typeof value === 'string' && isNoCodeDecimalLiteral(value.trim().replace(',', '.'))) return value.trim();
+    if (type === NoCodeDataType.Number && typeof value === 'string' && isNoCodeDecimalLiteral(value.trim())) return value.trim();
     if (typeof value === 'object') return JSON.stringify(value);
     return compact ? String(value) : `„${String(value)}“`;
 }

@@ -2,6 +2,11 @@ import {describe, expect, it} from 'vitest';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {formatNoCodeValue} from './format-no-code-value';
 
+it('shows comma-separated numeric literals as the text received by the evaluator', () => {
+    expect(formatNoCodeValue('1,5', NoCodeDataType.Number)).toBe('„1,5“');
+    expect(formatNoCodeValue('1.5', NoCodeDataType.Number)).toBe('1.5');
+});
+
 describe('formatNoCodeValue for authored clock times', () => {
     it.each([
         ['09:30', '09:30:00 Uhr'],

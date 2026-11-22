@@ -1,15 +1,13 @@
 import {
     getApplicationTimeZone,
-    isInstantIso,
+    instantToDateTime,
     isLocalDateIso,
-    isLocalDateTimeIso,
     isLocalTimeIso,
     isYearIso,
     isYearMonthIso,
-    resolveLocalDateTime,
 } from '../../../utils/temporal-utils';
 import {NoCodeDataType, NoCodeDataTypeLabels} from '../../../data/no-code-data-type';
-import {NoCodeOperatorDetailsDTO, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeDateInput, NoCodeOperatorDetailsDTO, NoCodeParameter, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
@@ -35,7 +33,6 @@ const INCOMPATIBLE_SOURCES: Partial<Record<NoCodeDataType, NoCodeDataType[]>> = 
 
 // Text formats the backend parses, see NoCodeOperator and IsoTimestampUtils.
 const NUMBER_TEXT = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
-const DATE_TIME_TEXT = /^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})?$/;
 
 export function getNoCodeEditorNodeType(
     node: NoCodeEditorNode,
@@ -65,31 +62,33 @@ export function getNoCodeEditorNodeType(
  */
 export function getNoCodeEditorTypeConflict(
     node: NoCodeEditorNode,
-    expectedType: NoCodeDataType,
+    parameter: Pick<NoCodeParameter, 'type' | 'dateInput'>,
     allElements: ElementWithParents[],
     allOperators: NoCodeOperatorDetailsDTO[],
 ): string | null {
+    const expectedType = parameter.type;
+    const strictCalendar = parameter.dateInput === NoCodeDateInput.Calendar;
     const expected = NoCodeDataTypeLabels[expectedType];
 
     if (node.type === 'NoCodeStaticValue') {
-        return isStringNullOrEmpty(node.value) || staticValueFits(node.value!, expectedType)
+        return isStringNullOrEmpty(node.value) || staticValueFits(node.value!, expectedType, strictCalendar)
             ? null
             : `Typkonflikt: Erwartet wird „${expected}“, „${node.value}“ lässt sich nicht umwandeln.`;
     }
 
     const actualType = getNoCodeEditorNodeType(node, allElements, allOperators);
-    return INCOMPATIBLE_SOURCES[expectedType]?.includes(actualType)
+    return (strictCalendar && actualType === T.DateTime) || INCOMPATIBLE_SOURCES[expectedType]?.includes(actualType)
         ? `Typkonflikt: Erwartet wird „${expected}“, geliefert wird „${NoCodeDataTypeLabels[actualType]}“.`
         : null;
 }
 
-function staticValueFits(value: string, expectedType: NoCodeDataType): boolean {
+function staticValueFits(value: string, expectedType: NoCodeDataType, strictCalendar: boolean): boolean {
     switch (expectedType) {
         case T.Number:
             // castToNumber also turns dates and times into numbers; other text would become its length.
             return NUMBER_TEXT.test(value) || isLocalDateIso(value) || dateTimeFits(value) || isLocalTimeIso(value);
         case T.Date:
-            return isLocalDateIso(value) || isYearMonthIso(value) || isYearIso(value) || dateTimeFits(value);
+            return isLocalDateIso(value) || isYearMonthIso(value) || isYearIso(value) || (!strictCalendar && dateTimeFits(value));
         case T.DateTime:
             return dateTimeFits(value);
         case T.Time:
@@ -114,9 +113,5 @@ function parseJson(value: string): unknown {
 }
 
 function dateTimeFits(value: string): boolean {
-    if (!DATE_TIME_TEXT.test(value)) return false;
-    if (isInstantIso(value)) return true;
-    // The backend also accepts legacy timestamps without an offset, in the application timezone.
-    const local = value.replace(/\.\d{1,9}$/, '');
-    return isLocalDateTimeIso(local) && resolveLocalDateTime(local, getApplicationTimeZone()).resolved;
+    return instantToDateTime(value, getApplicationTimeZone(), true) != null;
 }

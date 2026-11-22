@@ -143,6 +143,27 @@ class NoCodeDateOperatorsTest {
     }
 
     @Test
+    void missingCalendarDatesAndAmountsProduceFieldSpecificErrors() {
+        var data = runtime();
+        for (var operator : List.of(new NoCodeAddToDateOperator(), new NoCodeSubtractFromDateOperator())) {
+            assertTrue(assertThrows(NoCodeException.class, () -> operator.evaluate(data, null, 1, "tage"))
+                    .getMessage().contains("Ausgangsdatum"));
+            assertTrue(assertThrows(NoCodeException.class, () -> operator.evaluate(data, "2026-08", null, "monate"))
+                    .getMessage().contains("Anzahl"));
+        }
+        for (var direction : NoCodeAdjustDateTimeOperator.Direction.values()) {
+            var operator = new NoCodeAdjustDateTimeOperator(direction);
+            assertTrue(assertThrows(NoCodeException.class, () -> operator.evaluate(data, FIXED_NOW, null, "tage"))
+                    .getMessage().contains("Anzahl"));
+        }
+        var compare = new NoCodeTemporalCompareOperator(NoCodeTemporalCompareOperator.TemporalType.DATE);
+        assertEquals("Prüfen Sie die Datumsangabe für „Datum“.",
+                assertThrows(NoCodeException.class, () -> compare.evaluate(data, null, "gleich", "2026")).getMessage());
+        assertEquals("Prüfen Sie die Datumsangabe für „Vergleichsdatum“.",
+                assertThrows(NoCodeException.class, () -> compare.evaluate(data, "2026", "gleich", null)).getMessage());
+    }
+
+    @Test
     void createTodayShouldReturnApplicationLocalDate() throws NoCodeException {
         var operator = new NoCodeCreateTodayOperator(businessTime);
         var data = runtime();

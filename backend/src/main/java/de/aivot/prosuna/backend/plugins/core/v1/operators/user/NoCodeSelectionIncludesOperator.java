@@ -65,6 +65,8 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
                 # Was ist zu beachten?
                 Verglichen werden Art und ID eines Eintrags, nicht seine sichtbare Bezeichnung. Eine Organisationseinheit und ein Team mit derselben ID gelten als unterschiedliche Einträge. Die Reihenfolge und mehrfache Vorkommen desselben Eintrags sind für den Vergleich unerheblich.
 
+                Einträge ohne ID oder ohne unterstützte Art werden beim Vergleich ausgelassen. Enthält eine der beiden Auswahlen dadurch keinen gültigen Eintrag, erhalten Sie **Falsch**.
+
                 Mit **„Nicht“** können Sie prüfen, ob nicht alle gesuchten Einträge enthalten sind. Bei mehreren gesuchten Einträgen bedeutet das nicht, dass keiner davon enthalten ist.
                 """;
     }
@@ -125,6 +127,7 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
 
         return values
                 .stream()
+                .filter(entry -> DomainAndUserSelectInputElement.isSupportedType(entry.getType()))
                 .map(DomainAndUserSelectInputElementValue::toComparableKey)
                 .collect(Collectors.toSet());
     }

@@ -166,6 +166,10 @@ class NoCodeOperatorTest {
         assertFalse(operator.castToBoolean(false));
         assertTrue(operator.castToBoolean(1));
         assertFalse(operator.castToBoolean(0));
+        assertTrue(operator.castToBoolean((byte) 1));
+        assertFalse(operator.castToBoolean((byte) 0));
+        assertTrue(operator.castToBoolean((short) -1));
+        assertFalse(operator.castToBoolean((short) 0));
         assertTrue(operator.castToBoolean("true"));
         assertFalse(operator.castToBoolean("false"));
         assertFalse(operator.castToBoolean(""));
@@ -267,6 +271,9 @@ class NoCodeOperatorTest {
         assertEquals(Map.of("key", "value"), operator.castToMap(Map.of("key", "value")));
         assertEquals(Map.of("key", "value"), operator.castToMap("{\"key\":\"value\"}"));
         assertEquals(Map.of(), operator.castToMap("invalid"));
+        assertEquals(Map.of(), operator.castToMap(null));
+        assertNull(operator.castToMap("null"));
+        assertFalse(operator.isEqualToReference(Map.of(), "null"));
     }
 
     @Test
@@ -274,5 +281,8 @@ class NoCodeOperatorTest {
         assertEquals(List.of(1, 2, 3), operator.castToList(List.of(1, 2, 3)));
         assertEquals(List.of(1, 2, 3), operator.castToList("[1,2,3]"));
         assertEquals(List.of(), operator.castToList("invalid"));
+        assertEquals(List.of(), operator.castToList(null));
+        assertNull(operator.castToList("null"));
+        assertFalse(operator.isEqualToReference(List.of(), "null"));
     }
 }

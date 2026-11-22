@@ -32,4 +32,15 @@ describe('getNoCodeNumberValidationError', () => {
         expect(getNoCodeNumberValidationError(null, 'Wert', null)).toBeUndefined();
         expect(getNoCodeNumberValidationError('1.5', 'Zahl', {integerOnly: false})).toBeUndefined();
     });
+
+    it('accepts missing and empty duration values and flags nonnumeric inputs at the field', () => {
+        const durationConstraints = {integerOnly: false, allowEmpty: true};
+        for (const value of [null, undefined, '', 0, '1.5']) {
+            expect(getNoCodeNumberValidationError(value, 'Anzahl', durationConstraints)).toBeUndefined();
+        }
+        for (const value of ['abc', ' ', true, {}, []]) {
+            expect(getNoCodeNumberValidationError(value, 'Anzahl', durationConstraints))
+                .toBe('Geben Sie für „Anzahl“ eine Zahl ein.');
+        }
+    });
 });

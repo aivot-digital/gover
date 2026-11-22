@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
+import tools.jackson.core.JacksonException;
 
 public class NoCodeObjectGetOperator extends NoCodeOperator {
     public static final String OPERATOR_ID = "object-get";
@@ -48,6 +49,8 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
 
                 # Was ist zu beachten?
                 Der Name muss einschließlich Groß- und Kleinschreibung übereinstimmen. Es wird genau eine Eigenschaft auf der obersten Ebene gelesen. `adresse.ort` wird als vollständiger Eigenschaftsname behandelt, nicht als Pfad. Für verschachtelte Objekte können Sie die Funktion mehrfach ineinander einsetzen.
+
+                Fehlt das Objekt oder enthält der JSON-Text `null`, erhalten Sie einen leeren Wert. Ungültiger JSON-Text und Werte ohne Objektstruktur führen zu einer Fehlermeldung.
                 """;
     }
 
@@ -83,9 +86,12 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var obj = castToMap(args[0]);
         var field = castToString(args[1]);
-
-        return new NoCodeResult(obj.getOrDefault(field, null));
+        try {
+            var obj = readMap(args[0]);
+            return new NoCodeResult(obj == null ? null : obj.get(field));
+        } catch (JacksonException | ClassCastException | IllegalArgumentException e) {
+            throw new NoCodeException("Für die Eingabe „Objekt“ wird ein Objekt oder ein gültiges JSON-Objekt als Text benötigt.");
+        }
     }
 }

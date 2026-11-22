@@ -43,4 +43,12 @@ class NoCodeParameterTest {
         assertEquals(mapper.valueToTree(parameter), mapper.valueToTree(restored));
         assertFalse(restored.optionsAsSentencePart());
     }
+
+    @Test
+    void existingNumberConstraintsStillRequireAValue() {
+        var mapper = JsonMapperTestUtils.createMapper();
+        var constraints = mapper.readValue("{\"integerOnly\":true,\"minimum\":0,\"maximum\":10}", NoCodeNumberConstraints.class);
+        assertEquals(new NoCodeNumberConstraints(true, 0.0, 10.0), constraints);
+        assertFalse(constraints.allowEmpty());
+    }
 }

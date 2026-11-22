@@ -56,6 +56,7 @@ class NoCodeDateArithmeticPresentationTest {
 
         var json = JsonMapperTestUtils.createMapper().valueToTree(details);
         var serializedParameters = json.get("signatures").get(0).get("parameters");
+        assertEquals("Calendar", serializedParameters.get(0).get("dateInput").asString());
         var constraints = serializedParameters.get(1).get("numberConstraints");
         assertTrue(constraints.get("integerOnly").booleanValue());
         assertEquals((double) Integer.MIN_VALUE, constraints.get("minimum").doubleValue());

@@ -7,7 +7,10 @@ import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,6 +86,28 @@ class NoCodeDurationOperatorsTest {
             assertEquals("0 Sekunden", new NoCodeFormatDurationOperator().evaluate(runtime(), empty, "days").getValue());
         }
         assertNumber(5400, new NoCodeCreateDurationOperator().evaluate(runtime(), "1.5", "hours").getValue());
+    }
+
+    @Test
+    void rejectsNonnumericDurationInputsWithTheirFieldLabel() {
+        for (var operator : List.of(new NoCodeCreateDurationOperator(), new NoCodeConvertDurationOperator(), new NoCodeFormatDurationOperator())) {
+            var parameter = operator.getSignatures()[0].parameters()[0];
+            assertTrue(parameter.numberConstraints().allowEmpty());
+            var message = "Geben Sie für „" + parameter.label() + "“ eine Zahl ein.";
+            for (var input : List.of("abc", " ", "12:30", "2026-11-22", LocalDate.of(2026, 11, 22),
+                    List.of(1), Map.of("quantity", 1), false, Double.NaN, Float.POSITIVE_INFINITY)) {
+                assertEquals(message, assertThrows(NoCodeException.class,
+                        () -> operator.evaluate(runtime(), input, "hours")).getMessage());
+            }
+        }
+    }
+
+    @Test
+    void preservesEightPlaceRoundingAndHandlesExtremeExponentsWithoutExpansion() throws NoCodeException {
+        var operator = new NoCodeCreateDurationOperator();
+        assertNumber(1, operator.evaluate(runtime(), "0.999999999", "seconds").getValue());
+        assertNumber(0, operator.evaluate(runtime(), "1e-999999999", "days").getValue());
+        assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), "1e999999999", "days"));
     }
 
     @Test

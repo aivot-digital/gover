@@ -7,6 +7,7 @@ export function getNoCodeNumberValidationError(
     constraints?: NoCodeNumberConstraints | null,
 ): string | undefined {
     if (constraints == null) return undefined;
+    if (constraints.allowEmpty && (value == null || value === '')) return undefined;
 
     const source = typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
     const numeric = Number(source);

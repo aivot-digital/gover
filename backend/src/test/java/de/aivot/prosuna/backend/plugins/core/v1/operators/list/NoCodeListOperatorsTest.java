@@ -3,7 +3,9 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.list;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeNumberConstraints;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import org.junit.jupiter.api.Test;
 
@@ -82,6 +84,7 @@ class NoCodeListOperatorsTest {
         var selected = operator.evaluate(data, list, "name").getValue();
 
         assertEquals(Arrays.asList("A", "B", null), selected);
+        assertEquals(NoCodeDataType.List, operator.getSignatures()[0].returnType());
     }
 
     @Test
@@ -90,6 +93,7 @@ class NoCodeListOperatorsTest {
         var rows = List.of(Map.of("person.name", "Direktes Feld", "person", Map.of("name", "Verschachtelt")), Map.of("other", "B"));
 
         assertEquals(Arrays.asList("Direktes Feld", null), operator.evaluate(runtime(), rows, "person.name").getValue());
+        assertEquals(Arrays.asList(null, "A", null), operator.evaluate(runtime(), "[null,{\"name\":\"A\"},\"null\"]", "name").getValue());
     }
 
     @Test
@@ -102,6 +106,25 @@ class NoCodeListOperatorsTest {
         assertEquals("C", operator.evaluate(data, list, -1).getValue());
         assertEquals("B", operator.evaluate(data, list, -2).getValue());
         assertNull(operator.evaluate(data, list, 5).getValue());
+        assertNull(operator.evaluate(data, list, Integer.MIN_VALUE).getValue());
+        assertNull(operator.evaluate(data, list, Integer.MAX_VALUE).getValue());
+        assertEquals("B", operator.evaluate(data, list, "1.0").getValue());
+    }
+
+    @Test
+    void listGetShouldReturnMissingEntriesAndRejectInvalidPositions() throws NoCodeException {
+        var operator = new NoCodeListGetOperator();
+        var data = runtime();
+        var list = Arrays.asList(null, "B", null);
+
+        assertEquals(new NoCodeNumberConstraints(true, (double) Integer.MIN_VALUE, (double) Integer.MAX_VALUE),
+                operator.getSignatures()[0].parameters()[1].numberConstraints());
+        assertNull(operator.evaluate(data, list, 0).getValue());
+        assertNull(operator.evaluate(data, list, -1).getValue());
+        for (var position : Arrays.asList(null, "abc", List.of(1), 0.5, 4294967296L)) {
+            var error = assertThrows(NoCodeException.class, () -> operator.evaluate(data, list, position));
+            assertTrue(error.getMessage().contains("Position"));
+        }
     }
 
     @Test
@@ -174,6 +197,27 @@ class NoCodeListOperatorsTest {
 
         assertEquals(3, operator.evaluate(data, List.of("a", "b", "c")).getValue());
         assertEquals(0, operator.evaluate(data, List.of()).getValue());
+        assertEquals(0, operator.evaluate(data, (Object) null).getValue());
+        assertEquals(0, operator.evaluate(data, " null ").getValue());
+    }
+
+    @Test
+    void listEvaluationAndReferenceComparisonsShouldUsePluginCasts() throws NoCodeException {
+        var operator = new NoCodeListLengthOperator() {
+            @Override
+            public List<Object> castToList(Object value) {
+                return List.of(value);
+            }
+
+            @Override
+            public Map<String, Object> castToMap(Object value) {
+                return Map.of("name", value);
+            }
+        };
+
+        assertEquals(1, operator.evaluate(runtime(), "A").getValue());
+        assertTrue(operator.isEqualToReference(List.of("A"), "A"));
+        assertTrue(operator.isEqualToReference(Map.of("name", "A"), "A"));
     }
 
     @Test

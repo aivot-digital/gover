@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
@@ -47,7 +48,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                 - **Datum:** Der Datumswert, den Sie ausgeben möchten.
                 - **Ausgabeformat:** Die gewünschte Darstellung des Datums.
 
-                Das Datum können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für das selbst festgelegte Ausgabeformat wählen Sie eine der vier Vorgaben: Tag, Monat und Jahr; Monat und Jahr; Jahr; oder die Reihenfolge Jahr-Monat-Tag. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
+                Das Datum können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für ein selbst festgelegtes Datum wählen Sie unter „Datumsgenauigkeit“ Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Für das selbst festgelegte Ausgabeformat wählen Sie eine der vier Vorgaben: Tag, Monat und Jahr; Monat und Jahr; Jahr; oder die Reihenfolge Jahr-Monat-Tag. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
 
                 Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein darüber geliefertes Format muss ein gültiges Formatmuster sein, etwa **dd.MM.yyyy**.
 
@@ -82,7 +83,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                                 NoCodeDataType.Date,
                                 "Datum",
                                 "Das zu formatierende Datum."
-                        ).withSentence("das Datum"),
+                        ).withSentence("das Datum").withDateInput(NoCodeDateInput.CalendarOrDateTime),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Ausgabeformat",

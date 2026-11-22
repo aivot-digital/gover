@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import static de.aivot.prosuna.backend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -91,6 +92,13 @@ class NoCodeTemporalComparePresentationTest {
         for (var index = 0; index < parameters.length; index++) {
             assertEquals(expectedLabels[index], parameters[index].label());
             assertEquals(index == 1, serializedParameters.get(index).get("optionsAsSentencePart").booleanValue());
+        }
+        if (type == NoCodeTemporalCompareOperator.TemporalType.DATE) {
+            assertEquals("Calendar", serializedParameters.get(0).get("dateInput").asString());
+            assertEquals("Calendar", serializedParameters.get(2).get("dateInput").asString());
+        } else {
+            assertNull(parameters[0].dateInput());
+            assertNull(parameters[2].dateInput());
         }
         assertEquals(0, parameters[0].options().length);
         assertEquals(0, parameters[2].options().length);

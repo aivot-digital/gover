@@ -83,7 +83,7 @@ public class NoCodeListSumOperator extends NoCodeOperator {
             throw new NoCodeWrongArgumentCountException(1, args.length);
         }
 
-        var list = castToList(args[0]);
+        var list = listOperandOrEmpty(args[0]);
 
         if (list.isEmpty()) {
             return new NoCodeResult(BigDecimal.ZERO);

@@ -82,8 +82,8 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var left = castToList(args[0]);
-        var right = castToList(args[1]);
+        var left = listOperandOrEmpty(args[0]);
+        var right = listOperandOrEmpty(args[1]);
 
         for (var item : left) {
             if (containsMatchingValue(right, item)) {

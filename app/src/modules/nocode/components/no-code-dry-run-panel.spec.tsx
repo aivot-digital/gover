@@ -98,6 +98,21 @@ describe('NoCodeDryRunPanel', () => {
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
+    it.each([
+        [NoCodeDataType.Date, '2026-11-22', '22.11.2026', 'Datumswert'],
+        [NoCodeDataType.Date, '2026-11', '11.2026', 'Datumswert'],
+        [NoCodeDataType.Date, '2026', '2026', 'Datumswert'],
+        [NoCodeDataType.Time, '13:30:00', '13:30:00 Uhr', 'Uhrzeitwert'],
+        [NoCodeDataType.DateTime, '2026-11-22T12:30:00.123456789Z', '22.11.2026 13:30:00,123456789 Uhr', 'Datums- und Zeitwert'],
+        [undefined, '2026-11-22', '„2026-11-22“', 'Textwert'],
+    ] as const)('displays %s for the returned value %s', async (valueType, value, display, label) => {
+        api.post.mockResolvedValue({...evaluated(value), valueType});
+        setup();
+        const result = await screen.findByRole('region', {name: 'Gesamtergebnis'});
+        expect(within(result).getByText(display)).toBeInTheDocument();
+        expect(result).toHaveTextContent(`Datentyp: ${label}`);
+    });
+
     it.each(['a'.repeat(300), {
         items: [{
             name: 'Lang',

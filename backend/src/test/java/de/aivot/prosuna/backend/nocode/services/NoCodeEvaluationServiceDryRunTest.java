@@ -1,9 +1,11 @@
 package de.aivot.prosuna.backend.nocode.services;
 
+import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunResultDTO;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
@@ -68,6 +70,38 @@ class NoCodeEvaluationServiceDryRunTest {
         var inner = result.operands().get(1);
         assertEquals(0, new BigDecimal(5).compareTo((BigDecimal) inner.value()));
         assertEquals(List.of(2, 3), inner.operands().stream().map(NoCodeDryRunResultDTO::value).toList());
+    }
+
+    @Test
+    void shouldSerializeTheTypesOfTemporalSubexpressionsBeforeTheirValuesBecomeStrings() {
+        var result = dryRun(new NoCodeExpression("compare-datetime",
+                new NoCodeExpression("add-to-datetime", new NoCodeExpression("create-now"),
+                        new NoCodeStaticValue(1), new NoCodeStaticValue("tage")),
+                new NoCodeStaticValue("vor"), new NoCodeStaticValue("2026-11-22T13:30:00Z")));
+
+        var mapper = JsonMapperTestUtils.createMapper();
+        var json = mapper.readTree(mapper.writeValueAsString(result));
+        assertEquals("Evaluated", json.get("status").asString());
+        assertEquals(result.value(), json.get("value").asBoolean());
+        var adjusted = json.at("/operands/0");
+        assertEquals("DateTime", adjusted.get("valueType").asString());
+        assertEquals("DateTime", adjusted.at("/operands/0/valueType").asString());
+        var literal = json.at("/operands/2");
+        assertEquals("2026-11-22T13:30:00Z", literal.get("value").asString());
+        assertNull(literal.get("valueType"));
+    }
+
+    @Test
+    void shouldIdentifyCalendarAndClockResultsAtTheirOriginalPrecision() {
+        assertEquals(NoCodeDataType.Date, dryRun(new NoCodeExpression("create-today")).getValueType());
+        for (var date : List.of("2026-11", "2026")) {
+            var result = dryRun(new NoCodeExpression("subtract-from-date", new NoCodeStaticValue(date),
+                    new NoCodeStaticValue(0), new NoCodeStaticValue("jahre")));
+            assertEquals(NoCodeDataType.Date, result.getValueType());
+            assertEquals(date, result.value().toString());
+        }
+        var time = dryRun(new NoCodeExpression("extract-time-from-datetime", new NoCodeExpression("create-now")));
+        assertEquals(NoCodeDataType.Time, time.getValueType());
     }
 
     @Test

@@ -6,6 +6,14 @@ import jakarta.annotation.Nullable;
 public record NoCodeNumberConstraints(
         boolean integerOnly,
         @Nullable Double minimum,
-        @Nullable Double maximum
+        @Nullable Double maximum,
+        @Nullable Boolean allowEmpty
 ) {
+    public NoCodeNumberConstraints {
+        allowEmpty = Boolean.TRUE.equals(allowEmpty);
+    }
+
+    public NoCodeNumberConstraints(boolean integerOnly, @Nullable Double minimum, @Nullable Double maximum) {
+        this(integerOnly, minimum, maximum, false);
+    }
 }

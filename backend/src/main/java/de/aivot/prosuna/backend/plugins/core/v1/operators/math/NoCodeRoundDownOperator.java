@@ -72,6 +72,7 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
                                 "Nachkommastellen",
                                 "Die gewünschte Anzahl an Nachkommastellen; 0 rundet auf ganze Zahlen."
                         ).withSentence("auf", "Nachkommastellen gerundet (bei gleichem Abstand zu null hin)")
+                                .withNumberConstraints(RoundOperatorSupport.DECIMAL_PLACES)
                 )
         );
     }
@@ -89,8 +90,8 @@ public class NoCodeRoundDownOperator extends NoCodeOperator {
         }
 
         var number = castToNumber(args[0]);
-        var decimalPlaces = castToNumber(args[1]).intValue();
+        var decimalPlaces = requireInteger(args[1], "Geben Sie für „Nachkommastellen“ eine ganze Zahl im unterstützten Zahlenbereich ein.");
 
-        return new NoCodeResult(number.setScale(decimalPlaces, RoundingMode.HALF_DOWN));
+        return new NoCodeResult(RoundOperatorSupport.round(number, decimalPlaces, RoundingMode.HALF_DOWN));
     }
 }

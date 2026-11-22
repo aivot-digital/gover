@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import jakarta.annotation.Nullable;
@@ -33,7 +34,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
 
                 # Welche Werte werden benötigt?
 
-                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können ein vollständiges Datum selbst eingeben, beispielsweise `15.08.2026`, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Es gibt keine festen Auswahlwerte.
+                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können das Datum selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Für die eigene Eingabe wählen Sie unter „Datumsgenauigkeit“ Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Es gibt keine festen Auswahlwerte.
                 - **Anzahl:** Geben Sie eine ganze Zahl ein, beispielsweise `5`. Es gibt keine festen Auswahlwerte. Sie können die Anzahl auch aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
                 - **Einheit:** Wählen Sie Tage, Wochen, Monate oder Jahre. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
 
@@ -65,7 +66,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                 - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: 31.03.2026 minus 1 Monat ergibt 28.02.2026.
                 - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 minus 1 Jahr ergibt 28.02.2023.
                 - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
-                - Enthält ein übernommenes Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden. Im Eingabefeld für ein selbst festgelegtes Ausgangsdatum können Sie derzeit nur vollständige Datumsangaben eingeben.
+                - Enthält das Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden.
                 """;
     }
 
@@ -83,7 +84,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                                 NoCodeDataType.Date,
                                 "Ausgangsdatum",
                                 "Das Datum, von dem aus Sie rechnen möchten."
-                        ).withSentence("das Datum"),
+                        ).withSentence("das Datum").withDateInput(NoCodeDateInput.Calendar),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Anzahl",
@@ -112,7 +113,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var date = requireCalendarValue(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
+        var date = requireCalendarValue(args[0], "Prüfen Sie die Datumsangabe für „Ausgangsdatum“.");
         var amount = requireInteger(args[1], "Die Anzahl muss eine ganze Zahl sein.");
         var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 

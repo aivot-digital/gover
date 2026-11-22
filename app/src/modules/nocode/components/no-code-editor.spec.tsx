@@ -77,6 +77,7 @@ const add: NoCodeOperatorDetailsDTO = {
     ...equals,
     identifier: 'add',
     label: 'Addiere',
+    variableArgumentCount: true,
     signatures: [{
         returnType: NoCodeDataType.Number,
         parameters: ['Summand 1', 'Summand 2'].map((label) => ({
@@ -574,6 +575,28 @@ describe('NoCodeEditor', () => {
         expect(screen.getByRole('treeitem', {name: 'Parameter 1: a, Beliebiger Wert'})).toBeInTheDocument();
         expect(screen.getByRole('treeitem', {name: 'Parameter 2: b, Beliebiger Wert'})).toBeInTheDocument();
         expect(screen.getByText(/Die Anzahl der Parameter passt nicht/)).toBeInTheDocument();
+    });
+
+    it('runs a stored variadic expression with every operand and retains them on replacement', async () => {
+        const onChange = vi.fn();
+        const stored: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'add',
+            operands: ['1', '2', '3'].map(value => ({type: 'NoCodeStaticValue', value})),
+        };
+        const subtract = {...add, identifier: 'subtract', label: 'Subtrahiere'};
+        api.post.mockResolvedValue({status: NoCodeDryRunStatus.Evaluated, value: 6, operands: []});
+        render(<Harness initial={stored} operators={[add, subtract]} returnType={NoCodeDataType.Number} onChange={onChange}/>);
+        expect(screen.queryByText(/Die Anzahl der Parameter passt nicht/)).not.toBeInTheDocument();
+        expect(screen.getByRole('treeitem', {name: 'Summand 3: 3, Zahlenwert'})).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+        await waitFor(() => expect(api.post).toHaveBeenCalledWith('no-code/dry-run/',
+            expect.objectContaining({expression: stored}), expect.anything()));
+        fireEvent.click(screen.getByRole('button', {name: 'Addiere, Zahlenwert'}));
+        const dialog = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Subtrahiere: Ersetzen'}));
+        expect(onChange).toHaveBeenLastCalledWith({...stored, operatorIdentifier: 'subtract'});
     });
 
     it('confirms removed operands, leaves cancellation unchanged and can undo a zero-parameter switch', async () => {

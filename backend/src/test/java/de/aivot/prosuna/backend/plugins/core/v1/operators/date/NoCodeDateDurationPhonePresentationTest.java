@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeOperatorDetailsDTO;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeConvertDurationOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.duration.NoCodeCreateDurationOperator;
@@ -147,16 +148,14 @@ class NoCodeDateDurationPhonePresentationTest {
 
         var details = NoCodeOperatorDetailsDTO.fromSPI(new CommonOperatorsV1(null, null, businessTime))
                 .filter(detail -> identifiers.contains(detail.identifier())).collect(Collectors.toMap(NoCodeOperatorDetailsDTO::identifier, detail -> detail));
+        assertEquals(NoCodeDateInput.CalendarOrDateTime, details.get("format-date").signatures()[0].parameters()[0].dateInput());
         assertEquals("yyyy-MM-dd'T'HH:mm:ssXXX", details.get("format-datetime").signatures()[0].parameters()[1].options()[2].value());
         assertEquals("HH:mm:ss", details.get("format-time").signatures()[0].parameters()[1].options()[1].value());
         assertEquals("11", details.get("create-date").signatures()[0].parameters()[1].options()[10].value());
     }
 
     @Test
-    void recordsExistingDurationCoercionForTheTechnicalFollowUp() throws Exception {
-        assertEquals(0, new BigDecimal("3").compareTo((BigDecimal) new NoCodeCreateDurationOperator()
-                .evaluate(runtime(), "abc", "seconds").getValue()));
-        assertEquals("3 Sekunden", new NoCodeFormatDurationOperator().evaluate(runtime(), "abc", "hours").getValue());
+    void roundsDurationInputBeforeCheckingForWholeSeconds() throws Exception {
         assertEquals(0, new BigDecimal("1").compareTo((BigDecimal) new NoCodeConvertDurationOperator()
                 .evaluate(runtime(), new BigDecimal("0.999999999"), "seconds").getValue()));
     }

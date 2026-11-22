@@ -69,6 +69,18 @@ describe('validateNoCode', () => {
         }).isValid).toBe(false);
     });
 
+    it('accepts extra operands only for variadic operators and still validates every child', () => {
+        const variadic = {...operator, identifier: 'concat', variableArgumentCount: true};
+        const value = {type: 'NoCodeStaticValue', value: 'A'} as const;
+        const check = (id: string, operands: (NoCodeOperand | null)[]) => validateNoCode(
+            {type: 'NoCodeExpression', operatorIdentifier: id, operands}, [operator, variadic], [],
+        );
+        expect(check('concat', [value, value, value]).isValid).toBe(true);
+        expect(check('equals', [value, value, value]).isValid).toBe(false);
+        expect(check('concat', [value]).isValid).toBe(false);
+        expect(check('concat', [value, value, null]).subErrors?.[2].isValid).toBe(false);
+    });
+
     it('validates declared number constraints on static operands without evaluating dynamic sources', () => {
         const countedOperator: NoCodeOperatorDetailsDTO = {
             ...operator,
