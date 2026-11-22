@@ -1,6 +1,6 @@
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
-import {Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
 import {Permission} from '../../../../data/permissions/permission';
 import {useHasDepartmentPermission, useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
@@ -74,6 +74,8 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     // Delegated process grants do not count: only the managing department decides who has access to the process.
     const canManageProcessAccess = useHasDepartmentPermission(renderProcess.departmentId, Permission.PROCESS_DEFINITION_UPDATE);
     const missingUpdatePermissionTooltip = formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE);
+    // Only users with a delegated update grant reach this tab without canManageProcessAccess, so do not claim the permission is missing.
+    const managingDepartmentRequiredTooltip = `Die Prozessberechtigungen können Sie nur mit der Berechtigung „Prozess bearbeiten“ (${Permission.PROCESS_DEFINITION_UPDATE}) in der verwaltenden Organisationseinheit des Prozesses ändern.`;
     const accessTabDisabledSx = !canUpdateProcess ? {
         color: 'text.disabled',
         cursor: 'not-allowed',
@@ -143,7 +145,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     };
 
     const handleTabChange = async (newValue: number): Promise<void> => {
-        // Access tabs use aria-disabled to keep permission tooltips reachable.
+        // Access tabs use aria-disabled to keep permission tooltips reachable on hover.
         // ARIA does not prevent activation, so reject unauthorized tab changes here.
         if (newValue === currentTab || isSavingSettings || ((newValue === 2 || newValue === 3) && !canUpdateProcess)) {
             return;
@@ -334,6 +336,16 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     }}
                 >
                     {
+                        // The tooltips only appear on hover; this alert gives keyboard and screen-reader users the same reason.
+                        !canUpdateProcess &&
+                        <Alert
+                            severity="info"
+                            sx={{mb: 2}}
+                        >
+                            Sie können die Einstellungen einsehen. Zum Bearbeiten benötigen Sie die Berechtigung „Prozess bearbeiten“. Prozessberechtigungen und Standardrechte für neue Vorgänge sind nur mit dieser Berechtigung verfügbar.
+                        </Alert>
+                    }
+                    {
                         currentTab === 0 &&
                         <ProcessSettingsDialogGeneralTab
                             ref={generalTabRef}
@@ -434,7 +446,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     currentTab === 2 &&
                     <DisabledTooltip
                         disabled={!canManageProcessAccess}
-                        title={`${missingUpdatePermissionTooltip} Die Berechtigung muss für die verwaltende Organisationseinheit gelten.`}
+                        title={managingDepartmentRequiredTooltip}
                     >
                         <Button
                             variant="contained"

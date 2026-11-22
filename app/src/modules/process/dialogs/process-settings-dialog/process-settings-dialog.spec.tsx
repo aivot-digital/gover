@@ -83,7 +83,8 @@ describe('ProcessSettingsDialog', () => {
     it('is read-only and blocks the access tabs without the update permission', () => {
         renderDialog();
 
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        // Keyboard and screen-reader users cannot reach the hover tooltips, so the alert must explain the restriction.
+        expect(screen.getByRole('alert')).toHaveTextContent('Zum Bearbeiten benötigen Sie die Berechtigung „Prozess bearbeiten“.');
         expect(screen.getByRole('tab', {name: 'Prozessberechtigungen'})).toHaveAttribute('aria-disabled', 'true');
         expect(screen.getByRole('tab', {name: 'Standardrechte für neue Vorgänge'})).toHaveAttribute('aria-disabled', 'true');
         expect(screen.getByRole('tab', {name: 'Allgemeine Einstellungen'})).toBeEnabled();
@@ -161,7 +162,10 @@ describe('ProcessSettingsDialog', () => {
         const save = screen.getByRole('button', {name: 'Speichern'});
         expect(save).toBeDisabled();
         await userEvent.hover(save.parentElement!);
-        expect(await screen.findByRole('tooltip')).toHaveTextContent('verwaltende Organisationseinheit');
+        const tooltip = await screen.findByRole('tooltip');
+        expect(tooltip).toHaveTextContent('Die Prozessberechtigungen können Sie nur mit der Berechtigung „Prozess bearbeiten“ (process_definition.update) in der verwaltenden Organisationseinheit des Prozesses ändern.');
+        // Delegates hold the permission for this process, so the tooltip must not claim it is missing.
+        expect(tooltip).not.toHaveTextContent('Sie besitzen nicht die erforderliche Berechtigung');
         await userEvent.unhover(save.parentElement!);
 
         await userEvent.click(screen.getByRole('tab', {name: 'Standardrechte für neue Vorgänge'}));
