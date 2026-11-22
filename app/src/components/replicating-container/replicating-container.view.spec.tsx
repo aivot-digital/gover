@@ -160,7 +160,7 @@ describe('ReplicatingContainerView', () => {
     it('allows removing the first entry of a required collection while another entry remains', async () => {
         const user = userEvent.setup();
         const second = {id: 'address-2', values: {street: literalAuthoredValue('Musterweg 2')}};
-        const props = renderView({
+        const {props} = renderView({
             element: {...element, required: true},
             value: [{id: 'address-1', values: {street: literalAuthoredValue('Musterstraße 1')}}, second],
         });
