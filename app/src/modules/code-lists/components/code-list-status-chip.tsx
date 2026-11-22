@@ -5,8 +5,10 @@ import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProble
 import SyncArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/SyncArrowDown';
 import Autoplay from '@aivot/mui-material-symbols-400-n25-outlined/Autoplay';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
 import {SvgIconComponent} from '../../../types/svg-icon-component';
 import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '../enums/code-list-source-type';
+import {type CodeListColumnMapping} from '../models/code-list';
 import {
     formatInstantInApplicationTimeZone,
     formatRelativeEpochMillisInApplicationTimeZone,
@@ -15,6 +17,7 @@ import {
 
 interface CodeListStatusChipProps {
     status: CodeListStatus;
+    columnMappings: CodeListColumnMapping[];
     sourceType?: CodeListSourceType;
     statusMessage?: string | null;
     lastSync?: string | null;
@@ -30,13 +33,16 @@ const iconMap: Record<CodeListStatus, SvgIconComponent> = {
 export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
     const {
         status,
+        columnMappings,
         sourceType,
         statusMessage,
         lastSync,
     } = props;
 
-    const Icon = useMemo(() => iconMap[status], [status]);
     const isSyncable = sourceType == null || isCodeListSyncable(sourceType);
+    const hasWarning = isSyncable && status === CodeListStatus.Synced &&
+        columnMappings.some(mapping => mapping.index == null && mapping.formerSourceColumn != null);
+    const Icon = hasWarning ? Warning : iconMap[status];
 
     const lastSyncEpochMillis = useMemo(() => {
         if (!lastSync) return null;
@@ -57,6 +63,7 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
         if (!isSyncable && sourceType != null) {
             return CodeListSourceTypeLabels[sourceType];
         }
+        if (hasWarning) return 'Synchronisiert mit Warnung';
 
         const base = CodeListStatusLabels[status];
 
@@ -74,7 +81,7 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
         const relative = formatRelativeEpochMillisInApplicationTimeZone(lastSyncEpochMillis, now);
 
         return relative == null ? base : `${base} ${relative}`;
-    }, [isSyncable, lastSyncEpochMillis, minuteTick, sourceType, status]);
+    }, [hasWarning, isSyncable, lastSyncEpochMillis, minuteTick, sourceType, status]);
 
     const formattedLastSync = useMemo(() => {
         return formatInstantInApplicationTimeZone(lastSync, 'dd.MM.yyyy – HH:mm:ss') ?? undefined;
@@ -104,7 +111,7 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
         <Chip
             label={label}
             title={title}
-            color={isSyncable ? CodeListStatusColors[status] : 'default'}
+            color={hasWarning ? 'warning' : isSyncable ? CodeListStatusColors[status] : 'default'}
             size="small"
             icon={isSyncable ? <Icon fontSize="small" /> : undefined}
             mode="soft"

@@ -41,8 +41,11 @@ export interface ProcessNodeDefinitionMetadataForwardedProcessDataKey {
     subLabel: string | null;
     origin: ProcessNodeWrite;
     valueOptions?: ProcessNodeDefinitionMetadataValueOption[] | null;
-    // Set instead of valueOptions when the options come from a code list, which clients load themselves.
+    // Set instead of valueOptions when the options come from the given columns of a code list, which clients load
+    // themselves.
     codeListKey?: string | null;
+    codeListValueColumnKey?: string | null;
+    codeListLabelColumnKey?: string | null;
     codeListValueMode?: CodeListValueMode | null;
 }
 

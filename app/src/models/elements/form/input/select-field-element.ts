@@ -19,4 +19,8 @@ export interface SelectFieldElement extends BaseInputElement<ElementType.Select>
     options: Array<SelectFieldElementOption | string> | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;
     codeListKey: string | null | undefined;
+    // Keys of the code list columns for the values, the labels and, with dependsOnSelectFieldId, the group values.
+    codeListValueColumnKey?: string | null;
+    codeListLabelColumnKey?: string | null;
+    codeListGroupColumnKey?: string | null;
 }
