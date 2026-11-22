@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeAndOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeIfOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeValueOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeDivideOperator;
@@ -112,7 +113,7 @@ class NoCodeEvaluationServiceTest {
     @ValueSource(booleans = {true, false})
     void ifEvaluatesItsConditionOnceAndOnlyCallsTheSelectedBranch(boolean condition) throws NoCodeException {
         var valueOperator = spy(new NoCodeValueOperator());
-        var service = serviceWithIf(valueOperator);
+        var service = serviceWithConditionalOperators(valueOperator);
         var data = new DerivedRuntimeElementData();
         var conditionText = condition ? "wahr" : "falsch";
         var expression = new NoCodeExpression("if", value(conditionText), value("then"), value("else"));
@@ -128,7 +129,7 @@ class NoCodeEvaluationServiceTest {
     void ifPropagatesAConditionFailureWithoutCallingEitherBranch() throws NoCodeException {
         var valueOperator = spy(new NoCodeValueOperator());
         var expression = new NoCodeExpression("if", divisionByZero(), value("then"), value("else"));
-        var service = serviceWithIf(valueOperator);
+        var service = serviceWithConditionalOperators(valueOperator);
 
         var error = assertThrows(IllegalStateException.class, () -> service.evaluate(expression, new DerivedRuntimeElementData()));
         assertInstanceOf(NoCodeException.class, error.getCause());
@@ -142,16 +143,53 @@ class NoCodeEvaluationServiceTest {
         var unused = value("unused");
         var expression = new NoCodeExpression("if", new NoCodeStaticValue(condition),
                 condition ? divisionByZero() : unused, condition ? unused : divisionByZero());
-        var service = serviceWithIf(valueOperator);
+        var service = serviceWithConditionalOperators(valueOperator);
 
         var error = assertThrows(IllegalStateException.class, () -> service.evaluate(expression, new DerivedRuntimeElementData()));
         assertInstanceOf(NoCodeException.class, error.getCause());
         verify(valueOperator, never()).evaluate(any(), any(Object[].class));
     }
 
-    private static NoCodeEvaluationService serviceWithIf(NoCodeValueOperator valueOperator) {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void andOnlyCallsTheSecondConditionAfterATruthyFirstCondition(boolean first) throws NoCodeException {
+        var valueOperator = spy(new NoCodeValueOperator());
+        var service = serviceWithConditionalOperators(valueOperator);
+        var data = new DerivedRuntimeElementData();
+        var conditionText = first ? "wahr" : "falsch";
+        var expression = new NoCodeExpression("and", value(conditionText), value("second"));
+
+        assertEquals(first, service.evaluate(expression, data).getValue());
+        var calls = inOrder(valueOperator);
+        calls.verify(valueOperator).evaluate(data, conditionText);
+        if (first) {
+            calls.verify(valueOperator).evaluate(data, "second");
+        } else {
+            verify(valueOperator, never()).evaluate(data, "second");
+        }
+    }
+
+    @Test
+    void andPropagatesTheErrorFromEitherReachedCondition() throws NoCodeException {
+        var valueOperator = spy(new NoCodeValueOperator());
+        var service = serviceWithConditionalOperators(valueOperator);
+        var data = new DerivedRuntimeElementData();
+        var firstFails = new NoCodeExpression("and", divisionByZero(), value("unreachable"));
+        var secondFails = new NoCodeExpression("and", new NoCodeStaticValue(true), divisionByZero());
+
+        for (var expression : List.of(firstFails, secondFails)) {
+            var error = assertThrows(IllegalStateException.class, () -> service.evaluate(expression, data));
+            var cause = assertInstanceOf(NoCodeException.class, error.getCause());
+            assertEquals("„Teiler“ darf nicht 0 sein. Geben Sie eine andere Zahl ein.", cause.getMessage());
+        }
+        verify(valueOperator, never()).evaluate(data, "unreachable");
+    }
+
+    private static NoCodeEvaluationService serviceWithConditionalOperators(NoCodeValueOperator valueOperator) {
         var provider = mock(NoCodeOperatorsProvider.class);
-        when(provider.getOperators()).thenReturn(new NoCodeOperator[]{new NoCodeIfOperator(), valueOperator, new NoCodeDivideOperator()});
+        when(provider.getOperators()).thenReturn(new NoCodeOperator[]{
+                new NoCodeIfOperator(), new NoCodeAndOperator(), valueOperator, new NoCodeDivideOperator()
+        });
         return new NoCodeEvaluationService(List.of(provider));
     }
 

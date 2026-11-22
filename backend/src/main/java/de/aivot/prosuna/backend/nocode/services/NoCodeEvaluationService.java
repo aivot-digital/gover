@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeAndOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeIfOperator;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
@@ -220,9 +221,12 @@ public class NoCodeEvaluationService {
         var operatorIdentifier = expression.getOperatorIdentifier();
         var operator = operatorIdentifier == null ? null : noCodeOperatorProviders.get(operatorIdentifier);
         var signature = findWhitespaceSignature(operator, operands);
-        if (operator instanceof NoCodeIfOperator conditional && operands.size() == 3
-                && dryRunOperatorIdentifiers.contains(operatorIdentifier)) {
+        var dryRunAllowed = dryRunOperatorIdentifiers.contains(operatorIdentifier);
+        if (dryRunAllowed && operator instanceof NoCodeIfOperator conditional && operands.size() == 3) {
             return evaluateIfDryRun(conditional, new ArrayList<>(operands), elementData, processDataContext, limitResult, signature);
+        }
+        if (dryRunAllowed && operator instanceof NoCodeAndOperator conjunction && operands.size() == 2) {
+            return evaluateAndDryRun(conjunction, new ArrayList<>(operands), elementData, processDataContext, limitResult, signature);
         }
         var childResults = new ArrayList<NoCodeDryRunResultDTO>(operands.size());
         int index = 0;
@@ -235,7 +239,7 @@ public class NoCodeEvaluationService {
         if (operator == null) {
             return NoCodeDryRunResultDTO.failed("Die Funktion ist nicht verfügbar.", operandResults);
         }
-        if (!dryRunOperatorIdentifiers.contains(operatorIdentifier)) {
+        if (!dryRunAllowed) {
             return NoCodeDryRunResultDTO.skipped(
                     "Diese Funktion wird im Testlauf nicht ausgeführt, weil sie geschützte Daten liest oder Aktionen auslösen kann.",
                     operandResults
@@ -297,6 +301,37 @@ public class NoCodeEvaluationService {
     }
 
     @Nonnull
+    private NoCodeDryRunResultDTO evaluateAndDryRun(
+            @Nonnull NoCodeAndOperator operator,
+            @Nonnull List<NoCodeOperand> operands,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult,
+            @Nullable NoCodeSignatur signature
+    ) {
+        var first = limitResult.apply(evaluateDryRun(
+                operands.getFirst(), elementData, processDataContext, limitResult, parameterAt(signature, 0)));
+        var firstEvaluated = first.status() == NoCodeDryRunStatus.Evaluated;
+        if (!firstEvaluated || !operator.castToBoolean(first.value())) {
+            var message = firstEvaluated
+                    ? "Die erste Bedingung ist falsch."
+                    : "Die erste Bedingung konnte nicht ausgewertet werden.";
+            var skipped = limitResult.apply(NoCodeDryRunResultDTO.skipped(message, List.of()));
+            var results = List.of(first, skipped);
+            return firstEvaluated
+                    ? NoCodeDryRunResultDTO.evaluated(false, results)
+                    : NoCodeDryRunResultDTO.skipped(message, results);
+        }
+
+        var second = limitResult.apply(evaluateDryRun(
+                operands.getLast(), elementData, processDataContext, limitResult, parameterAt(signature, 1)));
+        var results = List.of(first, second);
+        return second.status() == NoCodeDryRunStatus.Evaluated
+                ? NoCodeDryRunResultDTO.evaluated(operator.castToBoolean(second.value()), results)
+                : NoCodeDryRunResultDTO.skipped("Die zweite Bedingung konnte nicht ausgewertet werden.", results);
+    }
+
+    @Nonnull
     private NoCodeResult evaluateNoCodeExpression(
             @Nonnull NoCodeExpression expression,
             @Nonnull DerivedRuntimeElementData elementData,
@@ -313,6 +348,15 @@ public class NoCodeEvaluationService {
             var selectedIndex = conditional.selectedResultIndex(condition);
             return new NoCodeResult(evaluateArgument(
                     inputs.get(selectedIndex), elementData, processDataContext, wildcardIndices, parameterAt(signature, selectedIndex)));
+        }
+        if (registeredOperator instanceof NoCodeAndOperator conjunction && operands.size() == 2) {
+            var inputs = new ArrayList<>(operands);
+            var first = evaluateArgument(inputs.getFirst(), elementData, processDataContext, wildcardIndices, parameterAt(signature, 0));
+            if (!conjunction.castToBoolean(first)) {
+                return new NoCodeResult(false);
+            }
+            var second = evaluateArgument(inputs.getLast(), elementData, processDataContext, wildcardIndices, parameterAt(signature, 1));
+            return new NoCodeResult(conjunction.castToBoolean(second));
         }
         var operandValues = new Object[operands.size()];
         int index = 0;

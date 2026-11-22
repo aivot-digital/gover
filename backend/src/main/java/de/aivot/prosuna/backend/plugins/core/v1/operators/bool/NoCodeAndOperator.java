@@ -26,23 +26,27 @@ public class NoCodeAndOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Verknüpfen Sie Bedingungen, die gemeinsam erfüllt sein müssen, etwa eine Altersgrenze und eine bestätigte Einwilligung.
+                Prüfen Sie beispielsweise, ob Einträge vorliegen und der Betrag pro Eintrag über einem Grenzwert liegt.
 
                 # Welche Werte werden benötigt?
-                Zwei Bedingungen. Für selbst festgelegte Bedingungen stehen „Wahr“ und „Falsch“ zur Auswahl. Eigene Auswahlwerte sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie Bedingungen aus Wertquellen oder Funktionen übernehmen.
+                Sie benötigen „Bedingung 1“ und „Bedingung 2“. Für jede Bedingung können Sie „Wahr“ oder „Falsch“ aus der festen Auswahl wählen. Über „Andere Wertquelle verwenden …“ können Sie eine Wertquelle oder eine Funktion verwenden.
 
                 # Welches Ergebnis erhalten Sie?
-                Ein Wahrheitswert: „Wahr“, wenn beide Bedingungen wahr sind. Ist mindestens eine Bedingung falsch, lautet das Ergebnis „Falsch“.
+                Sie erhalten „Wahr“, wenn beide Bedingungen wahr sind. Ist mindestens eine Bedingung falsch, erhalten Sie „Falsch“.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Und“ als Funktion für eine Bedingung.
-                2. Wählen Sie für „Bedingung 1“ über „Andere Wertquelle verwenden …“ die Wertquelle „Einwilligung“, die einen Wahrheitswert liefert.
-                3. Wählen Sie für „Bedingung 2“ die Wertquelle „Ausweis geprüft“.
+                1. Wählen Sie **„Und“**. Verwenden Sie für **„Bedingung 1“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Variable „Anzahl“ und geben Sie bei „Vergleichszahl“ `0` ein.
+                2. Verwenden Sie auch für **„Bedingung 2“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Funktion **„Dividieren“**. Übernehmen Sie als „Ausgangszahl“ die Variable „Gesamtbetrag“ und als „Teiler 1“ die Variable „Anzahl“.
+                3. Geben Sie als „Vergleichszahl“ der zweiten Bedingung `10` ein.
 
-                Sind beide Bedingungen wahr, ergibt der Ausdruck „Wahr“. Ist nur eine wahr, ergibt er „Falsch“.
+                Zugeklappt und in der Vorschau lesen Sie `(„Anzahl“ ist größer als 0) und ((„Gesamtbetrag“ geteilt durch „Anzahl“) ist größer als 10)`.
+
+                Bei einer Anzahl von `0` erhalten Sie „Falsch“. Die Division wird übersprungen. Bei einer Anzahl von `3` und einem Gesamtbetrag von `36` liegt der Betrag pro Eintrag bei `12`. Beide Bedingungen sind wahr und Sie erhalten „Wahr“.
 
                 # Was ist zu beachten?
-                Für weitere Bedingungen können Sie „Und“ verschachteln. Verwenden Sie Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt; ein Text wie „Nein“ wird dabei nicht automatisch zu „Falsch“. Verschachtelte Funktionen in allen Bedingungen werden vor der Verknüpfung ausgewertet und müssen auswertbar sein.
+                Die Funktion prüft die Bedingungen von oben nach unten. Ist „Bedingung 1“ falsch, steht das Ergebnis fest und „Bedingung 2“ wird übersprungen. Im Testlauf sehen Sie dort „Nicht ausgewertet“ mit der Begründung. Ist „Bedingung 1“ wahr, wird auch „Bedingung 2“ ausgewertet.
+
+                Für weitere Bedingungen können Sie „Und“ verschachteln. Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt. Der Text „Nein“ gilt dabei als wahr.
                 """;
     }
 

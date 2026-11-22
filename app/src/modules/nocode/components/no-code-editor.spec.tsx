@@ -1560,6 +1560,49 @@ describe('NoCodeEditor types and dry run', () => {
         expect(api.post).not.toHaveBeenCalled();
     });
 
+    it('marks the second AND condition as skipped after a false input and keeps its descendants editable', async () => {
+        const and: NoCodeOperatorDetailsDTO = {
+            ...equals, identifier: 'and', label: 'Und',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: ['Bedingung 1', 'Bedingung 2'].map(label => ({...not.signatures[0].parameters[0], label})),
+            }],
+        };
+        const first: NoCodeOperand = {
+            type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [{type: 'NoCodeStaticValue', value: 'true'}],
+        };
+        const second: NoCodeOperand = {
+            type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [
+                {type: 'NoCodeExpression', operatorIdentifier: 'always-true', operands: []},
+            ],
+        };
+        const initial: NoCodeOperand = {type: 'NoCodeExpression', operatorIdentifier: 'and', operands: [first, second]};
+        api.post.mockResolvedValue({
+            status: NoCodeDryRunStatus.Evaluated, value: false, message: null,
+            operands: [{
+                status: NoCodeDryRunStatus.Evaluated, value: false, message: null,
+                operands: [{status: NoCodeDryRunStatus.Evaluated, value: 'true', message: null, operands: []}],
+            }, {
+                status: NoCodeDryRunStatus.Skipped, value: null, message: 'Die erste Bedingung ist falsch.', operands: [],
+            }],
+        });
+        const onChange = vi.fn();
+        render(<Harness initial={initial} operators={[and, not, alwaysTrue]} onChange={onChange}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+        const result = await screen.findByRole('region', {name: 'Gesamtergebnis'});
+        expect(within(result).getByText('Falsch')).toBeVisible();
+        expect(result).toHaveTextContent('Datentyp: Wahrheitswert');
+        expect(screen.getByRole('treeitem', {name: 'Bedingung 1: Funktion Nicht, Wahrheitswert'}))
+            .toHaveAccessibleDescription('Testergebnis: Falsch');
+        const skipped = screen.getByRole('treeitem', {name: 'Bedingung 2: Funktion Nicht, Wahrheitswert'});
+        expect(skipped).toHaveAccessibleDescription('Nicht ausgewertet: Die erste Bedingung ist falsch.');
+        const child = within(skipped).getByRole('treeitem', {name: 'Wert: Funktion Immer wahr, Wahrheitswert'});
+        expect(child).not.toHaveAccessibleDescription();
+        fireEvent.click(within(child).getByRole('button', {name: 'Funktion „Immer wahr“ löschen'}));
+        expect(onChange).toHaveBeenLastCalledWith({...initial, operands: [first, {...second, operands: [null]}]});
+    });
+
     it.each([true, false])('shows the selected if result and keeps the skipped branch editable when the condition is %s', async condition => {
         const conditional: NoCodeOperatorDetailsDTO = {
             ...equals,
