@@ -69,6 +69,44 @@ describe('validateNoCode', () => {
         }).isValid).toBe(false);
     });
 
+    it('validates declared number constraints on static operands without evaluating dynamic sources', () => {
+        const countedOperator: NoCodeOperatorDetailsDTO = {
+            ...operator,
+            identifier: 'counted',
+            signatures: [{
+                returnType: NoCodeDataType.Date,
+                parameters: [{
+                    type: NoCodeDataType.Number,
+                    label: 'Anzahl',
+                    description: '',
+                    options: [],
+                    numberConstraints: {integerOnly: true, minimum: -2147483648, maximum: 2147483647},
+                }],
+            }],
+        };
+        const withCount = (count: NoCodeOperand): NoCodeOperand => ({
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'counted',
+            operands: [count],
+        });
+        for (const value of ['1.5', '2147483648', null]) {
+            const result = validateNoCode(withCount({type: 'NoCodeStaticValue', value}), [countedOperator], []);
+            expect(result.isValid).toBe(false);
+            expect(result.subErrors?.[0].error).toContain('„Anzahl“');
+        }
+        for (const count of [
+            {type: 'NoCodeStaticValue', value: '5.0'},
+            {type: 'NoCodeStaticValue', value: '0'},
+            {type: 'NoCodeProcessDataReference', path: 'duration'},
+            {type: 'NoCodeExpression', operatorIdentifier: 'equals', operands: [
+                {type: 'NoCodeStaticValue', value: 'a'},
+                {type: 'NoCodeStaticValue', value: 'b'},
+            ]},
+        ] satisfies NoCodeOperand[]) {
+            expect(validateNoCode(withCount(count), [countedOperator, operator], []).isValid).toBe(true);
+        }
+    });
+
     it('requires existing element references', () => {
         const element = {
             ...generateElementWithDefaultValues(ElementType.Text),

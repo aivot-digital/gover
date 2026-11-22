@@ -24,36 +24,54 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Vergleicht zwei Werte miteinander, um festzustellen, ob sie gleich sind.";
+        return "Prüft, ob zwei Werte gleich sind.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Ist gleich“** vergleicht zwei Werte miteinander, um festzustellen, ob sie gleich sind. \s
-                Das Ergebnis ist **wahr** (true), wenn die beiden Werte exakt gleich sind. \s
-                Sind die beiden Werte unterschiedlich, ergibt die Funktion **„Ist gleich“** den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine eingegebene Postleitzahl der benötigten Postleitzahl entspricht.
-                
-                Mit der Funktion **„Ist gleich“** wird diese Logik so formuliert: \s
-                `Eingabe Postleitzahl IST GLEICH Erwartete Postleitzahl`
-                
-                **Ergebnis:**
-                - Wenn die eingegebene Postleitzahl exakt der erwarteten Postleitzahl entspricht, ist das Ergebnis **wahr**.
-                - Wenn die eingegebene Postleitzahl von der erwarteten Postleitzahl abweicht, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte der Funktion „Ist gleich“
-                - **10 IST GLEICH 10** → **wahr** \s
-                - **10 IST GLEICH 20** → **falsch** \s
-                - **"Hallo" IST GLEICH "Hallo"** → **wahr** \s
-                - **"Hallo" IST GLEICH "Welt"** → **falsch**
-                
-                # Wann verwenden Sie die Funktion „Ist gleich“?
-                Verwenden Sie **„Ist gleich“**, wenn Sie prüfen möchten, ob zwei Werte exakt übereinstimmen. \s
-                Diese Funktion ist besonders hilfreich bei Validierungen, z. B. um sicherzustellen, dass Benutzereingaben mit den erwarteten Werten übereinstimmen.
+                # Wofür verwenden Sie diese Funktion?
+
+                Mit „Ist gleich“ prüfen Sie, ob zwei Werte gleich sind. Sie können beispielsweise prüfen, ob ein Formularelement einen bestimmten Text enthält.
+
+                # Welche Werte werden benötigt?
+
+                - **Wert 1:** Der Wert, den Sie prüfen möchten.
+                - **Wert 2:** Der Wert, mit dem Sie den ersten Wert vergleichen möchten.
+
+                Sie können beide Werte selbst festlegen, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
+
+                Die Funktion gibt keine festen Auswahlwerte vor. Stellen verwendete Formularelemente oder Vorgangsdaten passende Auswahlwerte bereit, werden diese vorgeschlagen. Sie können einen Vorschlag auswählen oder einen eigenen Wert eingeben. Ohne Vorschläge geben Sie den Wert selbst ein.
+
+                Selbst eingegebene Werte werden als Text gespeichert. Bei vorgeschlagenen Auswahlwerten wird der zur Auswahl gehörende Wert übernommen.
+
+                # Welches Ergebnis erhalten Sie?
+
+                Sie erhalten einen Wahrheitswert:
+
+                - **Wahr**, wenn die Werte nach den Vergleichsregeln übereinstimmen.
+                - **Falsch**, wenn sie nicht übereinstimmen.
+
+                # Beispiel im No-Code-Editor
+
+                Sie möchten prüfen, ob im Formularelement „Geburtsort“ der Text „Berlin“ eingegeben wurde.
+
+                1. Wählen Sie die Funktion „Ist gleich“.
+                2. Wählen Sie für „Wert 1“ die Option „Aus Formularelement übernehmen“ und anschließend „Geburtsort“.
+                3. Wählen Sie für „Wert 2“ die Option „Wert selbst festlegen“ und geben Sie `Berlin` ein.
+
+                Der fertige Ausdruck liest sich so:
+
+                **Wert von „Geburtsort“ ist gleich „Berlin“**
+
+                Bei der Eingabe „Berlin“ ergibt der Vergleich **wahr**, bei „Hamburg“ ergibt er **falsch**.
+
+                # Was ist zu beachten?
+
+                - Beim Vergleich zweier Texte werden Groß- und Kleinschreibung sowie Leerzeichen berücksichtigt. „Berlin“ und „berlin“ sind unterschiedlich.
+                - Zahlen werden nach ihrem Zahlenwert verglichen. Ist einer der Werte eine Zahl, kann auch ein als Zahl geschriebener Text übereinstimmen: Die Zahl `5` und der Text `"5"` gelten als gleich. Zwei Textwerte bleiben dagegen Texte: `"5.0"` und `"5"` sind unterschiedlich.
+                - Verwenden Sie möglichst Werte derselben Art. Bei unterschiedlichen Wertarten wird der zweite Wert in der Regel an die Art des ersten Werts angepasst. Dadurch kann die Reihenfolge das Ergebnis beeinflussen.
+                - Liefern beide verwendeten Wertquellen keinen Wert, ergibt der Vergleich **wahr**. Liefert nur eine Quelle keinen Wert, ergibt er **falsch**.
                 """;
     }
 
@@ -75,13 +93,13 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Wert 1",
-                                "Der erste Wert, der mit dem zweiten Wert verglichen werden soll."
+                                "Der Wert, den Sie prüfen möchten."
                         ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Wert 2",
-                                "Der zweite Wert, der mit dem ersten Wert verglichen werden soll."
-                        ).withSentence(getComparisonPhrase())
+                                "Der Wert, mit dem Sie den ersten Wert vergleichen möchten."
+                        ).withSentence(getComparisonPhrase(), "ist")
                 )
         );
     }

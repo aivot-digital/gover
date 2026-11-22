@@ -24,30 +24,48 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Ist nicht gleich“** prüft, ob zwei Werte **nicht gleich** sind. \s
-                Das Ergebnis ist **wahr** (true), wenn die beiden Werte **unterschiedlich** sind. \s
-                Sind die beiden Werte identisch, ergibt die Funktion den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob die eingegebene Postleitzahl **nicht** der erwarteten Postleitzahl entspricht.
-                
-                Mit der Funktion **„Ist nicht gleich“** wird diese Logik so formuliert: \s
-                `Eingabe Postleitzahl IST NICHT GLEICH Erwartete Postleitzahl`
-                
-                **Ergebnis:**
-                - **Bedingung wahr:** Wenn die eingegebene Postleitzahl von der erwarteten Postleitzahl abweicht, ist das Ergebnis **wahr**. \s
-                - **Bedingung falsch:** Wenn die eingegebene Postleitzahl der erwarteten Postleitzahl entspricht, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte der Funktion „Ist nicht gleich“
-                - **10 IST NICHT GLEICH 20** → **wahr** \s
-                - **10 IST NICHT GLEICH 10** → **falsch** \s
-                - **"Hallo" IST NICHT GLEICH "Welt"** → **wahr** \s
-                - **"Hallo" IST NICHT GLEICH "Hallo"** → **falsch**
-                
-                # Wann verwenden Sie die Funktion „Ist nicht gleich“?
-                Verwenden Sie **„Ist nicht gleich“**, wenn Sie prüfen möchten, ob zwei Werte **nicht identisch** sind. \s
-                Diese Funktion ist besonders hilfreich, um Abweichungen zu erkennen, z. B. bei Validierungen, Vergleichen oder wenn eine Übereinstimmung ausgeschlossen werden soll.
+                # Wofür verwenden Sie diese Funktion?
+
+                Mit „Ist nicht gleich“ prüfen Sie, ob zwei Werte voneinander abweichen. Sie können beispielsweise prüfen, ob der Wert eines Formularelements von einem festgelegten Vergleichswert abweicht.
+
+                # Welche Werte werden benötigt?
+
+                - **Wert 1:** Der Wert, den Sie prüfen möchten.
+                - **Wert 2:** Der Wert, mit dem Sie den ersten Wert vergleichen möchten.
+
+                Sie können beide Werte selbst festlegen, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
+
+                Die Funktion gibt keine festen Auswahlwerte vor. Stellen verwendete Formularelemente oder Vorgangsdaten passende Auswahlwerte bereit, werden diese vorgeschlagen. Sie können einen Vorschlag auswählen oder einen eigenen Wert eingeben. Ohne Vorschläge geben Sie den Wert selbst ein.
+
+                Selbst eingegebene Werte werden als Text gespeichert. Bei vorgeschlagenen Auswahlwerten wird der zur Auswahl gehörende Wert übernommen.
+
+                # Welches Ergebnis erhalten Sie?
+
+                Sie erhalten einen Wahrheitswert:
+
+                - **Wahr**, wenn die Werte nach den Vergleichsregeln nicht übereinstimmen.
+                - **Falsch**, wenn sie übereinstimmen.
+
+                # Beispiel im No-Code-Editor
+
+                Sie möchten prüfen, ob im Formularelement „Geburtsort“ ein anderer Text als „Berlin“ eingegeben wurde.
+
+                1. Wählen Sie die Funktion „Ist nicht gleich“.
+                2. Wählen Sie für „Wert 1“ die Option „Aus Formularelement übernehmen“ und anschließend „Geburtsort“.
+                3. Wählen Sie für „Wert 2“ die Option „Wert selbst festlegen“ und geben Sie `Berlin` ein.
+
+                Der fertige Ausdruck liest sich so:
+
+                **Wert von „Geburtsort“ ist nicht gleich „Berlin“**
+
+                Bei der Eingabe „Hamburg“ ergibt der Vergleich **wahr**, bei „Berlin“ ergibt er **falsch**.
+
+                # Was ist zu beachten?
+
+                - Beim Vergleich zweier Texte werden Groß- und Kleinschreibung sowie Leerzeichen berücksichtigt. „Berlin“ und „berlin“ sind unterschiedlich.
+                - Zahlen werden nach ihrem Zahlenwert verglichen. Ist einer der Werte eine Zahl, kann auch ein als Zahl geschriebener Text übereinstimmen: Die Zahl `5` und der Text `"5"` ergeben bei dieser Funktion **falsch**. Zwei Textwerte bleiben dagegen Texte: `"5.0"` und `"5"` ergeben **wahr**.
+                - Verwenden Sie möglichst Werte derselben Art. Bei unterschiedlichen Wertarten wird der zweite Wert in der Regel an die Art des ersten Werts angepasst. Dadurch kann die Reihenfolge das Ergebnis beeinflussen.
+                - Liefern beide verwendeten Wertquellen keinen Wert, ergibt der Vergleich **falsch**. Liefert nur eine Quelle keinen Wert, ergibt er **wahr**. Ein fehlender Wert stimmt deshalb beispielsweise nicht mit „Berlin“ überein.
                 """;
     }
 
@@ -65,6 +83,6 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
 
     @Override
     protected String getComparisonPhrase() {
-        return "ungleich";
+        return "nicht gleich";
     }
 }

@@ -21,43 +21,35 @@ public class NoCodeDivideOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Dividiere";
+        return "Dividieren";
     }
 
     @Override
     public String getAbstract() {
-        return "Dividiert zwei Werte.";
+        return "Teilt eine Zahl durch eine andere.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Dividiere“** teilt einen numerischen Wert durch einen anderen. \s
-                Das Ergebnis ist der Quotient der beiden Werte.
-                Division durch null ist nicht möglich und führt zu einem Fehler.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten den Quotienten von zwei Zahlen berechnen.
-                
-                Mit der Funktion **„Dividiere“** wird diese Logik so formuliert: \s
-                `Dividiere Wert1 Wert2`
-                
-                Beispielwerte: \s
-                - **Wert1:** 10 \s
-                - **Wert2:** 2
-                
-                **Ergebnis:**
-                - **Rückgabewert:** 5
-                
-                # Beispiele und Ergebnisse
-                - **Dividiere 10 2** → **5** \s
-                - **Dividiere 9 3** → **3** \s
-                - **Dividiere 5 0** → **Fehler** (Division durch null)
-                
-                # Wann verwenden Sie die Funktion „Dividiere“?
-                Verwenden Sie **„Dividiere“**, um den Quotienten von zwei numerischen Werten zu berechnen. \s
-                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                # Wofür verwenden Sie diese Funktion?
+                Teilen Sie eine Zahl durch eine andere, etwa einen Gesamtbetrag durch eine Anzahl.
+
+                # Welche Werte werden benötigt?
+                „Ausgangszahl“ und „Teiler“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Die Ausgangszahl geteilt durch den Teiler. Das Ergebnis wird auf acht Nachkommastellen gerundet.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Dividieren“ als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei „Ausgangszahl“ `10` und bei „Teiler“ `2` ein.
+                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+
+                Der Ausdruck `10 geteilt durch 2` ergibt `5`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Der Teiler darf nicht `0` sein. Bei mehreren bereits vorhandenen Teilern wird der Reihe nach geteilt und nach jedem Schritt gerundet.
                 """;
     }
 
@@ -73,13 +65,13 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                         NoCodeDataType.Number,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Dividend",
-                                "Der zu teilende Wert."
+                                "Ausgangszahl",
+                                "Die Zahl, die geteilt wird."
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Divisor",
-                                "Der Wert, durch den geteilt wird."
+                                "Teiler",
+                                "Die Zahl, durch die geteilt wird. Sie darf nicht 0 sein."
                         ).withSentence("geteilt durch")
                 )
         );
@@ -88,7 +80,7 @@ public class NoCodeDivideOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "teile „#0“ durch „#1“";
+        return "#0 geteilt durch #1";
     }
 
     @Override
@@ -107,7 +99,7 @@ public class NoCodeDivideOperator extends NoCodeOperator {
         for (int i = 1; i < args.length; i++) {
             var divisor = castToNumber(args[i]);
             if (divisor.compareTo(BigDecimal.ZERO) == 0) {
-                throw new NoCodeException("Division durch Null ist nicht erlaubt");
+                throw new NoCodeException("„Teiler“ darf nicht 0 sein. Geben Sie eine andere Zahl ein.");
             }
 
             dividend = dividend.divide(divisor, RoundingMode.HALF_UP);

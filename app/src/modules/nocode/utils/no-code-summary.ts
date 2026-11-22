@@ -12,6 +12,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {formatNoCodeValue} from './format-no-code-value';
 import {humanizeNoCode, NoCodePresentationContext} from './humanize-no-code';
 import {getNoCodeParameterSuggestions, getReferencedElementOptions} from './no-code-options';
+import {resolveNoCodeExpressionPresentation} from './no-code-parameter-presentation';
 
 export interface NoCodeSummaryDetail {
     label: string;
@@ -51,6 +52,7 @@ export function summarizeNoCode(
         operator: NoCodeOperatorDetailsDTO | undefined;
         parameters: NoCodeParameter[];
         options: NoCodeParameterOption[][];
+        useSentence: boolean;
     }>();
 
     function prepare(node: NoCodeExpression) {
@@ -60,13 +62,14 @@ export function summarizeNoCode(
         const operands = node.operands ?? [];
         const operator = allOperators.find(candidate => candidate.identifier === node.operatorIdentifier);
         const signature = operator == null ? undefined : resolveNoCodeSignature(operator, {operandCount: operands.length});
-        const parameters: NoCodeParameter[] = Array.from({length: Math.max(signature?.parameters.length ?? 0, operands.length)}, (_, i) =>
-            signature?.parameters[i] ?? {
-                label: `Parameter ${i + 1}`,
-                type: NoCodeDataType.Runtime,
-                description: null,
-                options: [],
-            });
+        const {parameters, useSentence} = resolveNoCodeExpressionPresentation(
+            Array.from({length: Math.max(signature?.parameters.length ?? 0, operands.length)}, (_, i) =>
+                signature?.parameters[i] ?? {
+                    label: `Parameter ${i + 1}`,
+                    type: NoCodeDataType.Runtime,
+                    description: null,
+                    options: [],
+                }), operands);
         const referenceOptions = operands.map(child => {
             if (child?.type === 'NoCodeProcessDataReference') return context.processOptions?.get(child.path ?? '') ?? [];
             const element = child?.type === 'NoCodeReference' ? allElements.find(({element}) => element.id === child.elementId)?.element : undefined;
@@ -76,6 +79,7 @@ export function summarizeNoCode(
         const result = {
             operator,
             parameters,
+            useSentence,
             options: parameters.map((parameter, i) => parameter.options.length ? parameter.options : suggestions[i]),
         };
         preparedExpressions.set(node, result);
@@ -106,7 +110,15 @@ export function summarizeNoCode(
                 if (selected == null) return formatNoCodeValue(node.value, parameter?.type ?? context.type);
                 const value = String(node.value);
                 addDetail(selected.label, value);
-                return `„${selected.label}“${(selectionValues.get(selected.label)?.size ?? 0) > 1 ? ` (${value})` : ''}`;
+                const type = parameter?.type ?? context.type;
+                // A textual selection does not become Boolean just because its stored value is "true" or "false".
+                const isBoolean = typeof node.value === 'boolean'
+                    ? type == null || type === NoCodeDataType.Runtime || type === NoCodeDataType.Boolean
+                    : type === NoCodeDataType.Boolean && (node.value === 'true' || node.value === 'false');
+                const isUnit = parameter?.quantityParameterIndex != null && parameter.options.some(option => option.value === value);
+                const isSentencePart = parameter?.optionsAsSentencePart === true && parameter.options.some(option => option.value === value);
+                const label = isBoolean || isUnit || isSentencePart ? selected.label : `„${selected.label}“`;
+                return label + ((selectionValues.get(selected.label)?.size ?? 0) > 1 ? ` (${value})` : '');
             }
             case 'NoCodeReference': {
                 const element = allElements.find(({element}) => element.id === node.elementId)?.element;
@@ -135,7 +147,7 @@ export function summarizeNoCode(
                 return `„${variable.label}“${(referenceIdentities.get(variable.label)?.size ?? 0) > 1 ? ` (${reference})` : ''}`;
             }
             case 'NoCodeExpression': {
-                const {operator, parameters, options} = prepare(node);
+                const {operator, parameters, options, useSentence} = prepare(node);
                 const operands = node.operands ?? [];
                 const argument = (index: number) => {
                     const text = describe(operands[index], parameters[index], options[index]);
@@ -144,7 +156,7 @@ export function summarizeNoCode(
                 const template = operator?.humanReadableTemplate;
                 const used = new Set(Array.from(template?.matchAll(/#(\d+)/g) ?? [], match => Number(match[1])));
                 // A partial template can misstate a variadic operation; use one complete fallback instead.
-                const completeTemplate = template != null && template.trim() !== '' && used.size === parameters.length
+                const completeTemplate = useSentence && template != null && template.trim() !== '' && used.size === parameters.length
                     && Array.from(used).every(index => index < parameters.length);
                 if (completeTemplate) {
                     // Replace once: authored strings containing placeholders must never be parsed again.

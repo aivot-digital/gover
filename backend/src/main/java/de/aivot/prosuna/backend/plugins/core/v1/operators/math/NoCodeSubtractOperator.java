@@ -18,42 +18,35 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Subtrahiere";
+        return "Subtrahieren";
     }
 
     @Override
     public String getAbstract() {
-        return "Subtrahiert zwei Werte.";
+        return "Zieht eine Zahl von einer anderen ab.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Subtrahiere“** zieht einen numerischen Wert von einem anderen ab. \s
-                Das Ergebnis ist die Differenz der beiden Werte.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten die Differenz von zwei Zahlen berechnen.
-                
-                Mit der Funktion **„Subtrahiere“** wird diese Logik so formuliert: \s
-                `Subtrahiere Wert1 Wert2`
-                
-                Beispielwerte: \s
-                - **Wert1:** 10 \s
-                - **Wert2:** 3
-                
-                **Ergebnis:**
-                - **Rückgabewert:** 7
-                
-                # Beispiele und Ergebnisse
-                - **Subtrahiere 10 2** → **8** \s
-                - **Subtrahiere 9 3** → **6** \s
-                - **Subtrahiere 5 10** → **-5**
-                
-                # Wann verwenden Sie die Funktion „Subtrahiere“?
-                Verwenden Sie **„Subtrahiere“**, um die Differenz von zwei numerischen Werten zu berechnen. \s
-                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                # Wofür verwenden Sie diese Funktion?
+                Ziehen Sie eine Zahl von einer anderen ab, etwa einen bereits gezahlten Betrag von einer Gesamtsumme.
+
+                # Welche Werte werden benötigt?
+                „Ausgangszahl“ und „Abzuziehende Zahl“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Die Ausgangszahl abzüglich der abzuziehenden Zahl.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Subtrahieren“ als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei „Ausgangszahl“ `10` und bei „Abzuziehende Zahl“ `3` ein.
+                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+
+                Der Ausdruck `10 minus 3` ergibt `7`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Die Reihenfolge der Zahlen beeinflusst das Ergebnis.
                 """;
     }
 
@@ -69,13 +62,13 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
                         NoCodeDataType.Number,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Minuend",
-                                "Der Wert, von dem subtrahiert wird."
+                                "Ausgangszahl",
+                                "Die Zahl, von der die andere Zahl abgezogen wird."
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Subtrahend",
-                                "Der Wert, der subtrahiert wird."
+                                "Abzuziehende Zahl",
+                                "Die Zahl, die von der Ausgangszahl abgezogen wird."
                         ).withSentence("minus")
                 )
         );
@@ -84,7 +77,7 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "subtrahiere „#1“ von „#0“";
+        return "#0 minus #1";
     }
 
     @Override

@@ -100,7 +100,7 @@ class NoCodeEvaluationServiceDryRunTest {
 
         var division = result.operands().getFirst();
         assertEquals(NoCodeDryRunStatus.Failed, division.status());
-        assertEquals("Division durch Null ist nicht erlaubt", division.message());
+        assertEquals("„Teiler“ darf nicht 0 sein. Geben Sie eine andere Zahl ein.", division.message());
         assertEquals(NoCodeDryRunStatus.Skipped, result.status());
     }
 

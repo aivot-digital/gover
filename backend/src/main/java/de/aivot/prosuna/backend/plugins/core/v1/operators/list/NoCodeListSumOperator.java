@@ -25,38 +25,30 @@ public class NoCodeListSumOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Berechnet die Summe aller numerischen Werte innerhalb einer Liste.";
+        return "Addiert die Werte einer Liste zu einer Summe.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Summe einer Liste“** berechnet die Summe aller numerischen Werte innerhalb einer Liste. \s
-                Er wird verwendet, um schnell und effizient die Gesamtmenge oder den Gesamtwert aus einer Sammlung von Zahlen zu ermitteln.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben eine Liste mit Umsätzen aus mehreren Transaktionen: `[100, 200, 50]`. \s
-                Mit der Funktion **„Summe einer Liste“** können Sie die Gesamtumsätze berechnen:
-                
-                ```text
-                Summe einer Liste Umsätze
-                ```
-                
-                **Ergebnis:** \s
-                Die Summe der Werte in der Liste beträgt: `100 + 200 + 50 = 350`.
-                
-                **Weitere Beispiele:**
-                - Liste der Werte: `[1, 2, 3, 4]` → **Ergebnis:** `10` \s
-                - Leere Liste: `[]` → **Ergebnis:** `0` \s
-                
-                # Wann verwenden Sie die Funktion „Summe einer Liste“?
-                Verwenden Sie **„Summe einer Liste“**, wenn Sie:
-                - Die Gesamtsumme einer Sammlung von Zahlen berechnen möchten (z. B. Umsätze, Preise, Mengen). \s
-                - Daten aus einer Tabelle oder Liste aggregieren, z. B. die Summe aller Werte in einer bestimmten Spalte. \s
-                - Statistiken oder Berichte erstellen, die Summen erfordern. \s
-                
-                Diese Funktion ist besonders nützlich für Analysen, Finanzberechnungen oder Berichte.
+                # Wofür verwenden Sie diese Funktion?
+                Berechnen Sie eine Gesamtsumme, beispielsweise aus den Beträgen mehrerer Positionen.
+
+                # Welche Werte werden benötigt?
+                **Liste:** Die Zahlen, die addiert werden sollen.
+
+                Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine Zahl mit der Summe der Listeneinträge. Eine leere Liste ergibt `0`.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Summe einer Liste“**. Verwenden Sie für **Liste** die Variable „Beträge“, die `[100, 200, 50]` liefert.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Summe von „Beträge“`. Das Ergebnis ist `350`. Um nur Beträge aus einer Tabelle zu addieren, können Sie zuvor mit **„Feldwerte aus Liste“** die betreffende Spalte ermitteln.
+
+                # Was ist zu beachten?
+                Jeder Eintrag wird in einen Zahlenwert umgewandelt und auf acht Nachkommastellen gerundet. Nichtnumerische Einträge werden nicht übersprungen. Verwenden Sie deshalb Zahlen oder Texte, die eine Zahl enthalten.
                 """;
     }
 
@@ -82,7 +74,7 @@ public class NoCodeListSumOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "berechne die Summe von „#0“";
+        return "Summe von #0";
     }
 
     @Override

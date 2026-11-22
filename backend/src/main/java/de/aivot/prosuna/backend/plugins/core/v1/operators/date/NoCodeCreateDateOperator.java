@@ -16,37 +16,39 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Erstelle Datum";
+        return "Datum bilden";
     }
 
     @Override
     public String getAbstract() {
-        return "Erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr.";
+        return "Bildet ein Datum aus einzeln angegebenem Tag, Monat und Jahr.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Erstelle Datum“** erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr. \s
-                Er wird verwendet, um ein Datum aus einzelnen Komponenten zu erstellen.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben die Werte für Tag, Monat und Jahr: `15`, `8`, `2023`. \s
-                Mit der Funktion **„Erstelle Datum“** können Sie ein Datum erstellen:
-                
-                ```text
-                Erstelle Datum (15, 8, 2023)
-                ```
-                
-                **Ergebnis:** \s
-                Das erstellte Datum ist: `2023-08-15`.
-                
-                # Wann verwenden Sie die Funktion „Erstelle Datum“?
-                Verwenden Sie **„Erstelle Datum“**, wenn Sie:
-                - Ein Datum aus einzelnen Komponenten (Tag, Monat, Jahr) erstellen möchten. \s
-                - Daten in einem bestimmten Format benötigen. \s
-                - Ein Datum für Berechnungen oder Vergleiche erstellen möchten.
+                # Wofür verwenden Sie diese Funktion?
+                Bilden Sie ein Datum, wenn Tag, Monat und Jahr einzeln vorliegen, zum Beispiel für einen jährlich festgelegten Termin.
+
+                # Welche Werte werden benötigt?
+                - **Tag:** Der Tag des Monats als ganze Zahl.
+                - **Monat:** Der gewünschte Monat.
+                - **Jahr:** Das Jahr als ganze Zahl.
+
+                Tag und Jahr können Sie selbst eingeben; dafür gibt es keine vorgegebenen Auswahlwerte. Für einen selbst festgelegten Monat wählen Sie einen der zwölf Monate aus. Zusätzlich können alle drei Eingaben aus einer anderen Wertquelle oder einer Funktion stammen.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein vollständiges Datum mit Tag, Monat und Jahr. Dieses können Sie beispielsweise mit **„Datumswerte vergleichen“** prüfen oder mit **„Datum formatieren“** als Text ausgeben.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie im Eingabefeld **„Datum“** von **„Datumswerte vergleichen“** die Funktion **„Datum bilden“**.
+                2. Geben Sie als **„Tag“** **15** ein, wählen Sie als **„Monat“** **„August“** und geben Sie als **„Jahr“** **2026** ein.
+                3. Vergleichen Sie das Ergebnis beispielsweise mit einem Datum aus einem Formularelement.
+
+                Das gebildete Datum ist **15.08.2026**. Zugeklappt lesen Sie: **„Datum aus Tag 15, Monat „August“ und Jahr 2026“**.
+
+                # Was ist zu beachten?
+                Die Kombination muss ein tatsächlich existierendes Datum ergeben. Der **31. Februar** wird beispielsweise abgelehnt. Die Funktion bildet einen Datumswert; für eine bestimmte Textdarstellung verwenden Sie **„Datum formatieren“**.
                 """;
     }
 
@@ -63,12 +65,12 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Tag",
-                                "Der Tag des Monats (1-31)"
+                                "Der gewünschte Tag als ganze Zahl. Er muss im gewählten Monat und Jahr existieren."
                         ).withSentence("aus Tag"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Monat",
-                                "Der Monat des Jahres (1-12)",
+                                "Wählen Sie den Monat aus. Bei einer anderen Wertquelle wird die Monatsnummer erwartet, zum Beispiel 8 für August.",
                                 new NoCodeParameterOption("Januar", "1"),
                                 new NoCodeParameterOption("Februar", "2"),
                                 new NoCodeParameterOption("März", "3"),
@@ -85,8 +87,8 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Jahr",
-                                "Das Jahr (z.B. 2023)"
-                        ).withSentence("Jahr")
+                                "Das Jahr des gewünschten Datums, zum Beispiel 2026."
+                        ).withSentence("und Jahr")
                 )
         );
     }
@@ -94,7 +96,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "erstelle ein Datum aus Tag „#0“, Monat „#1“ und Jahr „#2“";
+        return "Datum aus Tag #0, Monat #1 und Jahr #2";
     }
 
     @Override

@@ -17,37 +17,41 @@ public class NoCodeValueOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Wert zurückgeben";
+        return "Wert übernehmen";
     }
 
     @Override
     public String getAbstract() {
-        return "Gibt einen Wert zurück";
+        return "Übernimmt einen Wert unverändert als Ergebnis.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Wert zurückgeben“** gibt einen angegebenen Wert unverändert zurück.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten einen statischen Wert oder eine Benutzereingabe direkt weiterverarbeiten.
-                
-                Mit der Funktion **„Wert zurückgeben“** wird diese Logik so formuliert:
-                `Eingabewert WIRD ZURÜCKGEGEBEN`
-                
-                **Ergebnis:**
-                - Der eingegebene Wert wird unverändert zurückgegeben.
-                
-                # Wann verwenden Sie die Funktion „Wert zurückgeben“?
-                Verwenden Sie **„Wert zurückgeben“**, wenn Sie einen Wert ohne Änderungen weiterleiten oder ausgeben möchten.
+                # Wofür verwenden Sie diese Funktion?
+                Übernehmen Sie einen Wert unverändert, etwa einen Text aus einer Wertquelle als Ergebnis eines Ausdrucks.
+
+                # Welche Werte werden benötigt?
+                Einen „Wert“. Einen festen Text können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie den Wert aus einer Wertquelle oder einer Funktion übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Genau den übergebenen Wert, ohne ihn zu verändern. Wird ein Text übergeben, erhalten Sie denselben Text; Werte anderer Typen behalten ihren Typ.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Wert übernehmen“ als Funktion für einen Textwert.
+                2. Wählen Sie für „Wert“ über „Andere Wertquelle verwenden …“ die Wertquelle „E-Mail-Adresse“.
+                3. Verwenden Sie den Ausdruck beispielsweise als berechneten Text.
+
+                Enthält die Wertquelle „person@example.org“, erhalten Sie genau diesen Text.
+
+                # Was ist zu beachten?
+                Ein selbst eingegebener Text wird wörtlich übernommen. Die Eingabe `email` sucht kein Formularelement mit dieser Kennung. Um einen vorhandenen Wert zu übernehmen, wählen Sie die entsprechende Wertquelle.
                 """;
     }
 
     @Override
     public String getSentenceLead() {
-        return "ergibt den Wert";
+        return "ergibt";
     }
 
     @Override
@@ -57,9 +61,9 @@ public class NoCodeValueOperator extends NoCodeOperator {
                         NoCodeDataType.Runtime,
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Ziel",
-                                "Die ID des Elementes, dessen Wert zurückgegeben werden soll."
-                        ).withSentence("von")
+                                "Wert",
+                                "Der Wert, der unverändert als Ergebnis übernommen wird."
+                        ).withSentence("")
                 )
         );
     }
@@ -72,6 +76,6 @@ public class NoCodeValueOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "der Wert des Feldes mit der ID „#0“";
+        return "#0";
     }
 }

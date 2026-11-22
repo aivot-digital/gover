@@ -23,36 +23,30 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob das angegebene Formularelement laut berechnetem Sichtbarkeitszustand sichtbar ist.";
+        return "Prüft den berechneten Zustand eines Formularelements auf „sichtbar“.";
     }
 
     @Override
     public String getDescription() {
-        return """                
-                # Beschreibung:
-                Die Funktion **„Ist sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
-                Geben Sie die **ID eines im Formular konfigurierten Formularelements** an. \s
-                Die Funktion gibt **wahr** (true) zurück, wenn der berechnete Zustand sichtbar ist, und **falsch** (false), wenn er nicht sichtbar ist.
-                
-                # Anwendungsbeispiel:
-                Im Formular ist ein Eingabefeld mit der ID `"telefonnummer"` konfiguriert.
-                Seine Sichtbarkeit wird über eine Bedingung gesteuert.
-                
-                Mit der Funktion **„Ist sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
-                ```text
-                Ist sichtbar("telefonnummer")
-                ```
-                
-                **Ergebnis:**
-                - **wahr:** Wenn das Eingabefeld im berechneten Zustand sichtbar ist. \s
-                - **falsch:** Wenn das Eingabefeld im berechneten Zustand nicht sichtbar ist.
-                
-                **Weitere Beispiele:**
-                - **Ist sichtbar("zusatzangaben"):** → **wahr**, wenn der im Formular konfigurierte Abschnitt `"zusatzangaben"` im berechneten Zustand sichtbar ist. \s
-                - **Ist sichtbar("hinweis"):** → **falsch**, wenn das im Formular konfigurierte Textelement `"hinweis"` im berechneten Zustand nicht sichtbar ist.
-                
-                # Wann verwenden Sie die Funktion „Ist sichtbar“?
-                Verwenden Sie **„Ist sichtbar“**, um Bedingungen in Ihrem Formular vom berechneten Sichtbarkeitszustand eines anderen Formularelements abhängig zu machen.
+        return """
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob ein Formularelement laut seinem berechneten Sichtbarkeitszustand sichtbar ist. So kann eine weitere Bedingung auf dessen Sichtbarkeit aufbauen.
+
+                # Welche Werte werden benötigt?
+                Die interne Kennung des Formularelements. Geben Sie diese bei „Formularelement“ frei als Text ein; es gibt keine vorgegebene Auswahl. Über „Andere Wertquelle verwenden …“ kann die Kennung auch aus einer Wertquelle oder Funktion stammen. Benötigt wird die Kennung, nicht der Inhalt des Formularelements.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn das Formularelement im berechneten Zustand sichtbar ist, andernfalls „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Ermitteln Sie die interne Kennung des Formularelements, dessen Sichtbarkeit geprüft werden soll, beispielsweise `telefonnummer`.
+                2. Wählen Sie „Ist sichtbar“ als Funktion für eine Bedingung.
+                3. Tragen Sie bei „Formularelement“ `telefonnummer` ein.
+
+                Ist dieses Formularelement sichtbar, ergibt die Bedingung „Wahr“. Verwenden Sie das Ergebnis beispielsweise für einen zusätzlichen Hinweis.
+
+                # Was ist zu beachten?
+                Geprüft wird der berechnete Sichtbarkeitszustand, nicht, ob das Formularelement gerade im sichtbaren Bildschirmausschnitt liegt. Ist zur Kennung kein Zustand vorhanden, wird das Formularelement als sichtbar behandelt. Eine unbekannte Kennung ergibt daher „Wahr“.
                 """;
     }
 
@@ -73,9 +67,9 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
                         NoCodeDataType.Boolean,
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Wert",
-                                "Die ID des zu überprüfenden Formularelements."
-                        ).withSentence("wenn das Feld", getVisibilitySuffix())
+                                "Formularelement",
+                                "Die interne Kennung des Formularelements, dessen Sichtbarkeitszustand geprüft wird."
+                        ).withSentence("wenn das Formularelement", getVisibilitySuffix())
                 )
         );
     }
@@ -93,6 +87,6 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "das Formularelement „#0“ ist sichtbar";
+        return "das Formularelement #0 ist sichtbar";
     }
 }

@@ -5,7 +5,7 @@ import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {Autocomplete, Box, createFilterOptions, FormHelperText} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
-import {NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeNumberConstraints, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {useMemo} from 'react';
@@ -18,6 +18,7 @@ import {DateTimeFieldComponent} from '../../../components/date-time-field/date-t
 import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {formFieldHelperTextSx} from '../../../theming/form-field-tokens';
+import {getNoCodeNumberValidationError} from '../utils/no-code-number-validation';
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
@@ -29,6 +30,7 @@ interface NoCodeOperandEditorStaticValueProps {
     desiredType: NoCodeDataType;
     onAddEnclosingExpression: () => void;
     operandError?: NoCodeOperandError;
+    numberConstraints?: NoCodeNumberConstraints | null;
 }
 
 export const BOOL_DEFAULT_OPTIONS = NO_CODE_BOOLEAN_OPTIONS;
@@ -60,49 +62,13 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
     }, [originalOptions]);
 
     if (suggestionOptions != null) {
-        return (
-            <>
-                {props.optionsAreSuggestions === false
-                    ? <SelectStaticValue {...props} options={suggestionOptions}/>
-                    : <SuggestedStaticValue {...props} options={suggestionOptions}/>}
-
-                {
-                    operandError != null &&
-                    operandError.error != null &&
-                    <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{
-                            mt: 1,
-                        }}
-                    >
-                        {operandError.error}
-                    </Typography>
-                }
-            </>
-        );
+        return props.optionsAreSuggestions === false
+            ? <SelectStaticValue {...props} options={suggestionOptions}/>
+            : <SuggestedStaticValue {...props} options={suggestionOptions}/>;
     }
 
     if (desiredType === NoCodeDataType.Boolean) {
-        return (
-            <>
-                <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS}/>
-
-                {
-                    operandError != null &&
-                    operandError.error != null &&
-                    <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{
-                            mt: 1,
-                        }}
-                    >
-                        {operandError.error}
-                    </Typography>
-                }
-            </>
-        );
+        return <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS}/>;
     }
 
     if (desiredType === NoCodeDataType.Date) {
@@ -171,25 +137,11 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
         );
     }
 
-    return (
-        <>
-            <TextStaticValue {...props} />
+    return <TextStaticValue {...props}/>;
+}
 
-            {
-                operandError != null &&
-                operandError.error != null &&
-                <Typography
-                    color="error"
-                    variant="caption"
-                    sx={{
-                        mt: 1,
-                    }}
-                >
-                    {operandError.error}
-                </Typography>
-            }
-        </>
-    );
+function getStaticValueError(props: NoCodeOperandEditorStaticValueProps): string | undefined {
+    return props.operandError?.error ?? getNoCodeNumberValidationError(props.value.value, props.label, props.numberConstraints);
 }
 
 function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: string | null | undefined) {
@@ -223,6 +175,7 @@ function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
+            error={getStaticValueError(props)}
             value={props.value.value}
             onChange={(val) => {
                 updateStaticValue(props, val);
@@ -314,6 +267,7 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                         muiPassTroughProps={params}
                         label={props.label}
                         hint={props.hint}
+                        error={getStaticValueError(props)}
                         value={props.value.value}
                         onChange={(value) => updateStaticValue(props, value)}
                         margin="none"
@@ -363,6 +317,7 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
+            error={getStaticValueError(props)}
             value={props.value.value ?? undefined}
             onChange={(val) => {
                 updateStaticValue(props, val);

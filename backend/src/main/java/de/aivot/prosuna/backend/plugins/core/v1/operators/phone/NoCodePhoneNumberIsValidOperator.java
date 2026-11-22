@@ -24,23 +24,32 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft streng, ob eine Telefonnummer mit Ländervorwahl gültig ist.";
+        return "Prüft eine Telefonnummer mit Ländervorwahl anhand des bekannten Nummernplans.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Telefonnummer ist gültig“** prüft, ob eine Telefonnummer mit internationaler Ländervorwahl gültig ist.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob eine Telefonnummer zum bekannten Nummernplan ihres Landes passt, zum Beispiel wenn Sie strengere Anforderungen als eine reine Plausibilitätsprüfung benötigen.
 
-                Die Telefonnummer muss mit einem `+` und der Ländervorwahl beginnen. Nebenstellen oder Durchwahlen in Form von Erweiterungen werden nicht akzeptiert.
+                # Welche Werte werden benötigt?
+                **Telefonnummer:** Eine Telefonnummer mit internationaler Ländervorwahl, zum Beispiel **+49 30 123456**. Sie können sie frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
 
-                # Beispiele:
-                - **+49 30 123456** → **wahr**
-                - **+49 1234** → **falsch**
-                - **030 123456** → **falsch**
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn die Telefonnummer die Prüfung des Nummernplans besteht. Andernfalls erhalten Sie **Falsch**, auch bei einer fehlenden oder leeren Angabe.
 
-                Verwenden Sie diese Funktion, wenn eine Telefonnummer fachlich streng validiert werden soll.
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie für eine Bedingung **„Telefonnummer ist gültig“**.
+                2. Wählen Sie als **„Telefonnummer“** ein Telefonnummer-Feld als andere Wertquelle oder legen Sie **+49 30 123456** selbst fest.
+                3. Verwenden Sie das Ergebnis beispielsweise als Bedingung, bevor Sie die Nummer mit **„Telefonnummer vereinheitlichen“** weiterverarbeiten.
+
+                Für **+49 30 123456** ist das Ergebnis **Wahr**; für **+49 1234** ist es **Falsch**. Zugeklappt lesen Sie: **„„+49 30 123456“ ist eine gültige Telefonnummer“**.
+
+                # Was ist zu beachten?
+                Die Prüfung ist strenger als **„Telefonnummer ist plausibel“**. Sie prüft den bekannten Nummernplan, aber weder die tatsächliche Vergabe noch die Erreichbarkeit der Nummer. Neue Nummernbereiche können deshalb zunächst abgelehnt werden.
+
+                Die Nummer muss mit **+** und der Ländervorwahl beginnen. Übliche Trennzeichen sind möglich; separate Nebenstellenzusätze werden abgelehnt.
                 """;
     }
 
@@ -62,7 +71,7 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Telefonnummer",
-                                "Die zu prüfende Telefonnummer mit Ländervorwahl."
+                                "Die Telefonnummer mit + und internationaler Ländervorwahl, zum Beispiel +49 30 123456."
                         ).withSentence("wenn", "eine gültige Telefonnummer ist")
                 )
         );
@@ -71,7 +80,7 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ ist eine gültige Telefonnummer";
+        return "#0 ist eine gültige Telefonnummer";
     }
 
     @Override

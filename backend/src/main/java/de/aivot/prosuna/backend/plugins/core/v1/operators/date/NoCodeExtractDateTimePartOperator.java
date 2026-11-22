@@ -50,7 +50,48 @@ public class NoCodeExtractDateTimePartOperator extends NoCodeOperator {
 
     @Override
     public String getDescription() {
-        return getAbstract();
+        return switch (part) {
+            case DATE -> """
+                    # Wofür verwenden Sie diese Funktion?
+                    Ermitteln Sie das Datum eines Zeitpunkts, zum Beispiel den Kalendertag eines Termins.
+
+                    # Welche Werte werden benötigt?
+                    **Zeitpunkt:** Den Zeitpunkt können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für eine selbst festgelegte Angabe verwenden Sie das Datums- und Uhrzeitfeld; eine feste Auswahlliste gibt es nicht.
+
+                    # Welches Ergebnis erhalten Sie?
+                    Ein vollständiges Datum mit Tag, Monat und Jahr in der Zeitzone der Anwendung. Die Uhrzeit ist nicht Teil des Ergebnisses.
+
+                    # Beispiel im No-Code-Editor
+                    1. Wählen Sie im Eingabefeld **„Datum“** von **„Datumswerte vergleichen“** die Funktion **„Datum aus Zeitpunkt“**.
+                    2. Wählen Sie als **„Zeitpunkt“** die Wertquelle **„Termin“**, die dem **22.11.2026, 09:30:00 Uhr** in der Zeitzone **Europe/Berlin** entspricht.
+                    3. Vergleichen Sie das ermittelte Datum beispielsweise mit **„Heutiges Datum“**.
+
+                    In dieser Zeitzone erhalten Sie **22.11.2026**. Zugeklappt lesen Sie: **„Datum von „Termin““**.
+
+                    # Was ist zu beachten?
+                    Maßgeblich ist die Zeitzone der Anwendung. Derselbe Zeitpunkt kann in einer anderen Zeitzone auf einen anderen Kalendertag fallen. Ein Datum ohne Uhrzeit ist selbst kein Zeitpunkt.
+                    """;
+            case TIME -> """
+                    # Wofür verwenden Sie diese Funktion?
+                    Ermitteln Sie die Uhrzeit eines Zeitpunkts, zum Beispiel um einen Termin mit den Öffnungszeiten zu vergleichen.
+
+                    # Welche Werte werden benötigt?
+                    **Zeitpunkt:** Den Zeitpunkt können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für eine selbst festgelegte Angabe verwenden Sie das Datums- und Uhrzeitfeld; eine feste Auswahlliste gibt es nicht.
+
+                    # Welches Ergebnis erhalten Sie?
+                    Eine Uhrzeit auf die Sekunde genau in der Zeitzone der Anwendung. Datum und Sekundenbruchteile sind nicht Teil des Ergebnisses.
+
+                    # Beispiel im No-Code-Editor
+                    1. Wählen Sie im Eingabefeld **„Uhrzeit“** von **„Uhrzeiten vergleichen“** die Funktion **„Uhrzeit aus Zeitpunkt“**.
+                    2. Wählen Sie als **„Zeitpunkt“** die Wertquelle **„Termin“**, die dem **22.11.2026, 09:30:00 Uhr** in der Zeitzone **Europe/Berlin** entspricht.
+                    3. Vergleichen Sie die ermittelte Uhrzeit beispielsweise mit **17:00:00 Uhr**.
+
+                    In dieser Zeitzone erhalten Sie **09:30:00 Uhr**. Zugeklappt lesen Sie: **„Uhrzeit von „Termin““**.
+
+                    # Was ist zu beachten?
+                    Maßgeblich ist die Zeitzone der Anwendung. Das Ergebnis enthält weder das Datum noch eine Zeitzone und unterscheidet deshalb nicht zwischen zwei Vorkommen derselben Uhrzeit bei einer Zeitumstellung. Sekundenbruchteile werden weggelassen, nicht gerundet.
+                    """;
+        };
     }
 
     @Override
@@ -66,7 +107,7 @@ public class NoCodeExtractDateTimePartOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.DateTime,
                                 "Zeitpunkt",
-                                "Der absolute Zeitpunkt."
+                                "Der Zeitpunkt, dessen Datum oder Uhrzeit Sie benötigen."
                         ).withSentence("aus")
                 )
         );
@@ -76,8 +117,8 @@ public class NoCodeExtractDateTimePartOperator extends NoCodeOperator {
     @Override
     public String getHumanReadableTemplate() {
         return switch (part) {
-            case DATE -> "ermittle das Datum von „#0“";
-            case TIME -> "ermittle die Uhrzeit von „#0“";
+            case DATE -> "Datum von #0";
+            case TIME -> "Uhrzeit von #0";
         };
     }
 

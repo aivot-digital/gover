@@ -32,30 +32,40 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Auswahl beinhaltet";
+        return "Auswahl enthält Einträge";
     }
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob eine Auswahl von Organisationseinheiten, Teams und Personen bestimmte Einträge enthält.";
+        return "Prüft, ob eine Auswahl alle gesuchten Organisationseinheiten, Teams oder Personen enthält.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Auswahl beinhaltet“** prüft, ob eine Auswahl aus einem Feld zur Auswahl von Organisationseinheiten, Teams und Personen \s
-                oder aus einem Zuweisungskontext alle gesuchten Einträge enthält. Die Auswahl darf weitere Einträge enthalten.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob eine Auswahl bestimmte Organisationseinheiten, Teams oder Personen enthält, beispielsweise ein zuständiges Team. Auch die Auswahl aus einem Zuweisungskontext kann geprüft werden.
 
-                Die gesuchten Einträge können aus einem anderen Auswahlfeld stammen oder als fester Wert angegeben werden. \s
-                Ein fester Wert hat die Form `Typ:ID`, zum Beispiel `user:4f2c…`, `orgUnit:12` oder `team:7`.
+                # Welche Werte werden benötigt?
+                - **Auswahl:** Die zu prüfenden Einträge, beispielsweise aus einem Formularelement oder einem Zuweisungskontext.
+                - **Gesuchte Einträge:** Ein einzelner gesuchter Eintrag oder eine weitere Auswahl, deren Einträge alle enthalten sein sollen.
 
-                # Beispiele:
-                - Auswahl enthält `orgUnit:12` und `user:abc`, gesucht wird `orgUnit:12` → **wahr**
-                - Auswahl enthält `orgUnit:12`, gesucht wird `team:7` → **falsch**
-                - Auswahl ist leer → **falsch**
+                Beide Eingaben können aus einer anderen Wertquelle oder einer Funktion stammen. Einen einzelnen Eintrag können Sie auch frei als Text eingeben: `orgUnit:12` für die Organisationseinheit mit ID `12`, `team:7` für das Team mit ID `7` oder `user:abc` für das Konto mit ID `abc`. Eine Auswahl mit Namen wird hier nicht angeboten. Für mehrere Einträge verwenden Sie eine Wertquelle oder eine Funktion, die eine entsprechende Auswahl liefert.
 
-                Um zu prüfen, dass ein Eintrag nicht ausgewählt ist, kombinieren Sie die Funktion mit **„Nicht“**.
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn alle gesuchten Einträge in der Auswahl enthalten sind. Die Auswahl darf weitere Einträge enthalten. Sind Einträge nicht enthalten oder ist eine der beiden Auswahlen leer, erhalten Sie **Falsch**.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie **„Auswahl enthält Einträge“**.
+                2. Verwenden Sie bei **„Auswahl“** das Formularelement **„Zuständige Teams“**.
+                3. Legen Sie bei **„Gesuchte Einträge“** den Text `team:7` selbst fest.
+
+                Enthält das Formularelement das Team mit ID `7`, ist das Ergebnis **Wahr**. Zugeklappt und in der Vorschau lesen Sie: **Wert von „Zuständige Teams“ enthält alle Einträge aus „team:7“**.
+
+                # Was ist zu beachten?
+                Verglichen werden Art und ID eines Eintrags, nicht seine sichtbare Bezeichnung. Eine Organisationseinheit und ein Team mit derselben ID gelten als unterschiedliche Einträge. Die Reihenfolge und mehrfache Vorkommen desselben Eintrags sind für den Vergleich unerheblich.
+
+                Mit **„Nicht“** können Sie prüfen, ob nicht alle gesuchten Einträge enthalten sind. Bei mehreren gesuchten Einträgen bedeutet das nicht, dass keiner davon enthalten ist.
                 """;
     }
 
@@ -81,7 +91,7 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ beinhaltet „#1“";
+        return "#0 enthält alle Einträge aus #1";
     }
 
     @Override

@@ -40,6 +40,7 @@ import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
 import {Stack} from '@mui/material';
 import {NoCodeTreeRow} from './no-code-tree-row';
 import {useNoCodeParameterSuggestions} from '../hooks/use-no-code-parameter-suggestions';
+import {resolveNoCodeParameterPresentation} from '../utils/no-code-parameter-presentation';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -98,8 +99,8 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
 
         return resolveNoCodeSignature(operator, {
             operandCount: operands.length > 0 ? operands.length : undefined,
-        }).parameters;
-    }, [operator, operands.length]);
+        }).parameters.map(parameter => resolveNoCodeParameterPresentation(parameter, operands));
+    }, [operator, operands]);
 
     const parameterOptions = useNoCodeParameterSuggestions(operands, parameters, allElements);
 

@@ -19,37 +19,41 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Erstelle Zeit";
+        return "Uhrzeit bilden";
     }
 
     @Override
     public String getAbstract() {
-        return "Erstellt eine lokale Uhrzeit aus Stunde, Minute und optional Sekunde.";
+        return "Bildet eine Uhrzeit aus Stunde, Minute und Sekunde.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Erstelle Zeit“** erstellt eine lokale Uhrzeit aus Stunde, Minute und optional Sekunde. \s
-                Er wird verwendet, um eine Zeit aus einzelnen Komponenten zu erstellen.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben die Werte für Stunden und Minuten: `14`, `30`. \s
-                Mit der Funktion **„Erstelle Zeit“** können Sie eine Zeit erstellen:
-                
-                ```text
-                Erstelle Zeit (14, 30)
-                ```
-                
-                **Ergebnis:** \s
-                Die erstellte Zeit ist: `14:30:00`.
-                
-                # Wann verwenden Sie die Funktion „Erstelle Zeit“?
-                Verwenden Sie **„Erstelle Zeit“**, wenn Sie:
-                - Eine Zeit aus einzelnen Komponenten (Stunden, Minuten und optional Sekunden) erstellen möchten. \s
-                - Zeiten in einem bestimmten Format benötigen. \s
-                - Eine Zeit für Berechnungen oder Vergleiche erstellen möchten.
+                # Wofür verwenden Sie diese Funktion?
+                Bilden Sie eine Uhrzeit, wenn Stunde, Minute und Sekunde einzeln vorliegen, zum Beispiel für die tägliche Öffnungszeit.
+
+                # Welche Werte werden benötigt?
+                - **Stunde:** Die Stunde im 24-Stunden-Format.
+                - **Minute:** Die Minute innerhalb der Stunde.
+                - **Sekunde:** Die Sekunde innerhalb der Minute.
+
+                Sie können ganze Zahlen selbst eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine Uhrzeit auf die Sekunde genau, ohne Datum und ohne Zeitzone. Diese können Sie beispielsweise mit **„Uhrzeiten vergleichen“** prüfen.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie im Eingabefeld **„Uhrzeit“** von **„Uhrzeiten vergleichen“** die Funktion **„Uhrzeit bilden“**.
+                2. Geben Sie als **„Stunde“** **14**, als **„Minute“** **30** und als **„Sekunde“** **0** ein.
+                3. Vergleichen Sie das Ergebnis beispielsweise mit der Uhrzeit aus einem Formularelement.
+
+                Das Ergebnis ist **14:30:00 Uhr**. Die zugeklappte Darstellung nennt alle eingegebenen Bestandteile: **„Uhrzeit bilden: Stunde: 14; Minute: 30; Sekunde: 0“**.
+
+                # Was ist zu beachten?
+                Die Funktion bildet eine Uhrzeit und keinen Zeitpunkt. Wenn Sie zusätzlich ein Datum berücksichtigen möchten, verwenden Sie **„Datum und Uhrzeit verbinden“**.
+
+                Ältere Ausdrücke können nur Stunde und Minute enthalten. Dort wird die Sekunde als **0** ergänzt.
                 """;
     }
 
@@ -68,30 +72,30 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Stunde",
-                                "Die Stunde der Zeit (0-23)."
+                                "Die gewünschte Stunde im 24-Stunden-Format."
                         ).withSentence("aus Stunde"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Minute",
-                                "Die Minute der Zeit (0-59)."
+                                "Die Minute innerhalb der angegebenen Stunde."
                         ).withSentence("Minute"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Sekunde",
-                                "Die Sekunde der Zeit (0-59)."
-                        ).withSentence("Sekunde")
+                                "Die Sekunde innerhalb der angegebenen Minute."
+                        ).withSentence("und Sekunde")
                 ),
                 NoCodeSignatur.of(
                         NoCodeDataType.Time,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Stunde",
-                                "Die Stunde der Zeit (0-23)."
+                                "Die gewünschte Stunde im 24-Stunden-Format."
                         ).withSentence("aus Stunde"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Minute",
-                                "Die Minute der Zeit (0-59)."
+                                "Die Minute innerhalb der angegebenen Stunde."
                         ).withSentence("Minute")
                 )
         );

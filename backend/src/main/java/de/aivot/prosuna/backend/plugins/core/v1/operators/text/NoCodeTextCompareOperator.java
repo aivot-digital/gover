@@ -40,7 +40,7 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
     @Override
     public String getLabel() {
         return switch (mode) {
-            case CONTAINS -> "Text beinhaltet";
+            case CONTAINS -> "Text enthält";
             case STARTS_WITH -> "Text beginnt mit";
             case ENDS_WITH -> "Text endet mit";
             case EQUALS_IGNORE_CASE -> "Text ist gleich (ohne Groß-/Kleinschreibung)";
@@ -59,42 +59,61 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
 
     @Override
     public String getDescription() {
-        var example = switch (mode) {
-            case CONTAINS -> """
-                    - **Text** „Antrag auf Förderung“, **Suchtext** „Förderung“ → **wahr**
-                    - **Text** „Antrag auf Förderung“, **Suchtext** „förderung“ → **falsch**
-                    """;
-            case STARTS_WITH -> """
-                    - **Text** „DE89370400440532013000“, **Suchtext** „DE“ → **wahr**
-                    - **Text** „AT611904300234573201“, **Suchtext** „DE“ → **falsch**
-                    """;
-            case ENDS_WITH -> """
-                    - **Text** „bescheid.pdf“, **Suchtext** „.pdf“ → **wahr**
-                    - **Text** „bescheid.docx“, **Suchtext** „.pdf“ → **falsch**
-                    """;
-            case EQUALS_IGNORE_CASE -> """
-                    - **Text** „Müller“, **Vergleichstext** „MÜLLER“ → **wahr**
-                    - **Text** „Müller“, **Vergleichstext** „Mueller“ → **falsch**
-                    """;
+        var source = switch (mode) {
+            case CONTAINS -> "Betreff";
+            case STARTS_WITH -> "Kennung";
+            case ENDS_WITH -> "Dateiname";
+            case EQUALS_IGNORE_CASE -> "Nachname";
         };
-
+        var exampleText = switch (mode) {
+            case CONTAINS -> "Antrag auf Förderung";
+            case STARTS_WITH -> "DE89370400440532013000";
+            case ENDS_WITH -> "bescheid.pdf";
+            case EQUALS_IGNORE_CASE -> "Müller";
+        };
+        var otherText = switch (mode) {
+            case CONTAINS -> "Förderung";
+            case STARTS_WITH -> "DE";
+            case ENDS_WITH -> ".pdf";
+            case EQUALS_IGNORE_CASE -> "MÜLLER";
+        };
+        var comparisonLabel = mode == Mode.EQUALS_IGNORE_CASE ? "Vergleichstext" : "Suchtext";
+        var reading = getHumanReadableTemplate().replace("#0", "„" + source + "“").replace("#1", "„" + otherText + "“");
+        var purpose = switch (mode) {
+            case CONTAINS -> "Prüfen Sie, ob ein Text einen bestimmten Suchtext enthält, beispielsweise ein Stichwort im Betreff.";
+            case STARTS_WITH -> "Prüfen Sie, ob ein Text mit einem bestimmten Suchtext beginnt, beispielsweise eine Kennung mit einem Länderpräfix.";
+            case ENDS_WITH -> "Prüfen Sie, ob ein Text mit einem bestimmten Suchtext endet, beispielsweise ein Dateiname mit einer Dateiendung.";
+            case EQUALS_IGNORE_CASE -> "Prüfen Sie, ob zwei Texte übereinstimmen, auch wenn sie unterschiedlich groß- oder kleingeschrieben sind.";
+        };
         return """
-                # Beschreibung:
-                Die Funktion **„%s“** %s \s
-                Der Vergleich erfolgt wörtlich: Sonderzeichen wie Punkte oder Klammern haben keine besondere Bedeutung. \s
+                # Wofür verwenden Sie diese Funktion?
                 %s
-                Ist ein Wert leer, wird er als leerer Text behandelt.
 
-                # Beispiele:
-                %s
-                Um das Gegenteil zu prüfen, kombinieren Sie die Funktion mit **„Nicht“**.
+                # Welche Werte werden benötigt?
+                **Text:** Der zu prüfende Text. **%s:** Der Text, mit dem verglichen wird.
+
+                Beide Texte können Sie frei eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn die beschriebene Bedingung zutrifft; andernfalls **Falsch**.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie in einer Bedingung **„%s“**. Verwenden Sie für **Text** die Variable „%s“, die `%s` liefert, und geben Sie als **%s** `%s` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `%s`. Das Ergebnis ist **Wahr**. Um die umgekehrte Bedingung zu prüfen, setzen Sie diesen Ausdruck in **„Nicht“** ein.
+
+                # Was ist zu beachten?
+                Der Vergleich erfolgt wörtlich. Punkte, Klammern und andere Sonderzeichen haben keine besondere Bedeutung. Leerzeichen in übernommenen Texten werden berücksichtigt. Bei selbst festgelegten Texten werden Leerzeichen am Anfang und Ende beim Verlassen des Eingabefeldes entfernt. %s
+
+                Fehlende Werte werden als leerer Text behandelt. %s
                 """.formatted(
-                getLabel(),
-                getAbstract().replaceFirst("^Prüft", "prüft"),
+                purpose, comparisonLabel, getLabel(), source, exampleText, comparisonLabel, otherText, reading,
                 mode == Mode.EQUALS_IGNORE_CASE
-                        ? ""
+                        ? "Groß- und Kleinschreibung werden ignoriert; beispielsweise passen „Müller“ und „MÜLLER“ zusammen, „Müller“ und „Mueller“ dagegen nicht."
                         : "Groß- und Kleinschreibung werden unterschieden.",
-                example
+                mode == Mode.EQUALS_IGNORE_CASE
+                        ? "Zwei leere Texte ergeben Wahr."
+                        : "Ein leerer Suchtext ergibt Wahr, auch bei einem leeren Text."
         );
     }
 
@@ -132,10 +151,10 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
     @Override
     public String getHumanReadableTemplate() {
         return switch (mode) {
-            case CONTAINS -> "„#0“ beinhaltet „#1“";
-            case STARTS_WITH -> "„#0“ beginnt mit „#1“";
-            case ENDS_WITH -> "„#0“ endet mit „#1“";
-            case EQUALS_IGNORE_CASE -> "„#0“ ist gleich „#1“ (ohne Groß-/Kleinschreibung)";
+            case CONTAINS -> "#0 enthält #1";
+            case STARTS_WITH -> "#0 beginnt mit #1";
+            case ENDS_WITH -> "#0 endet mit #1";
+            case EQUALS_IGNORE_CASE -> "#0 ist gleich #1 (ohne Beachtung der Groß- und Kleinschreibung)";
         };
     }
 

@@ -21,27 +21,33 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Liste beinhaltet alle";
+        return "Liste enthält alle Werte";
     }
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob eine Liste alle Werte einer zweiten Liste enthält.";
+        return "Prüft, ob jeder gesuchte Wert in einer Liste vorkommt.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Liste beinhaltet alle“** prüft, ob jeder Wert der zweiten Liste auch in der ersten Liste vorkommt. \s
-                Die Reihenfolge spielt keine Rolle. Die erste Liste darf weitere Werte enthalten.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob eine Liste alle benötigten Werte enthält, beispielsweise alle erforderlichen Kategorien.
 
-                # Beispiele:
-                - `["A", "B", "C"]` beinhaltet alle von `["A", "C"]` → **wahr**
-                - `["A", "B"]` beinhaltet alle von `["A", "D"]` → **falsch**
-                - `["A"]` beinhaltet alle von `[]` → **wahr**
+                # Welche Werte werden benötigt?
+                **Liste:** Die Liste, in der gesucht wird. **Gesuchte Werte:** Eine zweite Liste mit allen Werten, die enthalten sein sollen. Beide Listen können Sie selbst als JSON-Liste eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
-                Um zu prüfen, ob mindestens ein Wert vorkommt, verwenden Sie **„Listen überschneiden sich“**.
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn jeder gesuchte Wert vorkommt; andernfalls **Falsch**. Die erste Liste darf zusätzliche Werte enthalten.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie in einer Bedingung **„Liste enthält alle Werte“**. Verwenden Sie für **Liste** die Variable „Ausgewählte Kategorien“ mit `["A", "B", "C"]` und für **Gesuchte Werte** die Variable „Erforderliche Kategorien“ mit `["A", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ enthält alle Werte aus „Erforderliche Kategorien“`. Das Ergebnis ist **Wahr**.
+
+                # Was ist zu beachten?
+                Die Reihenfolge ist unerheblich. Eine leere Liste gesuchter Werte ergibt **Wahr**. Mehrfach gesuchte gleiche Werte müssen nicht mehrfach in der ersten Liste vorkommen. Zahlen und Texte mit derselben Zahl können als gleich gelten, etwa `2` und `"2"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 
@@ -67,7 +73,7 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ beinhaltet alle Werte aus „#1“";
+        return "#0 enthält alle Werte aus #1";
     }
 
     @Override

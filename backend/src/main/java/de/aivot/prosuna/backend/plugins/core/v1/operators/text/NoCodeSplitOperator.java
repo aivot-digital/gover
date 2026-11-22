@@ -21,48 +21,41 @@ public class NoCodeSplitOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Aufteilen";
+        return "Text aufteilen";
     }
 
     @Override
     public String getAbstract() {
-        return "Teilt einen Text anhand eines Separators auf.";
+        return "Teilt einen Text an einem festgelegten Trennzeichen in eine Liste auf.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Aufteilen“** teilt einen Text anhand eines angegebenen Separators auf. \s
-                Das Ergebnis ist eine Liste von Teilstrings, die durch das Aufteilen des Eingabetextes entstehen.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten einen Satz in einzelne Wörter aufteilen.
-                
-                Mit der Funktion **„Aufteilen“** wird diese Logik so formuliert: \s
-                `Aufteilen Text Separator`
-                
-                Beispielwerte: \s
-                - **Text:** "apfel,banane,orange" \s
-                - **Separator:** ","
-                
-                **Ergebnis:**
-                - **Rückgabewert:** ["apfel", "banane", "orange"]
-                
-                # Beispiele und Ergebnisse
-                - **Text "a,b,c" Separator ","** → **["a", "b", "c"]** \s
-                - **Text "hallo welt" Separator " "** → **["hallo", "welt"]** \s
-                - **Text "eins|zwei|drei" Separator "|"** → **["eins", "zwei", "drei"]**
-                
-                # Wann verwenden Sie die Funktion „Aufteilen“?
-                Verwenden Sie **„Aufteilen“**, um einen Text in Teile zu zerlegen, basierend auf einem bestimmten Separator. \s
-                Diese Funktion ist besonders nützlich beim Parsen von CSV-Daten, beim Tokenisieren von Sätzen oder beim Verarbeiten von getrennten Zeichenfolgen.
+                # Wofür verwenden Sie diese Funktion?
+                Teilen Sie einen Text in einzelne Teile auf, beispielsweise mehrere durch Kommas getrennte Kategorien.
+
+                # Welche Werte werden benötigt?
+                **Text:** Der aufzuteilende Text. **Trennzeichen:** Das Zeichen oder die Zeichenfolge zwischen den Textteilen, beispielsweise ein Komma.
+
+                Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine Liste mit den Textteilen in ihrer ursprünglichen Reihenfolge.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Text aufteilen“**. Geben Sie als **Text** `A,B,C` und als **Trennzeichen** ein Komma `,` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„A,B,C“ aufgeteilt an „,“`. Das Ergebnis ist `["A", "B", "C"]`. Verwenden Sie das Ergebnis beispielsweise als **Liste** in **„Anzahl der Listeneinträge“**, um `3` zu erhalten.
+
+                # Was ist zu beachten?
+                Das Trennzeichen wird wörtlich verwendet; Sonderzeichen wie Punkte haben keine besondere Bedeutung. Leerzeichen bleiben in den Textteilen erhalten. Leere Teile zwischen Trennzeichen bleiben erhalten, leere Teile am Textende werden entfernt. Ohne Trennzeichen erhalten Sie eine Liste mit dem gesamten Text als einzigem Eintrag.
                 """;
     }
 
     @Override
     public String getSentenceLead() {
-        return "ergibt";
+        return "ergibt die Textteile aus";
     }
 
     @Override
@@ -77,8 +70,8 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Separator",
-                                "Das Zeichen oder die Zeichenfolge, anhand derer der Text aufgeteilt werden soll."
+                                "Trennzeichen",
+                                "Zeichen oder Zeichenfolge, an der der Text aufgeteilt wird, beispielsweise ein Komma."
                         ).withSentence("aufgeteilt an")
                 )
         );
@@ -87,7 +80,7 @@ public class NoCodeSplitOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "teile „#0“ mit dem Separator „#1“ auf";
+        return "#0 aufgeteilt an #1";
     }
 
     @Override

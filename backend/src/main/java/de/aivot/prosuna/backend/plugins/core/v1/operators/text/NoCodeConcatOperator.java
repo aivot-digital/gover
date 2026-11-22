@@ -18,39 +18,41 @@ public class NoCodeConcatOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Text verketten";
+        return "Werte zu Text zusammenfügen";
     }
 
     @Override
     public String getAbstract() {
-        return "Verkettet zwei oder mehr Werte zu einem Text.";
+        return "Fügt Werte ohne zusätzliche Trennzeichen zu einem Text zusammen.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Text verketten“** verbindet zwei oder mehr Werte zu einem einzigen Text. \s
-                Alle Eingaben werden dabei als Text behandelt und in der angegebenen Reihenfolge zusammengefügt.
-                                
-                # Anwendungsbeispiel:
-                Angenommen, Sie möchten aus Vorname und Nachname einen vollständigen Namen erzeugen:
-                                
-                ```text
-                Text verketten ("Max", " ", "Mustermann")
-                ```
-                                
-                **Ergebnis:** \s
-                "Max Mustermann"
-                                
-                # Wann verwenden Sie die Funktion „Text verketten“?
-                Verwenden Sie **„Text verketten“**, wenn Sie mehrere Werte zu einer lesbaren Zeichenkette kombinieren möchten, z. B. für Ausgaben, Beschriftungen oder Meldungen.
+                # Wofür verwenden Sie diese Funktion?
+                Setzen Sie einen Text aus einzelnen Werten zusammen, beispielsweise eine Kennung aus einem festen Präfix und einem vorhandenen Wert.
+
+                # Welche Werte werden benötigt?
+                **Erster Wert** und **Zweiter Wert:** Die Werte, die hintereinander stehen sollen. Texte und Zahlen werden zu Text umgewandelt.
+
+                Sie können die Werte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Text, der die Werte in ihrer angegebenen Reihenfolge direkt aneinanderfügt.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Werte zu Text zusammenfügen“**. Geben Sie als **Erster Wert** `AZ-` ein und verwenden Sie als **Zweiter Wert** die Variable „Kennung“, die `2026-17` liefert.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Text aus „AZ-“ gefolgt von „Kennung“`. Das Ergebnis ist `AZ-2026-17`. Für weitere Bausteine können Sie das Ergebnis in eine weitere Funktion **„Werte zu Text zusammenfügen“** einsetzen.
+
+                # Was ist zu beachten?
+                Leerzeichen und Trennzeichen werden nicht automatisch ergänzt. Bei selbst festgelegten Texten werden Leerzeichen am Anfang und Ende beim Verlassen des Eingabefeldes entfernt. Benötigen Sie dort Leerzeichen, übernehmen Sie den Text aus einer Wertquelle oder Funktion. Fehlende Werte werden als leerer Text eingefügt.
                 """;
     }
 
     @Override
     public String getSentenceLead() {
-        return "ergibt";
+        return "ergibt den Text";
     }
 
     @Override
@@ -60,13 +62,13 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                         NoCodeDataType.String,
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
-                                "Text 1",
-                                "Der erste Textbaustein."
-                        ).withSentence(""),
+                                "Erster Wert",
+                                "Der erste Wert des Ergebnistextes, beispielsweise ein festes Präfix wie AZ-."
+                        ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
-                                "Text 2",
-                                "Der zweite Textbaustein."
+                                "Zweiter Wert",
+                                "Der Wert, der direkt auf den ersten Wert folgen soll."
                         ).withSentence("gefolgt von")
                 )
         );
@@ -75,7 +77,7 @@ public class NoCodeConcatOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "verkette „#0“ mit „#1“";
+        return "Text aus #0 gefolgt von #1";
     }
 
     @Override

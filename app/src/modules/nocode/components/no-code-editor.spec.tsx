@@ -5,7 +5,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../../data/element-type/element-type';
 import {NoCodeDryRunStatus} from '../../../models/dtos/no-code-dry-run-dto';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
-import {NoCodeDataType} from '../../../data/no-code-data-type';
+import {NoCodeDataType, NoCodeDataTypeLabels} from '../../../data/no-code-data-type';
 import {type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {NoCodeEditor} from './no-code-editor';
@@ -99,33 +99,108 @@ const alwaysTrue: NoCodeOperatorDetailsDTO = {
     }],
 };
 
-const dateComparison: NoCodeOperatorDetailsDTO = {
-    ...equals,
-    identifier: 'date-compare',
-    label: 'Datumswerte vergleichen',
-    signatures: [{
-        returnType: NoCodeDataType.Boolean,
-        parameters: [{
-            type: NoCodeDataType.Date,
-            label: 'Wert 1',
-            description: null,
-            options: [],
-        }, {
-            type: NoCodeDataType.String,
-            label: 'Vergleich',
-            description: null,
-            options: [
-                {label: 'ist gleich', value: 'gleich'},
-                {label: 'ist davor oder gleich', value: 'vor-oder-gleich'},
-            ],
-        }, {
-            type: NoCodeDataType.Date,
-            label: 'Wert 2',
-            description: null,
-            options: [],
-        }],
-    }],
+const currentToday: NoCodeOperatorDetailsDTO = {
+    ...alwaysTrue,
+    identifier: 'create-today',
+    label: 'Heutiges Datum',
+    abstractDescription: 'Liefert das heutige Datum.',
+    humanReadableTemplate: 'heutiges Datum',
+    signatures: [{returnType: NoCodeDataType.Date, parameters: []}],
 };
+
+const currentNow: NoCodeOperatorDetailsDTO = {
+    ...currentToday,
+    identifier: 'create-now',
+    label: 'Aktueller Zeitpunkt',
+    abstractDescription: 'Liefert das aktuelle Datum mit Uhrzeit.',
+    humanReadableTemplate: 'aktueller Zeitpunkt',
+    signatures: [{returnType: NoCodeDataType.DateTime, parameters: []}],
+};
+
+function temporalComparison(type: NoCodeDataType): NoCodeOperatorDetailsDTO {
+    const [identifier, label, firstLabel, secondLabel] = type === NoCodeDataType.Date
+        ? ['compare-date', 'Datumswerte vergleichen', 'Datum', 'Vergleichsdatum']
+        : type === NoCodeDataType.Time
+            ? ['compare-time', 'Uhrzeiten vergleichen', 'Uhrzeit', 'Vergleichsuhrzeit']
+            : ['compare-datetime', 'Zeitpunkte vergleichen', 'Zeitpunkt', 'Vergleichszeitpunkt'];
+    return {
+        ...equals, identifier, label, humanReadableTemplate: '#0 ist #1 #2', sentenceLead: 'ergibt wahr',
+        signatures: [{
+            returnType: NoCodeDataType.Boolean,
+            parameters: [{
+                type, label: firstLabel, description: null, sentencePhrase: 'wenn', options: [],
+            }, {
+                type: NoCodeDataType.String,
+                label: 'Vergleichsart',
+                description: null,
+                sentencePhrase: '',
+                optionsAsSentencePart: true,
+                options: [
+                    {label: 'gleich', value: 'gleich'},
+                    {label: 'nicht gleich', value: 'ungleich'},
+                    {label: 'früher als', value: 'vor'},
+                    {label: 'früher als oder gleich', value: 'vor-oder-gleich'},
+                    {label: 'später als', value: 'nach'},
+                    {label: 'später als oder gleich', value: 'nach-oder-gleich'},
+                ],
+            }, {
+                type, label: secondLabel, description: null, sentencePhrase: '', sentenceSuffix: 'ist', options: [],
+            }],
+        }],
+    };
+}
+
+const dateComparison = temporalComparison(NoCodeDataType.Date);
+
+function dateArithmetic(identifier: string, label: string, direction: string, type = NoCodeDataType.Date): NoCodeOperatorDetailsDTO {
+    const isDateTime = type === NoCodeDataType.DateTime;
+    return {
+        ...equals,
+        identifier,
+        label,
+        sentenceLead: 'ergibt',
+        humanReadableTemplate: `#0 ${direction} #1 #2`,
+        signatures: [{
+            returnType: type,
+            parameters: [{
+                type,
+                label: isDateTime ? 'Ausgangszeitpunkt' : 'Ausgangsdatum',
+                description: null,
+                sentencePhrase: isDateTime ? 'den Zeitpunkt' : 'das Datum',
+                options: [],
+            }, {
+                type: NoCodeDataType.Number,
+                label: 'Anzahl',
+                description: null,
+                sentencePhrase: direction,
+                numberConstraints: {integerOnly: true, minimum: -2147483648, maximum: 2147483647},
+                options: [],
+            }, {
+                type: NoCodeDataType.String,
+                label: 'Einheit',
+                description: null,
+                sentencePhrase: '',
+                quantityParameterIndex: 1,
+                options: [
+                    {label: 'Tage', value: 'tage', singularLabel: 'Tag'},
+                    {label: 'Wochen', value: 'wochen', singularLabel: 'Woche'},
+                ],
+            }],
+        }],
+    };
+}
+
+function dateArithmeticExpression(identifier: string, value = '2026-08-15'): NoCodeOperand {
+    return {
+        type: 'NoCodeExpression',
+        operatorIdentifier: identifier,
+        operands: [
+            {type: 'NoCodeStaticValue', value},
+            {type: 'NoCodeStaticValue', value: '1'},
+            {type: 'NoCodeStaticValue', value: 'tage'},
+        ],
+    };
+}
 
 const incompleteComparison: NoCodeOperand = {
     type: 'NoCodeExpression',
@@ -394,12 +469,12 @@ describe('NoCodeEditor', () => {
         render(<Harness initial={incompleteComparison}
                         operators={[dateComparison]}
                         onChange={onChange}/>);
-        const empty = screen.getByRole('treeitem', {name: 'Vergleich: leer, Textwert'});
+        const empty = screen.getByRole('treeitem', {name: 'Vergleichsart: leer, Textwert'});
         empty.focus();
         await user.keyboard('{Enter}');
-        expect(screen.getByRole('button', {name: 'ist davor oder gleich'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'früher als oder gleich'})).toBeInTheDocument();
         expect(onChange).not.toHaveBeenCalled();
-        await user.click(screen.getByRole('button', {name: 'ist davor oder gleich'}));
+        await user.click(screen.getByRole('button', {name: 'früher als oder gleich'}));
         const selected = {
             ...incompleteComparison,
             operands: [
@@ -409,15 +484,15 @@ describe('NoCodeEditor', () => {
             ],
         };
         expect(onChange).toHaveBeenCalledExactlyOnceWith(selected);
-        const item = screen.getByRole('treeitem', {name: 'Vergleich: ist davor oder gleich, Textwert'});
+        const item = screen.getByRole('treeitem', {name: 'Vergleichsart: früher als oder gleich, Textwert'});
         await waitFor(() => expect(item).toHaveFocus());
-        expect(screen.queryByRole('list', {name: 'Vergleich auswählen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('list', {name: 'Vergleichsart auswählen'})).not.toBeInTheDocument();
         expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
 
         await user.keyboard('{Enter}');
-        const input = await screen.findByRole('combobox', {name: 'Vergleich'});
+        const input = await screen.findByRole('combobox', {name: 'Vergleichsart'});
         await user.click(input);
-        await user.click(await screen.findByRole('option', {name: 'ist gleich'}));
+        await user.click(await screen.findByRole('option', {name: 'gleich'}));
         expect(onChange).toHaveBeenLastCalledWith({
             ...selected,
             operands: [selected.operands[0], {type: 'NoCodeStaticValue', value: 'gleich'}, selected.operands[2]],
@@ -438,7 +513,7 @@ describe('NoCodeEditor', () => {
         render(<Harness initial={incompleteComparison}
                         operators={[dateComparison, equals]}
                         onChange={onChange}/>);
-        const empty = screen.getByRole('treeitem', {name: 'Vergleich: leer, Textwert'});
+        const empty = screen.getByRole('treeitem', {name: 'Vergleichsart: leer, Textwert'});
         empty.focus();
         await user.keyboard('{Enter}');
         await user.click(screen.getByRole('button', {name: 'Andere Wertquelle verwenden …'}));
@@ -448,9 +523,9 @@ describe('NoCodeEditor', () => {
         await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(screen.getByRole('button', {name: 'Mit Funktion ermitteln'})).toHaveFocus();
         await user.click(screen.getByRole('button', {name: 'Zurück zur Auswahl'}));
-        expect(screen.getByRole('button', {name: 'ist gleich'})).toHaveFocus();
+        expect(screen.getByRole('button', {name: 'gleich'})).toHaveFocus();
         await user.keyboard('{Escape}');
-        await waitFor(() => expect(screen.queryByRole('list', {name: 'Vergleich auswählen'})).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByRole('list', {name: 'Vergleichsart auswählen'})).not.toBeInTheDocument());
         expect(empty).toHaveFocus();
         expect(onChange).not.toHaveBeenCalled();
     });
@@ -1233,6 +1308,226 @@ class FakeDataTransfer {
 }
 
 describe('operator sentences and descriptions', () => {
+    it.each([
+        [NoCodeDataType.Date, '2026-11-22', '2026-11-23', '22.11.2026', '23.11.2026'],
+        [NoCodeDataType.Time, '09:00', '17:00:00', '09:00:00 Uhr', '17:00:00 Uhr'],
+        [NoCodeDataType.DateTime, '2026-11-22T12:30:00Z', '2026-11-22T13:30:00Z', '22.11.2026 13:30:00 Uhr', '22.11.2026 14:30:00 Uhr'],
+    ] as const)('reads a fixed %s comparison as a complete conditional and collapsed sentence', (type, left, right, displayedLeft, displayedRight) => {
+        const comparison = temporalComparison(type);
+        const [first, , second] = comparison.signatures[0].parameters;
+        const initial: NoCodeOperand = {
+            type: 'NoCodeExpression', operatorIdentifier: comparison.identifier,
+            operands: [{type: 'NoCodeStaticValue', value: left}, {type: 'NoCodeStaticValue', value: 'vor-oder-gleich'}, {type: 'NoCodeStaticValue', value: right}],
+        };
+        const original = structuredClone(initial);
+        const onChange = vi.fn();
+        render(<Harness initial={initial} operators={[comparison]} onChange={onChange}/>);
+
+        const root = screen.getByRole('treeitem', {name: `Bedingung: Funktion ${comparison.label}, Wahrheitswert`});
+        expect(root.firstElementChild).toHaveTextContent('ergibt wahr');
+        expect(screen.getByRole('treeitem', {name: `${first.label}: ${displayedLeft}, ${NoCodeDataTypeLabels[type]}`})).toHaveTextContent(/^wenn/);
+        expect(screen.getByRole('treeitem', {name: `${second.label}: ${displayedRight}, ${NoCodeDataTypeLabels[type]}`})).toHaveTextContent(/ist$/);
+        fireEvent.click(screen.getByRole('button', {name: `${comparison.label}: zuklappen`}));
+        expect(root).toHaveAccessibleDescription(`${displayedLeft} ist früher als oder gleich ${displayedRight}`);
+        expect(initial).toEqual(original);
+        expect(onChange).not.toHaveBeenCalled();
+        expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it('uses parameter names for a dynamic comparison and restores the sentence when a fixed choice is selected', async () => {
+        const user = userEvent.setup();
+        const comparison = temporalComparison(NoCodeDataType.Time);
+        const initial: NoCodeOperand = {
+            type: 'NoCodeExpression', operatorIdentifier: comparison.identifier,
+            operands: [{type: 'NoCodeStaticValue', value: '09:00:00'}, {type: 'NoCodeProcessDataReference', path: 'vergleich'}, {type: 'NoCodeStaticValue', value: '17:00:00'}],
+        };
+        const onChange = vi.fn();
+        render(<Harness initial={initial} operators={[comparison]} onChange={onChange}/>);
+        const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Uhrzeiten vergleichen, Wahrheitswert'});
+
+        expect(root.firstElementChild).toHaveTextContent('Ergebnistyp: Wahrheitswert');
+        expect(root.firstElementChild).not.toHaveTextContent('ergibt wahr');
+        expect(screen.getByRole('treeitem', {name: 'Uhrzeit: 09:00:00 Uhr, Uhrzeitwert'})).toHaveTextContent(/^Uhrzeit/);
+        expect(screen.getByRole('treeitem', {name: 'Vergleichsuhrzeit: 17:00:00 Uhr, Uhrzeitwert'})).toHaveTextContent(/^Vergleichsuhrzeit/);
+        expect(screen.queryByText('wenn')).not.toBeInTheDocument();
+        expect(screen.queryByText('ist')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'Uhrzeiten vergleichen: zuklappen'}));
+        expect(root).toHaveAccessibleDescription('Uhrzeiten vergleichen: Uhrzeit: 09:00:00 Uhr; Vergleichsart: Vorgangsdaten → vergleich; Vergleichsuhrzeit: 17:00:00 Uhr');
+        fireEvent.click(screen.getByRole('button', {name: 'Uhrzeiten vergleichen: aufklappen'}));
+
+        const mode = screen.getByRole('treeitem', {name: 'Vergleichsart: Vorgangsdaten → vergleich, Beliebiger Wert'});
+        fireEvent.keyDown(mode, {key: 'Delete'});
+        const empty = screen.getByRole('treeitem', {name: 'Vergleichsart: leer, Textwert'});
+        fireEvent.keyDown(empty, {key: 'Enter'});
+        await user.click(screen.getByRole('button', {name: 'früher als'}));
+
+        expect(root.firstElementChild).toHaveTextContent('ergibt wahr');
+        expect(screen.getByRole('treeitem', {name: 'Uhrzeit: 09:00:00 Uhr, Uhrzeitwert'})).toHaveTextContent(/^wenn/);
+        expect(screen.getByRole('treeitem', {name: 'Vergleichsuhrzeit: 17:00:00 Uhr, Uhrzeitwert'})).toHaveTextContent(/ist$/);
+        expect(onChange).toHaveBeenLastCalledWith({...initial, operands: [initial.operands![0], {type: 'NoCodeStaticValue', value: 'vor'}, initial.operands![2]]});
+        expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        [currentToday, 'Datumswert'],
+        [currentNow, 'Datums- und Zeitwert'],
+    ] as const)('shows the parameterless time function $0.label without value inputs or a collapse action', (operator, typeLabel) => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        initial={{type: 'NoCodeExpression', operatorIdentifier: operator.identifier, operands: []}}
+                        returnType={operator.signatures[0].returnType}
+                        operators={[operator]}/>);
+
+        const item = screen.getByRole('treeitem', {name: `Bedingung: Funktion ${operator.label}, ${typeLabel}`});
+        expect(item).not.toHaveAttribute('aria-expanded');
+        expect(within(item).getByText(`Ergebnistyp: ${typeLabel}`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: `${operator.label}, ${typeLabel}`})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: `${operator.label}: zuklappen`})).not.toBeInTheDocument();
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+        expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it('keeps today readable when a surrounding date calculation is collapsed without changing the draft', () => {
+        const subtract = dateArithmetic('subtract-from-date', 'Vom Datum abziehen', 'minus');
+        subtract.signatures[0].parameters[2].options.push({label: 'Jahre', value: 'jahre', singularLabel: 'Jahr'});
+        const initial: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: subtract.identifier,
+            operands: [
+                {type: 'NoCodeExpression', operatorIdentifier: 'create-today', operands: []},
+                {type: 'NoCodeStaticValue', value: '18'},
+                {type: 'NoCodeStaticValue', value: 'jahre'},
+            ],
+        };
+        const original = structuredClone(initial);
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange} initial={initial}
+                        returnType={NoCodeDataType.Date} operators={[subtract, currentToday]}/>);
+
+        const today = screen.getByRole('treeitem', {name: 'Ausgangsdatum: Funktion Heutiges Datum, Datumswert'});
+        expect(today).toHaveTextContent(/^das Datum.*Heutiges Datum/);
+        expect(today).not.toHaveAttribute('aria-expanded');
+        fireEvent.click(screen.getByRole('button', {name: 'Vom Datum abziehen: zuklappen'}));
+        expect(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Vom Datum abziehen, Datumswert'}))
+            .toHaveAccessibleDescription('(heutiges Datum) minus 18 Jahre');
+        fireEvent.click(screen.getByRole('button', {name: 'Vom Datum abziehen: aufklappen'}));
+        expect(screen.getByRole('treeitem', {name: 'Ausgangsdatum: Funktion Heutiges Datum, Datumswert'})).toBeInTheDocument();
+        expect(initial).toEqual(original);
+        expect(onChange).not.toHaveBeenCalled();
+        expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['subtract-from-date', 'Vom Datum abziehen', NoCodeDataType.Date, '2026-08-15'],
+        ['subtract-from-datetime', 'Vom Zeitpunkt abziehen', NoCodeDataType.DateTime, '2026-11-22T12:30:00Z'],
+    ] as const)('explains an invalid quantity of %s at its field and clears the error after correction', async (identifier, label, type, value) => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        returnType={type}
+                        operators={[dateArithmetic(identifier, label, 'minus', type)]}
+                        initial={dateArithmeticExpression(identifier, value)}/>);
+        fireEvent.click(screen.getByRole('button', {name: '1, Zahlenwert'}));
+        const input = await screen.findByRole('textbox', {name: /^Anzahl/});
+
+        fireEvent.change(input, {target: {value: '1.5'}});
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription('Geben Sie für „Anzahl“ eine ganze Zahl ein.');
+        fireEvent.change(input, {target: {value: '2147483648'}});
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription('Geben Sie für „Anzahl“ eine Zahl zwischen −2.147.483.648 und 2.147.483.647 ein.');
+
+        for (const valid of [' 5 ', '.0']) {
+            fireEvent.change(input, {target: {value: valid}});
+            expect(input).not.toHaveAttribute('aria-invalid', 'true');
+            expect(screen.queryByText(/Typkonflikt/)).not.toBeInTheDocument();
+            expect(onChange).toHaveBeenLastCalledWith({
+                type: 'NoCodeExpression',
+                operatorIdentifier: identifier,
+                operands: [
+                    {type: 'NoCodeStaticValue', value},
+                    {type: 'NoCodeStaticValue', value: valid},
+                    {type: 'NoCodeStaticValue', value: 'tage'},
+                ],
+            });
+        }
+        fireEvent.keyDown(input, {key: 'Escape'});
+        await waitFor(() => expect(screen.queryByRole('textbox', {name: /^Anzahl/})).not.toBeInTheDocument());
+        expect(screen.getByRole('treeitem', {name: 'Anzahl: .0, Zahlenwert'})).not.toHaveAttribute('aria-invalid', 'true');
+        expect(screen.queryByText(/Typkonflikt/)).not.toBeInTheDocument();
+    });
+
+    it.each([
+        ['subtract-from-date', 'Vom Datum abziehen', 'minus', NoCodeDataType.Date, '2026-08-15', '15.08.2026'],
+        ['add-to-date', 'Zum Datum hinzufügen', 'plus', NoCodeDataType.Date, '2026-08-15', '15.08.2026'],
+        ['subtract-from-datetime', 'Vom Zeitpunkt abziehen', 'minus', NoCodeDataType.DateTime, '2026-11-22T12:30:00Z', '22.11.2026 13:30:00 Uhr'],
+        ['add-to-datetime', 'Zum Zeitpunkt hinzufügen', 'plus', NoCodeDataType.DateTime, '2026-11-22T12:30:00Z', '22.11.2026 13:30:00 Uhr'],
+    ] as const)('keeps the expanded pills and collapsed reading consistent when editing the quantity of %s', async (identifier, label, direction, type, value, displayedValue) => {
+        const onChange = vi.fn();
+        const initial = dateArithmeticExpression(identifier, value);
+        const typeLabel = type === NoCodeDataType.DateTime ? 'Datums- und Zeitwert' : 'Datumswert';
+        const parameterLabel = type === NoCodeDataType.DateTime ? 'Ausgangszeitpunkt' : 'Ausgangsdatum';
+        const phrase = type === NoCodeDataType.DateTime ? 'den Zeitpunkt' : 'das Datum';
+        render(<Harness onChange={onChange}
+                        returnType={type}
+                        operators={[dateArithmetic(identifier, label, direction, type)]}
+                        initial={initial}/>);
+
+        const startingValue = screen.getByRole('treeitem', {name: `${parameterLabel}: ${displayedValue}, ${typeLabel}`});
+        expect(startingValue).toHaveTextContent(new RegExp(`^${phrase}`));
+        expect(startingValue).toHaveTextContent(displayedValue);
+        expect(screen.getByRole('treeitem', {name: 'Einheit: Tag, Textwert'})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: `${label}: zuklappen`}));
+        const root = screen.getByRole('treeitem', {name: `Bedingung: Funktion ${label}, ${typeLabel}`});
+        expect(root).toHaveAccessibleDescription(`${displayedValue} ${direction} 1 Tag`);
+
+        fireEvent.click(screen.getByRole('button', {name: `${label}: aufklappen`}));
+        fireEvent.click(screen.getByRole('button', {name: '1, Zahlenwert'}));
+        const input = await screen.findByRole('textbox', {name: /^Anzahl/});
+        fireEvent.change(input, {target: {value: '2'}});
+        fireEvent.keyDown(input, {key: 'Escape'});
+        await waitFor(() => expect(screen.queryByRole('textbox', {name: /^Anzahl/})).not.toBeInTheDocument());
+        expect(screen.getByRole('treeitem', {name: 'Einheit: Tage, Textwert'})).toBeInTheDocument();
+        expect(onChange).toHaveBeenLastCalledWith({
+            ...initial,
+            operands: [
+                {type: 'NoCodeStaticValue', value},
+                {type: 'NoCodeStaticValue', value: '2'},
+                {type: 'NoCodeStaticValue', value: 'tage'},
+            ],
+        });
+        fireEvent.click(screen.getByRole('button', {name: `${label}: zuklappen`}));
+        expect(root).toHaveAccessibleDescription(`${displayedValue} ${direction} 2 Tage`);
+    });
+
+    it('offers singular unit labels for one and stores the original option value when selecting a different unit', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        returnType={NoCodeDataType.Date}
+                        operators={[dateArithmetic('subtract-from-date', 'Vom Datum abziehen', 'minus')]}
+                        initial={dateArithmeticExpression('subtract-from-date')}/>);
+        await user.click(screen.getByRole('button', {name: 'Tag, Textwert'}));
+        const input = await screen.findByRole('combobox', {name: 'Einheit'});
+        expect(input).toHaveTextContent('Tag');
+        await user.click(input);
+        await user.click(await screen.findByRole('option', {name: 'Woche'}));
+
+        expect(onChange).toHaveBeenLastCalledWith({
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'subtract-from-date',
+            operands: [
+                {type: 'NoCodeStaticValue', value: '2026-08-15'},
+                {type: 'NoCodeStaticValue', value: '1'},
+                {type: 'NoCodeStaticValue', value: 'wochen'},
+            ],
+        });
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('combobox', {name: 'Einheit'})).not.toBeInTheDocument());
+        expect(screen.getByRole('treeitem', {name: 'Einheit: Woche, Textwert'})).toBeInTheDocument();
+    });
+
     const sentenceEquals: NoCodeOperatorDetailsDTO = {
         ...equals,
         sentenceLead: 'ergibt wahr',
@@ -1257,6 +1552,22 @@ describe('operator sentences and descriptions', () => {
                     options: [],
                 },
             ],
+        }],
+    };
+    const sentenceNot: NoCodeOperatorDetailsDTO = {
+        ...not,
+        sentenceLead: 'ergibt wahr',
+        humanReadableTemplate: 'nicht „#0“',
+        signatures: [{
+            returnType: NoCodeDataType.Boolean,
+            parameters: [{
+                type: NoCodeDataType.Boolean,
+                label: 'Bedingung',
+                description: 'Die Bedingung, deren Ergebnis Sie umkehren möchten.',
+                sentencePhrase: 'wenn',
+                sentenceSuffix: 'falsch ist',
+                options: [{label: 'Wahr', value: 'true'}, {label: 'Falsch', value: 'false'}],
+            }],
         }],
     };
     const operatorItemName = 'Bedingung: Funktion Ist Gleich, Wahrheitswert';
@@ -1361,6 +1672,21 @@ describe('operator sentences and descriptions', () => {
         expect(onChange).not.toHaveBeenCalled();
     });
 
+    it.each([['true', 'Wahr'], ['false', 'Falsch']])('reads a fixed Boolean %s without quotes after collapsing', (value, label) => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
+                        operators={[sentenceNot]}
+                        initial={{type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [{type: 'NoCodeStaticValue', value}]}}/>);
+        const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Nicht, Wahrheitswert'});
+        expect(within(root).getByRole('treeitem', {name: `Bedingung: ${label}, Wahrheitswert`}))
+            .toHaveTextContent(new RegExp(`^wenn.*${label}.*falsch ist$`));
+
+        fireEvent.click(screen.getByRole('button', {name: 'Nicht: zuklappen'}));
+        expect(root).toHaveAccessibleDescription(`nicht ${label}`);
+        expect(screen.getByText(`nicht ${label}`)).toBeVisible();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('also summarizes an individually collapsed nested expression without changing its parent', () => {
         const onChange = vi.fn();
         render(<Harness onChange={onChange}
@@ -1382,7 +1708,7 @@ describe('operator sentences and descriptions', () => {
         const onChange = vi.fn();
         render(<Harness onChange={onChange}
                         readOnly={readOnly}
-                        operators={[{...dateComparison, humanReadableTemplate: '#0 #1 #2'}]}
+                        operators={[dateComparison]}
                         initial={{
                             ...incompleteComparison,
                             operands: [
@@ -1393,7 +1719,7 @@ describe('operator sentences and descriptions', () => {
                         } as NoCodeOperand}/>);
         fireEvent.click(screen.getByRole('button', {name: 'Datumswerte vergleichen: zuklappen'}));
         const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Datumswerte vergleichen, Wahrheitswert'});
-        expect(root).toHaveTextContent('ist davor oder gleich');
+        expect(root).toHaveTextContent('früher als oder gleich');
         expect(screen.getByText('vor-oder-gleich')).not.toBeVisible();
 
         const details = screen.getByRole('button', {name: 'Technische Details'});

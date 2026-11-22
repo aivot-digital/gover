@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,54 @@ class NoCodeTextOperatorsTest {
     @Test
     void regexFindShouldRejectInvalidPatterns() {
         assertThrows(NoCodeException.class, () -> REGEX_FIND.evaluate(runtime(), "abc", "("));
+    }
+
+    @Test
+    void base64ShouldEncodeUtf8TextAndTreatMissingTextAsEmpty() throws NoCodeException {
+        var operator = new NoCodeBase64Operator();
+
+        assertEquals("SGFsbG8=", operator.evaluate(runtime(), "Hallo").getValue());
+        assertEquals("R3LDvMOfZQ==", operator.evaluate(runtime(), "Grüße").getValue());
+        assertEquals("", operator.evaluate(runtime(), (Object) null).getValue());
+    }
+
+    @Test
+    void concatShouldCombinePrefixesAndPreserveProvidedTextWithoutAddingSeparators() throws NoCodeException {
+        var operator = new NoCodeConcatOperator();
+
+        assertEquals("AZ-2026-17", operator.evaluate(runtime(), "AZ-", "2026-17").getValue());
+        assertEquals("Guten Tag Müller", operator.evaluate(runtime(), "Guten Tag ", "Müller").getValue());
+        assertEquals("AB", operator.evaluate(runtime(), "A", "B").getValue());
+        assertEquals("A2", operator.evaluate(runtime(), "A", null, 2).getValue());
+    }
+
+    @Test
+    void splitShouldUseLiteralSeparatorsAndKeepOnlyInternalEmptyParts() throws NoCodeException {
+        var operator = new NoCodeSplitOperator();
+
+        assertEquals(List.of("A", "B", "C"), operator.evaluate(runtime(), "A.B.C", ".").getValue());
+        assertEquals(List.of("A", "", "B"), operator.evaluate(runtime(), "A,,B,", ",").getValue());
+        assertEquals(List.of("A,B"), operator.evaluate(runtime(), "A,B", "").getValue());
+    }
+
+    @Test
+    void regexExtractionShouldReturnCompleteNonOverlappingMatches() throws NoCodeException {
+        var operator = new NoCodeRegexExtractOperator();
+
+        assertEquals(List.of("12", "34"), operator.evaluate(runtime(), "Position 12 und 34", "[0-9]+").getValue());
+        assertEquals(List.of("AB-12", "CD-34"), operator.evaluate(runtime(), "AB-12 CD-34", "([A-Z]+)-([0-9]+)").getValue());
+        assertEquals(List.of("aa"), operator.evaluate(runtime(), "aaa", "aa").getValue());
+        assertEquals(List.of(), operator.evaluate(runtime(), "keine Zahl", "[0-9]+").getValue());
+    }
+
+    @Test
+    void regexWholeTextMatchShouldRejectPartialMatches() throws NoCodeException {
+        var operator = new NoCodeRegexMatchOperator();
+
+        assertTrue(operator.evaluate(runtime(), "10115", "[0-9]{5}").getValueAsBoolean());
+        assertFalse(operator.evaluate(runtime(), "PLZ 10115", "[0-9]{5}").getValueAsBoolean());
+        assertTrue(operator.evaluate(runtime(), "", "").getValueAsBoolean());
+        assertFalse(operator.evaluate(runtime(), "A", "").getValueAsBoolean());
     }
 
     /**

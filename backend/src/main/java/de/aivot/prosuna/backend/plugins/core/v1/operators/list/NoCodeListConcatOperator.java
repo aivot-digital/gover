@@ -24,32 +24,28 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Kombiniert zwei Listen zu einer einzigen Liste.";
+        return "Hängt die Einträge einer zweiten Liste an die erste Liste an.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Listen zusammenfügen“** dient dazu, zwei Listen zu einer einzigen Liste zu kombinieren. \s
-                Das Ergebnis ist eine neue Liste, die alle Elemente der beiden ursprünglichen Listen enthält.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben zwei Listen: `["A", "B", "C"]` und `["D", "E", "F"]`. \s
-                Mit der Funktion **„Listen zusammenfügen“** können Sie diese Listen kombinieren:
-                
-                ```text
-                Listen zusammenfügen (["A", "B", "C"], ["D", "E", "F"])
-                ```
-                
-                **Ergebnis:** \s
-                Die zurückgegebene Liste enthält: `["A", "B", "C", "D", "E", "F"]`.
-                
-                # Wann verwenden Sie die Funktion „Listen zusammenfügen“?
-                Verwenden Sie **„Listen zusammenfügen“**, wenn Sie:
-                - Zwei Listen zu einer einzigen Liste kombinieren möchten. \s
-                - Daten aus mehreren Quellen zusammenführen möchten. \s
-                - Eine vollständige Liste aus mehreren Teilmengen erstellen möchten.
+                # Wofür verwenden Sie diese Funktion?
+                Führen Sie zwei Listen zusammen, beispielsweise bereits erfasste und zusätzlich ausgewählte Kategorien.
+
+                # Welche Werte werden benötigt?
+                **Erste Liste** und **Zweite Liste:** Die beiden Listen, die zusammen betrachtet werden. Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine neue Liste: zuerst alle Einträge der ersten Liste, danach alle Einträge der zweiten Liste.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Listen zusammenfügen“**. Verwenden Sie für **Erste Liste** die Variable „Bisherige Kategorien“ mit `["A", "B"]` und für **Zweite Liste** die Variable „Weitere Kategorien“ mit `["B", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Bisherige Kategorien“ gefolgt von „Weitere Kategorien“`. Das Ergebnis ist `["A", "B", "B", "C"]`. Diese Liste kann anschließend als Eingabe einer weiteren Listenfunktion dienen.
+
+                # Was ist zu beachten?
+                Die Reihenfolge bleibt erhalten. Doppelte Einträge bleiben enthalten. Die beiden ursprünglichen Listen werden nicht verändert.
                 """;
     }
 
@@ -65,12 +61,12 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
                         NoCodeDataType.List,
                         new NoCodeParameter(
                                 NoCodeDataType.List,
-                                "Liste 1",
+                                "Erste Liste",
                                 "Die erste Liste, die zusammengefügt werden soll."
                         ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
-                                "Liste 2",
+                                "Zweite Liste",
                                 "Die zweite Liste, die zusammengefügt werden soll."
                         ).withSentence("und")
                 )
@@ -80,7 +76,7 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "füge „#0“ und „#1“ zu einer Liste zusammen";
+        return "#0 gefolgt von #1";
     }
 
     @Override

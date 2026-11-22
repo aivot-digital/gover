@@ -15,11 +15,11 @@ final class DurationOperatorSupport {
 
     @Nonnull
     static NoCodeParameter unitParameter() {
-        return new NoCodeParameter(NoCodeDataType.String, "Einheit", "Sekunden, Minuten, Stunden oder Tage. Ein Tag entspricht immer 24 Stunden.",
-                new NoCodeParameterOption("Sekunden", "seconds"),
-                new NoCodeParameterOption("Minuten", "minutes"),
-                new NoCodeParameterOption("Stunden", "hours"),
-                new NoCodeParameterOption("Tage", "days")).withSentence("in der Einheit");
+        return new NoCodeParameter(NoCodeDataType.String, "Einheit", "Wählen Sie Sekunden, Minuten, Stunden oder Tage. Ein Tag entspricht immer 24 Stunden.",
+                new NoCodeParameterOption("Sekunden", "seconds", "Sekunde"),
+                new NoCodeParameterOption("Minuten", "minutes", "Minute"),
+                new NoCodeParameterOption("Stunden", "hours", "Stunde"),
+                new NoCodeParameterOption("Tage", "days", "Tag")).withSentence("in der Einheit");
     }
 
     @Nonnull

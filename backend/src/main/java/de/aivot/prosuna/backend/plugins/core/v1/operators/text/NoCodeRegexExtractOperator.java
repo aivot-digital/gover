@@ -23,41 +23,35 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Regex-Extraktion";
+        return "Treffer aus Text ermitteln";
     }
 
     @Override
     public String getAbstract() {
-        return "Extrahiert alle übereinstimmenden Teile eines Textes, die einem regulären Ausdruck entsprechen.";
+        return "Liest alle Textstellen aus, die zu einem Suchmuster passen.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Regex-Extraktion“** extrahiert alle übereinstimmenden Teile eines Textes, die einem regulären Ausdruck entsprechen. \s
-                Das Ergebnis ist eine Liste der übereinstimmenden Teile.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten alle E-Mail-Adressen aus einem Text extrahieren.
-                
-                Mit der Funktion **„Regex-Extraktion“** wird diese Logik so formuliert: \s
-                `Regex-Extraktion Text Regulärer Ausdruck`
-                
-                Beispielwerte: \s
-                - **Text:** "Kontakt: test@example.com, info@example.org" \s
-                - **Regulärer Ausdruck:** "[\\w.-]+@[\\w.-]+\\.\\w+"
-                
-                **Ergebnis:**
-                - **Rückgabewert:** ["test@example.com", "info@example.org"]
-                
-                # Beispiele und Ergebnisse
-                - **Text "abc123 def456" Regulärer Ausdruck "\\d+"** → **["123", "456"]** \s
-                - **Text "keine Übereinstimmung" Regulärer Ausdruck "\\d+"** → **[]**
-                
-                # Wann verwenden Sie die Funktion „Regex-Extraktion“?
-                Verwenden Sie **„Regex-Extraktion“**, um alle übereinstimmenden Teile eines Textes zu extrahieren, die einem bestimmten Muster entsprechen. \s
-                Diese Funktion ist besonders hilfreich bei der Extraktion von Daten wie E-Mail-Adressen, Telefonnummern oder anderen formatierten Daten.
+                # Wofür verwenden Sie diese Funktion?
+                Lesen Sie passende Textstellen aus einem Text aus, beispielsweise alle darin vorkommenden Zahlen.
+
+                # Welche Werte werden benötigt?
+                **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten. **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
+
+                Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine Liste mit allen vollständigen Treffern in der Reihenfolge ihres Vorkommens. Ohne Treffer ist die Liste leer.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Treffer aus Text ermitteln“**. Geben Sie als **Text** `Position 12 und 34` und als **Suchmuster** `[0-9]+` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Treffer für das Muster „[0-9]+“ in „Position 12 und 34“`. Das Ergebnis ist `["12", "34"]`. Verwenden Sie das Ergebnis als **Liste** in **„Anzahl der Listeneinträge“**, um die zwei Treffer zu zählen.
+
+                # Was ist zu beachten?
+                Das Suchmuster ist ein regulärer Ausdruck nach Java-Syntax. Treffer überlappen sich nicht. Es wird jeweils der gesamte Treffer zurückgegeben, nicht nur eine eingeklammerte Gruppe. Ein Muster, das auch ohne Zeichen passt, kann leere Treffer erzeugen.
                 """;
     }
 
@@ -78,9 +72,9 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
                         ).withSentence("in"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Regulärer Ausdruck",
-                                "Der reguläre Ausdruck, der die zu extrahierenden Muster definiert."
-                        ).withSentence("für den regulären Ausdruck")
+                                "Suchmuster",
+                                "Regel für passende Textstellen, beispielsweise [0-9]+ für eine oder mehrere Ziffern."
+                        ).withSentence("für das Muster")
                 )
         );
     }
@@ -88,7 +82,7 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "extrahiere aus „#0“ alle Treffer für „#1“";
+        return "Treffer für das Muster #1 in #0";
     }
 
     @Override
@@ -104,7 +98,7 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
         try {
             pattern = Pattern.compile(regex);
         } catch (Exception e) {
-            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+            throw new NoCodeException("Das Suchmuster ist kein gültiger regulärer Ausdruck: " + regex);
         }
         Matcher matcher = pattern.matcher(input);
 

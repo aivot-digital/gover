@@ -2,16 +2,18 @@ import {validateNoCodeNodeDataPath} from './no-code-node-data-path';
 import {AnyElement} from '../../../models/elements/any-element';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {NoCodeOperand, NoCodeOperandError} from '../../../models/functions/no-code-expression';
-import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeOperatorDetailsDTO, NoCodeParameter, resolveNoCodeSignature} from '../../../models/dtos/no-code-operator-details-dto';
+import {getNoCodeNumberValidationError} from './no-code-number-validation';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {isValidProcessDataPath} from '../../../utils/process-data-path';
 
-/** Structural checks mirror NoCodeOperand.validate; type conversion remains the evaluator's responsibility. */
+/** Check structure and explicitly declared literal constraints; dynamic values remain the evaluator's responsibility. */
 export function validateNoCode(
     operand: NoCodeOperand | null | undefined,
     operators: NoCodeOperatorDetailsDTO[],
     elements: ElementWithParents[],
     required = true,
+    parameter?: NoCodeParameter,
 ): NoCodeOperandError {
     let error: string | null = null;
     let subErrors: NoCodeOperandError[] = [];
@@ -20,7 +22,8 @@ export function validateNoCode(
     } else {
         switch (operand.type) {
             case 'NoCodeStaticValue':
-                // The node itself represents an intentional value, including an empty value, false or zero.
+                // Unconstrained nodes still represent intentional values, including empty values, false or zero.
+                error = getNoCodeNumberValidationError(operand.value, parameter?.label ?? 'Wert', parameter?.numberConstraints) ?? null;
                 break;
             case 'NoCodeReference':
                 if (!operand.elementId) error = 'Wählen Sie ein Formularelement aus.';
@@ -34,7 +37,8 @@ export function validateNoCode(
                 if (operator != null && !operator.signatures.some((signature) => signature.parameters.length === operands.length)) {
                     error = 'Die Anzahl der Parameter passt nicht zur Funktion.';
                 }
-                subErrors = operands.map((child) => validateNoCode(child, operators, elements));
+                const parameters = operator == null ? [] : resolveNoCodeSignature(operator, {operandCount: operands.length}).parameters;
+                subErrors = operands.map((child, index) => validateNoCode(child, operators, elements, true, parameters[index]));
                 break;
             }
             case 'NoCodeNodeDataReference':

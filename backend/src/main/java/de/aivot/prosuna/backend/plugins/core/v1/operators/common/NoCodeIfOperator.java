@@ -14,43 +14,35 @@ public class NoCodeIfOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Wenn Dann Sonst";
+        return "Wenn, dann, sonst";
     }
 
     @Override
     public String getAbstract() {
-        return "Überprüft einen Wahrheitswert und gibt basierend auf diesem entweder den zweiten Parameter (wenn die Bedingung wahr ist) oder den dritten Parameter (wenn die Bedingung falsch ist) zurück.";
+        return "Wählt abhängig von einer Bedingung einen von zwei Werten aus.";
     }
 
     @Override
     public String getDescription() {
-        return """                
-                # Beschreibung:
-                Die Funktion **„Wenn Dann Sonst“** überprüft einen Wahrheitswert (true oder false) und gibt basierend auf diesem entweder den **zweiten Parameter** (wenn die Bedingung wahr ist) oder den **dritten Parameter** (wenn die Bedingung falsch ist) zurück.
-                
-                - Ist die Bedingung **wahr**, wird der **zweite Parameter** zurückgegeben. \s
-                - Ist die Bedingung **falsch**, wird der **dritte Parameter** zurückgegeben.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten eine Nachricht generieren, die vom Status einer Bewerbung abhängt:
-                
-                - Wenn die Bewerbung **angenommen** ist, soll die Nachricht „Herzlichen Glückwunsch“ lauten. \s
-                - Andernfalls soll die Nachricht „Leider abgelehnt“ sein.
-                
-                Mit der Funktion **„Wenn Dann Sonst“** wird diese Logik so formuliert: \s
-                `WENN Bewerbung Angenommen DANN "Herzlichen Glückwunsch" SONST "Leider abgelehnt"`
-                
-                **Ergebnis:**
-                - **Bedingung wahr:** Wenn die Bewerbung **angenommen** ist, gibt die Funktion den Text **„Herzlichen Glückwunsch“** zurück.
-                - **Bedingung falsch:** Wenn die Bewerbung **abgelehnt** ist, gibt die Funktion den Text **„Leider abgelehnt“** zurück.
-                
-                # Beispiele und Ergebnisse
-                - **WENN wahr DANN Wert1 SONST Wert2** → **Wert1** \s
-                - **WENN falsch DANN Wert1 SONST Wert2** → **Wert2**
-                
-                # Wann verwenden Sie die Funktion „Wenn Dann Sonst“?
-                Verwenden Sie **„Wenn Dann Sonst“**, wenn Sie zwischen zwei Ergebnissen basierend auf einer Bedingung auswählen möchten. \s
-                Diese Funktion ist besonders hilfreich für bedingte Logik, z. B. um personalisierte Nachrichten, Optionen oder Werte abhängig von einer Entscheidung oder einem Zustand zu erzeugen.
+        return """
+                # Wofür verwenden Sie diese Funktion?
+                Wählen Sie abhängig von einer Bedingung zwischen zwei Ergebnissen, etwa zwischen zwei Hinweistexten.
+
+                # Welche Werte werden benötigt?
+                Eine „Bedingung“ und die beiden Werte „Ergebnis bei Wahr“ und „Ergebnis bei Falsch“. Für eine feste Bedingung wählen Sie „Wahr“ oder „Falsch“; eigene Auswahlwerte sind nicht möglich. Feste Ergebnisse können Sie frei als Text eingeben. Über „Andere Wertquelle verwenden …“ können alle drei Eingaben aus Wertquellen oder Funktionen stammen; die Ergebnisse können dabei auch andere Werttypen haben.
+
+                # Welches Ergebnis erhalten Sie?
+                Bei einer wahren Bedingung den Wert aus „Ergebnis bei Wahr“, andernfalls den Wert aus „Ergebnis bei Falsch“. Der ausgewählte Wert wird unverändert übernommen.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Wenn, dann, sonst“ als Funktion für einen Textwert.
+                2. Wählen Sie als „Bedingung“ die Wertquelle „Unterlagen vollständig“.
+                3. Tragen Sie bei „Ergebnis bei Wahr“ `Prüfung möglich` und bei „Ergebnis bei Falsch“ `Unterlagen fehlen` ein.
+
+                Sind die Unterlagen vollständig, erhalten Sie „Prüfung möglich“, andernfalls „Unterlagen fehlen“.
+
+                # Was ist zu beachten?
+                Verwenden Sie für die Bedingung einen Wahrheitswert. Andere Werttypen werden in Wahrheitswerte umgewandelt. Verschachtelte Funktionen in beiden Ergebniszweigen werden vor der Auswahl ausgewertet; auch ein nicht ausgewählter Zweig muss daher auswertbar sein.
                 """;
     }
 
@@ -61,20 +53,20 @@ public class NoCodeIfOperator extends NoCodeOperator {
                         NoCodeDataType.Runtime,
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
-                                "Wahrheitswert",
-                                "Der zu überprüfende Wahrheitswert.",
+                                "Bedingung",
+                                "Die Bedingung, die das Ergebnis bestimmt.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
                         ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Ergebnis bei Wahr",
-                                "Der zurückzugebende Wert, wenn der Wahrheitswert wahr ist."
+                                "Der Wert, der bei einer wahren Bedingung übernommen wird."
                         ).withSentence("dann"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Ergebnis bei Falsch",
-                                "Der zurückzugebende Wert, wenn der Wahrheitswert falsch ist."
+                                "Der Wert, der bei einer falschen Bedingung übernommen wird."
                         ).withSentence("sonst")
                 )
         );
@@ -92,6 +84,6 @@ public class NoCodeIfOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "wenn „#0“ wahr ist, dann „#1“ andernfalls „#2“";
+        return "wenn #0, dann #1, sonst #2";
     }
 }

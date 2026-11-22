@@ -20,48 +20,41 @@ public class NoCodeAddOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Addiere";
+        return "Addieren";
     }
 
     @Override
     public String getAbstract() {
-        return "Addiert zwei Werte.";
+        return "Addiert zwei Zahlen.";
     }
 
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "Addiere #0 und #1";
+        return "#0 plus #1";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Addiere“** summiert zwei oder mehr numerische Werte. \s
-                Das Ergebnis ist die Summe aller angegebenen Werte.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten die Summe von zwei Zahlen berechnen.
-                
-                Mit der Funktion **„Addiere“** wird diese Logik so formuliert: \s
-                `Addiere Wert1 Wert2`
-                
-                Beispielwerte: \s
-                - **Wert1:** 5 \s
-                - **Wert2:** 3
-                
-                **Ergebnis:**
-                - **Rückgabewert:** 8
-                
-                # Beispiele und Ergebnisse
-                - **Addiere 1 2** → **3** \s
-                - **Addiere 10 20 30** → **60** \s
-                - **Addiere -5 5** → **0**
-                
-                # Wann verwenden Sie die Funktion „Addiere“?
-                Verwenden Sie **„Addiere“**, um die Summe von zwei oder mehr numerischen Werten zu berechnen. \s
-                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                # Wofür verwenden Sie diese Funktion?
+                Berechnen Sie die Summe zweier Zahlen, etwa einen Gesamtbetrag aus zwei Einzelbeträgen.
+
+                # Welche Werte werden benötigt?
+                „Zahl 1“ und „Zahl 2“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Die Summe beider Zahlen.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Addieren“ als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei „Zahl 1“ `5` und bei „Zahl 2“ `3` ein.
+                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+
+                Der Ausdruck `5 plus 3` ergibt `8`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt.
                 """;
     }
 
@@ -77,13 +70,13 @@ public class NoCodeAddOperator extends NoCodeOperator {
                         NoCodeDataType.Number,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Summand 1",
-                                "Der erste Wert, der addiert werden soll."
+                                "Zahl 1",
+                                "Die erste Zahl für die Summe."
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Summand 2",
-                                "Der zweite Wert, der addiert werden soll."
+                                "Zahl 2",
+                                "Die Zahl, die zur ersten Zahl addiert wird."
                         ).withSentence("plus")
                 )
         );

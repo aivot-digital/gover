@@ -19,39 +19,30 @@ public class NoCodeAndOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Verknüpft zwei Wahrheitswerte über das logische Und miteinander.";
+        return "Prüft, ob beide Bedingungen erfüllt sind.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Und“** (auch bekannt als logisches UND) verknüpft zwei Wahrheitswerte miteinander. \s
-                Das Ergebnis ist **wahr** (true), wenn beide der verknüpften Bedingungen **wahr** sind. \s
-                Falls eine der Bedingungen oder beide **falsch** (false) sind, ergibt die Funktion **„Und“** den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person die folgenden Bedingungen gleichzeitig erfüllt:
-                
-                - Sie ist über 18 Jahre alt.
-                - Sie hat einen gültigen Ausweis.
-                
-                Mit der Funktion „Und“ wird diese Logik so formuliert: \s
-                `Alter > 18 UND Hat gültigen Ausweis`.
-                
-                **Ergebnis:**
-                - Wenn die Person **über 18 ist** und einen **gültigen Ausweis besitzt**, ist das Ergebnis **wahr**.
-                - Wenn eine oder beide Bedingungen nicht erfüllt sind, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte der Funktion „Und“
-                - **wahr** UND **wahr** → **wahr**
-                - **wahr** UND **falsch** → **falsch**
-                - **falsch** UND **wahr** → **falsch**
-                - **falsch** UND **falsch** → **falsch**
-                
-                # Wann verwenden Sie die Funktion „Und“?
-                Verwenden Sie **„Und“**, wenn alle Bedingungen erfüllt sein müssen, um die gewünschte Aktion oder Entscheidung zu treffen. \s
-                Dies ist hilfreich, wenn Sie z. B. Formulare oder Entscheidungen erstellen, bei denen mehrere Kriterien gleichzeitig erfüllt sein müssen.
+                # Wofür verwenden Sie diese Funktion?
+                Verknüpfen Sie Bedingungen, die gemeinsam erfüllt sein müssen, etwa eine Altersgrenze und eine bestätigte Einwilligung.
+
+                # Welche Werte werden benötigt?
+                Zwei Bedingungen. Für selbst festgelegte Bedingungen stehen „Wahr“ und „Falsch“ zur Auswahl. Eigene Auswahlwerte sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie Bedingungen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn beide Bedingungen wahr sind. Ist mindestens eine Bedingung falsch, lautet das Ergebnis „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Und“ als Funktion für eine Bedingung.
+                2. Wählen Sie für „Bedingung 1“ über „Andere Wertquelle verwenden …“ die Wertquelle „Einwilligung“, die einen Wahrheitswert liefert.
+                3. Wählen Sie für „Bedingung 2“ die Wertquelle „Ausweis geprüft“.
+
+                Sind beide Bedingungen wahr, ergibt der Ausdruck „Wahr“. Ist nur eine wahr, ergibt er „Falsch“.
+
+                # Was ist zu beachten?
+                Für weitere Bedingungen können Sie „Und“ verschachteln. Verwenden Sie Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt; ein Text wie „Nein“ wird dabei nicht automatisch zu „Falsch“. Verschachtelte Funktionen in allen Bedingungen werden vor der Verknüpfung ausgewertet und müssen auswertbar sein.
                 """;
     }
 
@@ -68,17 +59,17 @@ public class NoCodeAndOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
                                 "Bedingung 1",
-                                "Die erste Bedingung, die überprüft werden soll.",
+                                "Eine Bedingung, die einen Wahrheitswert liefert.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        ).withSentence("wenn"),
+                        ).withSentence("wenn", "wahr ist"),
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
                                 "Bedingung 2",
-                                "Die zweite Bedingung, die überprüft werden soll.",
+                                "Eine weitere Bedingung, die einen Wahrheitswert liefert.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        ).withSentence("und")
+                        ).withSentence("und", "wahr ist")
                 )
         );
     }
@@ -97,6 +88,6 @@ public class NoCodeAndOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ und „#1“";
+        return "#0 und #1";
     }
 }

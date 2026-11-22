@@ -22,43 +22,35 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Regex-Übereinstimmung";
+        return "Text passt vollständig zu Muster";
     }
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob ein Text mit einem regulären Ausdruck übereinstimmt";
+        return "Prüft, ob der gesamte Text zu einem Suchmuster passt.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Regex-Übereinstimmung“** prüft, ob ein Text mit einem regulären Ausdruck übereinstimmt. \s
-                Das Ergebnis ist **wahr** (true), wenn der Text mit dem regulären Ausdruck übereinstimmt. \s
-                Andernfalls ist das Ergebnis **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zeichenkette eine bestimmte Struktur hat, z.B. eine E-Mail-Adresse.
-                
-                Mit der Funktion **„Regex-Übereinstimmung“** wird diese Logik so formuliert: \s
-                `Regex-Übereinstimmung Text Regulärer Ausdruck`
-                
-                Beispielwerte: \s
-                - **Text:** "test@example.com" \s
-                - **Regulärer Ausdruck:** "^[\\w.-]+@[\\w.-]+\\.\\w+$"
-                
-                **Ergebnis:**
-                - **Rückgabewert:** wahr
-                
-                # Wahrheitswerte der Funktion „Regex-Übereinstimmung“
-                - **Text "abc123" Regulärer Ausdruck "^[a-z]+\\d+$"** → **wahr** \s
-                - **Text "123abc" Regulärer Ausdruck "^[a-z]+\\d+$"** → **falsch** \s
-                - **Text "test@example.com" Regulärer Ausdruck "^[\\w.-]+@[\\w.-]+\\.\\w+$"** → **wahr**
-                
-                # Wann verwenden Sie die Funktion „Regex-Übereinstimmung“?
-                Verwenden Sie **„Regex-Übereinstimmung“**, um zu prüfen, ob ein Text mit einem bestimmten Muster übereinstimmt. \s
-                Diese Funktion ist besonders hilfreich bei der Validierung von Eingaben, wie z.B. E-Mail-Adressen, Telefonnummern oder anderen formatierten Daten.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob der gesamte Text einer Regel entspricht, beispielsweise ob eine Postleitzahl genau fünf Ziffern enthält.
+
+                # Welche Werte werden benötigt?
+                **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten. **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
+
+                Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn der gesamte Text zum Suchmuster passt; andernfalls **Falsch**.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie in einer Bedingung **„Text passt vollständig zu Muster“**. Verwenden Sie für **Text** die Variable „Postleitzahl“, die `10115` liefert, und geben Sie als **Suchmuster** `[0-9]{5}` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Postleitzahl“ passt vollständig zum Muster „[0-9]{5}“`. Das Ergebnis ist **Wahr**. Der Text `PLZ 10115` ergibt dagegen **Falsch**.
+
+                # Was ist zu beachten?
+                Das Suchmuster ist ein regulärer Ausdruck nach Java-Syntax. Es muss den gesamten Text erfassen. Ein leeres Suchmuster passt nur zu einem leeren Text. Möchten Sie nur nach einer passenden Textstelle suchen, verwenden Sie **„Text enthält Muster“**.
                 """;
     }
 
@@ -79,9 +71,9 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
                         ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Regulärer Ausdruck",
-                                "Der reguläre Ausdruck, mit dem der Text verglichen werden soll"
-                        ).withSentence("auf den regulären Ausdruck", "passt")
+                                "Suchmuster",
+                                "Regel, zu der der gesamte Text passen muss, beispielsweise [0-9]{5} für genau fünf Ziffern."
+                        ).withSentence("vollständig zum Muster", "passt")
                 )
         );
     }
@@ -89,7 +81,7 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ passt auf den regulären Ausdruck „#1“";
+        return "#0 passt vollständig zum Muster #1";
     }
 
     @Override
@@ -105,7 +97,7 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
         try {
             matches = Pattern.matches(regex, input);
         } catch (Exception e) {
-            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+            throw new NoCodeException("Das Suchmuster ist kein gültiger regulärer Ausdruck: " + regex);
         }
         return new NoCodeResult(matches);
     }

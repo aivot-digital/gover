@@ -25,38 +25,28 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob zwei Listen mindestens einen gemeinsamen Wert enthalten.";
+        return "Prüft, ob zwei Listen mindestens einen gemeinsamen Wert haben.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Listen überschneiden sich“** prüft, ob zwei Listen mindestens einen gemeinsamen Wert enthalten. \s
-                Das Ergebnis ist **wahr**, sobald sich ein Wert in beiden Listen befindet. \s
-                Gibt es keinen gemeinsamen Eintrag, ist das Ergebnis **falsch**.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben eine Liste mit erlaubten Kategorien und eine zweite Liste mit den von der Person ausgewählten Kategorien. \s
-                Mit der Funktion **„Listen überschneiden sich“** können Sie prüfen, ob mindestens eine Auswahl zulässig ist:
-                
-                ```text
-                Listen überschneiden sich (["A", "B", "C"], ["X", "B", "Y"])
-                ```
-                
-                **Ergebnis:** \s
-                Da beide Listen den Wert `"B"` enthalten, ist das Ergebnis `wahr`.
-                
-                **Weitere Beispiele:**
-                - `[1, 2, 3]` und `[4, 5, 6]` → **Ergebnis:** `falsch` \s
-                - `[1, 2, 3]` und `["3", 4]` → **Ergebnis:** `wahr` \s
-                - `[]` und `["A"]` → **Ergebnis:** `falsch`
-                
-                # Wann verwenden Sie die Funktion „Listen überschneiden sich“?
-                Verwenden Sie **„Listen überschneiden sich“**, wenn Sie:
-                - Prüfen möchten, ob zwei Listen gemeinsame Werte haben. \s
-                - Regeln oder Filter auslösen möchten, sobald eine Überschneidung vorliegt. \s
-                - Schnell feststellen möchten, ob zwischen zwei Datenmengen eine Gemeinsamkeit besteht.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob zwei Listen mindestens einen gemeinsamen Wert haben, beispielsweise ob eine Auswahl eine zulässige Kategorie enthält.
+
+                # Welche Werte werden benötigt?
+                **Erste Liste** und **Zweite Liste:** Die beiden Listen, die zusammen betrachtet werden. Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, sobald ein Wert in beiden Listen vorkommt; andernfalls **Falsch**.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie in einer Bedingung **„Listen überschneiden sich“**. Verwenden Sie für **Erste Liste** die Variable „Ausgewählte Kategorien“ mit `["X", "B"]` und für **Zweite Liste** die Variable „Zulässige Kategorien“ mit `["A", "B", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ und „Zulässige Kategorien“ haben mindestens einen gemeinsamen Wert`. Das Ergebnis ist **Wahr**.
+
+                # Was ist zu beachten?
+                Eine leere Liste ergibt **Falsch**. Um alle gesuchten Werte zu prüfen, verwenden Sie **„Liste enthält alle Werte“**. Zahlen und Texte mit derselben Zahl können als gleich gelten, etwa `2` und `"2"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 
@@ -72,14 +62,14 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
                         NoCodeDataType.Boolean,
                         new NoCodeParameter(
                                 NoCodeDataType.List,
-                                "Liste 1",
+                                "Erste Liste",
                                 "Die erste Liste, die auf gemeinsame Werte geprüft werden soll."
                         ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
-                                "Liste 2",
+                                "Zweite Liste",
                                 "Die zweite Liste, mit der die Überschneidung geprüft werden soll."
-                        ).withSentence("und", "gemeinsame Einträge haben")
+                        ).withSentence("und", "mindestens einen gemeinsamen Wert haben")
                 )
         );
     }
@@ -87,7 +77,7 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "prüfe, ob sich „#0“ und „#1“ überschneiden";
+        return "#0 und #1 haben mindestens einen gemeinsamen Wert";
     }
 
     @Override

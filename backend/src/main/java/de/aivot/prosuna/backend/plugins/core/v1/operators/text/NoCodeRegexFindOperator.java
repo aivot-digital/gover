@@ -26,22 +26,30 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob ein Teil eines Textes zu einem regulären Ausdruck passt.";
+        return "Prüft, ob mindestens eine Textstelle zu einem Suchmuster passt.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Text enthält Muster“** prüft, ob irgendein Teil eines Textes zu einem regulären Ausdruck passt. \s
-                Anders als bei **„Regex-Übereinstimmung“** muss nicht der gesamte Text dem Muster entsprechen.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob ein Text eine Textstelle enthält, die zu einem Suchmuster passt, beispielsweise eine vierstellige Jahreszahl.
 
-                # Beispiele:
-                - **Text** „Aktenzeichen AZ-2026-17“, **Regulärer Ausdruck** „AZ-\\d{4}“ → **wahr**
-                - **Text** „Aktenzeichen fehlt“, **Regulärer Ausdruck** „AZ-\\d{4}“ → **falsch**
+                # Welche Werte werden benötigt?
+                **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten. **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
 
-                Ein ungültiger regulärer Ausdruck führt zu einem Fehler. \s
-                Um das Gegenteil zu prüfen, kombinieren Sie die Funktion mit **„Nicht“**.
+                Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn mindestens eine Textstelle zum Suchmuster passt; andernfalls **Falsch**.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie in einer Bedingung **„Text enthält Muster“**. Verwenden Sie für **Text** die Variable „Aktenzeichen“, die `AZ-2026-17` liefert, und geben Sie als **Suchmuster** `[0-9]{4}` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Aktenzeichen“ enthält einen Treffer für das Muster „[0-9]{4}“`. Das Ergebnis ist **Wahr**, weil `2026` zum Muster passt.
+
+                # Was ist zu beachten?
+                Das Suchmuster ist ein regulärer Ausdruck nach Java-Syntax. Sonderzeichen können eine besondere Bedeutung haben. Ein leeres Suchmuster findet auch in einem leeren Text einen Treffer. Für einen wörtlichen Suchtext verwenden Sie **„Text enthält“**; für die Prüfung des gesamten Textes **„Text passt vollständig zu Muster“**.
                 """;
     }
 
@@ -57,9 +65,9 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
                         ).withSentence("wenn der Text"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Regulärer Ausdruck",
-                                "Das Muster, nach dem im Text gesucht werden soll."
-                        ).withSentence("einen Treffer für den regulären Ausdruck", "enthält")
+                                "Suchmuster",
+                                "Regel für passende Textstellen, beispielsweise [0-9]+ für eine oder mehrere Ziffern."
+                        ).withSentence("einen Treffer für das Muster", "enthält")
                 )
         );
     }
@@ -67,7 +75,7 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ enthält das Muster „#1“";
+        return "#0 enthält einen Treffer für das Muster #1";
     }
 
     @Override
@@ -78,7 +86,7 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
         try {
             return new NoCodeResult(Pattern.compile(regex).matcher(input).find());
         } catch (PatternSyntaxException e) {
-            throw new NoCodeException("Ungültiger regulärer Ausdruck: " + regex);
+            throw new NoCodeException("Das Suchmuster ist kein gültiger regulärer Ausdruck: " + regex);
         }
     }
 

@@ -49,6 +49,35 @@ const expression: NoCodeOperand = {
     ],
 };
 
+function temporalComparison(type: NoCodeDataType): NoCodeOperatorDetailsDTO {
+    const [identifier, label, firstLabel, secondLabel] = type === NoCodeDataType.Date
+        ? ['compare-date', 'Datumswerte vergleichen', 'Datum', 'Vergleichsdatum']
+        : type === NoCodeDataType.Time
+            ? ['compare-time', 'Uhrzeiten vergleichen', 'Uhrzeit', 'Vergleichsuhrzeit']
+            : ['compare-datetime', 'Zeitpunkte vergleichen', 'Zeitpunkt', 'Vergleichszeitpunkt'];
+    return {
+        ...operators[0], identifier, label, humanReadableTemplate: '#0 ist #1 #2', sentenceLead: 'ergibt wahr',
+        signatures: [{
+            returnType: NoCodeDataType.Boolean,
+            parameters: [{
+                type, label: firstLabel, description: null, sentencePhrase: 'wenn', options: [],
+            }, {
+                type: NoCodeDataType.String,
+                label: 'Vergleichsart',
+                description: null,
+                sentencePhrase: '',
+                optionsAsSentencePart: true,
+                options: [
+                    {label: 'früher als', value: 'vor'},
+                    {label: 'früher als oder gleich', value: 'vor-oder-gleich'},
+                ],
+            }, {
+                type, label: secondLabel, description: null, sentencePhrase: '', sentenceSuffix: 'ist', options: [],
+            }],
+        }],
+    };
+}
+
 function withVariables(variables: InputVariableSuggestion[]) {
     const rootElement = generateElementWithDefaultValues(ElementType.GroupLayout);
     return ({children}: {children: ReactNode}) => createElement(ViewDispatcherContextProvider, {
@@ -102,6 +131,192 @@ describe('useNoCodePreview', () => {
         });
 
         await waitFor(() => expect(result.current).toBe('Addiere „Anzahl der Positionen“ und 1'));
+    });
+
+    it.each([
+        [NoCodeDataType.Date, '2026-11-22', '2026-11-23', '22.11.2026', '23.11.2026'],
+        [NoCodeDataType.Time, '09:00', '17:00:00', '09:00:00 Uhr', '17:00:00 Uhr'],
+        [NoCodeDataType.DateTime, '2026-11-22T12:30:00Z', '2026-11-22T13:30:00Z', '22.11.2026 13:30:00 Uhr', '22.11.2026 14:30:00 Uhr'],
+    ] as const)('previews a known %s comparison and names the parameters when its mode becomes dynamic', async (type, left, right, displayedLeft, displayedRight) => {
+        const comparison = temporalComparison(type);
+        const variables: InputVariableSuggestion[] = [{source: InputVariableSource.ProcessData, path: 'vergleich', label: 'Ausgewählte Vergleichsart'}];
+        const initial: NoCodeOperand = {
+            type: 'NoCodeExpression', operatorIdentifier: comparison.identifier,
+            operands: [{type: 'NoCodeStaticValue', value: left}, {type: 'NoCodeStaticValue', value: 'vor'}, {type: 'NoCodeStaticValue', value: right}],
+        };
+        const original = structuredClone(initial);
+        api.get.mockResolvedValue([comparison]);
+        const {result, rerender} = renderHook(({operand}) => useNoCodePreview(operand), {
+            initialProps: {operand: initial}, wrapper: withVariables(variables),
+        });
+
+        await waitFor(() => expect(result.current).toBe(`${displayedLeft} ist früher als ${displayedRight}`));
+        expect(result.current).toBe(summarizeNoCode(initial, [], [comparison], {variables}).text);
+
+        const dynamic: NoCodeOperand = {...initial, operands: [initial.operands![0], {type: 'NoCodeProcessDataReference', path: 'vergleich'}, initial.operands![2]]};
+        rerender({operand: dynamic});
+        const [first, , second] = comparison.signatures[0].parameters;
+        expect(result.current).toBe(`${comparison.label}: ${first.label}: ${displayedLeft}; Vergleichsart: „Ausgewählte Vergleichsart“; ${second.label}: ${displayedRight}`);
+        expect(result.current).toBe(summarizeNoCode(dynamic, [], [comparison], {variables}).text);
+        expect(initial).toEqual(original);
+        expect(api.get).toHaveBeenCalledExactlyOnceWith('no-code/operators', {queryParams: undefined});
+    });
+
+    it.each([
+        ['create-today', 'Heutiges Datum', NoCodeDataType.Date, 'heutiges Datum'],
+        ['create-now', 'Aktueller Zeitpunkt', NoCodeDataType.DateTime, 'aktueller Zeitpunkt'],
+    ] as const)('previews %s as a symbolic value both alone and inside another function', async (identifier, label, returnType, template) => {
+        const isToday = identifier === 'create-today';
+        const currentTime: NoCodeOperatorDetailsDTO = {
+            ...operators[0],
+            identifier,
+            label,
+            humanReadableTemplate: template,
+            signatures: [{returnType, parameters: []}],
+        };
+        const parent: NoCodeOperatorDetailsDTO = isToday ? {
+            ...operators[0],
+            identifier: 'subtract-from-date',
+            label: 'Vom Datum abziehen',
+            humanReadableTemplate: '#0 minus #1 #2',
+            signatures: [{
+                returnType: NoCodeDataType.Date,
+                parameters: [{
+                    label: 'Ausgangsdatum',
+                    type: NoCodeDataType.Date,
+                    description: null,
+                    options: [],
+                }, {
+                    label: 'Anzahl',
+                    type: NoCodeDataType.Number,
+                    description: null,
+                    options: [],
+                }, {
+                    label: 'Einheit',
+                    type: NoCodeDataType.String,
+                    description: null,
+                    quantityParameterIndex: 1,
+                    options: [{label: 'Jahre', value: 'jahre'}],
+                }],
+            }],
+        } : temporalComparison(NoCodeDataType.DateTime);
+        const operand: NoCodeOperand = {type: 'NoCodeExpression', operatorIdentifier: identifier, operands: []};
+        api.get.mockResolvedValue([currentTime, parent]);
+        const {result, rerender} = renderHook(({value}) => useNoCodePreview(value), {
+            initialProps: {value: operand},
+            wrapper: withVariables([{source: InputVariableSource.ProcessData, path: 'termin', label: 'Termin'}]),
+        });
+
+        await waitFor(() => expect(result.current).toBe(template));
+        const nested: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: parent.identifier,
+            operands: isToday ? [operand, {type: 'NoCodeStaticValue', value: '18'}, {type: 'NoCodeStaticValue', value: 'jahre'}]
+                : [{type: 'NoCodeProcessDataReference', path: 'termin'}, {type: 'NoCodeStaticValue', value: 'vor-oder-gleich'}, operand],
+        };
+        const original = structuredClone(nested);
+        rerender({value: nested});
+        expect(result.current).toBe(isToday ? '(heutiges Datum) minus 18 Jahre'
+            : '„Termin“ ist früher als oder gleich (aktueller Zeitpunkt)');
+        expect(nested).toEqual(original);
+        expect(api.get).toHaveBeenCalledExactlyOnceWith('no-code/operators', {queryParams: undefined});
+    });
+
+    it.each([['true', 'Wahr'], ['false', 'Falsch']])('previews a fixed Boolean %s without quotes', async (value, label) => {
+        api.get.mockResolvedValue([{
+            ...operators[0],
+            identifier: 'not',
+            label: 'Nicht',
+            humanReadableTemplate: 'nicht „#0“',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [{
+                    type: NoCodeDataType.Boolean,
+                    label: 'Bedingung',
+                    description: null,
+                    options: [{label: 'Wahr', value: 'true'}, {label: 'Falsch', value: 'false'}],
+                }],
+            }],
+        }]);
+        const {result} = renderHook(() => useNoCodePreview({
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'not',
+            operands: [{type: 'NoCodeStaticValue', value}],
+        }));
+
+        await waitFor(() => expect(result.current).toBe(`nicht ${label}`));
+    });
+
+    it.each([
+        ['subtract-from-date', 'Vom Datum abziehen', 'minus', NoCodeDataType.Date, '2026-08-15', '15.08.2026'],
+        ['add-to-date', 'Zum Datum hinzufügen', 'plus', NoCodeDataType.Date, '2026-08-15', '15.08.2026'],
+        ['subtract-from-datetime', 'Vom Zeitpunkt abziehen', 'minus', NoCodeDataType.DateTime, '2026-11-22T12:30:00Z', '22.11.2026 13:30:00 Uhr'],
+        ['add-to-datetime', 'Zum Zeitpunkt hinzufügen', 'plus', NoCodeDataType.DateTime, '2026-11-22T12:30:00Z', '22.11.2026 13:30:00 Uhr'],
+    ] as const)('previews %s with the same temporal value and quantity grammar as the collapsed editor', async (identifier, label, direction, type, value, displayedValue) => {
+        const arithmetic: NoCodeOperatorDetailsDTO = {
+            ...operators[0],
+            identifier,
+            label,
+            humanReadableTemplate: `#0 ${direction} #1 #2`,
+            signatures: [{
+                returnType: type,
+                parameters: [{
+                    label: type === NoCodeDataType.DateTime ? 'Ausgangszeitpunkt' : 'Ausgangsdatum',
+                    type,
+                    description: null,
+                    options: [],
+                }, {
+                    label: 'Anzahl',
+                    type: NoCodeDataType.Number,
+                    description: null,
+                    options: [],
+                }, {
+                    label: 'Einheit',
+                    type: NoCodeDataType.String,
+                    description: null,
+                    quantityParameterIndex: 1,
+                    options: [{label: 'Tage', value: 'tage', singularLabel: 'Tag'}],
+                }],
+            }],
+        };
+        const operand: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: identifier,
+            operands: [
+                {type: 'NoCodeStaticValue', value},
+                {type: 'NoCodeStaticValue', value: '1'},
+                {type: 'NoCodeStaticValue', value: 'tage'},
+            ],
+        };
+        const now: NoCodeOperatorDetailsDTO = {
+            ...operators[0],
+            identifier: 'create-now',
+            label: 'Aktueller Zeitpunkt',
+            humanReadableTemplate: 'aktueller Zeitpunkt',
+            signatures: [{returnType: NoCodeDataType.DateTime, parameters: []}],
+        };
+        api.get.mockResolvedValue(type === NoCodeDataType.DateTime ? [arithmetic, now] : [arithmetic]);
+        const {result, rerender} = renderHook(({value}) => useNoCodePreview(value), {
+            initialProps: {value: operand},
+        });
+
+        await waitFor(() => expect(result.current).toBe(`${displayedValue} ${direction} 1 Tag`));
+        expect(result.current).toBe(summarizeNoCode(operand, [], [arithmetic]).text);
+
+        const plural = {...operand, operands: [operand.operands![0], {type: 'NoCodeStaticValue' as const, value: '2'}, operand.operands![2]]};
+        rerender({value: plural});
+        expect(result.current).toBe(`${displayedValue} ${direction} 2 Tage`);
+        expect(result.current).toBe(summarizeNoCode(plural, [], [arithmetic]).text);
+        expect(operand.operands?.[0]).toEqual({type: 'NoCodeStaticValue', value});
+        if (type === NoCodeDataType.DateTime) {
+            const dynamic = {
+                ...operand,
+                operands: [{type: 'NoCodeExpression' as const, operatorIdentifier: 'create-now', operands: []}, operand.operands![1], operand.operands![2]],
+            };
+            rerender({value: dynamic});
+            expect(result.current).toBe(`(aktueller Zeitpunkt) ${direction} 1 Tag`);
+        }
+        expect(api.get).toHaveBeenCalledExactlyOnceWith('no-code/operators', {queryParams: undefined});
     });
 
     it('matches the collapsed reading text for nested expressions and selection labels', async () => {

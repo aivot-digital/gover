@@ -31,39 +31,35 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Mitarbeiter:innen-E-Mail";
+        return "E-Mail-Adresse zum Konto";
     }
 
     @Override
     public String getAbstract() {
-        return "Gibt die E-Mail-Adresse einer Mitarbeiter:in anhand ihrer ID zurück.";
+        return "Liest die hinterlegte E-Mail-Adresse eines internen Kontos anhand seiner ID.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Mitarbeiter:innen-E-Mail“** gibt die E-Mail-Adresse einer Mitarbeiter:in anhand ihrer ID zurück. \s
-                Wenn keine Mitarbeiter:in mit dieser ID gefunden wird oder die ID leer ist, wird **null** zurückgegeben.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten die E-Mail-Adresse der Mitarbeiter:in ermitteln, die einem Vorgang zugeordnet ist. \s
-                
-                Mit der Funktion **„Mitarbeiter:innen-E-Mail“** wird diese Logik so formuliert: \s
-                `Mitarbeiter:innen-E-Mail Zugewiesene Mitarbeiter:innen-ID`
-                
-                Beispielwerte: \s
-                - **Mitarbeiter:innen-ID:** "8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1"
-                
-                **Ergebnis:**
-                - **Rückgabewert:** "max.mustermann@example.org"
-                
-                # Weitere Beispiele:
-                - `Mitarbeiter:innen-E-Mail 8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1` \s
-                  **Ergebnis:** "max.mustermann@example.org"
-                
-                # Wann verwenden Sie die Funktion „Mitarbeiter:innen-E-Mail“?
-                Verwenden Sie **„Mitarbeiter:innen-E-Mail“**, wenn Ihnen die ID einer Mitarbeiter:in vorliegt und Sie daraus die E-Mail-Adresse ermitteln möchten, z. B. für Benachrichtigungen, Prüfungen oder Ausgaben.
+                # Wofür verwenden Sie diese Funktion?
+                Lesen Sie die hinterlegte E-Mail-Adresse eines internen Kontos, beispielsweise um sie in einem weiteren Ausdruck zu verwenden.
+
+                # Welche Werte werden benötigt?
+                **Konto-ID:** Die eindeutige ID des internen Kontos. Sie können die ID frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Eine Auswahl von Konten wird hier nicht angeboten.
+
+                # Welches Ergebnis erhalten Sie?
+                Die zum Konto gespeicherte E-Mail-Adresse als Text. Ist die ID leer oder das Konto nicht vorhanden, erhalten Sie keinen Wert (`null`).
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie **„E-Mail-Adresse zum Konto“**.
+                2. Verwenden Sie bei **„Konto-ID“** eine Wertquelle, die die ID des gewünschten Kontos liefert.
+                3. Für ein Konto mit der hinterlegten E-Mail-Adresse `erika.muster@example.org` erhalten Sie den Text `erika.muster@example.org`.
+
+                Zugeklappt und in der Vorschau lesen Sie beispielsweise: **E-Mail-Adresse zum Konto „Zugewiesenes Konto“**, wenn Sie eine Variable mit dieser Bezeichnung verwenden.
+
+                # Was ist zu beachten?
+                Die Eingabe muss die Konto-ID liefern, nicht den Namen oder eine vollständige Auswahl aus Organisationseinheiten, Teams und Personen. Die Funktion verwendet die bei der Ausführung hinterlegte Adresse; die Vorschau ruft sie nicht ab.
                 """;
     }
 
@@ -79,9 +75,9 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
                         NoCodeDataType.String,
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Mitarbeiter:innen-ID",
-                                "Die ID der Mitarbeiter:in, deren E-Mail-Adresse ermittelt werden soll."
-                        ).withSentence("zur Mitarbeiter:innen-ID")
+                                "Konto-ID",
+                                "Die ID des internen Kontos, dessen hinterlegte E-Mail-Adresse Sie benötigen."
+                        ).withSentence("zum Konto")
                 )
         );
     }
@@ -89,13 +85,13 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "ermittle die E-Mail-Adresse von „#0“";
+        return "E-Mail-Adresse zum Konto #0";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (userRepository == null) {
-            throw new NoCodeException("Der Operator „Mitarbeiter:innen-E-Mail“ wurde ohne UserRepository initialisiert.");
+            throw new NoCodeException("Die Funktion „E-Mail-Adresse zum Konto“ ist hier nicht verfügbar.");
         }
 
         var userId = castToString(args[0]);

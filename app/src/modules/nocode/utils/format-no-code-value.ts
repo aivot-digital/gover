@@ -1,5 +1,8 @@
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {dateValueToDateTime, isYearIso, localTimeIsoToDateTime} from '../../../utils/temporal-utils';
+import {isNoCodeDecimalLiteral} from './no-code-number-validation';
+import {formatNoCodeDateTimeValue} from './no-code-date-time-value';
 
 /** Formatting describes authored values; only an explicit parameter type permits displaying a string as typed. */
 export function formatNoCodeValue(value: unknown, type = NoCodeDataType.Runtime, options: NoCodeParameterOption[] = [], compact = false): string {
@@ -7,10 +10,26 @@ export function formatNoCodeValue(value: unknown, type = NoCodeDataType.Runtime,
     if (value === '') return 'Leerer Text';
     const option = options.find((candidate) => candidate.value === String(value));
     if (option != null) return compact ? option.label : `„${option.label}“ (${String(value)})`;
+    if (type === NoCodeDataType.Date && typeof value === 'string') {
+        const date = dateValueToDateTime(value, 'day');
+        if (date != null) return date.toFormat('dd.MM.yyyy');
+        const month = dateValueToDateTime(value, 'month');
+        if (month != null) return month.toFormat('MM.yyyy');
+        if (isYearIso(value)) return value;
+    }
+    if (type === NoCodeDataType.DateTime) {
+        const dateTime = formatNoCodeDateTimeValue(value);
+        if (dateTime != null) return dateTime;
+    }
+    if (type === NoCodeDataType.Time) {
+        const time = localTimeIsoToDateTime(value);
+        if (time != null) return time.toFormat("HH:mm:ss 'Uhr'");
+    }
     if (typeof value === 'boolean' || type === NoCodeDataType.Boolean && (value === 'true' || value === 'false')) {
         return value === true || value === 'true' ? 'Wahr' : 'Falsch';
     }
-    if (typeof value === 'number' || type === NoCodeDataType.Number && typeof value === 'string' && /^[-+]?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?$/.test(value)) return String(value);
+    if (typeof value === 'number') return String(value);
+    if (type === NoCodeDataType.Number && typeof value === 'string' && isNoCodeDecimalLiteral(value.trim().replace(',', '.'))) return value.trim();
     if (typeof value === 'object') return JSON.stringify(value);
     return compact ? String(value) : `„${String(value)}“`;
 }

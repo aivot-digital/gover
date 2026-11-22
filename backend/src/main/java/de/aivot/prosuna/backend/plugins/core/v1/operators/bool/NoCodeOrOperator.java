@@ -21,39 +21,30 @@ public class NoCodeOrOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Verknüpft zwei Wahrheitswerte über das logische Oder miteinander.";
+        return "Prüft, ob mindestens eine der Bedingungen erfüllt ist.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Oder“** (auch bekannt als logisches ODER) verknüpft zwei Wahrheitswerte miteinander. \s
-                Das Ergebnis ist **wahr** (true), wenn **mindestens eine** der verknüpften Bedingungen **wahr** ist. \s
-                Ist **keine** der Bedingungen wahr, ergibt die Funktion **„Oder“** den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person die folgenden Bedingungen erfüllt:
-                
-                - Sie hat einen gültigen Ausweis. \s
-                - Oder sie besitzt eine andere Form der Identifikation.
-                
-                Mit der Funktion **„Oder“** wird diese Logik so formuliert: \s
-                `Hat gültigen Ausweis ODER Besitzt andere Identifikation`
-                
-                **Ergebnis:**
-                - Wenn die Person **einen gültigen Ausweis** hat oder **eine andere Identifikation** besitzt, ist das Ergebnis **wahr**.
-                - Wenn die Person **keinen gültigen Ausweis** hat und **keine andere Identifikation** besitzt, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte der Funktion „Oder“
-                - **wahr** ODER **wahr** → **wahr**
-                - **wahr** ODER **falsch** → **wahr**
-                - **falsch** ODER **wahr** → **wahr**
-                - **falsch** ODER **falsch** → **falsch**
-                
-                # Wann verwenden Sie die Funktion „Oder“?
-                Verwenden Sie **„Oder“**, wenn **mindestens eine Bedingung erfüllt** sein muss, um die gewünschte Aktion oder Entscheidung zu treffen. \s
-                Diese Funktion ist nützlich, wenn Sie mehrere alternative Kriterien zulassen möchten, z. B. bei Optionen oder Auswahlmöglichkeiten.
+                # Wofür verwenden Sie diese Funktion?
+                Verknüpfen Sie Bedingungen, von denen mindestens eine erfüllt sein muss, etwa zwei alternative Voraussetzungen.
+
+                # Welche Werte werden benötigt?
+                Zwei bis zehn Bedingungen; wählen Sie die passende Anzahl an Eingaben. Für selbst festgelegte Bedingungen stehen „Wahr“ und „Falsch“ zur Auswahl. Eigene Auswahlwerte sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie Bedingungen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn mindestens eine Bedingung wahr ist. Das gilt auch, wenn mehrere Bedingungen wahr sind. Nur wenn alle Bedingungen falsch sind, lautet das Ergebnis „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Oder“ als Funktion für eine Bedingung.
+                2. Wählen Sie für „Bedingung 1“ über „Andere Wertquelle verwenden …“ die Wertquelle „Einwilligung“, die einen Wahrheitswert liefert.
+                3. Wählen Sie für „Bedingung 2“ die Wertquelle „Andere Zustimmung liegt vor“.
+
+                Ist eine der beiden Bedingungen wahr, ergibt der Ausdruck „Wahr“. Sind beide falsch, ergibt er „Falsch“.
+
+                # Was ist zu beachten?
+                Bei drei oder mehr Bedingungen werden alle ausgewählten Eingaben berücksichtigt. Verwenden Sie Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt; ein Text wie „Nein“ wird dabei nicht automatisch zu „Falsch“. Verschachtelte Funktionen in allen Bedingungen werden vor der Verknüpfung ausgewertet und müssen auswertbar sein.
                 """;
     }
 
@@ -72,10 +63,10 @@ public class NoCodeOrOperator extends NoCodeOperator {
                 parameters[j] = new NoCodeParameter(
                         NoCodeDataType.Boolean,
                         "Bedingung " + (j + 1),
-                        "Die " + (j + 1) + ". Bedingung für die ODER-Verknüpfung.",
+                        "Eine Bedingung, die einen Wahrheitswert liefert.",
                         new NoCodeParameterOption("Wahr", "true"),
                         new NoCodeParameterOption("Falsch", "false")
-                ).withSentence(j == 0 ? "wenn" : "oder");
+                ).withSentence(j == 0 ? "wenn" : "oder", "wahr ist");
             }
             signatures[i] = NoCodeSignatur.of(
                     NoCodeDataType.Boolean,
@@ -100,6 +91,6 @@ public class NoCodeOrOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ oder „#1“";
+        return "#0 oder #1";
     }
 }

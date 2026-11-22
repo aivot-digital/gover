@@ -20,42 +20,35 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Multipliziere";
+        return "Multiplizieren";
     }
 
     @Override
     public String getAbstract() {
-        return "Multipliziert zwei Werte.";
+        return "Multipliziert zwei Zahlen.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Multipliziere“** multipliziert zwei oder mehr numerische Werte. \s
-                Das Ergebnis ist das Produkt aller angegebenen Werte.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten das Produkt von zwei Zahlen berechnen.
-                
-                Mit der Funktion **„Multipliziere“** wird diese Logik so formuliert: \s
-                `Multipliziere Wert1 Wert2`
-                
-                Beispielwerte: \s
-                - **Wert1:** 5 \s
-                - **Wert2:** 3
-                
-                **Ergebnis:**
-                - **Rückgabewert:** 15
-                
-                # Beispiele und Ergebnisse
-                - **Multipliziere 2 3** → **6** \s
-                - **Multipliziere 4 5 6** → **120** \s
-                - **Multipliziere -2 3** → **-6**
-                
-                # Wann verwenden Sie die Funktion „Multipliziere“?
-                Verwenden Sie **„Multipliziere“**, um das Produkt von zwei oder mehr numerischen Werten zu berechnen. \s
-                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                # Wofür verwenden Sie diese Funktion?
+                Berechnen Sie das Produkt zweier Zahlen, etwa einen Gesamtbetrag aus Menge und Einzelpreis.
+
+                # Welche Werte werden benötigt?
+                „Zahl 1“ und „Zahl 2“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Das Produkt beider Zahlen.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Multiplizieren“ als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei „Zahl 1“ `5` und bei „Zahl 2“ `3` ein.
+                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert eines Formularelements.
+
+                Der Ausdruck `5 mal 3` ergibt `15`. Für weitere Rechenschritte können Sie Funktionen verschachteln.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt.
                 """;
     }
 
@@ -71,13 +64,13 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
                         NoCodeDataType.Number,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Faktor 1",
-                                "Der erste zu multiplizierende Wert."
+                                "Zahl 1",
+                                "Die erste der beiden Zahlen, die miteinander multipliziert werden."
                         ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Faktor 2",
-                                "Der zweite zu multiplizierende Wert."
+                                "Zahl 2",
+                                "Die zweite der beiden Zahlen, die miteinander multipliziert werden."
                         ).withSentence("mal")
                 )
         );
@@ -86,7 +79,7 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "multipliziere „#0“ mit „#1“";
+        return "#0 mal #1";
     }
 
     @Override

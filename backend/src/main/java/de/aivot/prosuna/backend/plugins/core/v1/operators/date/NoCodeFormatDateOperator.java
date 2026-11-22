@@ -34,35 +34,43 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Formatiert ein Datum nach einem angegebenen Format.";
+        return "Gibt ein Datum im gewählten Format als Text aus.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Datum formatieren“** formatiert ein Datum nach einem frei definierbaren Muster.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben ein Datum und möchten es als `TT.MM.JJJJ` ausgeben.
-                
-                ```text
-                Datum formatieren (Datum, "dd.MM.yyyy")
-                ```
-                
-                **Ergebnis:**
-                Ein Text im gewünschten Datumsformat, z. B. `15.08.2023`.
-                
-                # Wann verwenden Sie die Funktion „Datum formatieren“?
-                Verwenden Sie **„Datum formatieren“**, wenn Sie:
-                - Datumswerte als Text anzeigen oder weitergeben möchten.
-                - Ein bestimmtes Ausgabeformat für Datum/Uhrzeit benötigen.
+                # Wofür verwenden Sie diese Funktion?
+                Geben Sie ein Datum als Text aus, zum Beispiel für eine Nachricht oder eine Zusammenfassung.
+
+                # Welche Werte werden benötigt?
+                - **Datum:** Der Datumswert, den Sie ausgeben möchten.
+                - **Ausgabeformat:** Die gewünschte Darstellung des Datums.
+
+                Das Datum können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für das selbst festgelegte Ausgabeformat wählen Sie eine der vier Vorgaben: Tag, Monat und Jahr; Monat und Jahr; Jahr; oder die Reihenfolge Jahr-Monat-Tag. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
+
+                Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein darüber geliefertes Format muss ein gültiges Formatmuster sein, etwa **dd.MM.yyyy**.
+
+                # Welches Ergebnis erhalten Sie?
+                Einen Text im gewählten Format. Der ursprüngliche Datumswert bleibt unverändert.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie für einen Textwert **„Datum formatieren“**.
+                2. Legen Sie als **„Datum“** den **22.11.2026** fest oder wählen Sie ein entsprechendes Datumsfeld als Wertquelle.
+                3. Wählen Sie als **„Ausgabeformat“** **„Tag, Monat und Jahr“**.
+
+                Das Ergebnis ist der Text **„22.11.2026“**. Zugeklappt lesen Sie: **„22.11.2026 als Text im Format „Tag, Monat und Jahr““**.
+
+                # Was ist zu beachten?
+                Ein Datumswert kann auch nur aus Monat und Jahr oder nur aus einem Jahr bestehen. Wählen Sie dann ein Format, das keine fehlenden Bestandteile verlangt. Aus **November 2026** kann beispielsweise **„11.2026“**, aber kein vollständiges Tagesdatum entstehen.
+
+                Für die Textdarstellung eines Zeitpunkts mit Uhrzeit verwenden Sie **„Zeitpunkt formatieren“**. Das Ergebnis dieser Funktion ist Text und kein neuer Datumswert.
                 """;
     }
 
     @Override
     public String getSentenceLead() {
-        return "ergibt";
+        return "ergibt den Text für";
     }
 
     @Override
@@ -77,12 +85,12 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                         ).withSentence("das Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Format",
-                                "Das Ausgabeformat als DateTimeFormatter-Muster.",
-                                new NoCodeParameterOption("Datum (TT.MM.JJJJ)", "dd.MM.yyyy"),
+                                "Ausgabeformat",
+                                "Wählen Sie die gewünschte Darstellung. Ein Format aus einer anderen Wertquelle muss ein gültiges Formatmuster sein.",
+                                new NoCodeParameterOption("Tag, Monat und Jahr", "dd.MM.yyyy"),
                                 new NoCodeParameterOption("Monat und Jahr", "MM.yyyy"),
                                 new NoCodeParameterOption("Jahr", "yyyy"),
-                                new NoCodeParameterOption("ISO-Datum", "yyyy-MM-dd")
+                                new NoCodeParameterOption("Jahr-Monat-Tag", "yyyy-MM-dd")
                         ).withSentence("im Format")
                 )
         );
@@ -91,7 +99,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "formatiere „#0“ mit dem Muster „#1“";
+        return "#0 als Text im Format #1";
     }
 
     @Override

@@ -35,6 +35,14 @@ class NoCodeListOperatorsTest {
     }
 
     @Test
+    void listAvgShouldRetainFractionalResultsToEightDecimalPlaces() throws NoCodeException {
+        var operator = new NoCodeListAvgOperator();
+
+        assertEquals(new BigDecimal("0.33333333"), operator.evaluate(runtime(), List.of(1, 0, 0)).getValue());
+        assertEquals(new BigDecimal("1.50000000"), operator.evaluate(runtime(), List.of(1, 2)).getValue());
+    }
+
+    @Test
     void listConcatShouldMergeInOrderWithoutMutatingSourceLists() throws NoCodeException {
         var operator = new NoCodeListConcatOperator();
         var data = runtime();
@@ -74,6 +82,14 @@ class NoCodeListOperatorsTest {
         var selected = operator.evaluate(data, list, "name").getValue();
 
         assertEquals(Arrays.asList("A", "B", null), selected);
+    }
+
+    @Test
+    void listSelectShouldReadDirectFieldNamesAndPreserveMissingValues() throws NoCodeException {
+        var operator = new NoCodeListSelectOperator();
+        var rows = List.of(Map.of("person.name", "Direktes Feld", "person", Map.of("name", "Verschachtelt")), Map.of("other", "B"));
+
+        assertEquals(Arrays.asList("Direktes Feld", null), operator.evaluate(runtime(), rows, "person.name").getValue());
     }
 
     @Test
@@ -180,6 +196,11 @@ class NoCodeListOperatorsTest {
         assertTrue(operator.evaluate(data, List.of(new BigDecimal("1.0"), 2), List.of("1", 2)).getValueAsBoolean());
         assertTrue(operator.evaluate(data, Arrays.asList("A", null), Arrays.asList((Object) null)).getValueAsBoolean());
         assertFalse(operator.evaluate(data, List.of("A"), Arrays.asList((Object) null)).getValueAsBoolean());
+    }
+
+    @Test
+    void listContainsAllShouldCheckMembershipWithoutRequiringDuplicateOccurrences() throws NoCodeException {
+        assertTrue(new NoCodeListContainsAllOperator().evaluate(runtime(), List.of("A"), List.of("A", "A")).getValueAsBoolean());
     }
 
     /**

@@ -80,6 +80,27 @@ class NoCodeCommonOperatorsTest {
     }
 
     @Test
+    void notEqualsShouldCompareTextIncludingCaseAndWhitespace() throws NoCodeException {
+        var data = runtime();
+        var operator = new NoCodeNotEqualsOperator();
+
+        assertFalse(operator.evaluate(data, "Berlin", "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "Hamburg", "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "berlin", "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "Berlin ", "Berlin").getValueAsBoolean());
+    }
+
+    @Test
+    void notEqualsShouldDistinguishOneMissingValueFromTwoMissingValues() throws NoCodeException {
+        var data = runtime();
+        var operator = new NoCodeNotEqualsOperator();
+
+        assertFalse(operator.evaluate(data, null, null).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, null, "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "Berlin", null).getValueAsBoolean());
+    }
+
+    @Test
     void equalsAndNotEqualsShouldCompareNumberFieldValuesByValue() throws NoCodeException {
         var data = runtime();
         var equals = new NoCodeEqualsOperator();

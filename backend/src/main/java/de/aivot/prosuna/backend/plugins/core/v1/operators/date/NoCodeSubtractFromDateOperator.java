@@ -16,45 +16,56 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Von Datum subtrahieren";
+        return "Vom Datum abziehen";
     }
 
     @Override
     public String getAbstract() {
-        return "Subtrahiert eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren von einem gegebenen Datum.";
+        return "Zieht Tage, Wochen, Monate oder Jahre von einem Datum ab.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Von Datum subtrahieren“** subtrahiert eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren von einem gegebenen Datum. \s
-                Er wird verwendet, um Datumsarithmetik durchzuführen.
-                
-                Verfügbare Einheiten:
-                - Tage \s
-                - Wochen \s
-                - Monate \s
-                - Jahre
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben ein Datum `2023-08-15` und möchten 5 Tage subtrahieren. \s
-                Mit der Funktion **„Von Datum subtrahieren“** können Sie diese Operation durchführen:
-                
-                ```text
-                Von Datum subtrahieren ("2023-08-15", 5, "Tage")
-                ```
-                
-                **Ergebnis:** \s
-                Das resultierende Datum ist: `2023-08-10`.
-                
-                # Wann verwenden Sie die Funktion „Von Datum subtrahieren“?
-                Verwenden Sie **„Von Datum subtrahieren“**, wenn Sie:
-                - Datumsarithmetik durchführen müssen. \s
-                - Vergangene Daten basierend auf einem gegebenen Datum berechnen möchten.
+                # Wofür verwenden Sie diese Funktion?
 
-                Teil-Datumswerte behalten ihre Präzision. Monate können nur um Monate oder Jahre,
-                reine Jahreswerte nur um Jahre verschoben werden.
+                Mit „Vom Datum abziehen“ berechnen Sie ein früheres Datum, beispielsweise einen Stichtag vor einem Termin.
+
+                # Welche Werte werden benötigt?
+
+                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können ein vollständiges Datum selbst eingeben, beispielsweise `15.08.2026`, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Es gibt keine festen Auswahlwerte.
+                - **Anzahl:** Geben Sie eine ganze Zahl ein, beispielsweise `5`. Es gibt keine festen Auswahlwerte. Sie können die Anzahl auch aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
+                - **Einheit:** Wählen Sie Tage, Wochen, Monate oder Jahre. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
+
+                # Welches Ergebnis erhalten Sie?
+
+                Sie erhalten das berechnete Datum. Eine positive Anzahl führt zu einem früheren Datum.
+
+                Enthält das Ausgangsdatum nur Monat und Jahr oder nur ein Jahr, enthält auch das Ergebnis nur diese Angaben.
+
+                # Beispiel im No-Code-Editor
+
+                Sie möchten das Datum ermitteln, das fünf Tage vor dem 15.08.2026 liegt.
+
+                1. Wählen Sie die Funktion „Vom Datum abziehen“.
+                2. Wählen Sie für „Ausgangsdatum“ die Option „Wert selbst festlegen“ und geben Sie `15.08.2026` ein.
+                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `5` ein.
+                4. Wählen Sie für „Einheit“ die Option „Tage“.
+
+                Der fertige Ausdruck liest sich so:
+
+                **15.08.2026 minus 5 Tage**
+
+                Das Ergebnis ist **10.08.2026**.
+
+                # Was ist zu beachten?
+
+                - Tage sind Kalendertage. Wochenenden und Feiertage werden mitgezählt. Eine Woche entspricht sieben Tagen.
+                - Bei der Anzahl `0` bleibt das Datum gleich. Eine negative Anzahl kehrt die Rechenrichtung um: Mit `-5` erhalten Sie ein späteres Datum.
+                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: 31.03.2026 minus 1 Monat ergibt 28.02.2026.
+                - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 minus 1 Jahr ergibt 28.02.2023.
+                - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
+                - Enthält ein übernommenes Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden. Im Eingabefeld für ein selbst festgelegtes Ausgangsdatum können Sie derzeit nur vollständige Datumsangaben eingeben.
                 """;
     }
 
@@ -70,23 +81,25 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                         NoCodeDataType.Date,
                         new NoCodeParameter(
                                 NoCodeDataType.Date,
-                                "Datum",
-                                "Das Ausgangsdatum, von dem subtrahiert werden soll."
+                                "Ausgangsdatum",
+                                "Das Datum, von dem aus Sie rechnen möchten."
                         ).withSentence("das Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Anzahl",
-                                "Die Anzahl der Einheiten, die vom Datum subtrahiert werden sollen."
-                        ).withSentence("minus"),
+                                "Die Anzahl der gewählten Einheiten. Geben Sie eine ganze Zahl ein."
+                        ).withSentence("minus").withNumberConstraints(new NoCodeNumberConstraints(
+                                true, (double) Integer.MIN_VALUE, (double) Integer.MAX_VALUE
+                        )),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Einheit",
-                                "Die Einheit der Zeit, die subtrahiert werden soll (Tage, Wochen, Monate, Jahre).",
-                                new NoCodeParameterOption("Tage", NoCodeAddToDateOperator.DAYS_UNIT),
-                                new NoCodeParameterOption("Wochen", NoCodeAddToDateOperator.WEEKS_UNIT),
-                                new NoCodeParameterOption("Monate", NoCodeAddToDateOperator.MONTHS_UNIT),
-                                new NoCodeParameterOption("Jahre", NoCodeAddToDateOperator.YEARS_UNIT)
-                        ).withSentence("")
+                                "Wählen Sie Tage, Wochen, Monate oder Jahre.",
+                                new NoCodeParameterOption("Tage", NoCodeAddToDateOperator.DAYS_UNIT, "Tag"),
+                                new NoCodeParameterOption("Wochen", NoCodeAddToDateOperator.WEEKS_UNIT, "Woche"),
+                                new NoCodeParameterOption("Monate", NoCodeAddToDateOperator.MONTHS_UNIT, "Monat"),
+                                new NoCodeParameterOption("Jahre", NoCodeAddToDateOperator.YEARS_UNIT, "Jahr")
+                        ).withSentence("").withQuantityParameterIndex(1)
                 )
         );
     }
@@ -94,7 +107,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "subtrahiere „#1“ „#2“ von „#0“";
+        return "#0 minus #1 #2";
     }
 
     @Override

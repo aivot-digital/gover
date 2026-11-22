@@ -23,36 +23,47 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Heutiges Datum erstellen";
+        return "Heutiges Datum";
     }
 
     @Override
     public String getAbstract() {
-        return "Erstellt das heutige Datum in der Zeitzone der Anwendung.";
+        return "Liefert das heutige Datum.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Die Funktion **„Heutiges Datum erstellen“** erstellt das heutige Kalenderdatum in der Zeitzone der Anwendung. \s
-                Er wird verwendet, um das aktuelle Datum zu erhalten.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie möchten das heutige Datum erhalten. \s
-                Mit der Funktion **„Heutiges Datum erstellen“** können Sie das aktuelle Datum erstellen:
-                
-                ```text
-                Heutiges Datum erstellen ()
-                ```
-                
-                **Ergebnis:** \s
-                Das erstellte Datum ist das heutige Kalenderdatum.
-                
-                # Wann verwenden Sie die Funktion „Heutiges Datum erstellen“?
-                Verwenden Sie **„Heutiges Datum erstellen“**, wenn Sie:
-                - Das aktuelle Datum benötigen. \s
-                - Ein Datum für Berechnungen oder Vergleiche erstellen möchten.
+                # Wofür verwenden Sie diese Funktion?
+
+                Mit „Heutiges Datum“ verwenden Sie das Datum des heutigen Tages in Berechnungen und Vergleichen, beispielsweise um einen Stichtag zu bestimmen.
+
+                # Welche Werte werden benötigt?
+
+                Die Funktion benötigt keine Eingabewerte. Nach dem Hinzufügen sind keine weiteren Einstellungen erforderlich.
+
+                # Welches Ergebnis erhalten Sie?
+
+                Sie erhalten das heutige Datum mit Tag, Monat und Jahr.
+
+                # Beispiel im No-Code-Editor
+
+                Sie möchten den Stichtag ermitteln, der 18 Jahre vor heute liegt.
+
+                1. Wählen Sie die Funktion „Vom Datum abziehen“.
+                2. Wählen Sie für „Ausgangsdatum“ die Option „Mit Funktion ermitteln“ und anschließend „Heutiges Datum“.
+                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `18` ein.
+                4. Wählen Sie für „Einheit“ die Option „Jahre“.
+
+                Der fertige Ausdruck liest sich so:
+
+                **(heutiges Datum) minus 18 Jahre**
+
+                Bei einer Auswertung am 22.11.2026 ist das Ergebnis **22.11.2008**.
+
+                # Was ist zu beachten?
+
+                Das Datum wird bei jeder Auswertung neu ermittelt. Welcher Tag als heute gilt, richtet sich nach der für Prosuna eingestellten Zeitzone.
                 """;
     }
 
@@ -68,7 +79,7 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "erstelle das heutige Datum";
+        return "heutiges Datum";
     }
 
     @Override

@@ -18,38 +18,30 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob das angegebene Formularelement laut berechnetem Sichtbarkeitszustand nicht sichtbar ist.";
+        return "Prüft den berechneten Zustand eines Formularelements auf „nicht sichtbar“.";
     }
 
     @Override
     public String getDescription() {
-        return """                
-                ### **Funktion: "Ist nicht sichtbar"**
-                
-                # Beschreibung:
-                Die Funktion **„Ist nicht sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
-                Geben Sie die **ID eines im Formular konfigurierten Formularelements** an. \s
-                Die Funktion gibt **wahr** (true) zurück, wenn der berechnete Zustand nicht sichtbar ist, und **falsch** (false), wenn er sichtbar ist.
-                
-                # Anwendungsbeispiel:
-                Im Formular ist ein Eingabefeld mit der ID `"telefonnummer"` konfiguriert.
-                Seine Sichtbarkeit wird über eine Bedingung gesteuert.
-                
-                Mit der Funktion **„Ist nicht sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
-                ```text
-                Ist nicht sichtbar("telefonnummer")
-                ```
-                
-                **Ergebnis:**
-                - **wahr:** Wenn das Eingabefeld im berechneten Zustand nicht sichtbar ist. \s
-                - **falsch:** Wenn das Eingabefeld im berechneten Zustand sichtbar ist.
-                
-                **Weitere Beispiele:**
-                - **Ist nicht sichtbar("zusatzangaben"):** → **falsch**, wenn der im Formular konfigurierte Abschnitt `"zusatzangaben"` im berechneten Zustand sichtbar ist. \s
-                - **Ist nicht sichtbar("hinweis"):** → **wahr**, wenn das im Formular konfigurierte Textelement `"hinweis"` im berechneten Zustand nicht sichtbar ist.
-                
-                # Wann verwenden Sie die Funktion „Ist nicht sichtbar“?
-                Verwenden Sie **„Ist nicht sichtbar“**, um Bedingungen in Ihrem Formular vom berechneten Sichtbarkeitszustand eines anderen Formularelements abhängig zu machen.
+        return """
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob ein Formularelement laut seinem berechneten Sichtbarkeitszustand nicht sichtbar ist. So kann eine weitere Bedingung auf dessen Sichtbarkeit aufbauen.
+
+                # Welche Werte werden benötigt?
+                Die interne Kennung des Formularelements. Geben Sie diese bei „Formularelement“ frei als Text ein; es gibt keine vorgegebene Auswahl. Über „Andere Wertquelle verwenden …“ kann die Kennung auch aus einer Wertquelle oder Funktion stammen. Benötigt wird die Kennung, nicht der Inhalt des Formularelements.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn das Formularelement im berechneten Zustand nicht sichtbar ist, andernfalls „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Ermitteln Sie die interne Kennung des Formularelements, dessen Sichtbarkeit geprüft werden soll, beispielsweise `telefonnummer`.
+                2. Wählen Sie „Ist nicht sichtbar“ als Funktion für eine Bedingung.
+                3. Tragen Sie bei „Formularelement“ `telefonnummer` ein.
+
+                Ist dieses Formularelement nicht sichtbar, ergibt die Bedingung „Wahr“. Verwenden Sie das Ergebnis beispielsweise für einen zusätzlichen Hinweis.
+
+                # Was ist zu beachten?
+                Geprüft wird der berechnete Sichtbarkeitszustand, nicht, ob das Formularelement gerade im sichtbaren Bildschirmausschnitt liegt. Ist zur Kennung kein Zustand vorhanden, wird das Formularelement als sichtbar behandelt. Eine unbekannte Kennung ergibt daher „Falsch“.
                 """;
     }
 
@@ -61,7 +53,7 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "das Formularelement „#0“ ist nicht sichtbar";
+        return "das Formularelement #0 ist nicht sichtbar";
     }
 
     @Override

@@ -26,12 +26,24 @@ export interface NoCodeParameter {
     sentencePhrase?: string | null;
     /** Text after the operand. */
     sentenceSuffix?: string | null;
+    numberConstraints?: NoCodeNumberConstraints | null;
+    /** Marks fixed options as units and points to the sibling operand providing their quantity. */
+    quantityParameterIndex?: number | null;
+    /** A fixed choice supplies a sentence part; unknown choices require a named-input presentation. */
+    optionsAsSentencePart?: boolean | null;
     options: NoCodeParameterOption[];
+}
+
+export interface NoCodeNumberConstraints {
+    integerOnly: boolean;
+    minimum?: number | null;
+    maximum?: number | null;
 }
 
 export interface NoCodeParameterOption {
     label: string;
     value: string;
+    singularLabel?: string | null;
 }
 
 export function matchesDesiredNoCodeReturnType(

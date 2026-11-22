@@ -16,6 +16,7 @@ import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRi
 import {NoCodeOperatorDeleteDialog} from './no-code-operator-delete-dialog';
 import {NoCodeTestResult} from './no-code-test-result';
 import {formatNoCodeValue} from '../utils/format-no-code-value';
+import {resolveNoCodeExpressionPresentation} from '../utils/no-code-parameter-presentation';
 import {useNoCodePresentationContext} from '../hooks/use-no-code-presentation-context';
 import {NoCodePresentationContext} from '../utils/humanize-no-code';
 import {useNoCodeParameterSuggestions} from '../hooks/use-no-code-parameter-suggestions';
@@ -261,7 +262,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
     const [focusError, setFocusError] = useState(false);
     const [removeTarget, setRemoveTarget] = useState<{ node: NoCodeEditorNode; hasNotes: boolean; open: boolean } | null>(null);
     const removeFocus = useRef<string | null>(null);
-    const validation = operandError ?? validateNoCode(toNoCodeOperand(root), allOperators, allElements);
+    const validation = operandError ?? validateNoCode(toNoCodeOperand(root), allOperators, allElements, true, parameter);
     const [autoEditId, setAutoEditId] = useState<string | null>(null);
     const [activeKey, setActiveKey] = useState<string | null>(null);
     const [focusRequest, setFocusRequest] = useState<{ key: string } | null>(null);
@@ -1543,15 +1544,16 @@ function NoCodeEditorExpressionView(props: SlotProps & {
     const signature = operator == null ? undefined : resolveNoCodeSignature(operator, {
         operandCount: node.operands.length,
     });
-    // Malformed or older expressions remain fully visible even when their operator no longer accepts these operands.
-    const parameters: NoCodeParameter[] = Array.from({length: Math.max(signature?.parameters.length ?? 0, node.operands.length)}, (_, i) =>
-        signature?.parameters[i] ?? {
-            type: NoCodeDataType.Runtime,
-            label: `Parameter ${i + 1}`,
-            description: null,
-            options: [],
-        });
     const operands = useMemo(() => node.operands.map(toNoCodeOperand), [node.operands]);
+    // Malformed or older expressions remain fully visible even when their operator no longer accepts these operands.
+    const {parameters, useSentence} = resolveNoCodeExpressionPresentation(
+        Array.from({length: Math.max(signature?.parameters.length ?? 0, node.operands.length)}, (_, i) =>
+            signature?.parameters[i] ?? {
+                type: NoCodeDataType.Runtime,
+                label: `Parameter ${i + 1}`,
+                description: null,
+                options: [],
+            }), operands);
     const suggestions = useNoCodeParameterSuggestions(operands, parameters, ctx.allElements);
     const parameterCountError = operator != null && !operator.signatures.some((candidate) => candidate.parameters.length === node.operands.length)
         ? 'Die Anzahl der Parameter passt nicht zur Funktion. Wählen Sie die Funktion erneut aus, um sie anzupassen.'
@@ -1578,7 +1580,7 @@ function NoCodeEditorExpressionView(props: SlotProps & {
             parameter={slotParameter}
             depth={props.depth}
             resultType={dataType}
-            lead={operator?.sentenceLead}
+            lead={useSentence ? operator?.sentenceLead : null}
             summary={ctx.collapsed.has(node.id)
                 ? summarizeNoCode(toNoCodeOperand(node), ctx.allElements, ctx.allOperators, ctx.presentation)
                 : undefined}
@@ -1698,7 +1700,11 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
         summary,
     } = describeLeaf(node, parameter, ctx.allElements, props.suggestions, ctx.presentation);
     const errorId = error?.error != null ? `no-code-editor-error-${node.id}` : undefined;
-    const warning = getNoCodeEditorTypeConflict(node, parameter.type, ctx.allElements, ctx.allOperators);
+    // Explicit literal constraints reflect the operator's parser, which may accept
+    // number formats that differ from the generic runtime cast checked by the warning.
+    const warning = node.type === 'NoCodeStaticValue' && parameter.numberConstraints != null
+        ? null
+        : getNoCodeEditorTypeConflict(node, parameter.type, ctx.allElements, ctx.allOperators);
     const warningId = warning != null ? `no-code-editor-warning-${node.id}` : undefined;
 
     return (
