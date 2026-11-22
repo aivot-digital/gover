@@ -26,23 +26,26 @@ public class NoCodeIfOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Wählen Sie abhängig von einer Bedingung zwischen zwei Ergebnissen, etwa zwischen zwei Hinweistexten.
+                Berechnen Sie beispielsweise den Betrag pro Eintrag, wenn Einträge vorliegen. Bei einer Anzahl von null können Sie stattdessen einen Hinweis ausgeben.
 
                 # Welche Werte werden benötigt?
-                Eine „Bedingung“ und die beiden Werte „Ergebnis bei Wahr“ und „Ergebnis bei Falsch“. Für eine feste Bedingung wählen Sie „Wahr“ oder „Falsch“; eigene Auswahlwerte sind nicht möglich. Feste Ergebnisse können Sie frei als Text eingeben. Über „Andere Wertquelle verwenden …“ können alle drei Eingaben aus Wertquellen oder Funktionen stammen; die Ergebnisse können dabei auch andere Werttypen haben.
+                - Als **Bedingung** wählen Sie „Wahr“ oder „Falsch“ aus der festen Auswahl. Über „Andere Wertquelle verwenden …“ können Sie eine Wertquelle oder Funktion nutzen.
+                - Für **Ergebnis bei Wahr** und **Ergebnis bei Falsch** können Sie einen Text frei eingeben, einen Wert aus einer Wertquelle übernehmen oder eine Funktion verwenden.
 
                 # Welches Ergebnis erhalten Sie?
-                Bei einer wahren Bedingung den Wert aus „Ergebnis bei Wahr“, andernfalls den Wert aus „Ergebnis bei Falsch“. Der ausgewählte Wert wird unverändert übernommen.
+                Ist die Bedingung wahr, erhalten Sie den Wert aus „Ergebnis bei Wahr“. Ist sie falsch, erhalten Sie den Wert aus „Ergebnis bei Falsch“. Die Funktion übernimmt den ausgewählten Wert mit seinem Datentyp unverändert.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Wenn, dann, sonst“ als Funktion für einen Textwert.
-                2. Wählen Sie als „Bedingung“ die Wertquelle „Unterlagen vollständig“.
-                3. Tragen Sie bei „Ergebnis bei Wahr“ `Prüfung möglich` und bei „Ergebnis bei Falsch“ `Unterlagen fehlen` ein.
+                1. Wählen Sie **„Wenn, dann, sonst“**. Verwenden Sie für die **„Bedingung“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Variable „Anzahl“ und geben Sie bei „Vergleichszahl“ `0` ein.
+                2. Wählen Sie für **„Ergebnis bei Wahr“** die Funktion **„Dividieren“**. Übernehmen Sie bei „Ausgangszahl“ die Variable „Gesamtbetrag“ und bei „Teiler 1“ die Variable „Anzahl“.
+                3. Wählen Sie für **„Ergebnis bei Falsch“** die freie Texteingabe und geben Sie `Keine Einträge` ein.
 
-                Sind die Unterlagen vollständig, erhalten Sie „Prüfung möglich“, andernfalls „Unterlagen fehlen“.
+                Aufgeklappt sehen Sie bei „wenn“ die Funktion „Größer als“, bei „dann“ die Funktion „Dividieren“ und bei „sonst“ den Text „Keine Einträge“. Zugeklappt und in der Vorschau lesen Sie `wenn („Anzahl“ ist größer als 0), dann („Gesamtbetrag“ geteilt durch „Anzahl“), sonst „Keine Einträge“`.
+
+                Bei einem Gesamtbetrag von `24` und einer Anzahl von `3` erhalten Sie die Zahl `8`. Bei einer Anzahl von `0` erhalten Sie den Text „Keine Einträge“. Die Division wird nur bei einer Anzahl größer als null ausgeführt.
 
                 # Was ist zu beachten?
-                Verwenden Sie für die Bedingung einen Wahrheitswert. Andere Werttypen werden in Wahrheitswerte umgewandelt. Verschachtelte Funktionen in beiden Ergebniszweigen werden vor der Auswahl ausgewertet; auch ein nicht ausgewählter Zweig muss daher auswertbar sein.
+                Die Funktion wertet zuerst die Bedingung aus. Liefert sie einen Wert mit einem anderen Datentyp, wird er für diese Entscheidung in einen Wahrheitswert umgewandelt. Anschließend wertet die Funktion nur den gewählten Ergebniszweig aus. Im Testlauf steht am übersprungenen Zweig „Nicht ausgewertet“ mit der Begründung.
                 """;
     }
 
@@ -74,11 +77,11 @@ public class NoCodeIfOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var arg0 = castToBoolean(args[0]);
-        var arg1 = args[1];
-        var arg2 = args[2];
+        return new NoCodeResult(args[selectedResultIndex(args[0])]);
+    }
 
-        return new NoCodeResult(arg0 ? arg1 : arg2);
+    public int selectedResultIndex(@Nullable Object condition) {
+        return castToBoolean(condition) ? 1 : 2;
     }
 
     @Nullable

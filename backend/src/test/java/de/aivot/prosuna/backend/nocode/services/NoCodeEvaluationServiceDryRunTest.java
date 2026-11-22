@@ -11,24 +11,33 @@ import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeAddOperator;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 class NoCodeEvaluationServiceDryRunTest {
     private final NoCodeEvaluationService service = new NoCodeEvaluationService(List.of(
@@ -37,6 +46,103 @@ class NoCodeEvaluationServiceDryRunTest {
 
     private NoCodeDryRunResultDTO dryRun(NoCodeExpression expression) {
         return service.dryRun(expression, new DerivedRuntimeElementData(), new ProcessExecutionData());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 3})
+    void ifGuardsDivisionByZeroInBothEvaluationPaths(int count) {
+        var countReference = new NoCodeProcessDataReference("anzahl");
+        var expression = new NoCodeExpression("if",
+                new NoCodeExpression("greater-than", countReference, new NoCodeStaticValue(0)),
+                new NoCodeExpression("divide", new NoCodeProcessDataReference("gesamtbetrag"), countReference),
+                new NoCodeStaticValue("Keine Einträge"));
+        var processData = new ProcessExecutionData().addProcessData("anzahl", count).addProcessData("gesamtbetrag", 24);
+        var elementData = new DerivedRuntimeElementData();
+        var expected = count == 0 ? "Keine Einträge" : new BigDecimal("8.00000000");
+
+        assertEquals(expected, service.evaluate(expression, elementData, processData).getValue());
+        var result = service.dryRun(expression, elementData, processData);
+        assertEquals(NoCodeDryRunStatus.Evaluated, result.status());
+        assertEquals(expected, result.value());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void ifReportsAllThreeInputsWithoutReadingTheUnselectedProtectedBranch(boolean condition) {
+        var key = spy(new NoCodeReference("key"));
+        var secret = new NoCodeExpression("secrets-get", key);
+        var selected = new NoCodeExpression("value", new NoCodeStaticValue("selected"));
+        var expression = new NoCodeExpression("if", new NoCodeStaticValue(condition),
+                condition ? selected : secret, condition ? secret : selected);
+
+        var result = dryRun(expression);
+
+        assertEquals(NoCodeDryRunStatus.Evaluated, result.status());
+        assertEquals("selected", result.value());
+        assertEquals(3, result.operands().size());
+        assertEquals(NoCodeDryRunResultDTO.evaluated(condition, List.of()), result.operands().getFirst());
+        assertEquals(dryRun(selected), result.operands().get(condition ? 1 : 2));
+        var reason = condition ? "Die Bedingung ist wahr." : "Die Bedingung ist falsch.";
+        assertEquals(NoCodeDryRunResultDTO.skipped(reason, List.of()), result.operands().get(condition ? 2 : 1));
+        verify(key, never()).getElementId();
+    }
+
+    private static Stream<Arguments> unavailableIfOperands() {
+        return Stream.of(
+                Arguments.of(new NoCodeExpression("divide", new NoCodeStaticValue(1), new NoCodeStaticValue(0)),
+                        NoCodeDryRunStatus.Failed, "„Teiler“ darf nicht 0 sein. Geben Sie eine andere Zahl ein."),
+                Arguments.of(new NoCodeExpression("secrets-get", new NoCodeStaticValue("key")),
+                        NoCodeDryRunStatus.Skipped, "Diese Funktion wird im Testlauf nicht ausgeführt, weil sie geschützte Daten liest oder Aktionen auslösen kann.")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unavailableIfOperands")
+    void ifSkipsBothBranchesWhenTheConditionIsUnavailable(NoCodeExpression condition, NoCodeDryRunStatus status, String message) {
+        var unread = spy(new NoCodeReference("unused"));
+        var branch = new NoCodeExpression("value", unread);
+
+        var result = dryRun(new NoCodeExpression("if", condition, branch, branch));
+
+        var reason = "Die Bedingung konnte nicht ausgewertet werden.";
+        assertEquals(NoCodeDryRunStatus.Skipped, result.status());
+        assertEquals(reason, result.message());
+        assertEquals(3, result.operands().size());
+        assertEquals(status, result.operands().getFirst().status());
+        assertEquals(message, result.operands().getFirst().message());
+        var skipped = NoCodeDryRunResultDTO.skipped(reason, List.of());
+        assertEquals(List.of(skipped, skipped), result.operands().subList(1, 3));
+        verify(unread, never()).getElementId();
+    }
+
+    @ParameterizedTest
+    @MethodSource("unavailableIfOperands")
+    void ifKeepsTheReasonTheSelectedBranchWasUnavailable(NoCodeExpression selected, NoCodeDryRunStatus status, String message) {
+        var result = dryRun(new NoCodeExpression("if", new NoCodeStaticValue(false),
+                new NoCodeExpression("missing"), selected));
+
+        assertEquals(NoCodeDryRunStatus.Skipped, result.status());
+        assertEquals("Das gewählte Ergebnis konnte nicht ausgewertet werden.", result.message());
+        assertEquals(3, result.operands().size());
+        assertEquals(NoCodeDryRunResultDTO.evaluated(false, List.of()), result.operands().getFirst());
+        assertEquals(NoCodeDryRunResultDTO.skipped("Die Bedingung ist falsch.", List.of()), result.operands().get(1));
+        assertEquals(status, result.operands().get(2).status());
+        assertEquals(message, result.operands().get(2).message());
+    }
+
+    @Test
+    void ifHonorsTheResultBudgetBeforeUsingTheSelectedValue() {
+        var limited = NoCodeDryRunResultDTO.skipped("limit reached", List.of());
+        var expression = new NoCodeExpression("if", new NoCodeStaticValue(true),
+                new NoCodeStaticValue("selected"), new NoCodeStaticValue("unused"));
+
+        var result = service.dryRun(expression, new DerivedRuntimeElementData(), new ProcessExecutionData(),
+                intermediate -> "selected".equals(intermediate.value()) ? limited : intermediate);
+
+        assertEquals(NoCodeDryRunStatus.Skipped, result.status());
+        assertEquals("Das gewählte Ergebnis konnte nicht ausgewertet werden.", result.message());
+        assertEquals(limited, result.operands().get(1));
+        assertEquals(NoCodeDryRunResultDTO.skipped("Die Bedingung ist wahr.", List.of()), result.operands().get(2));
     }
 
     @Test

@@ -1559,6 +1559,72 @@ describe('NoCodeEditor types and dry run', () => {
         await new Promise((resolve) => setTimeout(resolve, 500));
         expect(api.post).not.toHaveBeenCalled();
     });
+
+    it.each([true, false])('shows the selected if result and keeps the skipped branch editable when the condition is %s', async condition => {
+        const conditional: NoCodeOperatorDetailsDTO = {
+            ...equals,
+            identifier: 'if',
+            label: 'Wenn, dann, sonst',
+            signatures: [{
+                returnType: NoCodeDataType.Runtime,
+                parameters: [
+                    {...not.signatures[0].parameters[0], label: 'Bedingung'},
+                    {...equals.signatures[0].parameters[0], label: 'Ergebnis bei Wahr'},
+                    {...equals.signatures[0].parameters[1], label: 'Ergebnis bei Falsch'},
+                ],
+            }],
+        };
+        const initial: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'if',
+            operands: [
+                {type: 'NoCodeStaticValue', value: String(condition)},
+                {type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [
+                    {type: 'NoCodeExpression', operatorIdentifier: 'always-true', operands: []},
+                ]},
+                {type: 'NoCodeStaticValue', value: 'Alternative'},
+            ],
+        };
+        const evaluated = (value: unknown) => ({status: NoCodeDryRunStatus.Evaluated, value, message: null, operands: []});
+        const skipped = {
+            status: NoCodeDryRunStatus.Skipped, value: null, operands: [],
+            message: condition ? 'Die Bedingung ist wahr.' : 'Die Bedingung ist falsch.',
+        };
+        api.post.mockResolvedValue({
+            ...evaluated(condition ? false : 'Alternative'),
+            operands: [
+                evaluated(String(condition)),
+                condition ? {...evaluated(false), operands: [evaluated(true)]} : skipped,
+                condition ? skipped : evaluated('Alternative'),
+            ],
+        });
+        render(<Harness initial={initial} returnType={NoCodeDataType.Runtime} operators={[conditional, not, alwaysTrue]} onChange={vi.fn()}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+        const result = await screen.findByRole('region', {name: 'Gesamtergebnis'});
+        const expectedResult = condition ? 'Falsch' : '„Alternative“';
+        expect(within(result).getByText(expectedResult)).toBeVisible();
+        expect(result).toHaveTextContent(condition ? 'Datentyp: Wahrheitswert' : 'Datentyp: Textwert');
+        expect(screen.getByRole('treeitem', {name: /Funktion Wenn, dann, sonst/})).toHaveAccessibleDescription(`Testergebnis: ${expectedResult}`);
+        const thenBranch = screen.getByRole('treeitem', {name: 'Ergebnis bei Wahr: Funktion Nicht, Wahrheitswert'});
+        const elseBranch = screen.getByRole('treeitem', {name: 'Ergebnis bei Falsch: Alternative, Beliebiger Wert'});
+        const nested = within(thenBranch).getByRole('treeitem', {name: 'Wert: Funktion Immer wahr, Wahrheitswert'});
+        expect(condition ? elseBranch : thenBranch).toHaveAccessibleDescription(`Nicht ausgewertet: ${skipped.message}`);
+        if (condition) {
+            expect(thenBranch).toHaveAccessibleDescription('Testergebnis: Falsch');
+            expect(nested).toHaveAccessibleDescription('Testergebnis: Wahr');
+        } else {
+            expect(nested).not.toHaveAccessibleDescription();
+            expect(elseBranch).not.toHaveAccessibleDescription();
+        }
+
+        fireEvent.click(condition ? within(elseBranch).getByRole('button', {name: 'Wert „Alternative“ löschen'})
+            : within(nested).getByRole('button', {name: 'Funktion „Immer wahr“ löschen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+        const emptySlot = condition ? 'Ergebnis bei Falsch: leer, Beliebiger Wert' : 'Wert: leer, Wahrheitswert';
+        expect(screen.getByRole('treeitem', {name: emptySlot})).toHaveAttribute('aria-invalid', 'true');
+        expect(api.post).toHaveBeenCalledTimes(1);
+    });
 });
 
 /** jsdom has no DataTransfer; react-aria only needs typed string items. */

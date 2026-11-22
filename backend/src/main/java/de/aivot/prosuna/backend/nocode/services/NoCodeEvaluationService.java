@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeIfOperator;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -219,6 +220,10 @@ public class NoCodeEvaluationService {
         var operatorIdentifier = expression.getOperatorIdentifier();
         var operator = operatorIdentifier == null ? null : noCodeOperatorProviders.get(operatorIdentifier);
         var signature = findWhitespaceSignature(operator, operands);
+        if (operator instanceof NoCodeIfOperator conditional && operands.size() == 3
+                && dryRunOperatorIdentifiers.contains(operatorIdentifier)) {
+            return evaluateIfDryRun(conditional, new ArrayList<>(operands), elementData, processDataContext, limitResult, signature);
+        }
         var childResults = new ArrayList<NoCodeDryRunResultDTO>(operands.size());
         int index = 0;
         for (var child : operands) {
@@ -261,6 +266,37 @@ public class NoCodeEvaluationService {
     }
 
     @Nonnull
+    private NoCodeDryRunResultDTO evaluateIfDryRun(
+            @Nonnull NoCodeIfOperator operator,
+            @Nonnull List<NoCodeOperand> operands,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult,
+            @Nullable NoCodeSignatur signature
+    ) {
+        var condition = limitResult.apply(evaluateDryRun(
+                operands.getFirst(), elementData, processDataContext, limitResult, parameterAt(signature, 0)));
+        if (condition.status() != NoCodeDryRunStatus.Evaluated) {
+            var message = "Die Bedingung konnte nicht ausgewertet werden.";
+            var skipped = NoCodeDryRunResultDTO.skipped(message, List.of());
+            return NoCodeDryRunResultDTO.skipped(message,
+                    List.of(condition, limitResult.apply(skipped), limitResult.apply(skipped)));
+        }
+
+        var selectedIndex = operator.selectedResultIndex(condition.value());
+        var selected = limitResult.apply(evaluateDryRun(
+                operands.get(selectedIndex), elementData, processDataContext, limitResult, parameterAt(signature, selectedIndex)));
+        var conditionWasTrue = selectedIndex == 1;
+        // Keep operand positions aligned with the editor tree. The unused subtree has no child results.
+        var skipped = limitResult.apply(NoCodeDryRunResultDTO.skipped(
+                conditionWasTrue ? "Die Bedingung ist wahr." : "Die Bedingung ist falsch.", List.of()));
+        var results = conditionWasTrue ? List.of(condition, selected, skipped) : List.of(condition, skipped, selected);
+        return selected.status() == NoCodeDryRunStatus.Evaluated
+                ? NoCodeDryRunResultDTO.evaluated(selected.value(), results)
+                : NoCodeDryRunResultDTO.skipped("Das gewählte Ergebnis konnte nicht ausgewertet werden.", results);
+    }
+
+    @Nonnull
     private NoCodeResult evaluateNoCodeExpression(
             @Nonnull NoCodeExpression expression,
             @Nonnull DerivedRuntimeElementData elementData,
@@ -269,13 +305,19 @@ public class NoCodeEvaluationService {
     ) {
         var operands = expression.getOperands();
         if (operands == null) operands = List.of();
-        var signature = findWhitespaceSignature(noCodeOperatorProviders.get(expression.getOperatorIdentifier()), operands);
+        var registeredOperator = noCodeOperatorProviders.get(expression.getOperatorIdentifier());
+        var signature = findWhitespaceSignature(registeredOperator, operands);
+        if (registeredOperator instanceof NoCodeIfOperator conditional && operands.size() == 3) {
+            var inputs = new ArrayList<>(operands);
+            var condition = evaluateArgument(inputs.getFirst(), elementData, processDataContext, wildcardIndices, parameterAt(signature, 0));
+            var selectedIndex = conditional.selectedResultIndex(condition);
+            return new NoCodeResult(evaluateArgument(
+                    inputs.get(selectedIndex), elementData, processDataContext, wildcardIndices, parameterAt(signature, selectedIndex)));
+        }
         var operandValues = new Object[operands.size()];
         int index = 0;
         for (var operand : operands) {
-            operandValues[index] = operand instanceof NoCodeStaticValue staticValue
-                    ? resolveStaticValue(staticValue, parameterAt(signature, index))
-                    : evaluate(operand, elementData, processDataContext, wildcardIndices).getValue();
+            operandValues[index] = evaluateArgument(operand, elementData, processDataContext, wildcardIndices, parameterAt(signature, index));
             index++;
         }
         var operator = getNoCodeOperator(expression.getOperatorIdentifier());
@@ -288,6 +330,19 @@ public class NoCodeEvaluationService {
                     e
             );
         }
+    }
+
+    @Nullable
+    private Object evaluateArgument(
+            @Nullable NoCodeOperand operand,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nullable List<Integer> wildcardIndices,
+            @Nullable NoCodeParameter parameter
+    ) {
+        return operand instanceof NoCodeStaticValue staticValue
+                ? resolveStaticValue(staticValue, parameter)
+                : evaluate(operand, elementData, processDataContext, wildcardIndices).getValue();
     }
 
     @Nullable

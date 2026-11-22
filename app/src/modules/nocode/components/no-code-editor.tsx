@@ -72,7 +72,7 @@ import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
 import {MarkdownContent} from '../../../components/markdown-content/markdown-content';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
-import {NoCodeDryRunResultDTO} from '../../../models/dtos/no-code-dry-run-dto';
+import {NoCodeDryRunResultDTO, NoCodeDryRunStatus} from '../../../models/dtos/no-code-dry-run-dto';
 import {NoCodeDataTypeMap} from '../data/no-code-data-type-map';
 import {humanizeNoCode} from '../utils/humanize-no-code';
 import {NoCodeSummary, summarizeNoCode} from '../utils/no-code-summary';
@@ -1840,7 +1840,7 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
             describedBy={[errorId, warningId]}
             depth={props.depth}
             invalid={errorId != null}
-            showResult={node.type !== 'NoCodeStaticValue'}
+            showResult={node.type !== 'NoCodeStaticValue' || ctx.results?.get(node.id)?.status === NoCodeDryRunStatus.Skipped}
             ctx={ctx}
             onActivate={() => ctx.readOnly
                 ? ctx.showDescription(node.id, getNodeDetails(node, ctx.allOperators)!)
