@@ -19,7 +19,8 @@ class NoCodeEditorMetadataCleanerTest {
     private NoCodeOperand expression() {
         return mapper.readValue("""
                 {"type":"NoCodeExpression","operatorIdentifier":"test","operands":[
-                    {"type":"NoCodeStaticValue","value":"kept","editorMetadata":{"notes":"child-secret"}}
+                    {"type":"NoCodeStaticValue","value":"kept","editorMetadata":{"notes":"child-secret"}},
+                    {"type":"NoCodeStaticValue","value":" "}
                 ],"editorMetadata":{"notes":"root-secret","testData":{"version":1,
                     "elementValues":{
                         "empty":{"text":"","type":"String","mode":"empty"},
@@ -65,8 +66,11 @@ class NoCodeEditorMetadataCleanerTest {
         configuration.putLiteral("ordinary", Map.of("notes", "keep me", "editorMetadata", "ordinary domain value"));
         var cleaned = cleaner.cleanConfiguration(configuration);
         var json = mapper.writeValueAsString(cleaned);
+        var tree = mapper.readTree(json);
         assertFalse(json.contains("secret"));
         assertTrue(json.contains("kept"));
+        assertEquals(" ", tree.at("/direct/operand/operands/1/value").asString());
+        assertEquals(" ", tree.at("/layout/value/visibility/noCode/operands/1/value").asString());
         assertTrue(json.contains("keep me"));
         assertTrue(json.contains("ordinary domain value"));
         assertTrue(mapper.writeValueAsString(configuration).contains("root-secret"));

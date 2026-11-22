@@ -599,6 +599,78 @@ describe('NoCodeEditor', () => {
         expect(onChange).toHaveBeenLastCalledWith({...stored, operatorIdentifier: 'subtract'});
     });
 
+    describe('preserving authored spaces for text functions', () => {
+        const literal = (value: string): NoCodeOperand => ({type: 'NoCodeStaticValue', value});
+
+        it.each([
+            ['split', 'Text aufteilen', NoCodeDataType.List, ['Max Mustermann'], ' ', ['Max', 'Mustermann']],
+            ['concat', 'Werte zu Text zusammenfügen', NoCodeDataType.String, ['Guten', ' Tag'], ' ', 'Guten Tag '],
+            ['text-contains', 'Text enthält', NoCodeDataType.Boolean, ['AZ Nr. 5'], 'AZ ', true],
+            ['text-starts-with', 'Text beginnt mit', NoCodeDataType.Boolean, ['AZ123'], 'AZ ', false],
+            ['text-ends-with', 'Text endet mit', NoCodeDataType.Boolean, ['AZ 123'], ' 123', true],
+            ['text-equals-ignore-case', 'Text ist gleich (ohne Groß-/Kleinschreibung)', NoCodeDataType.Boolean, ['AZ'], 'az ', false],
+        ] as const)('preserves the input for %s on blur, reopen and dry run', async (
+            identifier, label, returnType, precedingValues, authoredValue, result,
+        ) => {
+            const user = userEvent.setup();
+            const isSplit = identifier === 'split';
+            const isConcat = identifier === 'concat';
+            const inputType = isConcat ? NoCodeDataType.Runtime : NoCodeDataType.String;
+            const secondLabel = isSplit ? 'Trennzeichen' : 'Wert 2';
+            const targetLabel = isConcat ? 'Wert 3' : secondLabel;
+            const operator: NoCodeOperatorDetailsDTO = {
+                ...equals,
+                identifier,
+                label,
+                variableArgumentCount: isConcat,
+                humanReadableTemplate: isSplit ? '#0 aufgeteilt an #1' : null,
+                signatures: [{returnType, parameters: ['Wert 1', secondLabel].map(parameterLabel => ({
+                    type: inputType,
+                    label: parameterLabel,
+                    description: null,
+                    preserveWhitespace: true,
+                    options: [],
+                }))}],
+            };
+            const onChange = vi.fn();
+            const props = {onChange, operators: [operator], returnType};
+            const initial: NoCodeOperand = {
+                type: 'NoCodeExpression',
+                operatorIdentifier: identifier,
+                operands: [...precedingValues.map(literal), null],
+            };
+            const view = render(<Harness {...props} initial={initial}/>);
+            fireEvent.click(screen.getByRole('button', {name: `${targetLabel} festlegen`}));
+            fireEvent.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
+            const input = await screen.findByRole('textbox', {name: targetLabel});
+            await user.type(input, authoredValue);
+            await user.tab();
+            expect(input).toHaveValue(authoredValue);
+            await user.keyboard('{Escape}');
+            await waitFor(() => expect(screen.queryByRole('textbox', {name: targetLabel})).not.toBeInTheDocument());
+
+            const saved = structuredClone(onChange.mock.lastCall![0]);
+            const expected = {...initial, operands: [...precedingValues.map(literal), literal(authoredValue)]};
+            expect(saved).toEqual(expected);
+            view.unmount();
+            onChange.mockClear();
+            render(<Harness {...props} initial={saved}/>);
+
+            if (isSplit) {
+                expect(screen.getByRole('treeitem', {name: 'Trennzeichen: 1 Leerzeichen, Textwert'})).toBeVisible();
+                fireEvent.click(screen.getByRole('button', {name: 'Text aufteilen: zuklappen'}));
+                expect(screen.getByText('„Max Mustermann“ aufgeteilt an einem Leerzeichen')).toBeVisible();
+            }
+            expect(onChange).not.toHaveBeenCalled();
+
+            api.post.mockResolvedValueOnce({status: NoCodeDryRunStatus.Evaluated, value: result, operands: []});
+            fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+            await waitFor(() => expect(api.post).toHaveBeenCalledWith('no-code/dry-run/',
+                expect.objectContaining({expression: expected}), expect.anything()));
+        });
+    });
+
     describe('editing variadic inputs', () => {
         const removeInputName = /^Eingabe „.+“ entfernen$/;
         const literal = (value: string): NoCodeOperand => ({type: 'NoCodeStaticValue', value});

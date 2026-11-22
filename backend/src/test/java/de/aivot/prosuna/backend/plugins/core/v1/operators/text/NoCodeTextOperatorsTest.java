@@ -55,6 +55,29 @@ class NoCodeTextOperatorsTest {
     }
 
     @Test
+    void literalTextComparisonsShouldCountWhitespaceInBothInputs() throws NoCodeException {
+        assertFalse(evaluate(CONTAINS, "Max", " Max "));
+        assertTrue(evaluate(CONTAINS, " Max ", " Max "));
+        assertFalse(evaluate(STARTS_WITH, " Max", "Max"));
+        assertTrue(evaluate(STARTS_WITH, " Max", " "));
+        assertFalse(evaluate(ENDS_WITH, "Max ", "Max"));
+        assertTrue(evaluate(ENDS_WITH, "Max ", " "));
+        assertFalse(evaluate(EQUALS_IGNORE_CASE, " Max", "MAX"));
+        assertTrue(evaluate(EQUALS_IGNORE_CASE, " Max ", " MAX "));
+    }
+
+    @Test
+    void bothOperandsOfLiteralTextFunctionsShouldPreserveAuthoredWhitespace() {
+        for (var operator : List.of(new NoCodeConcatOperator(), new NoCodeSplitOperator(), CONTAINS, STARTS_WITH, ENDS_WITH, EQUALS_IGNORE_CASE)) {
+            var parameters = operator.getSignatures()[0].parameters();
+            assertEquals(2, parameters.length);
+            for (var parameter : parameters) {
+                assertTrue(parameter.preserveWhitespace(), operator.getIdentifier() + " " + parameter.label());
+            }
+        }
+    }
+
+    @Test
     void regexFindShouldMatchPartOfTheText() throws NoCodeException {
         assertTrue(evaluate(REGEX_FIND, "Aktenzeichen AZ-2026-17", "AZ-\\d{4}"));
         assertFalse(evaluate(REGEX_FIND, "Aktenzeichen fehlt", "AZ-\\d{4}"));
@@ -81,6 +104,7 @@ class NoCodeTextOperatorsTest {
 
         assertEquals("AZ-2026-17", operator.evaluate(runtime(), "AZ-", "2026-17").getValue());
         assertEquals("Guten Tag Müller", operator.evaluate(runtime(), "Guten Tag ", "Müller").getValue());
+        assertEquals(" Max Mustermann ", operator.evaluate(runtime(), " Max", " ", "Mustermann ").getValue());
         assertEquals("AB", operator.evaluate(runtime(), "A", "B").getValue());
         assertEquals("A2", operator.evaluate(runtime(), "A", null, 2).getValue());
     }
@@ -105,6 +129,9 @@ class NoCodeTextOperatorsTest {
     void splitShouldUseLiteralSeparatorsAndKeepOnlyInternalEmptyParts() throws NoCodeException {
         var operator = new NoCodeSplitOperator();
 
+        assertTrue(operator.getDescription().contains("„Max Mustermann“ aufgeteilt an einem Leerzeichen"));
+        assertEquals(List.of("Max", "Mustermann"), operator.evaluate(runtime(), "Max Mustermann", " ").getValue());
+        assertEquals(List.of(" Max", "Mustermann "), operator.evaluate(runtime(), " Max, Mustermann ", ", ").getValue());
         assertEquals(List.of("A", "B", "C"), operator.evaluate(runtime(), "A.B.C", ".").getValue());
         assertEquals(List.of("A", "", "B"), operator.evaluate(runtime(), "A,,B,", ",").getValue());
         assertEquals(List.of("A,B"), operator.evaluate(runtime(), "A,B", "").getValue());

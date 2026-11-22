@@ -65,6 +65,50 @@ describe('NoCodeOperandEditor', () => {
         });
     });
 
+    it.each(['textbox', 'combobox'] as const)('retains authored whitespace after leaving the %s', async role => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        function Editor() {
+            const [operand, setOperand] = useState<NoCodeOperand | null | undefined>({type: 'NoCodeStaticValue', value: ' '});
+            return <NoCodeOperandEditor
+                allElements={[]} allOperators={[]}
+                parameter={{type: NoCodeDataType.String, label: 'Text', description: null, options: [], preserveWhitespace: true}}
+                suggestions={role === 'combobox' ? [{label: 'Gruß', value: 'Hallo '}] : undefined}
+                operand={operand}
+                onChange={next => {
+                    onChange(next);
+                    setOperand(next);
+                }}
+            />;
+        }
+        render(<Editor/>);
+        const input = screen.getByRole(role, {name: 'Text'});
+        await user.click(input);
+        await user.tab();
+        expect(input).toHaveValue(' ');
+        expect(onChange).not.toHaveBeenCalled();
+
+        for (const value of ['  Hallo  ', ' ', '\t\u00a0']) {
+            await user.clear(input);
+            await user.paste(value);
+            await user.tab();
+            expect(input).toHaveValue(value);
+            expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value});
+        }
+
+        await user.clear(input);
+        await user.tab();
+        expect(input).toHaveValue('');
+        expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: undefined});
+        if (role === 'combobox') {
+            await user.click(input);
+            await user.click(screen.getByRole('option', {name: /Gruß/}));
+            await user.tab();
+            expect(input).toHaveValue('Hallo ');
+            expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: 'Hallo '});
+        }
+    });
+
     it('stores the same technical value from direct options and the existing fixed-value editor', async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();

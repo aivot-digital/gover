@@ -102,12 +102,13 @@ export function summarizeNoCode(
         });
     }
 
-    function describe(node: NoCodeOperand | null | undefined, parameter?: NoCodeParameter, options: NoCodeParameterOption[] = []): string {
+    function describe(node: NoCodeOperand | null | undefined, parameter?: NoCodeParameter, options: NoCodeParameterOption[] = [], splitSeparator = false): string {
         if (node == null) return parameter == null ? 'Kein Ausdruck definiert' : `Fehlender Parameter „${parameter.label}“`;
         switch (node.type) {
             case 'NoCodeStaticValue': {
                 const selected = node.value == null || node.value === '' ? undefined : options.find(option => option.value === String(node.value));
-                if (selected == null) return formatNoCodeValue(node.value, parameter?.type ?? context.type);
+                if (selected == null) return formatNoCodeValue(node.value, parameter?.type ?? context.type, [], false,
+                    {preserveWhitespace: parameter?.preserveWhitespace, splitSeparator});
                 const value = String(node.value);
                 addDetail(selected.label, value);
                 const type = parameter?.type ?? context.type;
@@ -149,8 +150,9 @@ export function summarizeNoCode(
             case 'NoCodeExpression': {
                 const {operator, parameters, options, useSentence} = prepare(node);
                 const operands = node.operands ?? [];
-                const argument = (index: number) => {
-                    const text = describe(operands[index], parameters[index], options[index]);
+                const argument = (index: number, inSentence = false) => {
+                    const text = describe(operands[index], parameters[index], options[index],
+                        inSentence && operator?.identifier === 'split' && index === 1);
                     return operands[index]?.type === 'NoCodeExpression' ? `(${text})` : text;
                 };
                 const template = operator == null ? null : getNoCodeReadableTemplate(operator, operands.length);
@@ -161,7 +163,7 @@ export function summarizeNoCode(
                 if (completeTemplate) {
                     // Replace once: authored strings containing placeholders must never be parsed again.
                     return template.replace(/„#(\d+)“|“#(\d+)”|"#(\d+)"|'#(\d+)'|#(\d+)/g,
-                        (_match, ...groups) => argument(Number(groups.slice(0, 5).find(group => group != null))));
+                        (_match, ...groups) => argument(Number(groups.slice(0, 5).find(group => group != null)), true));
                 }
                 const label = operator?.label ?? (node.operatorIdentifier ? `Unbekannte Funktion (${node.operatorIdentifier})` : 'Keine Funktion ausgewählt');
                 return label + (parameters.length ? `: ${parameters.map((parameter, i) => `${parameter.label}: ${argument(i)}`).join('; ')}` : '');

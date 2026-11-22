@@ -16,7 +16,7 @@ import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/Keyb
 import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
 import {NoCodeOperatorDeleteDialog} from './no-code-operator-delete-dialog';
 import {NoCodeTestResult} from './no-code-test-result';
-import {formatNoCodeValue} from '../utils/format-no-code-value';
+import {formatNoCodeValue, formatNoCodeWhitespaceText} from '../utils/format-no-code-value';
 import {resolveNoCodeExpressionPresentation} from '../utils/no-code-parameter-presentation';
 import {useNoCodePresentationContext} from '../hooks/use-no-code-presentation-context';
 import {NoCodePresentationContext} from '../utils/humanize-no-code';
@@ -1866,6 +1866,7 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
                     dataType={dataType}
                     label={label}
                     dismissLabel={dismissLabel}
+                    preserveWhitespace={node.type === 'NoCodeStaticValue' && parameter.preserveWhitespace}
                     error={error?.error}
                     errorId={errorId}
                     warning={warning}
@@ -1942,13 +1943,20 @@ function describeLeaf(
             const options = parameter.options.length > 0 ? parameter.options
                 : suggestions.length > 0 ? suggestions
                     : parameter.type === NoCodeDataType.Boolean ? BOOL_DEFAULT_OPTIONS : [];
-            const label = formatNoCodeValue(node.value, parameter.type, options, true);
+            const whitespaceText = parameter.preserveWhitespace && typeof node.value === 'string'
+                && !options.some(option => option.value === node.value)
+                ? formatNoCodeWhitespaceText(node.value)
+                : undefined;
+            const label = whitespaceText ?? formatNoCodeValue(node.value, parameter.type, options, true);
+            const empty = node.value == null || (parameter.preserveWhitespace
+                ? node.value === ''
+                : typeof node.value === 'string' && isStringNullOrEmpty(node.value));
             return {
                 label,
                 dataType: parameter.type,
-                dismissLabel: `Wert „${label}“ löschen`,
-                summary: node.value == null || typeof node.value === 'string' && isStringNullOrEmpty(node.value)
-                    ? 'Ergibt einen leeren Wert.' : `Ergibt den festgelegten Wert „${label}“.`,
+                dismissLabel: whitespaceText == null ? `Wert „${label}“ löschen` : `Wert löschen (${whitespaceText})`,
+                summary: whitespaceText != null ? `Ergibt ${whitespaceText}.`
+                    : empty ? 'Ergibt einen leeren Wert.' : `Ergibt den festgelegten Wert „${label}“.`,
             };
         }
         case 'NoCodeReference': {

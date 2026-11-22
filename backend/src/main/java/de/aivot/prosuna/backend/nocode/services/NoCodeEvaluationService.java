@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -111,11 +114,7 @@ public class NoCodeEvaluationService {
         }
 
         return switch (operand) {
-            // Static values resolve directly
-            case NoCodeStaticValue staticValue -> {
-                var value = staticValue.getValue();
-                yield new NoCodeResult(value);
-            }
+            case NoCodeStaticValue staticValue -> new NoCodeResult(resolveStaticValue(staticValue, null));
 
             // Referenced elements resolve based on their visibility and the values map
             case NoCodeReference reference -> {
@@ -192,7 +191,7 @@ public class NoCodeEvaluationService {
             @Nonnull ProcessExecutionData processDataContext,
             @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult
     ) {
-        return limitResult.apply(evaluateDryRun(operand, elementData, processDataContext, limitResult));
+        return limitResult.apply(evaluateDryRun(operand, elementData, processDataContext, limitResult, null));
     }
 
     @Nonnull
@@ -200,25 +199,34 @@ public class NoCodeEvaluationService {
             @Nullable NoCodeOperand operand,
             @Nonnull DerivedRuntimeElementData elementData,
             @Nonnull ProcessExecutionData processDataContext,
-            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult
+            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult,
+            @Nullable NoCodeParameter inputParameter
     ) {
         if (!(operand instanceof NoCodeExpression expression)) {
             try {
-                return NoCodeDryRunResultDTO.evaluated(evaluate(operand, elementData, processDataContext).getValue(), List.of());
+                var value = operand instanceof NoCodeStaticValue staticValue
+                        ? resolveStaticValue(staticValue, inputParameter)
+                        : evaluate(operand, elementData, processDataContext).getValue();
+                return NoCodeDryRunResultDTO.evaluated(value, List.of());
             } catch (RuntimeException e) {
                 logger.debug("No-code dry run could not resolve an operand", e);
                 return NoCodeDryRunResultDTO.failed("Der Wert konnte nicht gelesen werden.", List.of());
             }
         }
 
-        var operands = expression.getOperands() == null ? List.<NoCodeOperand>of() : expression.getOperands();
-        var operandResults = operands
-                .stream()
-                .map(child -> dryRun(child, elementData, processDataContext, limitResult))
-                .toList();
-
+        var operands = expression.getOperands();
+        if (operands == null) operands = List.of();
         var operatorIdentifier = expression.getOperatorIdentifier();
         var operator = operatorIdentifier == null ? null : noCodeOperatorProviders.get(operatorIdentifier);
+        var signature = findWhitespaceSignature(operator, operands);
+        var childResults = new ArrayList<NoCodeDryRunResultDTO>(operands.size());
+        int index = 0;
+        for (var child : operands) {
+            var childResult = evaluateDryRun(child, elementData, processDataContext, limitResult, parameterAt(signature, index));
+            childResults.add(limitResult.apply(childResult));
+            index++;
+        }
+        var operandResults = List.copyOf(childResults);
         if (operator == null) {
             return NoCodeDryRunResultDTO.failed("Die Funktion ist nicht verfügbar.", operandResults);
         }
@@ -260,16 +268,16 @@ public class NoCodeEvaluationService {
             @Nullable List<Integer> wildcardIndices
     ) {
         var operands = expression.getOperands();
-        if (operands == null) {
-            operands = List.of();
+        if (operands == null) operands = List.of();
+        var signature = findWhitespaceSignature(noCodeOperatorProviders.get(expression.getOperatorIdentifier()), operands);
+        var operandValues = new Object[operands.size()];
+        int index = 0;
+        for (var operand : operands) {
+            operandValues[index] = operand instanceof NoCodeStaticValue staticValue
+                    ? resolveStaticValue(staticValue, parameterAt(signature, index))
+                    : evaluate(operand, elementData, processDataContext, wildcardIndices).getValue();
+            index++;
         }
-
-        var operandValues = operands
-                .stream()
-                .map(op -> evaluate(op, elementData, processDataContext, wildcardIndices))
-                .map(NoCodeResult::getValue)
-                .toArray();
-
         var operator = getNoCodeOperator(expression.getOperatorIdentifier());
 
         try {
@@ -280,6 +288,47 @@ public class NoCodeEvaluationService {
                     e
             );
         }
+    }
+
+    @Nullable
+    private static Object resolveStaticValue(@Nonnull NoCodeStaticValue operand, @Nullable NoCodeParameter parameter) {
+        var value = operand.getValue();
+        // Keep the literal in stored JSON. Only evaluation decides whether whitespace means a missing value.
+        if (value instanceof String text && StringUtils.isNullOrEmpty(text)) {
+            return !text.isEmpty() && parameter != null && Boolean.TRUE.equals(parameter.preserveWhitespace()) ? text : null;
+        }
+        return value;
+    }
+
+    @Nullable
+    private static NoCodeSignatur findWhitespaceSignature(
+            @Nullable NoCodeOperator operator,
+            @Nonnull Collection<NoCodeOperand> operands
+    ) {
+        if (operator == null || operands.stream().noneMatch(operand -> operand instanceof NoCodeStaticValue staticValue
+                && staticValue.getValue() instanceof String text && !text.isEmpty() && StringUtils.isNullOrEmpty(text))) {
+            return null;
+        }
+        var signatures = operator.getSignatures();
+        if (signatures == null) return null;
+
+        // Use the same exact-then-longest match as the editor for variadic inputs.
+        NoCodeSignatur variadicMatch = null;
+        for (var signature : signatures) {
+            int count = signature.parameters().length;
+            if (count == operands.size()) return signature;
+            if (count < operands.size() && operator.hasVariableArgumentCount()
+                    && (variadicMatch == null || count > variadicMatch.parameters().length)) {
+                variadicMatch = signature;
+            }
+        }
+        return variadicMatch;
+    }
+
+    @Nullable
+    private static NoCodeParameter parameterAt(@Nullable NoCodeSignatur signature, int index) {
+        if (signature == null || signature.parameters().length == 0) return null;
+        return signature.parameters()[Math.min(index, signature.parameters().length - 1)];
     }
 
     @Nullable

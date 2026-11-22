@@ -44,12 +44,14 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                 Eine Liste mit den Textteilen in ihrer ursprünglichen Reihenfolge.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Text aufteilen“**. Geben Sie als **Text** `A,B,C` und als **Trennzeichen** ein Komma `,` ein.
+                1. Wählen Sie **„Text aufteilen“**.
+                2. Geben Sie bei „Text“ `Max Mustermann` ein.
+                3. Drücken Sie im Feld „Trennzeichen“ einmal die Leertaste.
 
-                Zugeklappt und in der Vorschau lesen Sie: `„A,B,C“ aufgeteilt an „,“`. Das Ergebnis ist `["A", "B", "C"]`. Verwenden Sie das Ergebnis beispielsweise als **Liste** in **„Anzahl der Listeneinträge“**, um `3` zu erhalten.
+                Zugeklappt und in der Vorschau lesen Sie `„Max Mustermann“ aufgeteilt an einem Leerzeichen`. Das Ergebnis ist `["Max", "Mustermann"]`. Verwenden Sie diese Liste beispielsweise in „Anzahl der Listeneinträge“, um die beiden Wörter zu zählen.
 
                 # Was ist zu beachten?
-                Das Trennzeichen wird wörtlich verwendet; Sonderzeichen wie Punkte haben keine besondere Bedeutung. Leerzeichen bleiben in den Textteilen erhalten. Leere Teile zwischen Trennzeichen bleiben erhalten, leere Teile am Textende werden entfernt. Ohne Trennzeichen erhalten Sie eine Liste mit dem gesamten Text als einzigem Eintrag.
+                Das Trennzeichen wird wörtlich verwendet. Sonderzeichen wie Punkte haben keine besondere Bedeutung. Leerzeichen am Anfang und Ende beider Eingaben zählen mit. Leerzeichen, die zum Trennzeichen gehören, werden beim Aufteilen entfernt. Leere Teile zwischen Trennzeichen bleiben erhalten, leere Teile am Textende werden entfernt. Ohne Trennzeichen erhalten Sie eine Liste mit dem gesamten Text als einzigem Eintrag.
                 """;
     }
 
@@ -67,12 +69,12 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der Text, der aufgeteilt werden soll."
-                        ).withSentence(""),
+                        ).withSentence("").withPreservedWhitespace(),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Trennzeichen",
-                                "Zeichen oder Zeichenfolge, an der der Text aufgeteilt wird, beispielsweise ein Komma."
-                        ).withSentence("aufgeteilt an")
+                                "Zeichen oder Zeichenfolge, an der der Text aufgeteilt wird, beispielsweise ein Leerzeichen oder ein Komma."
+                        ).withSentence("aufgeteilt an").withPreservedWhitespace()
                 )
         );
     }

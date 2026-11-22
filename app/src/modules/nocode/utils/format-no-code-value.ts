@@ -4,12 +4,30 @@ import {dateValueToDateTime, isYearIso, localTimeIsoToDateTime} from '../../../u
 import {isNoCodeDecimalLiteral} from './no-code-number-validation';
 import {formatNoCodeDateTimeValue} from './no-code-date-time-value';
 
+/** Name an all-space literal or retain the edges of a text in visible quotation marks. */
+export function formatNoCodeWhitespaceText(value: string): string | undefined {
+    if (value === value.trim()) return undefined;
+    if (/^ +$/.test(value)) return `${value.length} Leerzeichen`;
+    return `„${value}“`;
+}
+
 /** Only an explicit parameter or result type permits displaying a string as a temporal value. */
-export function formatNoCodeValue(value: unknown, type = NoCodeDataType.Runtime, options: NoCodeParameterOption[] = [], compact = false): string {
+export function formatNoCodeValue(
+    value: unknown,
+    type = NoCodeDataType.Runtime,
+    options: NoCodeParameterOption[] = [],
+    compact = false,
+    textOptions?: {preserveWhitespace?: boolean | null; splitSeparator?: boolean},
+): string {
     if (value == null) return 'Leerer Wert';
     if (value === '') return 'Leerer Text';
     const option = options.find((candidate) => candidate.value === String(value));
     if (option != null) return compact ? option.label : `„${option.label}“ (${String(value)})`;
+    if (textOptions?.preserveWhitespace && typeof value === 'string' && (type === NoCodeDataType.String || type === NoCodeDataType.Runtime)) {
+        if (!compact && textOptions.splitSeparator && value === ' ') return 'einem Leerzeichen';
+        const label = formatNoCodeWhitespaceText(value);
+        if (label != null) return label;
+    }
     if (type === NoCodeDataType.Date && typeof value === 'string') {
         const date = dateValueToDateTime(value, 'day');
         if (date != null) return date.toFormat('dd.MM.yyyy');

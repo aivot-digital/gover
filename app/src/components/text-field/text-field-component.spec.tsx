@@ -203,6 +203,32 @@ describe('TextFieldComponent', () => {
         expect(input).toHaveValue('Prosuna');
     });
 
+    it.each([
+        {bufferInputUntilBlur: true},
+        {debounce: 1000},
+    ])('commits and validates significant whitespace after composition with %j', mode => {
+        vi.useFakeTimers();
+        const onChange = vi.fn();
+        const onBlur = vi.fn();
+        const validate = vi.fn(() => undefined);
+        render(<TextFieldComponent label="Text" preserveWhitespace {...mode}
+                                   normalizeInput={value => value.toUpperCase()}
+                                   onChange={onChange} onBlur={onBlur} validate={validate}/>);
+        const input = screen.getByRole('textbox', {name: /^Text/});
+        fireEvent.compositionStart(input);
+        fireEvent.input(input, {target: {value: ' e'}, isComposing: true});
+        fireEvent.compositionEnd(input, {target: {value: ' é '}});
+        expect(onChange).not.toHaveBeenCalled();
+
+        fireEvent.blur(input);
+        expect(input).toHaveValue(' É ');
+        expect(onChange).toHaveBeenCalledExactlyOnceWith(' É ');
+        expect(onBlur).toHaveBeenLastCalledWith(' É ');
+        expect(validate).toHaveBeenLastCalledWith(' É ');
+        act(() => vi.advanceTimersByTime(1000));
+        expect(onChange).toHaveBeenCalledOnce();
+    });
+
     it('should copy the templated live input value when a copy value template is configured', () => {
         render(
             <TextFieldComponent

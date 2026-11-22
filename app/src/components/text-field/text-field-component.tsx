@@ -21,36 +21,6 @@ function getCharacterCount(count: number): string {
     return words[count] || count.toFixed(0);
 }
 
-/**
- * Clean the value for passing it to the parent.
- * Empty strings should be converted to null.
- * Leading and trailing whitespace should be removed if the corresponding flag is set.
- *
- * @param originalValue The original value to be cleaned.
- * @param flag The flag to determine if trailing whitespace should be kept or dropped. This is used during the debounce process to keep trailing whitespaces when debounce is triggered and the user is still typing.
- */
-function cleanValue(originalValue: string | null | undefined, flag: 'keepTrailingWhitespace' | 'dropTrailingWhitespace'): string | null {
-    // Missing input is emitted as an explicit clear once it originated from user interaction.
-    if (originalValue == null) {
-        return null;
-    }
-
-    let cleanedValue = originalValue;
-
-    // Remove all leading and trailing whitespace if the flag for dropping trailing whitespace is set
-    if (flag === 'dropTrailingWhitespace') {
-        // Remove trailing whitespace
-        cleanedValue = cleanedValue.trim();
-    }
-
-    // If the value is empty after trimming, return an explicit clear
-    if (cleanedValue.length === 0) {
-        return null;
-    }
-
-    return cleanedValue;
-}
-
 function renderStartAdornment(startIcon: React.ReactNode | undefined, existingStartAdornment: React.ReactNode): React.ReactNode {
     if (startIcon == null) {
         return existingStartAdornment;
@@ -124,6 +94,7 @@ export {AutocompleteTextField} from './autocomplete-text-field';
 
 export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');
+    const committedValue = (text: string) => (props.preserveWhitespace ? text : text.trim()) || null;
     const [hasBlurred, setHasBlurred] = useState(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const composingRef = useRef(false);
@@ -181,11 +152,10 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             }
             debounceTimeoutRef.current = setTimeout(() => {
                 debounceTimeoutRef.current = null;
-                const cleanedValue = cleanValue(newValue, 'keepTrailingWhitespace');
-                props.onChange(cleanedValue);
+                props.onChange(newValue || null);
             }, props.debounce);
         } else {
-            props.onChange(cleanValue(newValue, 'keepTrailingWhitespace'));
+            props.onChange(newValue || null);
         }
     };
 
@@ -216,7 +186,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         const wasComposing = composingRef.current;
         composingRef.current = false;
         const completedValue = wasComposing ? (props.normalizeInput?.(inputValue) ?? inputValue) : inputValue;
-        const cleanedValue = cleanValue(completedValue, 'dropTrailingWhitespace');
+        const cleanedValue = committedValue(completedValue);
         const cleanedInputValue = cleanedValue ?? '';
 
         if (cleanedInputValue !== inputValue) {
@@ -307,7 +277,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         </Box>
     ) : errorMessages[0];
     const validationError = (hasBlurred || props.validationRequested || errorMessages.length > 0)
-        ? props.validate?.(cleanValue(inputValue, 'dropTrailingWhitespace'))
+        ? props.validate?.(committedValue(inputValue))
         : undefined;
     const helperMessage = patternError ?? errorHelperMessage ?? validationError ?? props.hint;
     const showMaxCharacters = Boolean(

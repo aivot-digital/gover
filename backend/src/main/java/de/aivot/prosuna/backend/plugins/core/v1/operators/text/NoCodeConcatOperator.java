@@ -46,7 +46,7 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie `Text aus „AZ-“, „Kennung“ und „-A“`. Das Ergebnis ist `AZ-2026-17-A`.
 
                 # Was ist zu beachten?
-                Leerzeichen und Trennzeichen werden nicht automatisch ergänzt. Bei selbst festgelegten Texten werden Leerzeichen am Anfang und Ende beim Verlassen des Eingabefeldes entfernt. Benötigen Sie dort Leerzeichen, übernehmen Sie den Text aus einer Wertquelle oder Funktion. Fehlende Werte werden als leerer Text eingefügt.
+                Leerzeichen am Anfang und Ende jedes Textbausteins bleiben erhalten. Soll zwischen zwei Werten ein Leerzeichen stehen, können Sie es am Ende des ersten Wertes oder als eigenen Textbaustein eingeben. Fehlende Werte werden als leerer Text eingefügt.
                 """;
     }
 
@@ -64,12 +64,12 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                                 NoCodeDataType.Runtime,
                                 "Wert 1",
                                 "Der erste Wert des Ergebnistextes, beispielsweise ein festes Präfix wie AZ-."
-                        ).withSentence("aus"),
+                        ).withSentence("aus").withPreservedWhitespace(),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Wert 2",
                                 "Der Wert, der direkt an den bisherigen Text angefügt wird."
-                        ).withSentence("gefolgt von")
+                        ).withSentence("gefolgt von").withPreservedWhitespace()
                 )
         );
     }

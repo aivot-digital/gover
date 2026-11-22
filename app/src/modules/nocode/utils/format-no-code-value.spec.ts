@@ -7,6 +7,28 @@ it('shows comma-separated numeric literals as the text received by the evaluator
     expect(formatNoCodeValue('1.5', NoCodeDataType.Number)).toBe('1.5');
 });
 
+describe('whitespace in free text literals', () => {
+    const text = {preserveWhitespace: true};
+
+    it.each([
+        [' ', '1 Leerzeichen'], ['   ', '3 Leerzeichen'],
+        ['Guten Tag ', '„Guten Tag “'], ['  Name', '„  Name“'], ['\tName\t', '„\tName\t“'],
+        ['', 'Leerer Text'], [null, 'Leerer Wert'],
+    ])('makes the boundaries of %j visible in a compact text or runtime slot', (value, expected) => {
+        for (const type of [NoCodeDataType.String, NoCodeDataType.Runtime]) {
+            expect(formatNoCodeValue(value, type, [], true, text)).toBe(expected);
+        }
+    });
+
+    it('retains option labels and only explains spaces for opted-in text slots', () => {
+        const choice = [{label: 'Kundeneigene Auswahl', value: ' '}];
+        expect(formatNoCodeValue(' ', NoCodeDataType.String, choice, true, text)).toBe('Kundeneigene Auswahl');
+        expect(formatNoCodeValue(' ', NoCodeDataType.String, choice, false, text)).toBe('„Kundeneigene Auswahl“ ( )');
+        expect(formatNoCodeValue(' ', NoCodeDataType.String)).toBe('„ “');
+        expect(formatNoCodeValue(' ', NoCodeDataType.Number, [], false, text)).toBe('„ “');
+    });
+});
+
 describe('formatNoCodeValue for authored clock times', () => {
     it.each([
         ['09:30', '09:30:00 Uhr'],

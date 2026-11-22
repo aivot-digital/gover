@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.nocode.models;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import jakarta.annotation.Nonnull;
@@ -18,6 +19,7 @@ import jakarta.annotation.Nullable;
  * @param numberConstraints optional validation rules for authored numeric values
  * @param quantityParameterIndex sibling quantity for unit option labels, or {@code null} for ordinary options
  * @param dateInput supported calendar input forms, or {@code null} for the default editor
+ * @param preserveWhitespace whether authored text keeps its leading and trailing whitespace
  * @param optionsAsSentencePart whether a selected fixed option supplies a sentence part whose meaning must be known
  */
 public record NoCodeParameter(
@@ -30,11 +32,13 @@ public record NoCodeParameter(
         @Nullable Integer quantityParameterIndex,
         @Nullable Boolean optionsAsSentencePart,
         @Nullable NoCodeDateInput dateInput,
+        @JsonInclude(JsonInclude.Include.NON_DEFAULT) @Nullable Boolean preserveWhitespace,
         NoCodeParameterOption... options
 ) {
     public NoCodeParameter {
-        // Older serialized plugin signatures do not include the presentation flag.
+        // Older serialized plugin signatures do not include these flags.
         optionsAsSentencePart = Boolean.TRUE.equals(optionsAsSentencePart);
+        preserveWhitespace = Boolean.TRUE.equals(preserveWhitespace);
     }
 
     /**
@@ -90,6 +94,22 @@ public record NoCodeParameter(
         this(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, null, options);
     }
 
+    /** Preserves the constructor used by plugins that supply calendar input metadata. */
+    public NoCodeParameter(
+            NoCodeDataType type,
+            String label,
+            String description,
+            @Nullable String sentencePhrase,
+            @Nullable String sentenceSuffix,
+            @Nullable NoCodeNumberConstraints numberConstraints,
+            @Nullable Integer quantityParameterIndex,
+            @Nullable Boolean optionsAsSentencePart,
+            @Nullable NoCodeDateInput dateInput,
+            NoCodeParameterOption... options
+    ) {
+        this(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, false, options);
+    }
+
     @Nonnull
     public NoCodeParameter withSentence(@Nullable String sentencePhrase) {
         return withSentence(sentencePhrase, null);
@@ -97,28 +117,33 @@ public record NoCodeParameter(
 
     @Nonnull
     public NoCodeParameter withSentence(@Nullable String sentencePhrase, @Nullable String sentenceSuffix) {
-        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, options);
+        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, preserveWhitespace, options);
     }
 
     @Nonnull
     public NoCodeParameter withNumberConstraints(@Nonnull NoCodeNumberConstraints numberConstraints) {
-        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, options);
+        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, preserveWhitespace, options);
     }
 
     /** Marks fixed options as units whose singular label depends on a sibling quantity operand. */
     @Nonnull
     public NoCodeParameter withQuantityParameterIndex(int quantityParameterIndex) {
-        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, options);
+        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, preserveWhitespace, options);
     }
 
     /** A dynamic or unknown sentence part requires the editor to show named inputs instead of a sentence. */
     @Nonnull
     public NoCodeParameter withOptionsAsSentencePart() {
-        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, true, dateInput, options);
+        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, true, dateInput, preserveWhitespace, options);
     }
 
     @Nonnull
     public NoCodeParameter withDateInput(@Nullable NoCodeDateInput dateInput) {
-        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, options);
+        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, preserveWhitespace, options);
+    }
+
+    @Nonnull
+    public NoCodeParameter withPreservedWhitespace() {
+        return new NoCodeParameter(type, label, description, sentencePhrase, sentenceSuffix, numberConstraints, quantityParameterIndex, optionsAsSentencePart, dateInput, true, options);
     }
 }

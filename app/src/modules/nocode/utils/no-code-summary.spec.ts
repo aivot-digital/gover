@@ -424,6 +424,22 @@ describe('summarizeNoCode', () => {
             .toBe('Oder: Wert 1: Wahr; Wert 2: Falsch; Wert 3: Wahr');
     });
 
+    it('describes literal spaces with the grammar of their position in the expression', () => {
+        const split = operator('split', '#0 aufgeteilt an #1');
+        const compare = operator('text-contains', '#0 enthält #1');
+        for (const op of [split, compare]) {
+            op.signatures[0].parameters.forEach(p => { p.preserveWhitespace = true; });
+        }
+        for (const [operand, expected] of [
+            [expression('split', literal('Max Mustermann'), literal(' ')), '„Max Mustermann“ aufgeteilt an einem Leerzeichen'],
+            [expression('split', literal(' '), literal('  ')), '1 Leerzeichen aufgeteilt an 2 Leerzeichen'],
+            [expression('text-contains', literal('Name '), literal(' ')), '„Name “ enthält 1 Leerzeichen'],
+        ] as const) {
+            expect(summary(operand, [split, compare]).text).toBe(expected);
+            expect(humanizeNoCode(operand, [], [split, compare])).toBe(expected);
+        }
+    });
+
     it.each([
         ['add', 'plus', 'Zahl 2', 'Zahl 3'],
         ['subtract', 'minus', 'Abzuziehende Zahl 1', 'Abzuziehende Zahl 2'],

@@ -29,6 +29,8 @@ export interface NoCodeParameter {
     sentenceSuffix?: string | null;
     numberConstraints?: NoCodeNumberConstraints | null;
     dateInput?: NoCodeDateInput | null;
+    /** A freely entered text value uses its leading and trailing whitespace literally. */
+    preserveWhitespace?: boolean | null;
     /** Marks fixed options as units and points to the sibling operand providing their quantity. */
     quantityParameterIndex?: number | null;
     /** A fixed choice supplies a sentence part; unknown choices require a named-input presentation. */

@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.nocode.models;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -42,6 +43,26 @@ class NoCodeParameterTest {
 
         assertEquals(mapper.valueToTree(parameter), mapper.valueToTree(restored));
         assertFalse(restored.optionsAsSentencePart());
+        assertFalse(restored.preserveWhitespace());
+    }
+
+    @Test
+    void whitespaceMetadataShouldBeOptionalAndSurviveParameterCopiesAndSerialization() {
+        var mapper = JsonMapperTestUtils.createMapper();
+        var option = new NoCodeParameterOption("Bezeichnung", "value");
+        var parameter = new NoCodeParameter(
+                NoCodeDataType.String, "Text", "Ein Text.", "", null, null, null, false, (NoCodeDateInput) null, option
+        );
+        assertFalse(parameter.preserveWhitespace());
+        assertFalse(mapper.valueToTree(parameter).has("preserveWhitespace"));
+
+        var retained = parameter.withPreservedWhitespace().withSentence("aus").withQuantityParameterIndex(0)
+                .withNumberConstraints(new NoCodeNumberConstraints(true, null, null)).withOptionsAsSentencePart()
+                .withDateInput(NoCodeDateInput.Calendar);
+        var json = mapper.valueToTree(retained);
+        assertTrue(json.get("preserveWhitespace").asBoolean());
+        assertTrue(mapper.treeToValue(json, NoCodeParameter.class).preserveWhitespace());
+        assertEquals(option, retained.options()[0]);
     }
 
     @Test

@@ -103,7 +103,7 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `%s`. Das Ergebnis ist **Wahr**. Um die umgekehrte Bedingung zu prüfen, setzen Sie diesen Ausdruck in **„Nicht“** ein.
 
                 # Was ist zu beachten?
-                Der Vergleich erfolgt wörtlich. Punkte, Klammern und andere Sonderzeichen haben keine besondere Bedeutung. Leerzeichen in übernommenen Texten werden berücksichtigt. Bei selbst festgelegten Texten werden Leerzeichen am Anfang und Ende beim Verlassen des Eingabefeldes entfernt. %s
+                Der Vergleich erfolgt wörtlich. Punkte, Klammern und andere Sonderzeichen haben keine besondere Bedeutung. Leerzeichen am Anfang und Ende beider Texte zählen beim Vergleich mit. %s
 
                 Fehlende Werte werden als leerer Text behandelt. %s
                 """.formatted(
@@ -126,7 +126,7 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
                                 NoCodeDataType.String,
                                 "Text",
                                 "Der zu prüfende Text."
-                        ).withSentence("wenn der Text"),
+                        ).withSentence("wenn der Text").withPreservedWhitespace(),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 mode == Mode.EQUALS_IGNORE_CASE ? "Vergleichstext" : "Suchtext",
@@ -142,7 +142,7 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
                             case STARTS_WITH -> "beginnt";
                             case ENDS_WITH -> "endet";
                             case EQUALS_IGNORE_CASE -> "ohne Beachtung der Groß- und Kleinschreibung entspricht";
-                        })
+                        }).withPreservedWhitespace()
                 )
         );
     }

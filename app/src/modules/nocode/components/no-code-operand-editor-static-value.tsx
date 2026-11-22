@@ -33,6 +33,7 @@ interface NoCodeOperandEditorStaticValueProps {
     operandError?: NoCodeOperandError;
     numberConstraints?: NoCodeNumberConstraints | null;
     dateInput?: NoCodeDateInput | null;
+    preserveWhitespace?: boolean;
 }
 
 export const BOOL_DEFAULT_OPTIONS = NO_CODE_BOOLEAN_OPTIONS;
@@ -174,6 +175,7 @@ function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
 function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TextFieldComponent
+            preserveWhitespace={props.preserveWhitespace}
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
@@ -265,6 +267,7 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                 )}
                 renderInput={(params) => (
                     <TextFieldComponent
+                        preserveWhitespace={props.preserveWhitespace}
                         showOptionalIndicator={false}
                         muiPassTroughProps={params}
                         label={props.label}

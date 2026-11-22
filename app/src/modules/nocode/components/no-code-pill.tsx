@@ -50,6 +50,7 @@ export interface NoCodePillProps {
     /** A problem that does not stop evaluation, such as a type conflict. */
     warning?: string | null;
     warningId?: string;
+    preserveWhitespace?: boolean | null;
     /** -1 inside a tree, whose roving tab index keeps a single tab stop. */
     tabIndex?: number;
     ref?: Ref<HTMLButtonElement>;
@@ -143,7 +144,7 @@ export function NoCodePill(props: NoCodePillProps) {
                     <Box
                         component="span"
                         sx={{
-                            whiteSpace: 'normal',
+                            whiteSpace: props.preserveWhitespace ? 'pre-wrap' : 'normal',
                             overflowWrap: 'anywhere',
                             textAlign: 'left',
                         }}

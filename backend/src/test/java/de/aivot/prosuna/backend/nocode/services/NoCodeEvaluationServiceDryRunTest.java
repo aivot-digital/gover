@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.ComputedElementState;
+import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunRequestDTO;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunResultDTO;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
@@ -36,6 +37,59 @@ class NoCodeEvaluationServiceDryRunTest {
 
     private NoCodeDryRunResultDTO dryRun(NoCodeExpression expression) {
         return service.dryRun(expression, new DerivedRuntimeElementData(), new ProcessExecutionData());
+    }
+
+    @Test
+    void shouldRetainASingleSpaceSeparatorAcrossSerializationAndBothEvaluationPaths() {
+        var mapper = JsonMapperTestUtils.createMapper();
+        var request = mapper.readValue("""
+                {
+                  "expression": {
+                    "type": "NoCodeExpression",
+                    "operatorIdentifier": "split",
+                    "operands": [
+                      {"type": "NoCodeStaticValue", "value": "Max Mustermann"},
+                      {"type": "NoCodeStaticValue", "value": " "}
+                    ]
+                  }
+                }
+                """, NoCodeDryRunRequestDTO.class);
+
+        var serialized = mapper.writeValueAsString(request);
+        assertEquals(" ", mapper.readTree(serialized).at("/expression/operands/1/value").asString());
+        var restored = mapper.readValue(serialized, NoCodeDryRunRequestDTO.class);
+        var data = new DerivedRuntimeElementData();
+        var expected = List.of("Max", "Mustermann");
+        assertEquals(expected, service.evaluate(restored.expression(), data).getValue());
+        var result = service.dryRun(restored.expression(), data, new ProcessExecutionData());
+        assertEquals(NoCodeDryRunStatus.Evaluated, result.status());
+        assertEquals(expected, result.value());
+        assertEquals(" ", result.operands().get(1).value());
+    }
+
+    @Test
+    void shouldRetainWhitespaceInAdditionalConcatOperandsWithoutChangingUnmarkedInputs() {
+        var expression = new NoCodeExpression("concat",
+                new NoCodeExpression("value", new NoCodeStaticValue(" ")),
+                new NoCodeStaticValue("Max"), new NoCodeStaticValue(" "), new NoCodeStaticValue("Mustermann"));
+
+        assertEquals("Max Mustermann", service.evaluate(expression, new DerivedRuntimeElementData()).getValue());
+        var result = dryRun(expression);
+        assertEquals(NoCodeDryRunStatus.Evaluated, result.status());
+        assertEquals("Max Mustermann", result.value());
+        assertEquals(" ", result.operands().get(2).value());
+        var unmarked = result.operands().getFirst();
+        assertNull(unmarked.value());
+        assertNull(unmarked.operands().getFirst().value());
+    }
+
+    @Test
+    void shouldKeepTheWholeTextWhenTheSeparatorIsEmpty() {
+        var expression = new NoCodeExpression("split", new NoCodeStaticValue("Max Mustermann"), new NoCodeStaticValue(""));
+        assertEquals(List.of("Max Mustermann"), service.evaluate(expression, new DerivedRuntimeElementData()).getValue());
+        var result = dryRun(expression);
+        assertEquals(List.of("Max Mustermann"), result.value());
+        assertNull(result.operands().get(1).value());
     }
 
     @Test
