@@ -8,7 +8,9 @@ import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunRequestDTO;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeDryRunResultDTO;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDryRunStatus;
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
 import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeProcessDataReference;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
@@ -27,12 +29,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -217,6 +223,90 @@ class NoCodeEvaluationServiceDryRunTest {
         assertEquals(reason, result.message());
         assertEquals(List.of(limited, NoCodeDryRunResultDTO.skipped(reason, List.of())), result.operands());
         verify(unread, never()).getElementId();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0, true", "3, true", "4, false"})
+    void orGuardsDivisionByZeroInBothEvaluationPaths(int count, boolean expected) {
+        var countReference = new NoCodeProcessDataReference("anzahl");
+        var average = new NoCodeExpression("divide", new NoCodeProcessDataReference("gesamtbetrag"), countReference);
+        var expression = new NoCodeExpression("or",
+                new NoCodeExpression("less-than-or-equal", countReference, new NoCodeStaticValue(0)),
+                new NoCodeExpression("greater-than", average, new NoCodeStaticValue(10)));
+        var processData = new ProcessExecutionData().addProcessData("anzahl", count).addProcessData("gesamtbetrag", 36);
+        var elementData = new DerivedRuntimeElementData();
+
+        assertEquals(expected, service.evaluate(expression, elementData, processData).getValue());
+        var result = service.dryRun(expression, elementData, processData);
+        assertEquals(NoCodeDryRunStatus.Evaluated, result.status());
+        assertEquals(expected, result.value());
+        assertEquals(2, result.operands().size());
+        assertEquals(count <= 0, result.operands().getFirst().value());
+        var second = result.operands().get(1);
+        if (count == 0) {
+            assertEquals(NoCodeDryRunResultDTO.skipped("Bedingung 1 ist wahr.", List.of()), second);
+        } else {
+            assertEquals(NoCodeDryRunStatus.Evaluated, second.status());
+            assertEquals(expected, second.value());
+        }
+    }
+
+    @Test
+    void orKeepsAllTenResultPositionsWithoutVisitingConditionsAfterTheThirdIsTrue() {
+        var unread = spy(new NoCodeReference("unused"));
+        var conditions = new ArrayList<NoCodeOperand>(List.of(
+                new NoCodeStaticValue(false), new NoCodeStaticValue(0), new NoCodeStaticValue("wahr")));
+        conditions.addAll(Collections.nCopies(7, new NoCodeExpression("secrets-get", unread)));
+
+        var result = dryRun(new NoCodeExpression("or").setOperands(conditions));
+
+        var expected = new ArrayList<>(List.of(NoCodeDryRunResultDTO.evaluated(false, List.of()),
+                NoCodeDryRunResultDTO.evaluated(0, List.of()), NoCodeDryRunResultDTO.evaluated("wahr", List.of())));
+        expected.addAll(Collections.nCopies(7, NoCodeDryRunResultDTO.skipped("Bedingung 3 ist wahr.", List.of())));
+        assertEquals(NoCodeDryRunResultDTO.evaluated(true, expected), result);
+        verify(unread, never()).getElementId();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {2, 3, 4, 5, 6, 7, 8, 9, 10})
+    void orReturnsFalseAfterEvaluatingEveryConditionForEachSupportedArity(int count) {
+        var expression = new NoCodeExpression("or").setOperands(Collections.nCopies(count, new NoCodeStaticValue(false)));
+
+        assertEquals(false, service.evaluate(expression, new DerivedRuntimeElementData()).getValue());
+        var evaluatedConditions = Collections.nCopies(count, NoCodeDryRunResultDTO.evaluated(false, List.of()));
+        assertEquals(NoCodeDryRunResultDTO.evaluated(false, evaluatedConditions), dryRun(expression));
+    }
+
+    @ParameterizedTest
+    @MethodSource("unavailableOperands")
+    void orReportsTheUnavailableConditionAndSkipsEveryFollowingInput(NoCodeExpression unavailable, NoCodeDryRunStatus status, String message) {
+        var unread = spy(new NoCodeReference("unused"));
+        var remaining = new NoCodeExpression("value", unread);
+        var expression = new NoCodeExpression("or", new NoCodeStaticValue(false), unavailable, remaining, remaining);
+
+        var result = dryRun(expression);
+
+        var reason = "Bedingung 2 konnte nicht ausgewertet werden.";
+        assertEquals(NoCodeDryRunStatus.Skipped, result.status());
+        assertEquals(reason, result.message());
+        assertEquals(4, result.operands().size());
+        assertEquals(NoCodeDryRunResultDTO.evaluated(false, List.of()), result.operands().getFirst());
+        assertEquals(status, result.operands().get(1).status());
+        assertEquals(message, result.operands().get(1).message());
+        assertEquals(Collections.nCopies(2, NoCodeDryRunResultDTO.skipped(reason, List.of())), result.operands().subList(2, 4));
+        verify(unread, never()).getElementId();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 11})
+    void orRejectsUnsupportedConditionCountsEvenWhenTheFirstValueWouldBeTrue(int count) {
+        var expression = new NoCodeExpression("or").setOperands(Collections.nCopies(count, new NoCodeStaticValue(true)));
+
+        var error = assertThrows(IllegalStateException.class, () -> service.evaluate(expression, new DerivedRuntimeElementData()));
+        assertInstanceOf(NoCodeWrongArgumentCountException.class, error.getCause());
+        var result = dryRun(expression);
+        assertEquals(NoCodeDryRunStatus.Failed, result.status());
+        assertEquals("Die Anzahl der Parameter passt nicht zur Funktion.", result.message());
     }
 
     @Test

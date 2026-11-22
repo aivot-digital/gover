@@ -1603,6 +1603,47 @@ describe('NoCodeEditor types and dry run', () => {
         expect(onChange).toHaveBeenLastCalledWith({...initial, operands: [first, {...second, operands: [null]}]});
     });
 
+    it('shows which OR condition was true and why each later condition was skipped', async () => {
+        const or: NoCodeOperatorDetailsDTO = {
+            ...equals, identifier: 'or', label: 'Oder',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: Array.from({length: 4}, (_, i) => ({...not.signatures[0].parameters[0], label: `Bedingung ${i + 1}`})),
+            }],
+        };
+        const literalFalse: NoCodeOperand = {type: 'NoCodeStaticValue', value: 'false'};
+        const truth: NoCodeOperand = {type: 'NoCodeExpression', operatorIdentifier: 'always-true', operands: []};
+        const nested: NoCodeOperand = {type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [truth]};
+        const initial: NoCodeOperand = {type: 'NoCodeExpression', operatorIdentifier: 'or', operands: [literalFalse, truth, literalFalse, nested]};
+        const skipped = {status: NoCodeDryRunStatus.Skipped, value: null, message: 'Bedingung 2 ist wahr.', operands: []};
+        api.post.mockResolvedValue({
+            status: NoCodeDryRunStatus.Evaluated, value: true, message: null,
+            operands: [
+                {status: NoCodeDryRunStatus.Evaluated, value: 'false', message: null, operands: []},
+                {status: NoCodeDryRunStatus.Evaluated, value: true, message: null, operands: []},
+                skipped,
+                skipped,
+            ],
+        });
+        const onChange = vi.fn();
+        render(<Harness initial={initial} operators={[or, alwaysTrue, not]} onChange={onChange}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
+        const result = await screen.findByRole('region', {name: 'Gesamtergebnis'});
+        expect(within(result).getByText('Wahr')).toBeVisible();
+        expect(result).toHaveTextContent('Datentyp: Wahrheitswert');
+        expect(screen.getByRole('treeitem', {name: 'Bedingung 2: Funktion Immer wahr, Wahrheitswert'}))
+            .toHaveAccessibleDescription('Testergebnis: Wahr');
+        const third = screen.getByRole('treeitem', {name: 'Bedingung 3: Falsch, Wahrheitswert'});
+        const fourth = screen.getByRole('treeitem', {name: 'Bedingung 4: Funktion Nicht, Wahrheitswert'});
+        expect(third).toHaveAccessibleDescription('Nicht ausgewertet: Bedingung 2 ist wahr.');
+        expect(fourth).toHaveAccessibleDescription('Nicht ausgewertet: Bedingung 2 ist wahr.');
+        const child = within(fourth).getByRole('treeitem', {name: 'Wert: Funktion Immer wahr, Wahrheitswert'});
+        expect(child).not.toHaveAccessibleDescription();
+        fireEvent.click(within(child).getByRole('button', {name: 'Funktion „Immer wahr“ löschen'}));
+        expect(onChange).toHaveBeenLastCalledWith({...initial, operands: [literalFalse, truth, literalFalse, {...nested, operands: [null]}]});
+    });
+
     it.each([true, false])('shows the selected if result and keeps the skipped branch editable when the condition is %s', async condition => {
         const conditional: NoCodeOperatorDetailsDTO = {
             ...equals,

@@ -8,6 +8,12 @@ import jakarta.annotation.Nullable;
 
 public class NoCodeOrOperator extends NoCodeOperator {
     public static final String OPERATOR_ID = "or";
+    private static final int MINIMUM_CONDITIONS = 2;
+    private static final int MAXIMUM_CONDITIONS = 10;
+
+    public static boolean supportsConditionCount(int count) {
+        return count >= MINIMUM_CONDITIONS && count <= MAXIMUM_CONDITIONS;
+    }
 
     @Override
     public String getIdentifier() {
@@ -28,23 +34,29 @@ public class NoCodeOrOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
-                Verknüpfen Sie Bedingungen, von denen mindestens eine erfüllt sein muss, etwa zwei alternative Voraussetzungen.
+                Zeigen Sie beispielsweise einen Hinweis an, wenn die Anzahl der Einträge null oder negativ ist oder der Betrag pro Eintrag über einem Grenzwert liegt.
 
                 # Welche Werte werden benötigt?
-                Zwei bis zehn Bedingungen; wählen Sie die passende Anzahl an Eingaben. Für selbst festgelegte Bedingungen stehen „Wahr“ und „Falsch“ zur Auswahl. Eigene Auswahlwerte sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie Bedingungen aus Wertquellen oder Funktionen übernehmen.
+                Wählen Sie im Editor zwei bis zehn Bedingungen. Für jede Bedingung können Sie „Wahr“ oder „Falsch“ aus der festen Auswahl wählen. Über „Andere Wertquelle verwenden …“ können Sie eine Wertquelle oder eine Funktion verwenden.
 
                 # Welches Ergebnis erhalten Sie?
-                Ein Wahrheitswert: „Wahr“, wenn mindestens eine Bedingung wahr ist. Das gilt auch, wenn mehrere Bedingungen wahr sind. Nur wenn alle Bedingungen falsch sind, lautet das Ergebnis „Falsch“.
+                Sobald die erste wahre Bedingung gefunden ist, erhalten Sie „Wahr“. Sind alle Bedingungen falsch, erhalten Sie „Falsch“.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Oder“ als Funktion für eine Bedingung.
-                2. Wählen Sie für „Bedingung 1“ über „Andere Wertquelle verwenden …“ die Wertquelle „Einwilligung“, die einen Wahrheitswert liefert.
-                3. Wählen Sie für „Bedingung 2“ die Wertquelle „Andere Zustimmung liegt vor“.
+                1. Wählen Sie **„Oder“** mit zwei Bedingungen. Verwenden Sie für **„Bedingung 1“** die Funktion **„Kleiner als oder gleich“**. Wählen Sie bei „Zahl“ die Variable „Anzahl“ und geben Sie bei „Vergleichszahl“ `0` ein.
+                2. Verwenden Sie für **„Bedingung 2“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Funktion **„Dividieren“**. Übernehmen Sie als „Ausgangszahl“ die Variable „Gesamtbetrag“ und als „Teiler 1“ die Variable „Anzahl“.
+                3. Geben Sie als „Vergleichszahl“ der zweiten Bedingung `10` ein.
 
-                Ist eine der beiden Bedingungen wahr, ergibt der Ausdruck „Wahr“. Sind beide falsch, ergibt er „Falsch“.
+                Zugeklappt und in der Vorschau lesen Sie `(„Anzahl“ ist kleiner als oder gleich 0) oder ((„Gesamtbetrag“ geteilt durch „Anzahl“) ist größer als 10)`.
+
+                Bei einer Anzahl von `0` erhalten Sie „Wahr“. Die Division wird übersprungen. Im Testlauf steht bei „Bedingung 2“ der Status „Nicht ausgewertet“ mit der Begründung „Bedingung 1 ist wahr.“
+
+                Bei einer Anzahl von `3` und einem Gesamtbetrag von `36` wird die zweite Bedingung geprüft. Der Betrag pro Eintrag liegt mit `12` über dem Grenzwert von `10`. Sie erhalten „Wahr“.
 
                 # Was ist zu beachten?
-                Bei drei oder mehr Bedingungen werden alle ausgewählten Eingaben berücksichtigt. Verwenden Sie Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt; ein Text wie „Nein“ wird dabei nicht automatisch zu „Falsch“. Verschachtelte Funktionen in allen Bedingungen werden vor der Verknüpfung ausgewertet und müssen auswertbar sein.
+                Die Funktion prüft die Bedingungen von oben nach unten. Ist eine Bedingung wahr, überspringt sie alle folgenden Bedingungen. Im Testlauf steht an den dabei übersprungenen Bedingungen, welche Bedingung wahr war.
+
+                Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt. Der Text „Nein“ gilt dabei als wahr.
                 """;
     }
 
@@ -55,11 +67,11 @@ public class NoCodeOrOperator extends NoCodeOperator {
 
     @Override
     public NoCodeSignatur[] getSignatures() {
-        var signatures = new NoCodeSignatur[9];
+        var signatures = new NoCodeSignatur[MAXIMUM_CONDITIONS - MINIMUM_CONDITIONS + 1];
 
-        for (int i = 0; i < 9; i++) {
-            NoCodeParameter[] parameters = new NoCodeParameter[i + 2];
-            for (int j = 0; j < i + 2; j++) {
+        for (int i = 0; i < signatures.length; i++) {
+            NoCodeParameter[] parameters = new NoCodeParameter[i + MINIMUM_CONDITIONS];
+            for (int j = 0; j < parameters.length; j++) {
                 parameters[j] = new NoCodeParameter(
                         NoCodeDataType.Boolean,
                         "Bedingung " + (j + 1),

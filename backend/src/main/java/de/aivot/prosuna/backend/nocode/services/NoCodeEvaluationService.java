@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountExcept
 import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeAndOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeIfOperator;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessDataValueUtils;
@@ -225,8 +226,9 @@ public class NoCodeEvaluationService {
         if (dryRunAllowed && operator instanceof NoCodeIfOperator conditional && operands.size() == 3) {
             return evaluateIfDryRun(conditional, new ArrayList<>(operands), elementData, processDataContext, limitResult, signature);
         }
-        if (dryRunAllowed && operator instanceof NoCodeAndOperator conjunction && operands.size() == 2) {
-            return evaluateAndDryRun(conjunction, new ArrayList<>(operands), elementData, processDataContext, limitResult, signature);
+        var decisiveValue = shortCircuitValue(operator, operands.size());
+        if (dryRunAllowed && decisiveValue != null) {
+            return evaluateBooleanDryRun(operator, operands, decisiveValue, elementData, processDataContext, limitResult, signature);
         }
         var childResults = new ArrayList<NoCodeDryRunResultDTO>(operands.size());
         int index = 0;
@@ -301,34 +303,59 @@ public class NoCodeEvaluationService {
     }
 
     @Nonnull
-    private NoCodeDryRunResultDTO evaluateAndDryRun(
-            @Nonnull NoCodeAndOperator operator,
-            @Nonnull List<NoCodeOperand> operands,
+    private NoCodeDryRunResultDTO evaluateBooleanDryRun(
+            @Nonnull NoCodeOperator operator,
+            @Nonnull Collection<NoCodeOperand> operands,
+            boolean decisiveValue,
             @Nonnull DerivedRuntimeElementData elementData,
             @Nonnull ProcessExecutionData processDataContext,
             @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult,
             @Nullable NoCodeSignatur signature
     ) {
-        var first = limitResult.apply(evaluateDryRun(
-                operands.getFirst(), elementData, processDataContext, limitResult, parameterAt(signature, 0)));
-        var firstEvaluated = first.status() == NoCodeDryRunStatus.Evaluated;
-        if (!firstEvaluated || !operator.castToBoolean(first.value())) {
-            var message = firstEvaluated
-                    ? "Die erste Bedingung ist falsch."
-                    : "Die erste Bedingung konnte nicht ausgewertet werden.";
-            var skipped = limitResult.apply(NoCodeDryRunResultDTO.skipped(message, List.of()));
-            var results = List.of(first, skipped);
-            return firstEvaluated
-                    ? NoCodeDryRunResultDTO.evaluated(false, results)
-                    : NoCodeDryRunResultDTO.skipped(message, results);
+        var results = new ArrayList<NoCodeDryRunResultDTO>(operands.size());
+        for (var operand : operands) {
+            var index = results.size();
+            var condition = limitResult.apply(evaluateDryRun(
+                    operand, elementData, processDataContext, limitResult, parameterAt(signature, index)));
+            results.add(condition);
+            if (condition.status() != NoCodeDryRunStatus.Evaluated) {
+                var message = switch (operator) {
+                    case NoCodeAndOperator ignored -> index == 0
+                            ? "Die erste Bedingung konnte nicht ausgewertet werden."
+                            : "Die zweite Bedingung konnte nicht ausgewertet werden.";
+                    default -> "Bedingung " + (index + 1) + " konnte nicht ausgewertet werden.";
+                };
+                appendSkippedConditions(results, operands.size(), limitResult, message);
+                return NoCodeDryRunResultDTO.skipped(message, List.copyOf(results));
+            }
+            if (operator.castToBoolean(condition.value()) == decisiveValue) {
+                var message = decisiveValue ? "Bedingung " + (index + 1) + " ist wahr." : "Die erste Bedingung ist falsch.";
+                appendSkippedConditions(results, operands.size(), limitResult, message);
+                return NoCodeDryRunResultDTO.evaluated(decisiveValue, List.copyOf(results));
+            }
         }
+        return NoCodeDryRunResultDTO.evaluated(!decisiveValue, List.copyOf(results));
+    }
 
-        var second = limitResult.apply(evaluateDryRun(
-                operands.getLast(), elementData, processDataContext, limitResult, parameterAt(signature, 1)));
-        var results = List.of(first, second);
-        return second.status() == NoCodeDryRunStatus.Evaluated
-                ? NoCodeDryRunResultDTO.evaluated(operator.castToBoolean(second.value()), results)
-                : NoCodeDryRunResultDTO.skipped("Die zweite Bedingung konnte nicht ausgewertet werden.", results);
+    private static void appendSkippedConditions(
+            @Nonnull List<NoCodeDryRunResultDTO> results,
+            int operandCount,
+            @Nonnull UnaryOperator<NoCodeDryRunResultDTO> limitResult,
+            @Nonnull String message
+    ) {
+        // The editor maps results by position. The skipped conditions have no nested results.
+        while (results.size() < operandCount) {
+            results.add(limitResult.apply(NoCodeDryRunResultDTO.skipped(message, List.of())));
+        }
+    }
+
+    @Nullable
+    private static Boolean shortCircuitValue(@Nullable NoCodeOperator operator, int operandCount) {
+        return switch (operator) {
+            case NoCodeAndOperator ignored when operandCount == 2 -> false;
+            case NoCodeOrOperator ignored when NoCodeOrOperator.supportsConditionCount(operandCount) -> true;
+            case null, default -> null;
+        };
     }
 
     @Nonnull
@@ -349,14 +376,17 @@ public class NoCodeEvaluationService {
             return new NoCodeResult(evaluateArgument(
                     inputs.get(selectedIndex), elementData, processDataContext, wildcardIndices, parameterAt(signature, selectedIndex)));
         }
-        if (registeredOperator instanceof NoCodeAndOperator conjunction && operands.size() == 2) {
-            var inputs = new ArrayList<>(operands);
-            var first = evaluateArgument(inputs.getFirst(), elementData, processDataContext, wildcardIndices, parameterAt(signature, 0));
-            if (!conjunction.castToBoolean(first)) {
-                return new NoCodeResult(false);
+        var decisiveValue = shortCircuitValue(registeredOperator, operands.size());
+        if (decisiveValue != null) {
+            int index = 0;
+            for (var operand : operands) {
+                var value = evaluateArgument(operand, elementData, processDataContext, wildcardIndices, parameterAt(signature, index));
+                if (registeredOperator.castToBoolean(value) == decisiveValue.booleanValue()) {
+                    return new NoCodeResult(decisiveValue);
+                }
+                index++;
             }
-            var second = evaluateArgument(inputs.getLast(), elementData, processDataContext, wildcardIndices, parameterAt(signature, 1));
-            return new NoCodeResult(conjunction.castToBoolean(second));
+            return new NoCodeResult(!decisiveValue);
         }
         var operandValues = new Object[operands.size()];
         int index = 0;

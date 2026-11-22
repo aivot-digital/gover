@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import de.aivot.prosuna.backend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeAndOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeIfOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeValueOperator;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.math.NoCodeDivideOperator;
@@ -22,10 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -185,10 +188,38 @@ class NoCodeEvaluationServiceTest {
         verify(valueOperator, never()).evaluate(data, "unreachable");
     }
 
+    @Test
+    void orEvaluatesEachConditionOnceInOrderUntilTheFirstTruthyValue() throws NoCodeException {
+        var valueOperator = spy(new NoCodeValueOperator());
+        var service = serviceWithConditionalOperators(valueOperator);
+        var data = new DerivedRuntimeElementData();
+        var expression = new NoCodeExpression("or", value("false"), value("falsch"), value("wahr"), value("unused"));
+
+        assertEquals(true, service.evaluate(expression, data).getValue());
+        var calls = inOrder(valueOperator);
+        calls.verify(valueOperator).evaluate(data, "false");
+        calls.verify(valueOperator).evaluate(data, "falsch");
+        calls.verify(valueOperator).evaluate(data, "wahr");
+        verify(valueOperator, times(3)).evaluate(eq(data), any(Object[].class));
+    }
+
+    @Test
+    void orPropagatesAnErrorBeforeTheNextConditionCanBeCalled() throws NoCodeException {
+        var valueOperator = spy(new NoCodeValueOperator());
+        var service = serviceWithConditionalOperators(valueOperator);
+        var data = new DerivedRuntimeElementData();
+        var expression = new NoCodeExpression("or", new NoCodeStaticValue(false), divisionByZero(), value("unreachable"));
+
+        var error = assertThrows(IllegalStateException.class, () -> service.evaluate(expression, data));
+        var cause = assertInstanceOf(NoCodeException.class, error.getCause());
+        assertEquals("„Teiler“ darf nicht 0 sein. Geben Sie eine andere Zahl ein.", cause.getMessage());
+        verify(valueOperator, never()).evaluate(data, "unreachable");
+    }
+
     private static NoCodeEvaluationService serviceWithConditionalOperators(NoCodeValueOperator valueOperator) {
         var provider = mock(NoCodeOperatorsProvider.class);
         when(provider.getOperators()).thenReturn(new NoCodeOperator[]{
-                new NoCodeIfOperator(), new NoCodeAndOperator(), valueOperator, new NoCodeDivideOperator()
+                new NoCodeIfOperator(), new NoCodeAndOperator(), new NoCodeOrOperator(), valueOperator, new NoCodeDivideOperator()
         });
         return new NoCodeEvaluationService(List.of(provider));
     }
