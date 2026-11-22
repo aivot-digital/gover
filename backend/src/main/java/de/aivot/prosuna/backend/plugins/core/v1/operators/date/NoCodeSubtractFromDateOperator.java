@@ -28,7 +28,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Von Datum subtrahieren“** subtrahiert eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren von einem gegebenen Datum. \s
+                Die Funktion **„Von Datum subtrahieren“** subtrahiert eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren von einem gegebenen Datum. \s
                 Er wird verwendet, um Datumsarithmetik durchzuführen.
                 
                 Verfügbare Einheiten:
@@ -39,7 +39,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben ein Datum `2023-08-15` und möchten 5 Tage subtrahieren. \s
-                Mit dem Operator **„Von Datum subtrahieren“** können Sie diese Operation durchführen:
+                Mit der Funktion **„Von Datum subtrahieren“** können Sie diese Operation durchführen:
                 
                 ```text
                 Von Datum subtrahieren ("2023-08-15", 5, "Tage")
@@ -48,7 +48,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                 **Ergebnis:** \s
                 Das resultierende Datum ist: `2023-08-10`.
                 
-                # Wann verwenden Sie den Operator „Von Datum subtrahieren“?
+                # Wann verwenden Sie die Funktion „Von Datum subtrahieren“?
                 Verwenden Sie **„Von Datum subtrahieren“**, wenn Sie:
                 - Datumsarithmetik durchführen müssen. \s
                 - Vergangene Daten basierend auf einem gegebenen Datum berechnen möchten.

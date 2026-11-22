@@ -31,12 +31,12 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Erstelle Zeit“** erstellt eine lokale Uhrzeit aus Stunde, Minute und optional Sekunde. \s
+                Die Funktion **„Erstelle Zeit“** erstellt eine lokale Uhrzeit aus Stunde, Minute und optional Sekunde. \s
                 Er wird verwendet, um eine Zeit aus einzelnen Komponenten zu erstellen.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben die Werte für Stunden und Minuten: `14`, `30`. \s
-                Mit dem Operator **„Erstelle Zeit“** können Sie eine Zeit erstellen:
+                Mit der Funktion **„Erstelle Zeit“** können Sie eine Zeit erstellen:
                 
                 ```text
                 Erstelle Zeit (14, 30)
@@ -45,7 +45,7 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                 **Ergebnis:** \s
                 Die erstellte Zeit ist: `14:30:00`.
                 
-                # Wann verwenden Sie den Operator „Erstelle Zeit“?
+                # Wann verwenden Sie die Funktion „Erstelle Zeit“?
                 Verwenden Sie **„Erstelle Zeit“**, wenn Sie:
                 - Eine Zeit aus einzelnen Komponenten (Stunden, Minuten und optional Sekunden) erstellen möchten. \s
                 - Zeiten in einem bestimmten Format benötigen. \s

@@ -23,16 +23,16 @@ export function validateNoCode(
                 // The node itself represents an intentional value, including an empty value, false or zero.
                 break;
             case 'NoCodeReference':
-                if (!operand.elementId) error = 'Wählen Sie ein Element aus.';
-                else if (!elements.some(({element}) => element.id === operand.elementId)) error = 'Das ausgewählte Element ist nicht verfügbar.';
+                if (!operand.elementId) error = 'Wählen Sie ein Formularelement aus.';
+                else if (!elements.some(({element}) => element.id === operand.elementId)) error = 'Das ausgewählte Formularelement ist nicht verfügbar.';
                 break;
             case 'NoCodeExpression': {
                 const operator = operators.find((candidate) => candidate.identifier === operand.operatorIdentifier);
-                if (!operand.operatorIdentifier) error = 'Wählen Sie einen Operator aus.';
-                else if (operator == null) error = 'Der ausgewählte Operator ist nicht verfügbar.';
+                if (!operand.operatorIdentifier) error = 'Wählen Sie eine Funktion aus.';
+                else if (operator == null) error = 'Die ausgewählte Funktion ist nicht verfügbar.';
                 const operands = operand.operands ?? [];
                 if (operator != null && !operator.signatures.some((signature) => signature.parameters.length === operands.length)) {
-                    error = 'Die Anzahl der Parameter passt nicht zum Operator.';
+                    error = 'Die Anzahl der Parameter passt nicht zur Funktion.';
                 }
                 subErrors = operands.map((child) => validateNoCode(child, operators, elements));
                 break;

@@ -76,13 +76,21 @@ describe('humanizeNoCode', () => {
         expect(humanize({
             ...expr(literal('a')),
             operatorIdentifier: 'unknown',
-        } as NoCodeOperand)).toContain('Unbekannter Operator (unknown): „a“');
+        } as NoCodeOperand)).toContain('Unbekannte Funktion (unknown): „a“');
+        expect(humanize({
+            ...expr(),
+            operatorIdentifier: null,
+        } as NoCodeOperand)).toBe('Keine Funktion ausgewählt');
     });
     it('names unknown references and never hides omitted or additional parameters', () => {
         expect(humanize({
             type: 'NoCodeReference',
             elementId: 'deleted',
-        })).toBe('Unbekanntes Element (ID: deleted)');
+        })).toBe('Unbekanntes Formularelement (ID: deleted)');
+        expect(humanize({
+            type: 'NoCodeReference',
+            elementId: null,
+        })).toBe('Kein Formularelement ausgewählt');
         expect(humanize(expr(literal('a'), literal('b')), {
             ...operator,
             humanReadableTemplate: '#0',

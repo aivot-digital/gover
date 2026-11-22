@@ -29,21 +29,21 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Weniger als oder gleich“** vergleicht zwei Werte und prüft, ob der erste Wert kleiner oder gleich dem zweiten Wert ist. \s
+                Die Funktion **„Weniger als oder gleich“** vergleicht zwei Werte und prüft, ob der erste Wert kleiner oder gleich dem zweiten Wert ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der erste Wert kleiner oder gleich dem zweiten Wert ist. \s
                 Andernfalls ist das Ergebnis **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl kleiner oder gleich einer anderen Zahl ist.
                 
-                Mit dem Operator **„Weniger als oder gleich“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Weniger als oder gleich“** wird diese Logik so formuliert: \s
                 `Wert1 WENIGER ALS ODER GLEICH Wert2`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn Wert1 kleiner oder gleich Wert2 ist, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn Wert1 größer ist als Wert2, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Weniger als oder gleich“-Operator
+                # Wahrheitswerte der Funktion „Weniger als oder gleich“
                 - **5 WENIGER ALS ODER GLEICH 10** → **wahr** \s
                 - **10 WENIGER ALS ODER GLEICH 5** → **falsch** \s
                 - **10 WENIGER ALS ODER GLEICH 10** → **wahr** \s
@@ -51,9 +51,9 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
                 - **"abcd" WENIGER ALS ODER GLEICH "abc"** → **falsch** (Länge des Textes) \s
                 - **"abcd" WENIGER ALS ODER GLEICH "abcd"** → **wahr** (Länge des Textes)
                 
-                # Wann verwenden Sie den Operator „Weniger als oder gleich“?
+                # Wann verwenden Sie die Funktion „Weniger als oder gleich“?
                 Verwenden Sie **„Weniger als oder gleich“**, wenn Sie prüfen möchten, ob ein Wert kleiner oder gleich einem anderen Wert ist. \s
-                Dieser Operator ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
+                Diese Funktion ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
                 """;
     }
 

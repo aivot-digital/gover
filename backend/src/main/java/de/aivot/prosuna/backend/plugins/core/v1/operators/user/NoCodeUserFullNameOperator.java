@@ -43,13 +43,13 @@ public class NoCodeUserFullNameOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Mitarbeiter:innenname“** gibt den vollständigen Namen einer Mitarbeiter:in anhand ihrer ID zurück. \s
+                Die Funktion **„Mitarbeiter:innenname“** gibt den vollständigen Namen einer Mitarbeiter:in anhand ihrer ID zurück. \s
                 Wenn keine Mitarbeiter:in mit dieser ID gefunden wird oder die ID leer ist, wird **null** zurückgegeben.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten den Namen der Mitarbeiter:in anzeigen, die einem Vorgang zugeordnet ist. \s
                 
-                Mit dem Operator **„Mitarbeiter:innenname“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Mitarbeiter:innenname“** wird diese Logik so formuliert: \s
                 `Mitarbeiter:innenname Zugewiesene Mitarbeiter:innen-ID`
                 
                 Beispielwerte: \s
@@ -62,7 +62,7 @@ public class NoCodeUserFullNameOperator extends NoCodeOperator {
                 - `Mitarbeiter:innenname 8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1` \s
                   **Ergebnis:** "Max Mustermann"
                 
-                # Wann verwenden Sie den Operator „Mitarbeiter:innenname“?
+                # Wann verwenden Sie die Funktion „Mitarbeiter:innenname“?
                 Verwenden Sie **„Mitarbeiter:innenname“**, wenn Ihnen die ID einer Mitarbeiter:in vorliegt und Sie daraus den lesbaren vollständigen Namen ermitteln möchten, z. B. für Hinweise, Zusammenfassungen oder Benachrichtigungen.
                 """;
     }

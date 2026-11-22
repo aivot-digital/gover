@@ -28,12 +28,12 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Erstelle Datum“** erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr. \s
+                Die Funktion **„Erstelle Datum“** erstellt ein Datum aus dem angegebenen Tag, Monat und Jahr. \s
                 Er wird verwendet, um ein Datum aus einzelnen Komponenten zu erstellen.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben die Werte für Tag, Monat und Jahr: `15`, `8`, `2023`. \s
-                Mit dem Operator **„Erstelle Datum“** können Sie ein Datum erstellen:
+                Mit der Funktion **„Erstelle Datum“** können Sie ein Datum erstellen:
                 
                 ```text
                 Erstelle Datum (15, 8, 2023)
@@ -42,7 +42,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                 **Ergebnis:** \s
                 Das erstellte Datum ist: `2023-08-15`.
                 
-                # Wann verwenden Sie den Operator „Erstelle Datum“?
+                # Wann verwenden Sie die Funktion „Erstelle Datum“?
                 Verwenden Sie **„Erstelle Datum“**, wenn Sie:
                 - Ein Datum aus einzelnen Komponenten (Tag, Monat, Jahr) erstellen möchten. \s
                 - Daten in einem bestimmten Format benötigen. \s

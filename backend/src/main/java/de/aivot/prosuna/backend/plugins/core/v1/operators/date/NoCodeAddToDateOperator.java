@@ -45,7 +45,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Zu Datum hinzufügen“** fügt einem gegebenen Datum eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren hinzu. \s
+                Die Funktion **„Zu Datum hinzufügen“** fügt einem gegebenen Datum eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren hinzu. \s
                 Er wird verwendet, um Datumsarithmetik durchzuführen.
                 
                 Verfügbare Einheiten:
@@ -56,7 +56,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben ein Datum `2023-08-15` und möchten 5 Tage hinzufügen. \s
-                Mit dem Operator **„Zu Datum hinzufügen“** können Sie diese Operation durchführen:
+                Mit der Funktion **„Zu Datum hinzufügen“** können Sie diese Operation durchführen:
                 
                 ```text
                 Zu Datum hinzufügen ("2023-08-15", 5, "Tage")
@@ -65,7 +65,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                 **Ergebnis:** \s
                 Das resultierende Datum ist: `2023-08-20`.
                 
-                # Wann verwenden Sie den Operator „Zu Datum hinzufügen“?
+                # Wann verwenden Sie die Funktion „Zu Datum hinzufügen“?
                 Verwenden Sie **„Zu Datum hinzufügen“**, wenn Sie:
                 - Datumsarithmetik durchführen müssen. \s
                 - Zukünftige oder vergangene Daten basierend auf einem gegebenen Datum berechnen möchten.

@@ -29,21 +29,21 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Größer als oder gleich“** vergleicht zwei Werte und prüft, ob der erste Wert größer oder gleich dem zweiten Wert ist. \s
+                Die Funktion **„Größer als oder gleich“** vergleicht zwei Werte und prüft, ob der erste Wert größer oder gleich dem zweiten Wert ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der erste Wert größer oder gleich dem zweiten Wert ist. \s
                 Andernfalls ist das Ergebnis **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl größer oder gleich einer anderen Zahl ist.
                 
-                Mit dem Operator **„Größer als oder gleich“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Größer als oder gleich“** wird diese Logik so formuliert: \s
                 `Wert1 GRÖßER ALS ODER GLEICH Wert2`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn Wert1 größer oder gleich Wert2 ist, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn Wert1 kleiner ist als Wert2, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Größer als oder gleich“-Operator
+                # Wahrheitswerte der Funktion „Größer als oder gleich“
                 - **10 GRÖßER ALS ODER GLEICH 5** → **wahr** \s
                 - **5 GRÖßER ALS ODER GLEICH 10** → **falsch** \s
                 - **10 GRÖßER ALS ODER GLEICH 10** → **wahr** \s
@@ -51,9 +51,9 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
                 - **"abc" GRÖßER ALS ODER GLEICH "abcd"** → **falsch** (Länge des Textes) \s
                 - **"abcd" GRÖßER ALS ODER GLEICH "abcd"** → **wahr** (Länge des Textes)
                 
-                # Wann verwenden Sie den Operator „Größer als oder gleich“?
+                # Wann verwenden Sie die Funktion „Größer als oder gleich“?
                 Verwenden Sie **„Größer als oder gleich“**, wenn Sie prüfen möchten, ob ein Wert größer oder gleich einem anderen Wert ist. \s
-                Dieser Operator ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
+                Diese Funktion ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
                 """;
     }
 

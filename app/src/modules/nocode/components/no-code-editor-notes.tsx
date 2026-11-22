@@ -9,6 +9,7 @@ const RichTextInput = lazy(() => import('../../../components/rich-text-input-com
 
 export function NoCodeEditorNotes(props: {
     value?: string | null;
+    hasExpression: boolean;
     disabled: boolean;
     onChange: (notes: string | null) => void
 }) {
@@ -69,7 +70,9 @@ export function NoCodeEditorNotes(props: {
                                ariaLabel="Notizen zum Ausdruck"
                                value={props.value}
                                onChange={props.onChange}
-                               hint="Interne Hinweise zur fachlichen Bedeutung dieses Ausdrucks."
+                               hint={props.hasExpression
+                                   ? 'Interne Hinweise zur fachlichen Bedeutung dieses Ausdrucks.'
+                                   : 'Notizen können erst erfasst werden, wenn ein Ausdruck festgelegt ist.'}
                                disabled={props.disabled}
                                customerMode={false}
                                reducedMode

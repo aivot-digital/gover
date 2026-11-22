@@ -12,7 +12,7 @@ describe('NoCodePill', () => {
             <NoCodePill
                 dataType={NoCodeDataType.Boolean}
                 label="Ist Gleich"
-                dismissLabel="Operator „Ist Gleich“ löschen"
+                dismissLabel="Funktion „Ist Gleich“ löschen"
                 onClick={onClick}
                 onDismiss={onDismiss}
             />,
@@ -24,7 +24,7 @@ describe('NoCodePill', () => {
         expect(onClick).toHaveBeenCalledTimes(1);
         expect(onDismiss).not.toHaveBeenCalled();
 
-        fireEvent.click(screen.getByRole('button', {name: 'Operator „Ist Gleich“ löschen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Funktion „Ist Gleich“ löschen'}));
         expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
@@ -33,14 +33,14 @@ describe('NoCodePill', () => {
             <NoCodePill
                 dataType={NoCodeDataType.String}
                 label="Vorname"
-                dismissLabel="Wert des Elements „Vorname“ löschen"
-                error="Das Element existiert nicht mehr."
+                dismissLabel="Verweis auf Formularelement „Vorname“ löschen"
+                error="Das Formularelement existiert nicht mehr."
                 onClick={vi.fn()}
                 onDismiss={vi.fn()}
             />,
         );
 
         expect(screen.getByRole('button', {name: 'Vorname, Textwert'}))
-            .toHaveAccessibleDescription('Das Element existiert nicht mehr.');
+            .toHaveAccessibleDescription('Das Formularelement existiert nicht mehr.');
     });
 });

@@ -33,7 +33,7 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Liste beinhaltet alle“** prüft, ob jeder Wert der zweiten Liste auch in der ersten Liste vorkommt. \s
+                Die Funktion **„Liste beinhaltet alle“** prüft, ob jeder Wert der zweiten Liste auch in der ersten Liste vorkommt. \s
                 Die Reihenfolge spielt keine Rolle. Die erste Liste darf weitere Werte enthalten.
 
                 # Beispiele:

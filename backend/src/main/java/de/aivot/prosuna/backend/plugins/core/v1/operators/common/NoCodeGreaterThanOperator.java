@@ -29,7 +29,7 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Größer als“** vergleicht zwei Werte und prüft, ob der erste Wert größer als der zweite Wert ist. \s
+                Die Funktion **„Größer als“** vergleicht zwei Werte und prüft, ob der erste Wert größer als der zweite Wert ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der erste Wert größer ist als der zweite Wert. \s
                 Andernfalls ist das Ergebnis **falsch**.
 
@@ -40,22 +40,22 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl größer als eine andere Zahl ist.
                 
-                Mit dem Operator **„Größer als“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Größer als“** wird diese Logik so formuliert: \s
                 `Wert1 GRÖßER ALS Wert2`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn Wert1 größer ist als Wert2, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn Wert1 nicht größer ist als Wert2, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Größer als“-Operator
+                # Wahrheitswerte der Funktion „Größer als“
                 - **10 GRÖßER ALS 5** → **wahr** \s
                 - **5 GRÖßER ALS 10** → **falsch** \s
                 - **"abcd" GRÖßER ALS "abc"** → **wahr** (Länge des Textes) \s
                 - **"abc" GRÖßER ALS "def"** → **falsch** (gleiche Textlänge)
                 
-                # Wann verwenden Sie den Operator „Größer als“?
+                # Wann verwenden Sie die Funktion „Größer als“?
                 Verwenden Sie **„Größer als“**, wenn Sie prüfen möchten, ob ein Wert größer ist als ein anderer Wert. \s
-                Dieser Operator ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
+                Diese Funktion ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
                 """;
     }
 

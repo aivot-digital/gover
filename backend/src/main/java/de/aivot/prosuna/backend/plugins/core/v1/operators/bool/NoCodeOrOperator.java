@@ -28,9 +28,9 @@ public class NoCodeOrOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Oder“** (auch bekannt als logisches ODER) verknüpft zwei Wahrheitswerte miteinander. \s
+                Die Funktion **„Oder“** (auch bekannt als logisches ODER) verknüpft zwei Wahrheitswerte miteinander. \s
                 Das Ergebnis ist **wahr** (true), wenn **mindestens eine** der verknüpften Bedingungen **wahr** ist. \s
-                Ist **keine** der Bedingungen wahr, ergibt der Operator **„Oder“** den Wert **falsch**.
+                Ist **keine** der Bedingungen wahr, ergibt die Funktion **„Oder“** den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person die folgenden Bedingungen erfüllt:
@@ -38,22 +38,22 @@ public class NoCodeOrOperator extends NoCodeOperator {
                 - Sie hat einen gültigen Ausweis. \s
                 - Oder sie besitzt eine andere Form der Identifikation.
                 
-                Mit dem Operator **„Oder“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Oder“** wird diese Logik so formuliert: \s
                 `Hat gültigen Ausweis ODER Besitzt andere Identifikation`
                 
                 **Ergebnis:**
                 - Wenn die Person **einen gültigen Ausweis** hat oder **eine andere Identifikation** besitzt, ist das Ergebnis **wahr**.
                 - Wenn die Person **keinen gültigen Ausweis** hat und **keine andere Identifikation** besitzt, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Oder“-Operator
+                # Wahrheitswerte der Funktion „Oder“
                 - **wahr** ODER **wahr** → **wahr**
                 - **wahr** ODER **falsch** → **wahr**
                 - **falsch** ODER **wahr** → **wahr**
                 - **falsch** ODER **falsch** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Oder“?
+                # Wann verwenden Sie die Funktion „Oder“?
                 Verwenden Sie **„Oder“**, wenn **mindestens eine Bedingung erfüllt** sein muss, um die gewünschte Aktion oder Entscheidung zu treffen. \s
-                Dieser Operator ist nützlich, wenn Sie mehrere alternative Kriterien zulassen möchten, z. B. bei Optionen oder Auswahlmöglichkeiten.
+                Diese Funktion ist nützlich, wenn Sie mehrere alternative Kriterien zulassen möchten, z. B. bei Optionen oder Auswahlmöglichkeiten.
                 """;
     }
 

@@ -51,8 +51,10 @@ describe('NoCodeOperandEditorStaticValue', () => {
         expect(onChange).toHaveBeenLastCalledWith({type: 'NoCodeStaticValue', value: 'custom'});
         expect(input).toHaveValue('custom');
         expect(input).toHaveAccessibleDescription(/Der Wert entspricht keiner Auswahloption\.$/);
-        await user.click(within(control).getByRole('button', {name: 'Diesen festen Wert mit einem Ausdruck verknüpfen'}));
+        await user.click(within(control).getByRole('button', {name: 'Diesen Wert mit einer Funktion verknüpfen'}));
         expect(onAddEnclosingExpression).toHaveBeenCalledOnce();
+        await user.click(within(control).getByRole('button', {name: 'Diesen Wert löschen'}));
+        expect(onChange).toHaveBeenLastCalledWith(undefined);
     });
 
     it('confirms a match without repeating a label that equals the value', () => {

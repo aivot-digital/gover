@@ -80,6 +80,10 @@ class NoCodeEvaluationServiceDryRunTest {
 
         var secret = result.operands().getFirst();
         assertEquals(NoCodeDryRunStatus.Skipped, secret.status());
+        assertEquals(
+                "Diese Funktion wird im Testlauf nicht ausgeführt, weil sie geschützte Daten liest oder Aktionen auslösen kann.",
+                secret.message()
+        );
         assertNull(secret.value());
         assertEquals(NoCodeDryRunStatus.Evaluated, secret.operands().getFirst().status());
         assertEquals(NoCodeDryRunStatus.Skipped, result.status());
@@ -105,7 +109,15 @@ class NoCodeEvaluationServiceDryRunTest {
         var result = dryRun(new NoCodeExpression("missing"));
 
         assertEquals(NoCodeDryRunStatus.Failed, result.status());
-        assertEquals("Der Operator ist nicht verfügbar.", result.message());
+        assertEquals("Die Funktion ist nicht verfügbar.", result.message());
+    }
+
+    @Test
+    void shouldExplainInvalidFunctionParameterCounts() {
+        var result = dryRun(new NoCodeExpression("add", new NoCodeStaticValue(1)));
+
+        assertEquals(NoCodeDryRunStatus.Failed, result.status());
+        assertEquals("Die Anzahl der Parameter passt nicht zur Funktion.", result.message());
     }
 
     @Test

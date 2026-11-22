@@ -75,7 +75,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                 if (!active) return;
                 setLoadFailed(true);
                 console.error(err);
-                dispatch(showErrorSnackbar('Operatoren für No-Code-Ausdrücke konnten nicht geladen werden.'));
+                dispatch(showErrorSnackbar('Funktionen für No-Code-Ausdrücke konnten nicht geladen werden.'));
             })
             .finally(() => {
                 if (active) setIsBusy(false);
@@ -122,7 +122,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
             ) : loadFailed ? <Alert severity="error"
                                     action={<Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Erneut
                                                                                                              laden</Button>}>
-                Die Operatoren konnten nicht geladen werden. Der Ausdruck kann noch nicht geprüft werden.
+                Die Funktionen konnten nicht geladen werden. Der Ausdruck kann noch nicht geprüft werden.
             </Alert> : (
                 <>
                     <NoCodeEditor

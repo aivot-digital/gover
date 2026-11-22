@@ -269,6 +269,7 @@ describe('manual legacy rule conversion', () => {
         confirm.mockResolvedValueOnce(false);
         fireEvent.click(screen.getByRole('button', {name: 'Umstellung abbrechen'}));
         await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+        expect(confirm).toHaveBeenLastCalledWith(expect.objectContaining({isDestructive: true}));
         expect(screen.getByRole('button', {name: 'Umstellung abbrechen'})).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
         await waitFor(() => expect(onCancel).toHaveBeenCalledOnce());

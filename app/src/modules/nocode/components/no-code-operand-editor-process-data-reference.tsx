@@ -46,7 +46,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
             onClick: () => onChange(undefined),
         },
         {
-            tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
+            tooltip: 'Diesen Verweis mit einer Funktion verknüpfen',
             icon: <Functions/>,
             onClick: onAddEnclosingExpression,
         },

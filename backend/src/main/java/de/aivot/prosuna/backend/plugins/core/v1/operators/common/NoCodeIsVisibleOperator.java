@@ -30,15 +30,15 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
     public String getDescription() {
         return """                
                 # Beschreibung:
-                Der Operator **„Ist sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
+                Die Funktion **„Ist sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
                 Geben Sie die **ID eines im Formular konfigurierten Formularelements** an. \s
-                Der Operator gibt **wahr** (true) zurück, wenn der berechnete Zustand sichtbar ist, und **falsch** (false), wenn er nicht sichtbar ist.
+                Die Funktion gibt **wahr** (true) zurück, wenn der berechnete Zustand sichtbar ist, und **falsch** (false), wenn er nicht sichtbar ist.
                 
                 # Anwendungsbeispiel:
                 Im Formular ist ein Eingabefeld mit der ID `"telefonnummer"` konfiguriert.
                 Seine Sichtbarkeit wird über eine Bedingung gesteuert.
                 
-                Mit dem Operator **„Ist sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
+                Mit der Funktion **„Ist sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
                 ```text
                 Ist sichtbar("telefonnummer")
                 ```
@@ -51,7 +51,7 @@ public class NoCodeIsVisibleOperator extends NoCodeOperator {
                 - **Ist sichtbar("zusatzangaben"):** → **wahr**, wenn der im Formular konfigurierte Abschnitt `"zusatzangaben"` im berechneten Zustand sichtbar ist. \s
                 - **Ist sichtbar("hinweis"):** → **falsch**, wenn das im Formular konfigurierte Textelement `"hinweis"` im berechneten Zustand nicht sichtbar ist.
                 
-                # Wann verwenden Sie den Operator „Ist sichtbar“?
+                # Wann verwenden Sie die Funktion „Ist sichtbar“?
                 Verwenden Sie **„Ist sichtbar“**, um Bedingungen in Ihrem Formular vom berechneten Sichtbarkeitszustand eines anderen Formularelements abhängig zu machen.
                 """;
     }

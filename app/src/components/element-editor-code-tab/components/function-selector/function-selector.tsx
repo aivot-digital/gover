@@ -21,7 +21,7 @@ export function FunctionSelector(props: FunctionSelectorProps) {
         options.push(
             {
                 title: 'No-Code – Regeln und Berechnungen',
-                description: 'Stellen Sie Bedingungen und Berechnungen aus Werten, Variablen und Operatoren zusammen, ohne Programmcode zu schreiben.',
+                description: 'Stellen Sie Bedingungen und Berechnungen aus Werten, Variablen und Funktionen zusammen, ohne Programmcode zu schreiben.',
                 onSelect: props.onSelectNoCodeExpression,
                 icon: FunctionTypeIcon['expression'],
             },

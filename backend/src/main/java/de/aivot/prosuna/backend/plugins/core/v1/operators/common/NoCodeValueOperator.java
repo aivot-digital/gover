@@ -29,18 +29,18 @@ public class NoCodeValueOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Wert zurückgeben“** gibt einen angegebenen Wert unverändert zurück.
+                Die Funktion **„Wert zurückgeben“** gibt einen angegebenen Wert unverändert zurück.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten einen statischen Wert oder eine Benutzereingabe direkt weiterverarbeiten.
                 
-                Mit dem Operator **„Wert zurückgeben“** wird diese Logik so formuliert:
+                Mit der Funktion **„Wert zurückgeben“** wird diese Logik so formuliert:
                 `Eingabewert WIRD ZURÜCKGEGEBEN`
                 
                 **Ergebnis:**
                 - Der eingegebene Wert wird unverändert zurückgegeben.
                 
-                # Wann verwenden Sie den Operator „Wert zurückgeben“?
+                # Wann verwenden Sie die Funktion „Wert zurückgeben“?
                 Verwenden Sie **„Wert zurückgeben“**, wenn Sie einen Wert ohne Änderungen weiterleiten oder ausgeben möchten.
                 """;
     }

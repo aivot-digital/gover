@@ -30,7 +30,7 @@ public class NoCodeConcatOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Text verketten“** verbindet zwei oder mehr Werte zu einem einzigen Text. \s
+                Die Funktion **„Text verketten“** verbindet zwei oder mehr Werte zu einem einzigen Text. \s
                 Alle Eingaben werden dabei als Text behandelt und in der angegebenen Reihenfolge zusammengefügt.
                                 
                 # Anwendungsbeispiel:
@@ -43,7 +43,7 @@ public class NoCodeConcatOperator extends NoCodeOperator {
                 **Ergebnis:** \s
                 "Max Mustermann"
                                 
-                # Wann verwenden Sie den Operator „Text verketten“?
+                # Wann verwenden Sie die Funktion „Text verketten“?
                 Verwenden Sie **„Text verketten“**, wenn Sie mehrere Werte zu einer lesbaren Zeichenkette kombinieren möchten, z. B. für Ausgaben, Beschriftungen oder Meldungen.
                 """;
     }

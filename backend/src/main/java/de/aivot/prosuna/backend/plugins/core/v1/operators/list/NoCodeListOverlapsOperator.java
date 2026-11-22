@@ -32,13 +32,13 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Listen überschneiden sich“** prüft, ob zwei Listen mindestens einen gemeinsamen Wert enthalten. \s
+                Die Funktion **„Listen überschneiden sich“** prüft, ob zwei Listen mindestens einen gemeinsamen Wert enthalten. \s
                 Das Ergebnis ist **wahr**, sobald sich ein Wert in beiden Listen befindet. \s
                 Gibt es keinen gemeinsamen Eintrag, ist das Ergebnis **falsch**.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben eine Liste mit erlaubten Kategorien und eine zweite Liste mit den von der Person ausgewählten Kategorien. \s
-                Mit dem Operator **„Listen überschneiden sich“** können Sie prüfen, ob mindestens eine Auswahl zulässig ist:
+                Mit der Funktion **„Listen überschneiden sich“** können Sie prüfen, ob mindestens eine Auswahl zulässig ist:
                 
                 ```text
                 Listen überschneiden sich (["A", "B", "C"], ["X", "B", "Y"])
@@ -52,7 +52,7 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
                 - `[1, 2, 3]` und `["3", 4]` → **Ergebnis:** `wahr` \s
                 - `[]` und `["A"]` → **Ergebnis:** `falsch`
                 
-                # Wann verwenden Sie den Operator „Listen überschneiden sich“?
+                # Wann verwenden Sie die Funktion „Listen überschneiden sich“?
                 Verwenden Sie **„Listen überschneiden sich“**, wenn Sie:
                 - Prüfen möchten, ob zwei Listen gemeinsame Werte haben. \s
                 - Regeln oder Filter auslösen möchten, sobald eine Überschneidung vorliegt. \s

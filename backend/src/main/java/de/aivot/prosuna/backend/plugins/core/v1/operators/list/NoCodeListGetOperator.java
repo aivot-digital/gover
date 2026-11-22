@@ -29,7 +29,7 @@ public class NoCodeListGetOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Listenzugriff“** gibt ein Element einer Liste zurück. \s
+                Die Funktion **„Listenzugriff“** gibt ein Element einer Liste zurück. \s
                 Das erste Element hat den Index 0. Sollte der Index nicht existieren, wird ein leerer Wert zurückgegeben. \s
                 Bei einem negativen Index wird von hinten angefangen zu zählen.
                 Der Index -1 entspricht dem letzten Element, -2 dem vorletzten Element usw.
@@ -37,7 +37,7 @@ public class NoCodeListGetOperator extends NoCodeOperator {
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten das dritte Element aus einer Liste von Städten abrufen.
                 
-                Mit dem Operator **„Listenzugriff“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Listenzugriff“** wird diese Logik so formuliert: \s
                 `Listenzugriff Liste Index`
                 
                 Beispielwerte: \s
@@ -53,9 +53,9 @@ public class NoCodeListGetOperator extends NoCodeOperator {
                 - **Liste ["Apfel", "Banane", "Orange"] Index -1** → **"Orange"** \s
                 - **Liste [] Index 0** → **null**
                 
-                # Wann verwenden Sie den Operator „Listenzugriff“?
+                # Wann verwenden Sie die Funktion „Listenzugriff“?
                 Verwenden Sie **„Listenzugriff“**, um ein bestimmtes Element aus einer Liste zu extrahieren. \s
-                Dieser Operator ist besonders hilfreich, wenn Sie gezielt auf Elemente innerhalb einer Liste zugreifen möchten, z. B. um spezifische Daten zu extrahieren oder zu verarbeiten.
+                Diese Funktion ist besonders hilfreich, wenn Sie gezielt auf Elemente innerhalb einer Liste zugreifen möchten, z. B. um spezifische Daten zu extrahieren oder zu verarbeiten.
                 """;
     }
 

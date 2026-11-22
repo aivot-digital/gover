@@ -204,13 +204,13 @@ function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
         {
             color: 'error' as const,
             icon: <Delete/>,
-            tooltip: 'Diesen festen Wert löschen',
+            tooltip: 'Diesen Wert löschen',
             onClick: () => {
                 props.onChange(undefined);
             },
         },
         {
-            tooltip: 'Diesen festen Wert mit einem Ausdruck verknüpfen',
+            tooltip: 'Diesen Wert mit einer Funktion verknüpfen',
             icon: <Functions/>,
             onClick: props.onAddEnclosingExpression,
         },

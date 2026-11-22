@@ -31,12 +31,12 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Listen zusammenfügen“** dient dazu, zwei Listen zu einer einzigen Liste zu kombinieren. \s
+                Die Funktion **„Listen zusammenfügen“** dient dazu, zwei Listen zu einer einzigen Liste zu kombinieren. \s
                 Das Ergebnis ist eine neue Liste, die alle Elemente der beiden ursprünglichen Listen enthält.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben zwei Listen: `["A", "B", "C"]` und `["D", "E", "F"]`. \s
-                Mit dem Operator **„Listen zusammenfügen“** können Sie diese Listen kombinieren:
+                Mit der Funktion **„Listen zusammenfügen“** können Sie diese Listen kombinieren:
                 
                 ```text
                 Listen zusammenfügen (["A", "B", "C"], ["D", "E", "F"])
@@ -45,7 +45,7 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
                 **Ergebnis:** \s
                 Die zurückgegebene Liste enthält: `["A", "B", "C", "D", "E", "F"]`.
                 
-                # Wann verwenden Sie den Operator „Listen zusammenfügen“?
+                # Wann verwenden Sie die Funktion „Listen zusammenfügen“?
                 Verwenden Sie **„Listen zusammenfügen“**, wenn Sie:
                 - Zwei Listen zu einer einzigen Liste kombinieren möchten. \s
                 - Daten aus mehreren Quellen zusammenführen möchten. \s

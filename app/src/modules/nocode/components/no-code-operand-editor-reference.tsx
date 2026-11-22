@@ -57,7 +57,7 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
         <>
             <SelectFieldComponent
                 required
-                label={`${label ?? ''} — (Wert eines Elementes)`}
+                label={label}
                 value={operand.elementId ?? ''}
                 onChange={(val) => {
                     onChange({
@@ -71,21 +71,21 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
                 endAction={[
                     {
                         color: 'error',
-                        tooltip: 'Diesen Verweis auf ein Element löschen',
+                        tooltip: 'Diesen Verweis auf ein Formularelement löschen',
                         icon: <Delete/>,
                         onClick: () => {
                             onChange(undefined);
                         },
                     },
                     {
-                        tooltip: 'Element für diesen Verweis auswählen',
+                        tooltip: 'Formularelement für diesen Verweis auswählen',
                         icon: <DatabaseSearch/>,
                         onClick: () => {
                             setShowSelectElementDialog(true);
                         },
                     },
                     {
-                        tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
+                        tooltip: 'Diesen Verweis mit einer Funktion verknüpfen',
                         icon: <Functions/>,
                         onClick: onAddEnclosingExpression,
                     },
@@ -93,7 +93,7 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
                 muiPassTroughProps={{
                     margin: 'none',
                 }}
-                emptyStatePlaceholder="Keine passenden Elemente verfügbar"
+                emptyStatePlaceholder="Keine passenden Formularelemente verfügbar"
                 error={operandError?.error ?? undefined}
             />
 

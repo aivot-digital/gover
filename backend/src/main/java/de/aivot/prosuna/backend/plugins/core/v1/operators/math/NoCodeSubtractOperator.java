@@ -30,13 +30,13 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Subtrahiere“** zieht einen numerischen Wert von einem anderen ab. \s
+                Die Funktion **„Subtrahiere“** zieht einen numerischen Wert von einem anderen ab. \s
                 Das Ergebnis ist die Differenz der beiden Werte.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten die Differenz von zwei Zahlen berechnen.
                 
-                Mit dem Operator **„Subtrahiere“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Subtrahiere“** wird diese Logik so formuliert: \s
                 `Subtrahiere Wert1 Wert2`
                 
                 Beispielwerte: \s
@@ -51,9 +51,9 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
                 - **Subtrahiere 9 3** → **6** \s
                 - **Subtrahiere 5 10** → **-5**
                 
-                # Wann verwenden Sie den Operator „Subtrahiere“?
+                # Wann verwenden Sie die Funktion „Subtrahiere“?
                 Verwenden Sie **„Subtrahiere“**, um die Differenz von zwei numerischen Werten zu berechnen. \s
-                Dieser Operator ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
                 """;
     }
 

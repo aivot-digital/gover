@@ -35,7 +35,7 @@ export function ExtensionsPage() {
                                     }}
                                 >
                                     Auf dieser Seite finden Sie alle auf Ihrer Prosuna-Instanz installierten Erweiterungen.
-                                    Erweiterungen stellen zusätzliche Komponenten wie Prozesselemente, Operatoren,
+                                    Erweiterungen stellen zusätzliche Komponenten wie Prozesselemente, Funktionen,
                                     Speicheranbieter oder Integrationen bereit.
                                 </Typography>
                                 <Typography

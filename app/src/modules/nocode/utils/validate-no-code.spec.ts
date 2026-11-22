@@ -86,6 +86,16 @@ describe('validateNoCode', () => {
     });
 
     it.each([
+        [{type: 'NoCodeExpression', operatorIdentifier: null, operands: []}, 'Wählen Sie eine Funktion aus.'],
+        [{type: 'NoCodeExpression', operatorIdentifier: 'missing', operands: []}, 'Die ausgewählte Funktion ist nicht verfügbar.'],
+        [{type: 'NoCodeExpression', operatorIdentifier: 'equals', operands: []}, 'Die Anzahl der Parameter passt nicht zur Funktion.'],
+        [{type: 'NoCodeReference', elementId: null}, 'Wählen Sie ein Formularelement aus.'],
+        [{type: 'NoCodeReference', elementId: 'missing'}, 'Das ausgewählte Formularelement ist nicht verfügbar.'],
+    ] satisfies [NoCodeOperand, string][])('names the function or form element in the error for %j', (operand, error) => {
+        expect(validate(operand).error).toBe(error);
+    });
+
+    it.each([
         [{
             type: 'NoCodeProcessDataReference',
             path: '',

@@ -26,7 +26,7 @@ public class NoCodeIfOperator extends NoCodeOperator {
     public String getDescription() {
         return """                
                 # Beschreibung:
-                Der Operator **„Wenn Dann Sonst“** überprüft einen Wahrheitswert (true oder false) und gibt basierend auf diesem entweder den **zweiten Parameter** (wenn die Bedingung wahr ist) oder den **dritten Parameter** (wenn die Bedingung falsch ist) zurück.
+                Die Funktion **„Wenn Dann Sonst“** überprüft einen Wahrheitswert (true oder false) und gibt basierend auf diesem entweder den **zweiten Parameter** (wenn die Bedingung wahr ist) oder den **dritten Parameter** (wenn die Bedingung falsch ist) zurück.
                 
                 - Ist die Bedingung **wahr**, wird der **zweite Parameter** zurückgegeben. \s
                 - Ist die Bedingung **falsch**, wird der **dritte Parameter** zurückgegeben.
@@ -37,20 +37,20 @@ public class NoCodeIfOperator extends NoCodeOperator {
                 - Wenn die Bewerbung **angenommen** ist, soll die Nachricht „Herzlichen Glückwunsch“ lauten. \s
                 - Andernfalls soll die Nachricht „Leider abgelehnt“ sein.
                 
-                Mit dem Operator **„Wenn Dann Sonst“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Wenn Dann Sonst“** wird diese Logik so formuliert: \s
                 `WENN Bewerbung Angenommen DANN "Herzlichen Glückwunsch" SONST "Leider abgelehnt"`
                 
                 **Ergebnis:**
-                - **Bedingung wahr:** Wenn die Bewerbung **angenommen** ist, gibt der Operator den Text **„Herzlichen Glückwunsch“** zurück.
-                - **Bedingung falsch:** Wenn die Bewerbung **abgelehnt** ist, gibt der Operator den Text **„Leider abgelehnt“** zurück.
+                - **Bedingung wahr:** Wenn die Bewerbung **angenommen** ist, gibt die Funktion den Text **„Herzlichen Glückwunsch“** zurück.
+                - **Bedingung falsch:** Wenn die Bewerbung **abgelehnt** ist, gibt die Funktion den Text **„Leider abgelehnt“** zurück.
                 
                 # Beispiele und Ergebnisse
                 - **WENN wahr DANN Wert1 SONST Wert2** → **Wert1** \s
                 - **WENN falsch DANN Wert1 SONST Wert2** → **Wert2**
                 
-                # Wann verwenden Sie den Operator „Wenn Dann Sonst“?
+                # Wann verwenden Sie die Funktion „Wenn Dann Sonst“?
                 Verwenden Sie **„Wenn Dann Sonst“**, wenn Sie zwischen zwei Ergebnissen basierend auf einer Bedingung auswählen möchten. \s
-                Dieser Operator ist besonders hilfreich für bedingte Logik, z. B. um personalisierte Nachrichten, Optionen oder Werte abhängig von einer Entscheidung oder einem Zustand zu erzeugen.
+                Diese Funktion ist besonders hilfreich für bedingte Logik, z. B. um personalisierte Nachrichten, Optionen oder Werte abhängig von einer Entscheidung oder einem Zustand zu erzeugen.
                 """;
     }
 

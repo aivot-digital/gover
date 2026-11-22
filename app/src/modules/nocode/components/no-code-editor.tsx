@@ -34,8 +34,6 @@ import {
     Box,
     Button,
     ButtonBase,
-    Dialog,
-    DialogContent,
     Divider,
     IconButton,
     Link,
@@ -66,7 +64,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
-import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';
 import {MarkdownContent} from '../../../components/markdown-content/markdown-content';
 import {HintTooltip} from '../../../components/hint-tooltip/hint-tooltip';
 import {NoCodeDryRunResultDTO} from '../../../models/dtos/no-code-dry-run-dto';
@@ -258,7 +256,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
     const [touched, setTouched] = useState<Set<string>>(new Set());
     const [validated, setValidated] = useState<Set<string>>(new Set());
     const [focusError, setFocusError] = useState(false);
-    const [removeTarget, setRemoveTarget] = useState<{ node: NoCodeEditorExpressionNode; open: boolean } | null>(null);
+    const [removeTarget, setRemoveTarget] = useState<{ node: NoCodeEditorNode; hasNotes: boolean; open: boolean } | null>(null);
     const removeFocus = useRef<string | null>(null);
     const validation = operandError ?? validateNoCode(toNoCodeOperand(root), allOperators, allElements);
     const [autoEditId, setAutoEditId] = useState<string | null>(null);
@@ -552,10 +550,14 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
         remove: (nodeId) => {
             if (locked) return;
             const node = findNoCodeEditorNode(root, nodeId);
-            if (node?.type === 'NoCodeExpression' && node.operands.some((child) => child != null)) {
+            if (node == null) return;
+            const hasChildren = node.type === 'NoCodeExpression' && node.operands.some((child) => child != null);
+            const hasNotes = node.id === root?.id && Boolean(root?.editorMetadata?.notes?.trim());
+            if (hasChildren || hasNotes) {
                 removeFocus.current = nodeId;
                 setRemoveTarget({
                     node,
+                    hasNotes,
                     open: true,
                 });
             } else requestFocus(removeImmediately(nodeId));
@@ -726,6 +728,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                                                 component="div"
                                                 sx={{mr: 'auto'}}>{parameter.label || 'Ausdruck'}</Typography>}
         <NoCodeEditorNotes value={root?.editorMetadata?.notes}
+                           hasExpression={root != null}
                            disabled={locked || root == null}
                            onChange={(notes) => updateEditorMetadata({notes: notes?.trim() ? notes : undefined})}/>
         <Button size="small"
@@ -747,9 +750,11 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                                                            onClick={() => restoreHistory(true)}><Redo/></IconButton></span></Tooltip>
         </>}
     </Box>;
-    const removeOperator = removeTarget == null ? undefined : allOperators.find((op) => op.identifier === removeTarget.node.operatorIdentifier);
+    const removeExpression = removeTarget?.node.type === 'NoCodeExpression' ? removeTarget.node : null;
+    const removeOperands = removeExpression?.operands ?? [];
+    const removeOperator = removeExpression == null ? undefined : allOperators.find((op) => op.identifier === removeExpression.operatorIdentifier);
     const removeSlot = removeTarget == null ? null : findNoCodeEditorSlot(root, removeTarget.node.id);
-    const removeParameters = removeOperator == null || removeTarget == null ? [] : resolveNoCodeSignature(removeOperator, {operandCount: removeTarget.node.operands.length}).parameters;
+    const removeParameters = removeOperator == null ? [] : resolveNoCodeSignature(removeOperator, {operandCount: removeOperands.length}).parameters;
 
     const expressionTree = <Box
         sx={{
@@ -870,8 +875,9 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
             </Box>
             {removeTarget != null && <NoCodeOperatorDeleteDialog key={removeTarget.node.id}
                                                                  open={removeTarget.open && !locked}
-                                                                 name={removeOperator?.label ?? 'Unbekannter Operator'}
-                                                                 childrenOptions={removeTarget.node.operands.flatMap((child, index) => child == null ? [] : [{
+                                                                 name={removeOperator?.label ?? 'Unbekannte Funktion'}
+                                                                 hasNotes={removeTarget.hasNotes}
+                                                                 childrenOptions={removeOperands.flatMap((child, index) => child == null ? [] : [{
                                                                      value: child.id,
                                                                      label: `${removeParameters[index]?.label ?? `Parameter ${index + 1}`}: ${humanizeNoCode(toNoCodeOperand(child), allElements, allOperators, presentation)}`,
                                                                      warning: getNoCodeEditorTypeConflict(child, removeSlot == null ? parameter.type : slotParameterType(removeSlot), allElements, allOperators),
@@ -892,7 +898,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                                                                      });
                                                                  }}
                                                                  onKeep={(id) => {
-                                                                     const child = removeTarget.node.operands.find((node) => node?.id === id);
+                                                                     const child = removeOperands.find((node) => node?.id === id);
                                                                      if (!locked && child != null) {
                                                                          dispatch({
                                                                              type: 'replaceNode',
@@ -982,7 +988,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                     })}
                 >
                     <ListItemIcon><AccountTree/></ListItemIcon>
-                    <ListItemText>Übergeordneten Operator hinzufügen</ListItemText>
+                    <ListItemText>Übergeordnete Funktion hinzufügen</ListItemText>
                 </MenuItem>
                 {
                     menuDetails != null &&
@@ -1015,8 +1021,11 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                 </MenuItem>
             </Menu>
 
-            <Dialog
+            <InfoDialog
                 open={description?.open ?? false}
+                title={description?.title ?? ''}
+                severity="info"
+                closeButtonLabel="Schließen"
                 onClose={closeDescription}
                 // The tree item takes focus once the dialog is gone, also when it was opened from a closed tooltip.
                 disableRestoreFocus
@@ -1031,13 +1040,8 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                     },
                 }}
             >
-                <DialogTitleWithClose onClose={closeDescription}>
-                    {description?.title}
-                </DialogTitleWithClose>
-                <DialogContent tabIndex={0}>
-                    {description?.details}
-                </DialogContent>
-            </Dialog>
+                {description?.details}
+            </InfoDialog>
 
             <SelectOperatorDialog
                 open={!locked && wrapTarget != null}
@@ -1057,7 +1061,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
                         operatorIdentifier: op.identifier,
                         parameterCount: resolveNoCodeSignature(op, {operandCount: 1}).parameters.length,
                     });
-                    announce(`Operator „${op.label}“ hinzugefügt. „${wrapTarget.name}“ ist jetzt sein erster Parameter.`);
+                    announce(`Funktion „${op.label}“ hinzugefügt. „${wrapTarget.name}“ ist jetzt ihr erster Parameter.`);
                     focusAfterDialogRef.current = wrapperId;
                     setWrapTarget(null);
                 }}
@@ -1545,15 +1549,15 @@ function NoCodeEditorExpressionView(props: SlotProps & {
     const operands = useMemo(() => node.operands.map(toNoCodeOperand), [node.operands]);
     const suggestions = useNoCodeParameterSuggestions(operands, parameters, ctx.allElements);
     const parameterCountError = operator != null && !operator.signatures.some((candidate) => candidate.parameters.length === node.operands.length)
-        ? 'Die Anzahl der Parameter passt nicht zum Operator. Wählen Sie den Operator erneut aus, um sie anzupassen.'
+        ? 'Die Anzahl der Parameter passt nicht zur Funktion. Wählen Sie die Funktion erneut aus, um sie anzupassen.'
         : null;
     const name = operator?.label ?? (
         isStringNullOrEmpty(node.operatorIdentifier)
-            ? 'Kein Operator ausgewählt'
-            : 'Unbekannter Operator'
+            ? 'Keine Funktion ausgewählt'
+            : 'Unbekannte Funktion'
     );
     const dataType = signature?.returnType ?? NoCodeDataType.Runtime;
-    const errorText = error?.error ?? (operator == null && node.operatorIdentifier ? 'Der ausgewählte Operator ist nicht verfügbar.' : parameterCountError);
+    const errorText = error?.error ?? (operator == null && node.operatorIdentifier ? 'Die ausgewählte Funktion ist nicht verfügbar.' : parameterCountError);
     const errorId = errorText != null ? `no-code-editor-error-${node.id}` : undefined;
     const warning = getNoCodeEditorTypeConflict(node, slotParameter.type, ctx.allElements, ctx.allOperators);
     const warningId = warning != null ? `no-code-editor-warning-${node.id}` : undefined;
@@ -1572,7 +1576,7 @@ function NoCodeEditorExpressionView(props: SlotProps & {
             lead={operator?.sentenceLead}
             summary={summarizeNoCodeParameters(toNoCodeOperand(node)!, ctx.allElements, ctx.allOperators, ctx.presentation)}
             invalid={errorId != null}
-            ariaLabel={`Operator ${name}, ${NoCodeDataTypeLabels[dataType]}`}
+            ariaLabel={`Funktion ${name}, ${NoCodeDataTypeLabels[dataType]}`}
             describedBy={[errorId, warningId]}
             showResult
             ctx={ctx}
@@ -1613,7 +1617,7 @@ function NoCodeEditorExpressionView(props: SlotProps & {
                     }}
                     dataType={dataType}
                     label={name}
-                    dismissLabel={`Operator „${name}“ löschen`}
+                    dismissLabel={`Funktion „${name}“ löschen`}
                     error={errorText}
                     errorId={errorId}
                     warning={warning}
@@ -1808,25 +1812,25 @@ function describeLeaf(
             return {
                 label,
                 dataType: parameter.type,
-                dismissLabel: `Festen Wert „${label}“ löschen`,
+                dismissLabel: `Wert „${label}“ löschen`,
                 summary: node.value == null || typeof node.value === 'string' && isStringNullOrEmpty(node.value)
-                    ? 'Ergibt einen leeren Wert.' : `Ergibt den eingegebenen Wert „${label}“.`,
+                    ? 'Ergibt einen leeren Wert.' : `Ergibt den festgelegten Wert „${label}“.`,
             };
         }
         case 'NoCodeReference': {
             const element = allElements.find((entry) => entry.element.id === node.elementId)?.element;
             const label = element != null
                 ? generateComponentTitle(element)
-                : isStringNullOrEmpty(node.elementId) ? 'Kein Element ausgewählt' : 'Unbekanntes Element';
+                : isStringNullOrEmpty(node.elementId) ? 'Kein Formularelement ausgewählt' : 'Unbekanntes Formularelement';
             return {
                 label,
                 dataType: element != null ? NoCodeDataTypeMap[element.type] : NoCodeDataType.Runtime,
-                dismissLabel: `Wert des Elements „${label}“ löschen`,
+                dismissLabel: `Verweis auf Formularelement „${label}“ löschen`,
                 summary: element != null
-                    ? `Ergibt den aktuellen Wert des Elements „${label}“.`
+                    ? `Ergibt den aktuellen Wert des Formularelements „${label}“.`
                     : isStringNullOrEmpty(node.elementId)
-                        ? 'Es ist noch kein Element ausgewählt.'
-                        : 'Das ausgewählte Element ist nicht mehr vorhanden.',
+                        ? 'Es ist noch kein Formularelement ausgewählt.'
+                        : 'Das ausgewählte Formularelement ist nicht mehr vorhanden.',
             };
         }
         default: {

@@ -45,13 +45,13 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Geheimnis abrufen“** gibt den entschlüsselten Wert eines gespeicherten Geheimnisses anhand seines Schlüssels zurück. \s
+                Die Funktion **„Geheimnis abrufen“** gibt den entschlüsselten Wert eines gespeicherten Geheimnisses anhand seines Schlüssels zurück. \s
                 Wenn kein Geheimnis mit diesem Schlüssel gefunden wird oder der Schlüssel leer ist, wird **null** zurückgegeben.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten einen API-Schlüssel aus den gespeicherten Geheimnissen in einer No-Code-Regel verwenden.
                 
-                Mit dem Operator **„Geheimnis abrufen“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Geheimnis abrufen“** wird diese Logik so formuliert: \s
                 `Geheimnis abrufen Geheimnis-Schlüssel`
                 
                 Beispielwerte: \s
@@ -60,7 +60,7 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** "mein-geheimer-wert"
                 
-                # Wann verwenden Sie den Operator „Geheimnis abrufen“?
+                # Wann verwenden Sie die Funktion „Geheimnis abrufen“?
                 Verwenden Sie **„Geheimnis abrufen“**, wenn eine No-Code-Regel einen sensiblen Wert benötigt, der in der Geheimnisverwaltung gespeichert ist.
                 """;
     }

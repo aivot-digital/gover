@@ -298,7 +298,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 },
                                 {
                                     icon: <SwapHoriz/>,
-                                    tooltip: 'Ausdrucksoperator austauschen',
+                                    tooltip: 'Funktion austauschen',
                                     onClick: () => {
                                         setShowOperatorSwitcher(true);
                                     },
@@ -312,14 +312,14 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 },
                                 {
                                     icon: <Help/>,
-                                    tooltip: 'Hilfe zum Ausdruckstyp',
+                                    tooltip: 'Informationen zur Funktion',
                                     onClick: () => {
                                         setShowOperatorInfo(true);
                                     },
                                 },
                                 {
                                     icon: <Functions/>,
-                                    tooltip: 'Diesen Ausdruck mit einem anderen Ausdruck verknüpfen',
+                                    tooltip: 'Diesen Ausdruck mit einer Funktion verknüpfen',
                                     onClick: () => {
                                         onChange({
                                             type: 'NoCodeExpression',
@@ -465,7 +465,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
 
 function getReferenceOperandLabel(operand: NoCodeReference, allElements: ElementWithParents[]): string {
     if (isStringNullOrEmpty(operand.elementId)) {
-        return 'Kein Element ausgewählt';
+        return 'Kein Formularelement ausgewählt';
     }
 
     const element = allElements
@@ -473,19 +473,19 @@ function getReferenceOperandLabel(operand: NoCodeReference, allElements: Element
 
     return element != null
         ? generateComponentTitle(element.element)
-        : `Unbekanntes Element (ID: ${operand.elementId})`;
+        : `Unbekanntes Formularelement (ID: ${operand.elementId})`;
 }
 
 function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCodeOperatorDetailsDTO[]): string {
     if (isStringNullOrEmpty(operand.operatorIdentifier)) {
-        return 'Kein Ausdrucksoperator ausgewählt';
+        return 'Keine Funktion ausgewählt';
     }
 
     const operator = allOperators
         .find(op => op.identifier === operand.operatorIdentifier);
 
     if (operator == null) {
-        return `Der Ausdruck mit dem unbekannten No-Code-Operator (ID: ${operand.operatorIdentifier})`;
+        return `Unbekannte Funktion (ID: ${operand.operatorIdentifier})`;
     }
 
     return operator.label;

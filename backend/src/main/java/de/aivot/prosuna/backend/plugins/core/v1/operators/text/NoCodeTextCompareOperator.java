@@ -80,14 +80,14 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
 
         return """
                 # Beschreibung:
-                Der Operator **„%s“** %s \s
+                Die Funktion **„%s“** %s \s
                 Der Vergleich erfolgt wörtlich: Sonderzeichen wie Punkte oder Klammern haben keine besondere Bedeutung. \s
                 %s
                 Ist ein Wert leer, wird er als leerer Text behandelt.
 
                 # Beispiele:
                 %s
-                Um das Gegenteil zu prüfen, kombinieren Sie den Operator mit **„Nicht“**.
+                Um das Gegenteil zu prüfen, kombinieren Sie die Funktion mit **„Nicht“**.
                 """.formatted(
                 getLabel(),
                 getAbstract().replaceFirst("^Prüft", "prüft"),

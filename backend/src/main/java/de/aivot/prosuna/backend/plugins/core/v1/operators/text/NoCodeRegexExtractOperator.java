@@ -35,13 +35,13 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Regex-Extraktion“** extrahiert alle übereinstimmenden Teile eines Textes, die einem regulären Ausdruck entsprechen. \s
+                Die Funktion **„Regex-Extraktion“** extrahiert alle übereinstimmenden Teile eines Textes, die einem regulären Ausdruck entsprechen. \s
                 Das Ergebnis ist eine Liste der übereinstimmenden Teile.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten alle E-Mail-Adressen aus einem Text extrahieren.
                 
-                Mit dem Operator **„Regex-Extraktion“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Regex-Extraktion“** wird diese Logik so formuliert: \s
                 `Regex-Extraktion Text Regulärer Ausdruck`
                 
                 Beispielwerte: \s
@@ -55,9 +55,9 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
                 - **Text "abc123 def456" Regulärer Ausdruck "\\d+"** → **["123", "456"]** \s
                 - **Text "keine Übereinstimmung" Regulärer Ausdruck "\\d+"** → **[]**
                 
-                # Wann verwenden Sie den Operator „Regex-Extraktion“?
+                # Wann verwenden Sie die Funktion „Regex-Extraktion“?
                 Verwenden Sie **„Regex-Extraktion“**, um alle übereinstimmenden Teile eines Textes zu extrahieren, die einem bestimmten Muster entsprechen. \s
-                Dieser Operator ist besonders hilfreich bei der Extraktion von Daten wie E-Mail-Adressen, Telefonnummern oder anderen formatierten Daten.
+                Diese Funktion ist besonders hilfreich bei der Extraktion von Daten wie E-Mail-Adressen, Telefonnummern oder anderen formatierten Daten.
                 """;
     }
 

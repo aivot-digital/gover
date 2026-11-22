@@ -38,13 +38,13 @@ public class NoCodeAddOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Addiere“** summiert zwei oder mehr numerische Werte. \s
+                Die Funktion **„Addiere“** summiert zwei oder mehr numerische Werte. \s
                 Das Ergebnis ist die Summe aller angegebenen Werte.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten die Summe von zwei Zahlen berechnen.
                 
-                Mit dem Operator **„Addiere“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Addiere“** wird diese Logik so formuliert: \s
                 `Addiere Wert1 Wert2`
                 
                 Beispielwerte: \s
@@ -59,9 +59,9 @@ public class NoCodeAddOperator extends NoCodeOperator {
                 - **Addiere 10 20 30** → **60** \s
                 - **Addiere -5 5** → **0**
                 
-                # Wann verwenden Sie den Operator „Addiere“?
+                # Wann verwenden Sie die Funktion „Addiere“?
                 Verwenden Sie **„Addiere“**, um die Summe von zwei oder mehr numerischen Werten zu berechnen. \s
-                Dieser Operator ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
                 """;
     }
 

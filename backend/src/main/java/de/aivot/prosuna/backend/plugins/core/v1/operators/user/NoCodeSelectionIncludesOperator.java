@@ -44,7 +44,7 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Auswahl beinhaltet“** prüft, ob eine Auswahl aus einem Feld zur Auswahl von Organisationseinheiten, Teams und Personen \s
+                Die Funktion **„Auswahl beinhaltet“** prüft, ob eine Auswahl aus einem Feld zur Auswahl von Organisationseinheiten, Teams und Personen \s
                 oder aus einem Zuweisungskontext alle gesuchten Einträge enthält. Die Auswahl darf weitere Einträge enthalten.
 
                 Die gesuchten Einträge können aus einem anderen Auswahlfeld stammen oder als fester Wert angegeben werden. \s
@@ -55,7 +55,7 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
                 - Auswahl enthält `orgUnit:12`, gesucht wird `team:7` → **falsch**
                 - Auswahl ist leer → **falsch**
 
-                Um zu prüfen, dass ein Eintrag nicht ausgewählt ist, kombinieren Sie den Operator mit **„Nicht“**.
+                Um zu prüfen, dass ein Eintrag nicht ausgewählt ist, kombinieren Sie die Funktion mit **„Nicht“**.
                 """;
     }
 

@@ -41,7 +41,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Datum formatieren“** formatiert ein Datum nach einem frei definierbaren Muster.
+                Die Funktion **„Datum formatieren“** formatiert ein Datum nach einem frei definierbaren Muster.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben ein Datum und möchten es als `TT.MM.JJJJ` ausgeben.
@@ -53,7 +53,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
                 **Ergebnis:**
                 Ein Text im gewünschten Datumsformat, z. B. `15.08.2023`.
                 
-                # Wann verwenden Sie den Operator „Datum formatieren“?
+                # Wann verwenden Sie die Funktion „Datum formatieren“?
                 Verwenden Sie **„Datum formatieren“**, wenn Sie:
                 - Datumswerte als Text anzeigen oder weitergeben möchten.
                 - Ein bestimmtes Ausgabeformat für Datum/Uhrzeit benötigen.

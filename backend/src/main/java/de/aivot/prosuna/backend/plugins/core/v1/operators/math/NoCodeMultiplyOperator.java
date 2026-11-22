@@ -32,13 +32,13 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Multipliziere“** multipliziert zwei oder mehr numerische Werte. \s
+                Die Funktion **„Multipliziere“** multipliziert zwei oder mehr numerische Werte. \s
                 Das Ergebnis ist das Produkt aller angegebenen Werte.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten das Produkt von zwei Zahlen berechnen.
                 
-                Mit dem Operator **„Multipliziere“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Multipliziere“** wird diese Logik so formuliert: \s
                 `Multipliziere Wert1 Wert2`
                 
                 Beispielwerte: \s
@@ -53,9 +53,9 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
                 - **Multipliziere 4 5 6** → **120** \s
                 - **Multipliziere -2 3** → **-6**
                 
-                # Wann verwenden Sie den Operator „Multipliziere“?
+                # Wann verwenden Sie die Funktion „Multipliziere“?
                 Verwenden Sie **„Multipliziere“**, um das Produkt von zwei oder mehr numerischen Werten zu berechnen. \s
-                Dieser Operator ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
                 """;
     }
 

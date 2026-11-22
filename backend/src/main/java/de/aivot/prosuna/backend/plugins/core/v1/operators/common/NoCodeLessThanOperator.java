@@ -29,29 +29,29 @@ public class NoCodeLessThanOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Weniger als“** vergleicht zwei Werte und prüft, ob der erste Wert kleiner als der zweite Wert ist. \s
+                Die Funktion **„Weniger als“** vergleicht zwei Werte und prüft, ob der erste Wert kleiner als der zweite Wert ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der erste Wert kleiner ist als der zweite Wert. \s
                 Andernfalls ist das Ergebnis **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl kleiner als eine andere Zahl ist.
                 
-                Mit dem Operator **„Weniger als“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Weniger als“** wird diese Logik so formuliert: \s
                 `Wert1 WENIGER ALS Wert2`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn Wert1 kleiner ist als Wert2, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn Wert1 nicht kleiner ist als Wert2, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Weniger als“-Operator
+                # Wahrheitswerte der Funktion „Weniger als“
                 - **5 WENIGER ALS 10** → **wahr** \s
                 - **10 WENIGER ALS 5** → **falsch** \s
                 - **"abc" WENIGER ALS "abcd"** → **wahr** (Länge des Textes) \s
                 - **"abcd" WENIGER ALS "abc"** → **falsch** (Länge des Textes)
                 
-                # Wann verwenden Sie den Operator „Weniger als“?
+                # Wann verwenden Sie die Funktion „Weniger als“?
                 Verwenden Sie **„Weniger als“**, wenn Sie prüfen möchten, ob ein Wert kleiner ist als ein anderer Wert. \s
-                Dieser Operator ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
+                Diese Funktion ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
                 """;
     }
 

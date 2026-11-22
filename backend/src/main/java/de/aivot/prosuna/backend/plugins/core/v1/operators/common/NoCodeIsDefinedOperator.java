@@ -32,29 +32,29 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
     public String getDescription() {
         return """                
                 # Beschreibung:
-                Der Operator **„Ist nicht leer“** prüft, ob ein gegebener Wert **nicht leer** ist. \s
+                Die Funktion **„Ist nicht leer“** prüft, ob ein gegebener Wert **nicht leer** ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der Wert vorhanden ist, also nicht leer, null oder undefiniert. \s
-                Ist der Wert leer (z. B. ein leeres Feld, null oder ein nicht gesetzter Wert), ergibt der Operator den Wert **falsch**.
+                Ist der Wert leer (z. B. ein leeres Feld, null oder ein nicht gesetzter Wert), ergibt die Funktion den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person eine Telefonnummer angegeben hat.
                 
-                Mit dem Operator **„Ist nicht leer“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Ist nicht leer“** wird diese Logik so formuliert: \s
                 `IST NICHT LEER Telefonnummer`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn eine Telefonnummer angegeben ist, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn das Feld leer ist, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Ist nicht leer“-Operator
+                # Wahrheitswerte der Funktion „Ist nicht leer“
                 - **IST NICHT LEER Hallo** → **wahr** \s
                 - **IST NICHT LEER ""** (leerer Text) → **falsch** \s
                 - **IST NICHT LEER 123** → **wahr** \s
                 - **IST NICHT LEER null** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Ist nicht leer“?
+                # Wann verwenden Sie die Funktion „Ist nicht leer“?
                 Verwenden Sie **„Ist nicht leer“**, um sicherzustellen, dass ein Wert vorhanden ist, bevor Sie damit arbeiten. \s
-                Dieser Operator ist besonders hilfreich bei Formularen, um zu prüfen, ob eine Person Pflichtfelder ausgefüllt hat oder ob wichtige Daten bereitstehen.
+                Diese Funktion ist besonders hilfreich bei Formularen, um zu prüfen, ob eine Person Pflichtfelder ausgefüllt hat oder ob wichtige Daten bereitstehen.
                 """;
     }
 

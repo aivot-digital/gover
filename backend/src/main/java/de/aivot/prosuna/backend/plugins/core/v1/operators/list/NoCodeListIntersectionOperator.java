@@ -33,13 +33,13 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Schnittmenge zweier Listen“** ermittelt alle Werte, die in beiden Listen vorkommen. \s
+                Die Funktion **„Schnittmenge zweier Listen“** ermittelt alle Werte, die in beiden Listen vorkommen. \s
                 Das Ergebnis ist eine neue Liste mit den gemeinsamen Werten in der Reihenfolge ihres ersten Auftretens in der ersten Liste. \s
                 Jeder gemeinsame Wert wird dabei nur einmal zurückgegeben.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben zwei Listen mit Interessen: `["Sport", "Musik", "Reisen"]` und `["Lesen", "Musik", "Reisen"]`. \s
-                Mit dem Operator **„Schnittmenge zweier Listen“** können Sie die gemeinsamen Einträge ermitteln:
+                Mit der Funktion **„Schnittmenge zweier Listen“** können Sie die gemeinsamen Einträge ermitteln:
                 
                 ```text
                 Schnittmenge zweier Listen (["Sport", "Musik", "Reisen"], ["Lesen", "Musik", "Reisen"])
@@ -53,7 +53,7 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
                 - `["A", "A", "B"]` und `["A"]` → **Ergebnis:** `["A"]` \s
                 - `[]` und `["A"]` → **Ergebnis:** `[]`
                 
-                # Wann verwenden Sie den Operator „Schnittmenge zweier Listen“?
+                # Wann verwenden Sie die Funktion „Schnittmenge zweier Listen“?
                 Verwenden Sie **„Schnittmenge zweier Listen“**, wenn Sie:
                 - Gemeinsamkeiten zwischen zwei Listen identifizieren möchten. \s
                 - Prüfen möchten, welche Werte in zwei Datenquellen gleichzeitig vorkommen. \s

@@ -33,13 +33,13 @@ public class NoCodeBase64Operator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Konvertiere zu Base64“** konvertiert einen Text in eine Base64-kodierte Zeichenfolge. \s
+                Die Funktion **„Konvertiere zu Base64“** konvertiert einen Text in eine Base64-kodierte Zeichenfolge. \s
                 Das Ergebnis ist ein Text, der sicher in textbasierten Formaten übertragen oder gespeichert werden kann.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten einen Text für die Übertragung in einem textbasierten Format kodieren.
                 
-                Mit dem Operator **„Konvertiere zu Base64“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Konvertiere zu Base64“** wird diese Logik so formuliert: \s
                 `Konvertiere zu Base64 Text`
                 
                 Beispielwerte: \s
@@ -53,9 +53,9 @@ public class NoCodeBase64Operator extends NoCodeOperator {
                 - **Text "a,b,c"** → **"YSxiLGM="** \s
                 - **Text ""** → **""**
                 
-                # Wann verwenden Sie den Operator „Konvertiere zu Base64“?
+                # Wann verwenden Sie die Funktion „Konvertiere zu Base64“?
                 Verwenden Sie **„Konvertiere zu Base64“**, wenn Text in Base64-kodierter Form benötigt wird. \s
-                Dieser Operator ist besonders nützlich, wenn Textwerte in Schnittstellen, URLs oder anderen textbasierten Formaten weitergegeben werden.
+                Diese Funktion ist besonders nützlich, wenn Textwerte in Schnittstellen, URLs oder anderen textbasierten Formaten weitergegeben werden.
                 """;
     }
 

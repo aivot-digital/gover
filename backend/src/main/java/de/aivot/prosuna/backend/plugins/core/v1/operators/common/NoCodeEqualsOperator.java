@@ -31,29 +31,29 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Ist gleich“** vergleicht zwei Werte miteinander, um festzustellen, ob sie gleich sind. \s
+                Die Funktion **„Ist gleich“** vergleicht zwei Werte miteinander, um festzustellen, ob sie gleich sind. \s
                 Das Ergebnis ist **wahr** (true), wenn die beiden Werte exakt gleich sind. \s
-                Sind die beiden Werte unterschiedlich, ergibt der Operator **„Ist gleich“** den Wert **falsch**.
+                Sind die beiden Werte unterschiedlich, ergibt die Funktion **„Ist gleich“** den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine eingegebene Postleitzahl der benötigten Postleitzahl entspricht.
                 
-                Mit dem Operator **„Ist gleich“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Ist gleich“** wird diese Logik so formuliert: \s
                 `Eingabe Postleitzahl IST GLEICH Erwartete Postleitzahl`
                 
                 **Ergebnis:**
                 - Wenn die eingegebene Postleitzahl exakt der erwarteten Postleitzahl entspricht, ist das Ergebnis **wahr**.
                 - Wenn die eingegebene Postleitzahl von der erwarteten Postleitzahl abweicht, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Ist gleich“-Operator
+                # Wahrheitswerte der Funktion „Ist gleich“
                 - **10 IST GLEICH 10** → **wahr** \s
                 - **10 IST GLEICH 20** → **falsch** \s
                 - **"Hallo" IST GLEICH "Hallo"** → **wahr** \s
                 - **"Hallo" IST GLEICH "Welt"** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Ist gleich“?
+                # Wann verwenden Sie die Funktion „Ist gleich“?
                 Verwenden Sie **„Ist gleich“**, wenn Sie prüfen möchten, ob zwei Werte exakt übereinstimmen. \s
-                Dieser Operator ist besonders hilfreich bei Validierungen, z. B. um sicherzustellen, dass Benutzereingaben mit den erwarteten Werten übereinstimmen.
+                Diese Funktion ist besonders hilfreich bei Validierungen, z. B. um sicherzustellen, dass Benutzereingaben mit den erwarteten Werten übereinstimmen.
                 """;
     }
 

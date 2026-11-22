@@ -33,13 +33,13 @@ public class NoCodeSplitOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Aufteilen“** teilt einen Text anhand eines angegebenen Separators auf. \s
+                Die Funktion **„Aufteilen“** teilt einen Text anhand eines angegebenen Separators auf. \s
                 Das Ergebnis ist eine Liste von Teilstrings, die durch das Aufteilen des Eingabetextes entstehen.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten einen Satz in einzelne Wörter aufteilen.
                 
-                Mit dem Operator **„Aufteilen“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Aufteilen“** wird diese Logik so formuliert: \s
                 `Aufteilen Text Separator`
                 
                 Beispielwerte: \s
@@ -54,9 +54,9 @@ public class NoCodeSplitOperator extends NoCodeOperator {
                 - **Text "hallo welt" Separator " "** → **["hallo", "welt"]** \s
                 - **Text "eins|zwei|drei" Separator "|"** → **["eins", "zwei", "drei"]**
                 
-                # Wann verwenden Sie den Operator „Aufteilen“?
+                # Wann verwenden Sie die Funktion „Aufteilen“?
                 Verwenden Sie **„Aufteilen“**, um einen Text in Teile zu zerlegen, basierend auf einem bestimmten Separator. \s
-                Dieser Operator ist besonders nützlich beim Parsen von CSV-Daten, beim Tokenisieren von Sätzen oder beim Verarbeiten von getrennten Zeichenfolgen.
+                Diese Funktion ist besonders nützlich beim Parsen von CSV-Daten, beim Tokenisieren von Sätzen oder beim Verarbeiten von getrennten Zeichenfolgen.
                 """;
     }
 

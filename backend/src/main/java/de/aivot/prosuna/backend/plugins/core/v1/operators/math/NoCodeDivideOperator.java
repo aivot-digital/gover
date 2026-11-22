@@ -33,14 +33,14 @@ public class NoCodeDivideOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Dividiere“** teilt einen numerischen Wert durch einen anderen. \s
+                Die Funktion **„Dividiere“** teilt einen numerischen Wert durch einen anderen. \s
                 Das Ergebnis ist der Quotient der beiden Werte.
                 Division durch null ist nicht möglich und führt zu einem Fehler.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten den Quotienten von zwei Zahlen berechnen.
                 
-                Mit dem Operator **„Dividiere“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Dividiere“** wird diese Logik so formuliert: \s
                 `Dividiere Wert1 Wert2`
                 
                 Beispielwerte: \s
@@ -55,9 +55,9 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                 - **Dividiere 9 3** → **3** \s
                 - **Dividiere 5 0** → **Fehler** (Division durch null)
                 
-                # Wann verwenden Sie den Operator „Dividiere“?
+                # Wann verwenden Sie die Funktion „Dividiere“?
                 Verwenden Sie **„Dividiere“**, um den Quotienten von zwei numerischen Werten zu berechnen. \s
-                Dieser Operator ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                Diese Funktion ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
                 """;
     }
 

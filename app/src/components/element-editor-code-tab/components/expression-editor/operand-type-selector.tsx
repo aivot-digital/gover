@@ -63,7 +63,7 @@ export function OperandTypeSelector(props: OperandTypeSelectorProps) {
                 }}
                 startIcon={OperandTypeIcon.exp}
             >
-                Ausdruck
+                Mit Funktion ermitteln
             </Button>
 
             <Button
@@ -81,7 +81,7 @@ export function OperandTypeSelector(props: OperandTypeSelectorProps) {
                 }}
                 startIcon={OperandTypeIcon.reference}
             >
-                Referenz
+                Aus Formularelement übernehmen
             </Button>
 
             <Button
@@ -99,7 +99,7 @@ export function OperandTypeSelector(props: OperandTypeSelectorProps) {
                 }}
                 startIcon={OperandTypeIcon.value}
             >
-                Wert
+                Wert selbst festlegen
             </Button>
 
             {

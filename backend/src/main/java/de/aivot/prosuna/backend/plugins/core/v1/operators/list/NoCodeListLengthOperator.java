@@ -29,13 +29,13 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Listenlänge“** gibt die Anzahl der Elemente in einer Liste zurück. \s
+                Die Funktion **„Listenlänge“** gibt die Anzahl der Elemente in einer Liste zurück. \s
                 Das Ergebnis ist eine Ganzzahl, die die Anzahl der Elemente in der Liste darstellt.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten die Anzahl der Städte in einer Liste von Städten ermitteln.
                 
-                Mit dem Operator **„Listenlänge“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Listenlänge“** wird diese Logik so formuliert: \s
                 `Listenlänge Liste`
                 
                 Beispielwerte: \s
@@ -49,9 +49,9 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
                 - **Liste []** → **0** \s
                 - **Liste ["1", "2", "3", "4"]** → **4**
                 
-                # Wann verwenden Sie den Operator „Listenlänge“?
+                # Wann verwenden Sie die Funktion „Listenlänge“?
                 Verwenden Sie **„Listenlänge“**, um die Anzahl der Elemente in einer Liste zu ermitteln. \s
-                Dieser Operator ist besonders hilfreich, wenn Sie die Größe einer Liste überprüfen oder verarbeiten möchten.
+                Diese Funktion ist besonders hilfreich, wenn Sie die Größe einer Liste überprüfen oder verarbeiten möchten.
                 """;
     }
 

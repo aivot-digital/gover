@@ -31,13 +31,13 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Objektzugriff“** gibt ein Element eines Objekts zurück. \s
+                Die Funktion **„Objektzugriff“** gibt ein Element eines Objekts zurück. \s
                 Sollte der angegebene Schlüssel nicht im Objekt vorhanden sein, wird **null** zurückgegeben.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten die Postleitzahl einer Stadt aus einem Objekt extrahieren. \s
                 
-                Mit dem Operator **„Objektzugriff“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Objektzugriff“** wird diese Logik so formuliert: \s
                 `Objektzugriff Stadt Postleitzahl`
                 
                 Beispielwerte: \s
@@ -51,9 +51,9 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
                 - `Objektzugriff {"name": "Marburg", "postleitzahl": "35039", "ambiente": "Schön"} postleitzahl` \s
                   **Ergebnis:** "35039"
                 
-                # Wann verwenden Sie den Operator „Objektzugriff“?
+                # Wann verwenden Sie die Funktion „Objektzugriff“?
                 Verwenden Sie **„Objektzugriff“**, um ein bestimmtes Element aus einem Objekt zu extrahieren. \s
-                Dieser Operator ist besonders hilfreich, wenn Sie gezielt auf Elemente innerhalb eines Objekts zugreifen möchten, z. B. um spezifische Daten zu extrahieren oder zu verarbeiten.
+                Diese Funktion ist besonders hilfreich, wenn Sie gezielt auf Elemente innerhalb eines Objekts zugreifen möchten, z. B. um spezifische Daten zu extrahieren oder zu verarbeiten.
                 """;
     }
 

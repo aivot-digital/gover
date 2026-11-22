@@ -28,25 +28,25 @@ public class NoCodeNotOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Nicht“** (auch bekannt als logische Negation) kehrt den Wahrheitswert einer Bedingung um. \s
+                Die Funktion **„Nicht“** (auch bekannt als logische Negation) kehrt den Wahrheitswert einer Bedingung um. \s
                 Das Ergebnis ist **wahr** (true), wenn die ursprüngliche Bedingung **falsch** ist. \s
-                Ist die ursprüngliche Bedingung **wahr**, ergibt der Operator **„Nicht“** den Wert **falsch**.
+                Ist die ursprüngliche Bedingung **wahr**, ergibt die Funktion **„Nicht“** den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person **keinen gültigen Ausweis** hat.
                 
-                Mit dem Operator **„Nicht“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Nicht“** wird diese Logik so formuliert: \s
                 `NICHT Hat gültigen Ausweis`
                 
                 **Ergebnis:**
                 - Wenn die Person **keinen gültigen Ausweis** hat, ist das Ergebnis **wahr**.
                 - Wenn die Person **einen gültigen Ausweis** hat, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Nicht“-Operator
+                # Wahrheitswerte der Funktion „Nicht“
                 - **NICHT wahr** → **falsch**
                 - **NICHT falsch** → **wahr**
                 
-                # Wann verwenden Sie den Operator „Nicht“?
+                # Wann verwenden Sie die Funktion „Nicht“?
                 Verwenden Sie **„Nicht“**, wenn Sie prüfen möchten, ob eine Bedingung **nicht erfüllt** ist. \s
                 Dies ist besonders hilfreich, wenn Sie Ausschlusskriterien festlegen möchten, z. B. um Bedingungen umzukehren oder auszudrücken, dass etwas „nicht wahr“ ist.
                 """;

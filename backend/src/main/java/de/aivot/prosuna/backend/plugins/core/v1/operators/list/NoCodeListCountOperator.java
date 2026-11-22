@@ -29,13 +29,13 @@ public class NoCodeListCountOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Vorkommen in Liste zählen“** zählt, wie oft ein bestimmter Wert in einer Liste vorkommt. \s
+                Die Funktion **„Vorkommen in Liste zählen“** zählt, wie oft ein bestimmter Wert in einer Liste vorkommt. \s
                 Das Ergebnis ist eine Zahl.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie möchten zählen, wie oft eine ausgewählte Antwort in einer Liste enthalten ist.
                 
-                Mit dem Operator **„Vorkommen in Liste zählen“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Vorkommen in Liste zählen“** wird diese Logik so formuliert: \s
                 `Vorkommen in Liste zählen Antworten "Ja"`
                 
                 Beispielwerte: \s
@@ -44,7 +44,7 @@ public class NoCodeListCountOperator extends NoCodeOperator {
                 
                 **Ergebnis:** 2
                 
-                # Wann verwenden Sie den Operator „Vorkommen in Liste zählen“?
+                # Wann verwenden Sie die Funktion „Vorkommen in Liste zählen“?
                 Verwenden Sie **„Vorkommen in Liste zählen“**, wenn Sie ermitteln möchten, wie häufig ein Wert in einer Liste enthalten ist.
                 """;
     }

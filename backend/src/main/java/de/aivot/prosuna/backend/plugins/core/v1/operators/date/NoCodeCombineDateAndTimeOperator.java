@@ -39,7 +39,7 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
     @Override
     public String getDescription() {
         return """
-                Der Operator verbindet ein vollständiges Kalenderdatum und eine lokale Uhrzeit.
+                Die Funktion verbindet ein vollständiges Kalenderdatum und eine lokale Uhrzeit.
                 Die lokale Datums- und Uhrzeitangabe wird in der Zeitzone der Anwendung aufgelöst und als absoluter Zeitpunkt zurückgegeben.
                 Nicht existierende lokale Uhrzeiten während einer DST-Umstellung werden abgelehnt.
                 """;

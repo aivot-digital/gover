@@ -34,7 +34,7 @@ public class NoCodeCreateNowOperator extends NoCodeOperator {
     @Override
     public String getDescription() {
         return """
-                Der Operator **„Aktueller Zeitpunkt“** liefert den aktuellen absoluten Zeitpunkt.
+                Die Funktion **„Aktueller Zeitpunkt“** liefert den aktuellen absoluten Zeitpunkt.
                 Bei der Ausgabe wird der für diesen Zeitpunkt gültige Offset der Zeitzone der Anwendung verwendet.
                 """;
     }

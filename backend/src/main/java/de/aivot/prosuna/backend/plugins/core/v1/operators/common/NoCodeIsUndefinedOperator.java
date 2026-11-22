@@ -25,29 +25,29 @@ public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Ist leer“** prüft, ob ein gegebener Wert **leer** ist. \s
+                Die Funktion **„Ist leer“** prüft, ob ein gegebener Wert **leer** ist. \s
                 Das Ergebnis ist **wahr** (true), wenn der Wert leer, null oder undefiniert ist. \s
-                Ist der Wert vorhanden (also nicht leer), ergibt der Operator den Wert **falsch**.
+                Ist der Wert vorhanden (also nicht leer), ergibt die Funktion den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person keine E-Mail-Adresse angegeben hat.
                 
-                Mit dem Operator **„Ist leer“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Ist leer“** wird diese Logik so formuliert: \s
                 `IST LEER E-Mail-Adresse`
                 
                 **Ergebnis:**
                 - **Bedingung wahr:** Wenn das Feld für die E-Mail-Adresse leer ist, ist das Ergebnis **wahr**. \s
                 - **Bedingung falsch:** Wenn eine E-Mail-Adresse angegeben wurde, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Ist leer“-Operator
+                # Wahrheitswerte der Funktion „Ist leer“
                 - **IST LEER ""** (leerer Text) → **wahr** \s
                 - **IST LEER null** → **wahr** \s
                 - **IST LEER "Hallo"** → **falsch** \s
                 - **IST LEER 123** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Ist leer“?
+                # Wann verwenden Sie die Funktion „Ist leer“?
                 Verwenden Sie **„Ist leer“**, um zu prüfen, ob ein Wert fehlt oder leer ist. \s
-                Dieser Operator ist besonders hilfreich bei Formularen, um zu validieren, ob eine Person erforderliche Felder leer gelassen hat, oder um sicherzustellen, dass bestimmte Daten eingegeben wurden.
+                Diese Funktion ist besonders hilfreich bei Formularen, um zu validieren, ob eine Person erforderliche Felder leer gelassen hat, oder um sicherzustellen, dass bestimmte Daten eingegeben wurden.
                 """;
     }
 

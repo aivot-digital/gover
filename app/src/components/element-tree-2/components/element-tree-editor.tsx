@@ -469,7 +469,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     if (draft == null) return;
                                     if (JSON.stringify(draft.draft) !== JSON.stringify(draft.initial) && !await showConfirm({
                                         theme: drawerTheme,
-                                        confirmButtonColor: 'error',
+                                        isDestructive: true,
                                         title: 'Umstellung abbrechen?',
                                         confirmButtonText: 'Neue Fassung verwerfen',
                                         children: 'Die neue Fassung wird verworfen. Die bisherige Regel und andere Änderungen am Element bleiben erhalten.',

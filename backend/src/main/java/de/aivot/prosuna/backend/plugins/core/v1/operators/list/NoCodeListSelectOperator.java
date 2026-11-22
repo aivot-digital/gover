@@ -29,13 +29,13 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Werte aus Liste“** dient dazu, die Werte einer bestimmten **Spalte** (Feld) aus einer Tabelle oder einer Liste von Objekten zu extrahieren. \s
+                Die Funktion **„Werte aus Liste“** dient dazu, die Werte einer bestimmten **Spalte** (Feld) aus einer Tabelle oder einer Liste von Objekten zu extrahieren. \s
                 Das Ergebnis ist eine neue Liste, die nur die Werte des angegebenen Feldes enthält. \s
-                Dieser Operator ist ideal, wenn Sie gezielt Daten aus einer bestimmten Spalte einer Tabelle benötigen, um diese weiterzuverarbeiten oder anzuzeigen.
+                Diese Funktion ist ideal, wenn Sie gezielt Daten aus einer bestimmten Spalte einer Tabelle benötigen, um diese weiterzuverarbeiten oder anzuzeigen.
                 
                 # Anwendungsbeispiel:
                 Angenommen, Sie haben eine Tabelle mit Personendaten, die Felder wie **„Name“**, **„Alter“** und **„Stadt“** enthält. \s
-                Mit dem Operator **„Werte aus Liste“** können Sie beispielsweise die Spalte **„Name“** extrahieren, um nur die Namen der Personen zu erhalten:
+                Mit der Funktion **„Werte aus Liste“** können Sie beispielsweise die Spalte **„Name“** extrahieren, um nur die Namen der Personen zu erhalten:
                 
                 ```text
                 Werte aus Liste Personen -> Spalte: "Name"
@@ -48,9 +48,9 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
                 - Extraktion der Spalte **„Alter“** ergibt: `[25, 30, 22]` \s
                 - Extraktion der Spalte **„Stadt“** ergibt: `["Berlin", "Hamburg", "München"]`
                 
-                # Wann verwenden Sie den Operator „Werte aus Liste“?
+                # Wann verwenden Sie die Funktion „Werte aus Liste“?
                 Verwenden Sie **„Werte aus Liste“**, wenn Sie gezielt die Werte einer Spalte aus einer Tabelle oder Liste extrahieren möchten. \s
-                Dieser Operator ist besonders nützlich in den folgenden Szenarien:
+                Diese Funktion ist besonders nützlich in den folgenden Szenarien:
                 
                 - Sie möchten alle Werte aus einem bestimmten Feld (z. B. „Name“ oder „ID“) extrahieren, um sie weiterzuverarbeiten. \s
                 - Sie benötigen die Daten einer Spalte, z. B. für Filter, Analysen oder Berichte. \s

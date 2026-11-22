@@ -31,7 +31,7 @@ public class NoCodePhoneNumberIsPossibleOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Telefonnummer ist plausibel“** prüft, ob eine Telefonnummer mit internationaler Ländervorwahl grundsätzlich plausibel ist.
+                Die Funktion **„Telefonnummer ist plausibel“** prüft, ob eine Telefonnummer mit internationaler Ländervorwahl grundsätzlich plausibel ist.
 
                 Die Prüfung ist bewusst weniger streng als **„Telefonnummer ist gültig“**. Sie prüft vor allem, ob die Telefonnummer für das jeweilige Land eine mögliche Länge und Struktur hat. Neue oder seltene Nummernbereiche werden dadurch weniger wahrscheinlich abgelehnt.
 

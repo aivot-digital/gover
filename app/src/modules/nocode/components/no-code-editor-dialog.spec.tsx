@@ -69,7 +69,7 @@ describe('NoCodeEditorDialog', () => {
                                    onApply={onApply}
                                    onClose={vi.fn()}/>);
         await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
-        fireEvent.click(screen.getByRole('button', {name: 'Festen Wert „text“ löschen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Wert „text“ löschen'}));
         await screen.findByRole('button', {name: 'Ausdruck hinzufügen'});
         expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled();
         expect(screen.queryByRole('button', {name: 'Leerer Wert, Textwert'})).not.toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('NoCodeEditorDialog', () => {
         }}
                                    onApply={onApply}
                                    onClose={onClose}/>);
-        fireEvent.click(await screen.findByRole('button', {name: 'Festen Wert „text“ löschen'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'Wert „text“ löschen'}));
         fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
         const confirmation = await screen.findByRole('dialog', {name: 'Änderungen verwerfen?'});
         expect(onClose).not.toHaveBeenCalled();
@@ -139,8 +139,8 @@ describe('NoCodeEditorDialog', () => {
         }}
                                    onApply={vi.fn()}
                                    onClose={vi.fn()}/>);
-        expect(await screen.findByText(/Die Operatoren konnten nicht geladen werden/)).toBeInTheDocument();
-        expect(screen.queryByText('Unbekannter Operator')).not.toBeInTheDocument();
+        expect(await screen.findByText(/Die Funktionen konnten nicht geladen werden/)).toBeInTheDocument();
+        expect(screen.queryByText('Unbekannte Funktion')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeDisabled();
         fireEvent.click(screen.getByRole('button', {name: 'Erneut laden'}));
         await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
@@ -155,7 +155,7 @@ describe('NoCodeEditorDialog', () => {
         }}
                                    onApply={vi.fn()}
                                    onClose={vi.fn()}/>);
-        expect(await screen.findAllByText('Der ausgewählte Operator ist nicht verfügbar.')).not.toHaveLength(0);
+        expect(await screen.findAllByText('Die ausgewählte Funktion ist nicht verfügbar.')).not.toHaveLength(0);
         expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled();
         fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
         expect(screen.getByRole('treeitem')).toHaveFocus();
@@ -181,7 +181,7 @@ it('keeps the parameters of an unavailable extension visible and does not emit a
     }}
                                onApply={onApply}
                                onClose={onClose}/>);
-    expect(await screen.findAllByText('Der ausgewählte Operator ist nicht verfügbar.')).not.toHaveLength(0);
+    expect(await screen.findAllByText('Die ausgewählte Funktion ist nicht verfügbar.')).not.toHaveLength(0);
     expect(screen.getAllByRole('treeitem')).toHaveLength(3);
     expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled();
     fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
@@ -200,7 +200,7 @@ it('uses a large dialog without maximization, retains history and validates only
                                required
                                onApply={onApply}
                                onClose={vi.fn()}/>);
-    fireEvent.click(await screen.findByRole('button', {name: 'Festen Wert „text“ löschen'}));
+    fireEvent.click(await screen.findByRole('button', {name: 'Wert „text“ löschen'}));
     expect(screen.queryByText('Legen Sie einen Ausdruck fest.')).not.toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveClass('MuiDialog-paperWidthLg');
     expect(screen.queryByRole('button', {name: /Dialog maximieren|Dialog verkleinern/})).not.toBeInTheDocument();

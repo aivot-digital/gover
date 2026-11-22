@@ -26,9 +26,9 @@ public class NoCodeAndOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Und“** (auch bekannt als logisches UND) verknüpft zwei Wahrheitswerte miteinander. \s
+                Die Funktion **„Und“** (auch bekannt als logisches UND) verknüpft zwei Wahrheitswerte miteinander. \s
                 Das Ergebnis ist **wahr** (true), wenn beide der verknüpften Bedingungen **wahr** sind. \s
-                Falls eine der Bedingungen oder beide **falsch** (false) sind, ergibt der Operator **„Und“** den Wert **falsch**.
+                Falls eine der Bedingungen oder beide **falsch** (false) sind, ergibt die Funktion **„Und“** den Wert **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person die folgenden Bedingungen gleichzeitig erfüllt:
@@ -36,20 +36,20 @@ public class NoCodeAndOperator extends NoCodeOperator {
                 - Sie ist über 18 Jahre alt.
                 - Sie hat einen gültigen Ausweis.
                 
-                Mit dem Operator „Und“ wird diese Logik so formuliert: \s
+                Mit der Funktion „Und“ wird diese Logik so formuliert: \s
                 `Alter > 18 UND Hat gültigen Ausweis`.
                 
                 **Ergebnis:**
                 - Wenn die Person **über 18 ist** und einen **gültigen Ausweis besitzt**, ist das Ergebnis **wahr**.
                 - Wenn eine oder beide Bedingungen nicht erfüllt sind, ist das Ergebnis **falsch**.
                 
-                # Wahrheitswerte für den „Und“-Operator
+                # Wahrheitswerte der Funktion „Und“
                 - **wahr** UND **wahr** → **wahr**
                 - **wahr** UND **falsch** → **falsch**
                 - **falsch** UND **wahr** → **falsch**
                 - **falsch** UND **falsch** → **falsch**
                 
-                # Wann verwenden Sie den Operator „Und“?
+                # Wann verwenden Sie die Funktion „Und“?
                 Verwenden Sie **„Und“**, wenn alle Bedingungen erfüllt sein müssen, um die gewünschte Aktion oder Entscheidung zu treffen. \s
                 Dies ist hilfreich, wenn Sie z. B. Formulare oder Entscheidungen erstellen, bei denen mehrere Kriterien gleichzeitig erfüllt sein müssen.
                 """;

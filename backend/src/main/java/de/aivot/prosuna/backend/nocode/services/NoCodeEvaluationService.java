@@ -220,11 +220,11 @@ public class NoCodeEvaluationService {
         var operatorIdentifier = expression.getOperatorIdentifier();
         var operator = operatorIdentifier == null ? null : noCodeOperatorProviders.get(operatorIdentifier);
         if (operator == null) {
-            return NoCodeDryRunResultDTO.failed("Der Operator ist nicht verfügbar.", operandResults);
+            return NoCodeDryRunResultDTO.failed("Die Funktion ist nicht verfügbar.", operandResults);
         }
         if (!dryRunOperatorIdentifiers.contains(operatorIdentifier)) {
             return NoCodeDryRunResultDTO.skipped(
-                    "Dieser Operator wird im Testlauf nicht ausgeführt, weil er geschützte Daten liest oder Aktionen auslösen kann.",
+                    "Diese Funktion wird im Testlauf nicht ausgeführt, weil sie geschützte Daten liest oder Aktionen auslösen kann.",
                     operandResults
             );
         }
@@ -239,16 +239,16 @@ public class NoCodeEvaluationService {
         try {
             return NoCodeDryRunResultDTO.evaluated(operator.evaluate(elementData, operandValues).getValue(), operandResults);
         } catch (NoCodeWrongArgumentCountException e) {
-            return NoCodeDryRunResultDTO.failed("Die Anzahl der Parameter passt nicht zum Operator.", operandResults);
+            return NoCodeDryRunResultDTO.failed("Die Anzahl der Parameter passt nicht zur Funktion.", operandResults);
         } catch (NoCodeException e) {
             // Operators raise NoCodeException with messages written for the people who author expressions.
             return NoCodeDryRunResultDTO.failed(
-                    e.getMessage() == null ? "Der Operator konnte nicht ausgewertet werden." : e.getMessage(),
+                    e.getMessage() == null ? "Die Funktion konnte nicht ausgewertet werden." : e.getMessage(),
                     operandResults
             );
         } catch (RuntimeException e) {
             logger.debug("No-code dry run failed for operator {}", operatorIdentifier, e);
-            return NoCodeDryRunResultDTO.failed("Der Operator konnte mit diesen Werten nicht ausgewertet werden.", operandResults);
+            return NoCodeDryRunResultDTO.failed("Die Funktion konnte mit diesen Werten nicht ausgewertet werden.", operandResults);
         }
     }
 

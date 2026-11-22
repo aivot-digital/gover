@@ -95,14 +95,14 @@ public class NoCodeExpression extends NoCodeOperand {
 
                     subErrors.add(operand.validate());
                 } else {
-                    subErrors.add(new NoCodeOperandError(null, "Ein leerer Operator ist nicht erlaubt.", List.of()));
+                    subErrors.add(new NoCodeOperandError(null, "Legen Sie einen Ausdruck fest.", List.of()));
                 }
             }
         }
 
         String thisError = null;
         if (StringUtils.isNullOrEmpty(operatorIdentifier)) {
-            thisError = "Ein leerer Operator ist nicht erlaubt.";
+            thisError = "Wählen Sie eine Funktion aus.";
         }
 
         var op = SpringContext
@@ -111,7 +111,7 @@ public class NoCodeExpression extends NoCodeOperand {
                 .orElse(null);
 
         if (op == null) {
-            thisError = "Der angegebene Operator existiert nicht.";
+            thisError = "Die ausgewählte Funktion ist nicht verfügbar.";
         } else {
             var parameterCountMatched = false;
             for (var sig : op.getSignatures()) {

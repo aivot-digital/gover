@@ -24,18 +24,18 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     @Override
     public String getDescription() {
         return """                
-                ### **Operator: "Ist nicht sichtbar"**
+                ### **Funktion: "Ist nicht sichtbar"**
                 
                 # Beschreibung:
-                Der Operator **„Ist nicht sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
+                Die Funktion **„Ist nicht sichtbar“** prüft den berechneten Sichtbarkeitszustand des angegebenen Formularelements. \s
                 Geben Sie die **ID eines im Formular konfigurierten Formularelements** an. \s
-                Der Operator gibt **wahr** (true) zurück, wenn der berechnete Zustand nicht sichtbar ist, und **falsch** (false), wenn er sichtbar ist.
+                Die Funktion gibt **wahr** (true) zurück, wenn der berechnete Zustand nicht sichtbar ist, und **falsch** (false), wenn er sichtbar ist.
                 
                 # Anwendungsbeispiel:
                 Im Formular ist ein Eingabefeld mit der ID `"telefonnummer"` konfiguriert.
                 Seine Sichtbarkeit wird über eine Bedingung gesteuert.
                 
-                Mit dem Operator **„Ist nicht sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
+                Mit der Funktion **„Ist nicht sichtbar“** prüfen Sie dessen berechneten Sichtbarkeitszustand: \s
                 ```text
                 Ist nicht sichtbar("telefonnummer")
                 ```
@@ -48,7 +48,7 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
                 - **Ist nicht sichtbar("zusatzangaben"):** → **falsch**, wenn der im Formular konfigurierte Abschnitt `"zusatzangaben"` im berechneten Zustand sichtbar ist. \s
                 - **Ist nicht sichtbar("hinweis"):** → **wahr**, wenn das im Formular konfigurierte Textelement `"hinweis"` im berechneten Zustand nicht sichtbar ist.
                 
-                # Wann verwenden Sie den Operator „Ist nicht sichtbar“?
+                # Wann verwenden Sie die Funktion „Ist nicht sichtbar“?
                 Verwenden Sie **„Ist nicht sichtbar“**, um Bedingungen in Ihrem Formular vom berechneten Sichtbarkeitszustand eines anderen Formularelements abhängig zu machen.
                 """;
     }

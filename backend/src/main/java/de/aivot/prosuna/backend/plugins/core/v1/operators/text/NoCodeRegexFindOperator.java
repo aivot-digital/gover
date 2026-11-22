@@ -33,7 +33,7 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Text enthält Muster“** prüft, ob irgendein Teil eines Textes zu einem regulären Ausdruck passt. \s
+                Die Funktion **„Text enthält Muster“** prüft, ob irgendein Teil eines Textes zu einem regulären Ausdruck passt. \s
                 Anders als bei **„Regex-Übereinstimmung“** muss nicht der gesamte Text dem Muster entsprechen.
 
                 # Beispiele:
@@ -41,7 +41,7 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
                 - **Text** „Aktenzeichen fehlt“, **Regulärer Ausdruck** „AZ-\\d{4}“ → **falsch**
 
                 Ein ungültiger regulärer Ausdruck führt zu einem Fehler. \s
-                Um das Gegenteil zu prüfen, kombinieren Sie den Operator mit **„Nicht“**.
+                Um das Gegenteil zu prüfen, kombinieren Sie die Funktion mit **„Nicht“**.
                 """;
     }
 

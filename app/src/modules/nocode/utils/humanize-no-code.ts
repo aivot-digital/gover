@@ -28,7 +28,7 @@ export function humanizeNoCode(operand: NoCodeOperand | null, allElements: Eleme
             case 'NoCodeReference': {
                 const element = allElements.find(({element}) => element.id === node.elementId)?.element;
                 return element != null ? `Wert von „${generateComponentTitle(element)}“`
-                    : node.elementId ? `Unbekanntes Element (ID: ${node.elementId})` : 'Kein Element ausgewählt';
+                    : node.elementId ? `Unbekanntes Formularelement (ID: ${node.elementId})` : 'Kein Formularelement ausgewählt';
             }
             case 'NoCodeProcessDataReference':
             case 'NoCodeInstanceDataReference':
@@ -48,7 +48,7 @@ export function humanizeNoCode(operand: NoCodeOperand | null, allElements: Eleme
             case 'NoCodeExpression': {
                 const operator = allOperators.find((candidate) => candidate.identifier === node.operatorIdentifier);
                 const operands = node.operands ?? [];
-                if (operator == null) return `Unbekannter Operator (${node.operatorIdentifier || 'keine Auswahl'})${operands.length ? `: ${operands.map((child) => describe(child)).join('; ')}` : ''}`;
+                if (operator == null) return `${node.operatorIdentifier ? `Unbekannte Funktion (${node.operatorIdentifier})` : 'Keine Funktion ausgewählt'}${operands.length ? `: ${operands.map((child) => describe(child)).join('; ')}` : ''}`;
                 const {parameters} = resolveNoCodeSignature(operator, {operandCount: operands.length || undefined});
                 const referenceOptions = operands.map((child) => {
                     if (child?.type === 'NoCodeProcessDataReference') return context.processOptions?.get(child.path ?? '') ?? [];
@@ -105,7 +105,7 @@ export function summarizeNoCodeParameters(operand: NoCodeOperand, allElements: E
         if (!child) description = `Fehlender Parameter „${label}“`;
         else if (child.type === 'NoCodeExpression') {
             const childOperator = allOperators.find(candidate => candidate.identifier === child.operatorIdentifier);
-            description = `(${[childOperator?.label ?? 'Unbekannter Operator', childOperator?.sentenceLead,
+            description = `(${[childOperator?.label ?? (child.operatorIdentifier ? 'Unbekannte Funktion' : 'Keine Funktion ausgewählt'), childOperator?.sentenceLead,
                 summarizeNoCodeParameters(child, allElements, allOperators, context)].filter(Boolean).join(' ')})`;
         } else if (child.type === 'NoCodeStaticValue') {
             description = formatNoCodeValue(child.value, parameter?.type, parameter?.options.length ? parameter.options : suggestions[i]);

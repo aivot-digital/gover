@@ -197,7 +197,7 @@ describe('NoCodeEditor', () => {
         const onChange = vi.fn();
         render(<Harness onChange={onChange} {...{[mode]: true}}/>);
         expect(screen.getByRole('tree')).toHaveAttribute('aria-readonly', 'true');
-        expect(screen.queryByRole('button', {name: 'Festen Wert „a“ löschen'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Wert „a“ löschen'})).not.toBeInTheDocument();
         const first = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'});
         first.focus();
         for (const key of ['Delete', 'Backspace', ' ']) fireEvent.keyDown(first, {key});
@@ -205,7 +205,7 @@ describe('NoCodeEditor', () => {
             key: 'F10',
             shiftKey: true,
         });
-        expect(await screen.findByRole('menuitem', {name: 'Übergeordneten Operator hinzufügen'})).toHaveAttribute('aria-disabled', 'true');
+        expect(await screen.findByRole('menuitem', {name: 'Übergeordnete Funktion hinzufügen'})).toHaveAttribute('aria-disabled', 'true');
         fireEvent.click(screen.getByRole('menuitem', {name: 'An andere Stelle verschieben'}));
         expect(onChange).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('menuitem', {name: 'Beschreibung anzeigen'}));
@@ -227,7 +227,7 @@ describe('NoCodeEditor', () => {
     it('undoes and redoes deletion of the complete expression using the history buttons', async () => {
         const onChange = vi.fn();
         render(<Harness onChange={onChange}/>);
-        const root = screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'});
+        const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'});
         root.focus();
         fireEvent.keyDown(root, {key: 'Delete'});
         expect(onChange).not.toHaveBeenCalled();
@@ -240,6 +240,117 @@ describe('NoCodeEditor', () => {
         expect(onChange).toHaveBeenLastCalledWith(null);
         fireEvent.click(screen.getByRole('button', {name: 'Rückgängig'}));
         expect(onChange).toHaveBeenLastCalledWith(expression);
+    });
+
+    it.each([
+        {
+            name: 'a single value',
+            initial: a,
+            trigger: 'button',
+            cancel: 'button',
+        },
+        {
+            name: 'an operator without parameters',
+            initial: {type: 'NoCodeExpression', operatorIdentifier: 'always-true', operands: []} as NoCodeOperand,
+            trigger: 'keyboard',
+            cancel: 'escape',
+        },
+        {
+            name: 'an operator with empty parameters',
+            initial: {type: 'NoCodeExpression', operatorIdentifier: 'equals', operands: [null, null]} as NoCodeOperand,
+            trigger: 'menu',
+            cancel: 'close',
+        },
+    ])('confirms losing notes when deleting $name and restores them with undo', async ({initial, trigger, cancel}) => {
+        const stored: NoCodeOperand = {...initial, editorMetadata: {notes: 'Fachliche Ausnahme'}};
+        const onChange = vi.fn();
+        render(<Harness initial={stored}
+                        onChange={onChange}/>);
+        const root = screen.getByRole('treeitem', {name: /^Bedingung:/});
+        root.focus();
+        if (trigger === 'button') fireEvent.click(screen.getByRole('button', {name: 'Wert „a“ löschen'}));
+        else if (trigger === 'keyboard') fireEvent.keyDown(root, {key: 'Delete'});
+        else {
+            fireEvent.keyDown(root, {key: 'F10', shiftKey: true});
+            fireEvent.click(await screen.findByRole('menuitem', {name: 'Löschen'}));
+        }
+
+        const dialog = await screen.findByRole('dialog', {name: 'Ausdruck löschen?'});
+        expect(within(dialog).getByRole('alert')).toHaveTextContent('Mit dem Ausdruck werden auch seine Notizen gelöscht.');
+        expect(within(dialog).queryByRole('combobox')).not.toBeInTheDocument();
+        expect(within(dialog).queryByRole('button', {name: 'Durch Teilausdruck ersetzen'})).not.toBeInTheDocument();
+        const deleteButton = within(dialog).getByRole('button', {name: 'Ausdruck löschen'});
+        expect(deleteButton).toHaveClass('MuiButton-contained', 'MuiButton-colorError');
+        expect(deleteButton.querySelector('.MuiButton-startIcon svg')).not.toBeNull();
+        expect(within(dialog).getByRole('button', {name: 'Abbrechen'})).toHaveClass('MuiButton-outlined');
+        expect(onChange).not.toHaveBeenCalled();
+        if (cancel === 'escape') fireEvent.keyDown(dialog, {key: 'Escape'});
+        else fireEvent.click(within(dialog).getByRole('button', {name: cancel === 'close' ? 'Schließen' : 'Abbrechen'}));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(root).toHaveFocus();
+        expect(onChange).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(root, {key: 'Delete'});
+        fireEvent.click(screen.getByRole('button', {name: 'Ausdruck löschen'}));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(onChange).toHaveBeenLastCalledWith(null);
+        expect(screen.getByRole('treeitem', {name: 'Bedingung: leer, Wahrheitswert'})).toHaveFocus();
+        fireEvent.click(screen.getByRole('button', {name: 'Rückgängig'}));
+        expect(onChange).toHaveBeenLastCalledWith(stored);
+        expect(screen.getByRole('button', {name: 'Notizen anzeigen'})).toBeInTheDocument();
+    });
+
+    it.each(['delete', 'keep'] as const)('explains note loss for a root operator and handles %s', async (action) => {
+        const stored: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'not',
+            operands: [a],
+            editorMetadata: {notes: 'Fachliche Ausnahme'},
+        };
+        const onChange = vi.fn();
+        render(<Harness initial={stored}
+                        onChange={onChange}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Funktion „Nicht“ löschen'}));
+        const dialog = screen.getByRole('dialog', {name: 'Funktion entfernen?'});
+        expect(within(dialog).getByText('Bei „Alles löschen“ werden auch die Notizen zum Ausdruck gelöscht. Beim Ersetzen durch einen Teilausdruck bleiben sie erhalten.')).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.click(within(dialog).getByRole('button', {
+            name: action === 'delete' ? 'Alles löschen' : 'Durch Teilausdruck ersetzen',
+        }));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(onChange).toHaveBeenLastCalledWith(action === 'delete' ? null : {
+            ...a,
+            editorMetadata: stored.editorMetadata,
+        });
+    });
+
+    it('keeps root notes when deleting a child without warning about note loss', async () => {
+        const stored: NoCodeOperand = {
+            ...expression,
+            operands: [{type: 'NoCodeExpression', operatorIdentifier: 'not', operands: [a]}, a],
+            editorMetadata: {notes: 'Fachliche Ausnahme'},
+        };
+        const onChange = vi.fn();
+        render(<Harness initial={stored}
+                        onChange={onChange}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Funktion „Nicht“ löschen'}));
+        const dialog = screen.getByRole('dialog', {name: 'Funktion entfernen?'});
+        expect(within(dialog).queryByText(/Notizen/)).not.toBeInTheDocument();
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Alles löschen'}));
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(onChange).toHaveBeenLastCalledWith({...stored, operands: [null, a]});
+        fireEvent.click(screen.getByRole('button', {name: 'Wert „a“ löschen'}));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(onChange).toHaveBeenLastCalledWith({...stored, operands: [null, null]});
+    });
+
+    it.each([undefined, '', '   '])('deletes a single value immediately when notes are %j', (notes) => {
+        const onChange = vi.fn();
+        render(<Harness initial={{...a, editorMetadata: {notes}}}
+                        onChange={onChange}/>);
+        fireEvent.click(screen.getByRole('button', {name: 'Wert „a“ löschen'}));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(onChange).toHaveBeenLastCalledWith(null);
     });
 
     it('starts an empty expression through the shared choice without inserting a default value', async () => {
@@ -396,16 +507,21 @@ describe('NoCodeEditor', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich, Wahrheitswert'}));
             const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
             fireEvent.click(within(picker).getByRole('button', {name: 'Immer wahr: Ersetzen'}));
-            return screen.findByRole('dialog', {name: 'Operator ändern'});
+            return screen.findByRole('dialog', {name: 'Funktion ändern'});
         };
         let dialog = await choose();
         expect(within(dialog).getByRole('alert')).toHaveTextContent('2 belegte Parameter werden');
+        expect(within(dialog).getByText('Neue Funktion: Immer wahr')).toBeInTheDocument();
+        const confirmButton = within(dialog).getByRole('button', {name: 'Funktion ändern'});
+        expect(confirmButton).toHaveClass('MuiButton-contained', 'MuiButton-colorPrimary');
+        expect(confirmButton.querySelector('.MuiButton-startIcon')).toBeNull();
+        expect(within(dialog).getByRole('button', {name: 'Abbrechen'})).toHaveClass('MuiButton-outlined');
         expect(onChange).not.toHaveBeenCalled();
         fireEvent.keyDown(dialog, {key: 'Escape'});
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: 'Operator ändern'})).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: 'Funktion ändern'})).not.toBeInTheDocument());
         expect(onChange).not.toHaveBeenCalled();
         dialog = await choose();
-        fireEvent.click(within(dialog).getByRole('button', {name: 'Operator ändern'}));
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Funktion ändern'}));
         expect(onChange).toHaveBeenLastCalledWith({
             type: 'NoCodeExpression',
             operatorIdentifier: 'always-true',
@@ -437,10 +553,10 @@ describe('NoCodeEditor', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Ist Gleich, Wahrheitswert'}));
         const picker = await screen.findByRole('dialog', {name: 'Funktion auswählen'});
         fireEvent.click(within(picker).getByRole('button', {name: 'Mehrere Varianten: Ersetzen'}));
-        const dialog = await screen.findByRole('dialog', {name: 'Operator ändern'});
+        const dialog = await screen.findByRole('dialog', {name: 'Funktion ändern'});
         expect(within(dialog).getByRole('combobox', {name: /Anzahl der Parameter/})).toHaveTextContent('3');
         expect(onChange).not.toHaveBeenCalled();
-        fireEvent.click(within(dialog).getByRole('button', {name: 'Operator ändern'}));
+        fireEvent.click(within(dialog).getByRole('button', {name: 'Funktion ändern'}));
         expect(onChange).toHaveBeenLastCalledWith({
             type: 'NoCodeExpression',
             operatorIdentifier: 'flexible',
@@ -474,7 +590,7 @@ describe('NoCodeEditor', () => {
         render(<Harness onChange={vi.fn()}/>);
         fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
         fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
-        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'}))
+        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'}))
             .toHaveAccessibleDescription('Testergebnis: Wahr'));
         fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
         fireEvent.click(screen.getByRole('button', {name: 'a, Beliebiger Wert'}));
@@ -494,7 +610,7 @@ describe('NoCodeEditor', () => {
             value: false,
             operands: [],
         }));
-        expect(screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'}))
+        expect(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'}))
             .toHaveAccessibleDescription('Testergebnis: Wahr');
     });
 
@@ -505,7 +621,7 @@ describe('NoCodeEditor', () => {
         expect(screen.getByRole('button', {name: 'Ist Gleich, Wahrheitswert'})).toHaveTextContent('Ist Gleich');
         const second = screen.getByRole('treeitem', {name: 'Wert 2: b, Beliebiger Wert'});
 
-        fireEvent.click(screen.getByRole('button', {name: 'Festen Wert „a“ löschen'}));
+        fireEvent.click(screen.getByRole('button', {name: 'Wert „a“ löschen'}));
 
         expect(onChange).toHaveBeenLastCalledWith({
             ...expression,
@@ -522,7 +638,7 @@ describe('NoCodeEditor', () => {
         render(<Harness onChange={vi.fn()}/>);
 
         const tree = screen.getByRole('tree', {name: 'Bedingung'});
-        const root = screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'});
+        const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'});
         const first = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'});
         const second = screen.getByRole('treeitem', {name: 'Wert 2: b, Beliebiger Wert'});
         const tabStops = () => Array.from(tree.querySelectorAll<HTMLElement>('[tabindex]')).filter((el) => el.tabIndex >= 0);
@@ -607,7 +723,7 @@ describe('NoCodeEditor', () => {
 
     it('opens the operator picker with the Enter key', async () => {
         render(<Harness onChange={vi.fn()}/>);
-        const root = screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'});
+        const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'});
         root.focus();
 
         fireEvent.keyDown(root, {key: 'Enter'});
@@ -625,7 +741,7 @@ describe('NoCodeEditor', () => {
             leaf.focus();
 
             fireEvent.keyDown(leaf, {key: ' '});
-            expect(status).toHaveTextContent('„a“ aufgenommen. Ziel: Wert 2: Operator Nicht, Wahrheitswert, die Werte werden getauscht.');
+            expect(status).toHaveTextContent('„a“ aufgenommen. Ziel: Wert 2: Funktion Nicht, Wahrheitswert, die Werte werden getauscht.');
             expect(leaf).toHaveFocus();
 
             fireEvent.keyDown(leaf, {key: 'ArrowDown'});
@@ -667,7 +783,7 @@ describe('NoCodeEditor', () => {
                 editorMetadata,
             }}
                             onChange={vi.fn()}/>);
-            const root = screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'});
+            const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'});
             root.focus();
 
             fireEvent.keyDown(root, {key: ' '});
@@ -773,7 +889,7 @@ describe('adding a parent operator', () => {
             key: 'F10',
             shiftKey: true,
         });
-        fireEvent.click(await screen.findByRole('menuitem', {name: 'Übergeordneten Operator hinzufügen'}));
+        fireEvent.click(await screen.findByRole('menuitem', {name: 'Übergeordnete Funktion hinzufügen'}));
         return screen.findByRole('dialog', {name: 'Funktion auswählen'});
     }
 
@@ -793,9 +909,9 @@ describe('adding a parent operator', () => {
                 operands: [a],
             }, nested.operands![1]],
         });
-        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Wert 1: Operator Nicht, Wahrheitswert'})).toHaveFocus());
+        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Wert 1: Funktion Nicht, Wahrheitswert'})).toHaveFocus());
         // Announced once the dialog no longer hides the page from screen readers.
-        expect(screen.getByRole('status')).toHaveTextContent('Operator „Nicht“ hinzugefügt. „a“ ist jetzt sein erster Parameter.');
+        expect(screen.getByRole('status')).toHaveTextContent('Funktion „Nicht“ hinzugefügt. „a“ ist jetzt ihr erster Parameter.');
         expect(screen.getByRole('treeitem', {name: 'Wert: a, Wahrheitswert'})).toBeInTheDocument();
     });
 
@@ -804,7 +920,7 @@ describe('adding a parent operator', () => {
         render(<Harness onChange={onChange}
                         initial={nested}/>);
 
-        const dialog = await wrap(screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'}));
+        const dialog = await wrap(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'}));
         expect(within(dialog).queryByRole('button', {name: 'Addiere: Hinzufügen'})).not.toBeInTheDocument();
         expect(within(dialog).queryByRole('button', {name: 'Immer wahr: Hinzufügen'})).not.toBeInTheDocument();
         fireEvent.click(within(dialog).getByRole('button', {name: 'Nicht: Hinzufügen'}));
@@ -814,7 +930,7 @@ describe('adding a parent operator', () => {
             operatorIdentifier: 'not',
             operands: [nested],
         });
-        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Bedingung: Operator Nicht, Wahrheitswert'})).toHaveFocus());
+        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Nicht, Wahrheitswert'})).toHaveFocus());
     });
 
     it.each(['Escape', 'Schließen'])('returns focus and preserves the expression when cancelling with %s', async (method) => {
@@ -869,7 +985,7 @@ describe('NoCodeEditor types and dry run', () => {
                             }],
                         }}/>);
 
-        expect(screen.getByRole('treeitem', {name: 'Summand 1: Operator Nicht, Wahrheitswert'}))
+        expect(screen.getByRole('treeitem', {name: 'Summand 1: Funktion Nicht, Wahrheitswert'}))
             .toHaveAccessibleDescription('Typkonflikt: Erwartet wird „Zahlenwert“, geliefert wird „Wahrheitswert“.');
         expect(screen.getByRole('treeitem', {name: 'Summand 2: zwei, Zahlenwert'}))
             .toHaveAccessibleDescription('Typkonflikt: Erwartet wird „Zahlenwert“, „zwei“ lässt sich nicht umwandeln.');
@@ -878,7 +994,7 @@ describe('NoCodeEditor types and dry run', () => {
     it('offers only type-compatible targets when moving', () => {
         render(<Harness onChange={vi.fn()}
                         initial={typed}/>);
-        const negation = screen.getByRole('treeitem', {name: 'Wert 2: Operator Nicht, Wahrheitswert'});
+        const negation = screen.getByRole('treeitem', {name: 'Wert 2: Funktion Nicht, Wahrheitswert'});
         negation.focus();
 
         fireEvent.keyDown(negation, {key: ' '});
@@ -886,7 +1002,7 @@ describe('NoCodeEditor types and dry run', () => {
         fireEvent.keyDown(negation, {key: 'ArrowDown'});
 
         // The empty number slot of "Addiere" and the swap with "1" would put a truth value into a number.
-        expect(screen.getByRole('status')).toHaveTextContent('Ziel: Wert 1: Operator Addiere, Zahlenwert, die Werte werden getauscht.');
+        expect(screen.getByRole('status')).toHaveTextContent('Ziel: Wert 1: Funktion Addiere, Zahlenwert, die Werte werden getauscht.');
         expect(screen.getByRole('treeitem', {name: 'Summand 2: leer, Zahlenwert'}).querySelector('[data-tree-row]'))
             .not.toHaveStyle({outlineStyle: 'dashed'});
     });
@@ -986,11 +1102,11 @@ describe('NoCodeEditor types and dry run', () => {
         }), {abortController: expect.any(AbortController)}));
         expect(api.post.mock.lastCall![1].expression).not.toHaveProperty('id');
 
-        expect(await screen.findByRole('treeitem', {name: 'Wert 1: Operator Addiere, Zahlenwert'}))
+        expect(await screen.findByRole('treeitem', {name: 'Wert 1: Funktion Addiere, Zahlenwert'}))
             .toHaveAccessibleDescription('Testergebnis: 43');
         expect(screen.getByRole('treeitem', {name: 'Summand 1: Betrag, Zahlenwert'})).toHaveAccessibleDescription('Testergebnis: 42');
         expect(screen.getByText('Fehler: Division durch Null ist nicht erlaubt')).toBeInTheDocument();
-        expect(screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'}))
+        expect(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'}))
             .toHaveAccessibleDescription('Nicht ausgewertet: Ein Parameter konnte nicht ausgewertet werden.');
     });
 
@@ -1075,7 +1191,7 @@ describe('operator sentences and descriptions', () => {
             ],
         }],
     };
-    const operatorItemName = 'Bedingung: Operator Ist Gleich, Wahrheitswert';
+    const operatorItemName = 'Bedingung: Funktion Ist Gleich, Wahrheitswert';
     const described: NoCodeOperatorDetailsDTO = {
         ...sentenceEquals,
         signatures: [{
@@ -1148,7 +1264,7 @@ describe('operator sentences and descriptions', () => {
                                 }],
                             }],
                         }}/>);
-        const nestedItem = screen.getByRole('treeitem', {name: 'Wert 2: Operator Text verketten, Textwert'});
+        const nestedItem = screen.getByRole('treeitem', {name: 'Wert 2: Funktion Text verketten, Textwert'});
         expect(nestedItem).toHaveTextContent(/^gleich.*Text verketten.*ergibt.*a.*gefolgt von.*b.*ist$/);
         expect(screen.queryByText('Text 1')).not.toBeInTheDocument();
         expect(screen.getByRole('treeitem', {name: 'Text 1: a, Textwert'})).toBeInTheDocument();
@@ -1192,8 +1308,9 @@ describe('operator sentences and descriptions', () => {
         expect(within(dialog).getByText('beide Werte').tagName).toBe('STRONG');
     });
 
-    it('opens the description from the action menu and returns focus to the operator', async () => {
-        render(<Harness onChange={vi.fn()}
+    it.each(['Escape', 'Schließen'])('closes the function description with %s and returns focus', async (method) => {
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}
                         operators={[sentenceEquals]}/>);
         const operatorItem = screen.getByRole('treeitem', {name: operatorItemName});
 
@@ -1204,9 +1321,13 @@ describe('operator sentences and descriptions', () => {
         });
         fireEvent.click(await screen.findByRole('menuitem', {name: 'Beschreibung anzeigen'}));
         const dialog = await screen.findByRole('dialog', {name: 'Ist Gleich'});
-        fireEvent.keyDown(dialog, {key: 'Escape'});
+        const closeButton = within(dialog).getAllByRole('button', {name: 'Schließen'}).at(-1)!;
+        expect(closeButton).toHaveClass('MuiButton-text');
+        if (method === 'Escape') fireEvent.keyDown(dialog, {key: 'Escape'});
+        else fireEvent.click(closeButton);
 
         await waitFor(() => expect(operatorItem).toHaveFocus());
+        expect(onChange).not.toHaveBeenCalled();
     });
 
     it('retains all menu entries during exit before opening a description with subordinate headings', async () => {
@@ -1250,7 +1371,7 @@ describe('operator sentences and descriptions', () => {
 
         fireEvent.mouseOver(screen.getByRole('button', {name: 'a, Beliebiger Wert'}));
         const tooltip = await screen.findByRole('tooltip');
-        expect(tooltip).toHaveTextContent('Ergibt den eingegebenen Wert „a“.');
+        expect(tooltip).toHaveTextContent('Ergibt den festgelegten Wert „a“.');
         expect(tooltip).toHaveTextContent('Wert 1: Der erste Vergleichswert.');
         fireEvent.click(within(tooltip).getByRole('button', {name: 'Mehr...'}));
 
@@ -1269,7 +1390,7 @@ describe('operator sentences and descriptions', () => {
                         returnType={NoCodeDataType.Runtime}
                         onChange={vi.fn()}/>);
         fireEvent.mouseOver(screen.getByRole('button', {name: `${label}, Beliebiger Wert`}));
-        expect(await screen.findByRole('tooltip')).toHaveTextContent(`Ergibt den eingegebenen Wert „${label}“.`);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(`Ergibt den festgelegten Wert „${label}“.`);
     });
 
     it('names the referenced element', async () => {
@@ -1286,7 +1407,7 @@ describe('operator sentences and descriptions', () => {
 
         fireEvent.mouseOver(screen.getByRole('button', {name: /^Betrag, /}));
 
-        expect(await screen.findByRole('tooltip')).toHaveTextContent('Ergibt den aktuellen Wert des Elements „Betrag“.');
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Ergibt den aktuellen Wert des Formularelements „Betrag“.');
     });
 
     it('describes what belongs into an empty parameter', async () => {
@@ -1373,10 +1494,10 @@ it('keeps an entire selected direct subtree, restores it with undo and cancels w
         operands: [nested, a],
     }}
                     onChange={onChange}/>);
-    const root = screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'});
+    const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'});
     root.focus();
     fireEvent.keyDown(root, {key: 'Delete'});
-    const dialog = screen.getByRole('dialog', {name: 'Operator entfernen?'});
+    const dialog = screen.getByRole('dialog', {name: 'Funktion entfernen?'});
     expect(onChange).not.toHaveBeenCalled();
     expect(within(dialog).getByRole('button', {name: 'Durch Teilausdruck ersetzen'})).toBeDisabled();
     fireEvent.keyDown(dialog, {key: 'Escape'});
@@ -1389,7 +1510,7 @@ it('keeps an entire selected direct subtree, restores it with undo and cancels w
     fireEvent.click(screen.getByRole('button', {name: 'Durch Teilausdruck ersetzen'}));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(onChange).toHaveBeenLastCalledWith(nested);
-    expect(screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'})).toHaveFocus();
+    expect(screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'})).toHaveFocus();
     fireEvent.click(screen.getByRole('button', {name: 'Rückgängig'}));
     expect(onChange).toHaveBeenLastCalledWith({
         type: 'NoCodeExpression',
@@ -1407,7 +1528,7 @@ it('offers the only child directly and retains its value despite a type warning'
                         operands: [a],
                     }}
                     onChange={onChange}/>);
-    fireEvent.click(screen.getByRole('button', {name: 'Operator „Nicht“ löschen'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Funktion „Nicht“ löschen'}));
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('alert')).toHaveTextContent(/Zahlenwert/);
     fireEvent.click(within(dialog).getByRole('button', {name: 'Durch Teilausdruck ersetzen'}));
@@ -1419,13 +1540,13 @@ it('offers the only child directly and retains its value despite a type warning'
 it('uses the same deletion choice from the action menu', async () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange}/>);
-    const root = screen.getByRole('treeitem', {name: 'Bedingung: Operator Ist Gleich, Wahrheitswert'});
+    const root = screen.getByRole('treeitem', {name: 'Bedingung: Funktion Ist Gleich, Wahrheitswert'});
     fireEvent.keyDown(root, {
         key: 'F10',
         shiftKey: true,
     });
     fireEvent.click(await screen.findByRole('menuitem', {name: 'Löschen'}));
-    const dialog = await screen.findByRole('dialog', {name: 'Operator entfernen?'});
+    const dialog = await screen.findByRole('dialog', {name: 'Funktion entfernen?'});
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(within(dialog).getByRole('button', {name: 'Alles löschen'}));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -1437,7 +1558,7 @@ it('collapses without modifying the draft and expands the first invalid paramete
     const onChange = vi.fn();
     render(<Harness initial={nested}
                     onChange={onChange}/>);
-    const child = screen.getByRole('treeitem', {name: 'Wert 2: Operator Nicht, Wahrheitswert'});
+    const child = screen.getByRole('treeitem', {name: 'Wert 2: Funktion Nicht, Wahrheitswert'});
     expect(screen.queryByText('Legen Sie einen Ausdruck fest.')).not.toBeInTheDocument();
     fireEvent.keyDown(child, {key: 'ArrowLeft'});
     expect(child).toHaveAttribute('aria-expanded', 'false');
@@ -1498,7 +1619,7 @@ it('does not mark newly inserted operator parameters as invalid after an earlier
 it('leaves Ctrl/Cmd+Z and Shift+Z unhandled while history buttons remain available', () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange}/>);
-    fireEvent.click(screen.getByRole('button', {name: 'Festen Wert „a“ löschen'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Wert „a“ löschen'}));
     const item = screen.getByRole('treeitem', {name: 'Wert 1: leer, Beliebiger Wert'});
     const calls = onChange.mock.calls.length;
     for (const modifiers of [{ctrlKey: true}, {metaKey: true}, {
@@ -1531,7 +1652,7 @@ it.each([false, true])('opens the test area with reduced motion %s and keeps the
         expect(document.getElementById(toggle.getAttribute('aria-controls')!))
             .toContainElement(screen.getByRole('button', {name: 'Test ausführen'}));
         expect(screen.getByRole('tree')).toHaveAttribute('aria-readonly', 'false');
-        expect(screen.getByRole('button', {name: 'Festen Wert „a“ löschen'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Wert „a“ löschen'})).toBeEnabled();
         expect(scrollTo).toHaveBeenCalledOnce();
         expect(scrollTo).toHaveBeenCalledWith({
             top: expect.any(Number),
@@ -1554,7 +1675,7 @@ it('starts pointer dragging only on pills, not on sentence text, row space or ac
     expect(source).toHaveAttribute('draggable', 'true');
     const row = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'}).querySelector('[data-tree-row]')!;
     const target = screen.getByRole('treeitem', {name: 'Wert: leer, Wahrheitswert'}).querySelector('[data-tree-row]')!;
-    for (const surface of [row, screen.getByText('Wert 1'), screen.getByRole('button', {name: 'Festen Wert „a“ löschen'}), screen.getByRole('button', {name: 'Aktionen für „a“'})]) {
+    for (const surface of [row, screen.getByText('Wert 1'), screen.getByRole('button', {name: 'Wert „a“ löschen'}), screen.getByRole('button', {name: 'Aktionen für „a“'})]) {
         expect(surface.closest('[draggable="true"]')).toBeNull();
         const dataTransfer = new FakeDataTransfer();
         fireEvent.dragStart(surface, {dataTransfer});
@@ -1582,7 +1703,7 @@ it('retains partial results in the expression when the test area is closed', asy
     render(<Harness onChange={onChange}/>);
     fireEvent.click(screen.getByRole('button', {name: 'Testlauf'}));
     fireEvent.click(screen.getByRole('button', {name: 'Test ausführen'}));
-    const name = 'Bedingung: Operator Ist Gleich, Wahrheitswert';
+    const name = 'Bedingung: Funktion Ist Gleich, Wahrheitswert';
     await waitFor(() => expect(screen.getByRole('treeitem', {name})).toHaveAccessibleDescription('Testergebnis: Wahr'));
     expect(screen.getAllByRole('tree')).toHaveLength(1);
     expect(screen.getByRole('tree')).toHaveAttribute('aria-readonly', 'false');

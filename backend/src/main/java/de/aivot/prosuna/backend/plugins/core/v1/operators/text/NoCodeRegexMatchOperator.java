@@ -34,14 +34,14 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Regex-Übereinstimmung“** prüft, ob ein Text mit einem regulären Ausdruck übereinstimmt. \s
+                Die Funktion **„Regex-Übereinstimmung“** prüft, ob ein Text mit einem regulären Ausdruck übereinstimmt. \s
                 Das Ergebnis ist **wahr** (true), wenn der Text mit dem regulären Ausdruck übereinstimmt. \s
                 Andernfalls ist das Ergebnis **falsch**.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zeichenkette eine bestimmte Struktur hat, z.B. eine E-Mail-Adresse.
                 
-                Mit dem Operator **„Regex-Übereinstimmung“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Regex-Übereinstimmung“** wird diese Logik so formuliert: \s
                 `Regex-Übereinstimmung Text Regulärer Ausdruck`
                 
                 Beispielwerte: \s
@@ -51,14 +51,14 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
                 **Ergebnis:**
                 - **Rückgabewert:** wahr
                 
-                # Wahrheitswerte für den „Regex-Übereinstimmung“-Operator
+                # Wahrheitswerte der Funktion „Regex-Übereinstimmung“
                 - **Text "abc123" Regulärer Ausdruck "^[a-z]+\\d+$"** → **wahr** \s
                 - **Text "123abc" Regulärer Ausdruck "^[a-z]+\\d+$"** → **falsch** \s
                 - **Text "test@example.com" Regulärer Ausdruck "^[\\w.-]+@[\\w.-]+\\.\\w+$"** → **wahr**
                 
-                # Wann verwenden Sie den Operator „Regex-Übereinstimmung“?
+                # Wann verwenden Sie die Funktion „Regex-Übereinstimmung“?
                 Verwenden Sie **„Regex-Übereinstimmung“**, um zu prüfen, ob ein Text mit einem bestimmten Muster übereinstimmt. \s
-                Dieser Operator ist besonders hilfreich bei der Validierung von Eingaben, wie z.B. E-Mail-Adressen, Telefonnummern oder anderen formatierten Daten.
+                Diese Funktion ist besonders hilfreich bei der Validierung von Eingaben, wie z.B. E-Mail-Adressen, Telefonnummern oder anderen formatierten Daten.
                 """;
     }
 

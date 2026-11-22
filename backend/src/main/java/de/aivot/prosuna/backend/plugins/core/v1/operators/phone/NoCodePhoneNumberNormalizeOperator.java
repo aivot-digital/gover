@@ -31,11 +31,11 @@ public class NoCodePhoneNumberNormalizeOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Telefonnummer normalisieren“** wandelt eine Telefonnummer mit internationaler Ländervorwahl in das E.164-Format um.
+                Die Funktion **„Telefonnummer normalisieren“** wandelt eine Telefonnummer mit internationaler Ländervorwahl in das E.164-Format um.
 
-                Die Normalisierung erfolgt, wenn die Telefonnummer grundsätzlich plausibel ist. Der Operator prüft nicht streng, ob die Nummer zu einem gültigen Nummernbereich gehört. Wenn Sie das vor der Normalisierung sicherstellen möchten, kombinieren Sie diesen Operator mit **„Telefonnummer ist gültig“**.
+                Die Normalisierung erfolgt, wenn die Telefonnummer grundsätzlich plausibel ist. Die Funktion prüft nicht streng, ob die Nummer zu einem gültigen Nummernbereich gehört. Wenn Sie das vor der Normalisierung sicherstellen möchten, kombinieren Sie diese Funktion mit **„Telefonnummer ist gültig“**.
 
-                Bei einer nicht plausiblen Telefonnummer gibt der Operator **null** zurück.
+                Bei einer nicht plausiblen Telefonnummer gibt die Funktion **null** zurück.
 
                 # Beispiele:
                 - **+49 30 123456** → **+4930123456**

@@ -43,13 +43,13 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Mitarbeiter:innen-E-Mail“** gibt die E-Mail-Adresse einer Mitarbeiter:in anhand ihrer ID zurück. \s
+                Die Funktion **„Mitarbeiter:innen-E-Mail“** gibt die E-Mail-Adresse einer Mitarbeiter:in anhand ihrer ID zurück. \s
                 Wenn keine Mitarbeiter:in mit dieser ID gefunden wird oder die ID leer ist, wird **null** zurückgegeben.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie möchten die E-Mail-Adresse der Mitarbeiter:in ermitteln, die einem Vorgang zugeordnet ist. \s
                 
-                Mit dem Operator **„Mitarbeiter:innen-E-Mail“** wird diese Logik so formuliert: \s
+                Mit der Funktion **„Mitarbeiter:innen-E-Mail“** wird diese Logik so formuliert: \s
                 `Mitarbeiter:innen-E-Mail Zugewiesene Mitarbeiter:innen-ID`
                 
                 Beispielwerte: \s
@@ -62,7 +62,7 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
                 - `Mitarbeiter:innen-E-Mail 8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1` \s
                   **Ergebnis:** "max.mustermann@example.org"
                 
-                # Wann verwenden Sie den Operator „Mitarbeiter:innen-E-Mail“?
+                # Wann verwenden Sie die Funktion „Mitarbeiter:innen-E-Mail“?
                 Verwenden Sie **„Mitarbeiter:innen-E-Mail“**, wenn Ihnen die ID einer Mitarbeiter:in vorliegt und Sie daraus die E-Mail-Adresse ermitteln möchten, z. B. für Benachrichtigungen, Prüfungen oder Ausgaben.
                 """;
     }

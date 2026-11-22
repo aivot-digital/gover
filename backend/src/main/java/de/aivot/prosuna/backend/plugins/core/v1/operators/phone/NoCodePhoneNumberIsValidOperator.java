@@ -31,7 +31,7 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Telefonnummer ist gültig“** prüft, ob eine Telefonnummer mit internationaler Ländervorwahl gültig ist.
+                Die Funktion **„Telefonnummer ist gültig“** prüft, ob eine Telefonnummer mit internationaler Ländervorwahl gültig ist.
 
                 Die Telefonnummer muss mit einem `+` und der Ländervorwahl beginnen. Nebenstellen oder Durchwahlen in Form von Erweiterungen werden nicht akzeptiert.
 
@@ -40,7 +40,7 @@ public class NoCodePhoneNumberIsValidOperator extends NoCodeOperator {
                 - **+49 1234** → **falsch**
                 - **030 123456** → **falsch**
 
-                Verwenden Sie diesen Operator, wenn eine Telefonnummer fachlich streng validiert werden soll.
+                Verwenden Sie diese Funktion, wenn eine Telefonnummer fachlich streng validiert werden soll.
                 """;
     }
 

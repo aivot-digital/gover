@@ -32,13 +32,13 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Beschreibung:
-                Der Operator **„Aufrunden“** rundet eine gegebene Zahl auf die angegebene Anzahl von Dezimalstellen **nach oben** auf. \s
+                Die Funktion **„Aufrunden“** rundet eine gegebene Zahl auf die angegebene Anzahl von Dezimalstellen **nach oben** auf. \s
                 Das bedeutet, dass der Wert unabhängig vom nächsten Dezimalwert immer aufgerundet wird.
                 
                 # Anwendungsbeispiel:
                 Stellen Sie sich vor, Sie haben die Zahl `3.14159` und möchten diese auf 2 Dezimalstellen aufrunden.
                 
-                Mit dem Operator **„Aufrunden“** formulieren Sie: \s
+                Mit der Funktion **„Aufrunden“** formulieren Sie: \s
                 ```text
                 Aufrunden(3.14159, 2)
                 ```
@@ -51,13 +51,13 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
                 - **Aufrunden(5.6, 0):** → **6** (auf ganze Zahl gerundet) \s
                 - **Aufrunden(2.987, 3):** → **2.987** (keine Veränderung, da bereits 3 Dezimalstellen vorhanden sind)
                 
-                # Wann verwenden Sie den Operator „Aufrunden“?
+                # Wann verwenden Sie die Funktion „Aufrunden“?
                 Verwenden Sie **„Aufrunden“**, wenn:
                 - Sie präzise Werte auf eine definierte Anzahl von Dezimalstellen benötigen. \s
                 - Berechnungen oder Ergebnisse immer **nach oben** gerundet werden sollen, z. B. bei Preisberechnungen, die keine Rundungsverluste erlauben. \s
                 - Sie genaue, aufgerundete Werte für Berichte oder Darstellungen benötigen.
                 
-                Dieser Operator ist besonders hilfreich in Finanzberechnungen, wissenschaftlichen Analysen oder wenn garantierte Obergrenzen eingehalten werden müssen.
+                Diese Funktion ist besonders hilfreich in Finanzberechnungen, wissenschaftlichen Analysen oder wenn garantierte Obergrenzen eingehalten werden müssen.
                 """;
     }
 
