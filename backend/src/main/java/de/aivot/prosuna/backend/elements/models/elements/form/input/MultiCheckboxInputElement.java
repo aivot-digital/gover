@@ -27,6 +27,13 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     @Nullable
     private String codeListKey;
 
+    // Keys of the code list columns that provide the values and labels.
+    @Nullable
+    private String codeListValueColumnKey;
+
+    @Nullable
+    private String codeListLabelColumnKey;
+
     @Nullable
     private Integer minimumRequiredOptions;
 
@@ -203,6 +210,8 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         return Objects.equals(presentation, that.presentation) && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
+                && Objects.equals(codeListValueColumnKey, that.codeListValueColumnKey)
+                && Objects.equals(codeListLabelColumnKey, that.codeListLabelColumnKey)
                 && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
                 && Objects.equals(maximumOptions, that.maximumOptions)
                 && Objects.equals(displayInline, that.displayInline);
@@ -215,6 +224,8 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         result = 31 * result + Objects.hashCode(presentation);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListValueColumnKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
         result = 31 * result + Objects.hashCode(minimumRequiredOptions);
         result = 31 * result + Objects.hashCode(maximumOptions);
         result = 31 * result + Objects.hashCode(displayInline);
@@ -252,6 +263,26 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement setCodeListKey(@Nullable String codeListKey) {
         this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListValueColumnKey() {
+        return codeListValueColumnKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListValueColumnKey(@Nullable String codeListValueColumnKey) {
+        this.codeListValueColumnKey = codeListValueColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
         return this;
     }
 

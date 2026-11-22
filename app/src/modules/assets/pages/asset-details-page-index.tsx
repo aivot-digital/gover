@@ -260,6 +260,7 @@ export function AssetDetailsPageIndex() {
                             asset.storagePathFromRoot,
                             (asset.metadata ?? {}) as Record<string, unknown>,
                             parsedStorageProviderId,
+                            asset.updated,
                         );
                     }
 

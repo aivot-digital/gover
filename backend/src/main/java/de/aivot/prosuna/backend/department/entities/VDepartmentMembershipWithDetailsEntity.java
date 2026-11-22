@@ -49,6 +49,7 @@ public class VDepartmentMembershipWithDetailsEntity {
     @Convert(converter = JsonArrayConverter.class)
     private List<Map<String, Object>> domainRoleAssignments;
     private List<String> domainRolePermissions;
+    private Long lockVersion;
 
     // Getters and Setters
 
@@ -350,4 +351,13 @@ public class VDepartmentMembershipWithDetailsEntity {
     }
 
     // endregion
+
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public VDepartmentMembershipWithDetailsEntity setLockVersion(Long lockVersion) {
+        this.lockVersion = lockVersion;
+        return this;
+    }
 }

@@ -14,10 +14,10 @@ import {Button, Dialog, DialogActions, DialogContent} from "@mui/material";
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
-import {showApiErrorSnackbar, showErrorSnackbar} from "../../../../../slices/snackbar-slice";
+import {showApiErrorSnackbar, showErrorSnackbar, showLockConflictSnackbar} from "../../../../../slices/snackbar-slice";
 import {GenericListPropsFetchOptions, ListControlRef} from "../../../../../components/generic-list/generic-list-props";
 import {setLoadingMessage} from "../../../../../slices/shell-slice";
-import {isApiError} from "../../../../../models/api-error";
+import {isApiError, isLockVersionConflictError} from "../../../../../models/api-error";
 import {VUserDeputyWithDetailsEntity} from "../../../entities/v-user-deputy-with-details-entity";
 import {VUserDeputyWithDetailsApiService} from "../../../services/v-user-deputy-with-details-api-service";
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
@@ -254,7 +254,9 @@ export function UserDetailsPageDeputies() {
                 closeDeputyDialog();
             })
             .catch((error) => {
-                if (isApiError(error) && error.displayableToUser) {
+                if (isEditingDeputy && isLockVersionConflictError(error)) {
+                    dispatch(showLockConflictSnackbar(error.message));
+                } else if (isApiError(error) && error.displayableToUser) {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
@@ -380,6 +382,7 @@ export function UserDetailsPageDeputies() {
                                         deputyUserId: item.deputyUserId,
                                         fromDate: item.fromDate ?? getCurrentApplicationDate(),
                                         untilDate: item.untilDate,
+                                        lockVersion: item.lockVersion,
                                     });
                                     setDeputyDraftDetails(item);
                                 },

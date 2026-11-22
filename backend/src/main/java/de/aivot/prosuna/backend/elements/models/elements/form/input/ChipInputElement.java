@@ -28,6 +28,10 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
     @Nullable
     private String codeListKey;
 
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    @Nullable
+    private String codeListLabelColumnKey;
+
     @Nullable
     private Integer minItems;
 
@@ -159,6 +163,7 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
                 && Objects.equals(suggestions, that.suggestions)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
+                && Objects.equals(codeListLabelColumnKey, that.codeListLabelColumnKey)
                 && Objects.equals(minItems, that.minItems)
                 && Objects.equals(maxItems, that.maxItems)
                 && Objects.equals(maxItemLength, that.maxItemLength)
@@ -173,6 +178,7 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         result = 31 * result + Objects.hashCode(suggestions);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
         result = 31 * result + Objects.hashCode(minItems);
         result = 31 * result + Objects.hashCode(maxItems);
         result = 31 * result + Objects.hashCode(maxItemLength);
@@ -218,6 +224,16 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     public ChipInputElement setCodeListKey(@Nullable String codeListKey) {
         this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    public ChipInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
         return this;
     }
 

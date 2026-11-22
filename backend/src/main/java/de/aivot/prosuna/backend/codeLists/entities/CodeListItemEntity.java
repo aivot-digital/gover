@@ -5,6 +5,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import de.aivot.prosuna.backend.lib.models.LockVersioned;
@@ -87,6 +88,29 @@ public class CodeListItemEntity implements LockVersioned {
     public CodeListItemEntity setColumns(@Nonnull List<String> columns) {
         this.columns = columns;
         return this;
+    }
+
+    /** Returns the cell at the 1-based index; cells that were never stored, e.g. of a newly added column, are empty. */
+    @Nonnull
+    public String cellAt(int index) {
+        if (index < 1 || index > columns.size()) {
+            return "";
+        }
+        var cell = columns.get(index - 1);
+        return cell == null ? "" : cell;
+    }
+
+    /**
+     * Returns the cells moved from the column order {@code from}, in which they are stored, into the column order
+     * {@code to}. Cells of columns that {@code from} does not contain are empty.
+     */
+    @Nonnull
+    public List<String> cellsInColumnOrder(@Nonnull List<String> from, @Nonnull List<String> to) {
+        var cells = new ArrayList<String>(to.size());
+        for (var column : to) {
+            cells.add(cellAt(from.indexOf(column) + 1));
+        }
+        return cells;
     }
 
     @Nonnull

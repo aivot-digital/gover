@@ -9,6 +9,8 @@ export interface ReplicatingContainerLayout extends BaseInputElement<ElementType
     headlineTemplate: string | null | undefined;
     addLabel: string | null | undefined;
     removeLabel: string | null | undefined;
+    // Elements created before this option existed have no value and stay unsortable.
+    sortable: boolean | null | undefined;
     children: AnyFormElement[] | null | undefined;
 }
 

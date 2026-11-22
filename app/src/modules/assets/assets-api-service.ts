@@ -57,15 +57,18 @@ export class AssetsApiService extends BaseApiService {
             await this.putFormData<any>(
                 this.buildFileApiPath(storageProviderId, storagePathFromRoot),
                 formData,
+                // Only content changes the file's timestamp; a privacy change alone keeps last-write-wins.
+                {query: {basedOnUpdated: file != null ? asset.updated : undefined}},
             ),
         );
     }
 
-    public async updateMetadataInStorageProvider(storagePathFromRoot: string, metadata: Record<string, unknown>, storageProviderId: number): Promise<Asset> {
+    public async updateMetadataInStorageProvider(storagePathFromRoot: string, metadata: Record<string, unknown>, storageProviderId: number, basedOnUpdated?: string): Promise<Asset> {
         return AssetsApiService.mapViewItemToAsset(
             await this.put<Record<string, unknown>, any>(
                 this.buildFileMetadataApiPath(storageProviderId, storagePathFromRoot),
                 metadata ?? {},
+                {query: {basedOnUpdated}},
             ),
         );
     }
@@ -219,6 +222,7 @@ export class AssetsApiService extends BaseApiService {
             storagePathFromRoot: raw.pathFromRoot,
             filename: raw.filename,
             created: raw.created,
+            updated: raw.updated,
             uploaderId: raw.assetUploaderId ?? '',
             contentType: raw.mimeType ?? 'application/octet-stream',
             isPrivate: raw.assetIsPrivate ?? true,

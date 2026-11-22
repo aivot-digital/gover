@@ -360,7 +360,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Abbildungsregel"),
                 @ElementPOJOBindingProperty(key = "addLabel", strValue = "Neue Abbildungsregel"),
-                @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Abbildungsregel entfernen")
+                @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Abbildungsregel entfernen"),
+                @ElementPOJOBindingProperty(key = "sortable", boolValue = true)
         })
         public static class DataMappingActionNodeV1Rule {
             public static final String SOURCE_FIELD_ID = "source";

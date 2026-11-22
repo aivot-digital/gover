@@ -3,4 +3,5 @@ export interface TeamEntity {
     name: string;
     created: string;
     updated: string;
+    lockVersion?: number | null;
 }

@@ -9,6 +9,8 @@ import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component
 import {OptionsSourceType} from '../../models/elements/form/input/options-source-type';
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {CodeListSelectField} from '../../modules/code-lists/components/code-list-select-field';
+import {CodeListColumnSelectField} from '../../modules/code-lists/components/code-list-column-select-field';
+import {useCodeListColumnOptions} from '../../modules/code-lists/hooks/use-code-list-column-options';
 
 const optionsSourceOptions = [
     {
@@ -24,6 +26,7 @@ const optionsSourceOptions = [
 export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>) {
     const optionsSource = props.element.optionsSource ?? OptionsSourceType.Manual;
     const usesManualOptions = optionsSource === OptionsSourceType.Manual;
+    const codeListColumns = useCodeListColumnOptions(usesManualOptions ? null : props.element.codeListKey);
 
     const options = props.element.options ?? [];
 
@@ -54,9 +57,12 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                         onChange={(value) => {
                             const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
 
+                            const usesCodeList = nextSource === OptionsSourceType.CodeList;
                             props.onPatch({
                                 optionsSource: nextSource,
-                                codeListKey: nextSource === OptionsSourceType.CodeList ? props.element.codeListKey : undefined,
+                                codeListKey: usesCodeList ? props.element.codeListKey : undefined,
+                                codeListValueColumnKey: usesCodeList ? props.element.codeListValueColumnKey : undefined,
+                                codeListLabelColumnKey: usesCodeList ? props.element.codeListLabelColumnKey : undefined,
                             });
                         }}
                         options={optionsSourceOptions}
@@ -72,10 +78,45 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                             value={props.element.codeListKey}
                             error={props.configurationErrors?.codeListKey?.join(' ')}
                             onChange={(codeListKey) => {
-                                props.onPatch({
+                                // Column keys belong to one code list, so they do not carry over to another one.
+                                props.onPatch(codeListKey === props.element.codeListKey ? {codeListKey} : {
                                     codeListKey,
+                                    codeListValueColumnKey: undefined,
+                                    codeListLabelColumnKey: undefined,
                                 });
                             }}
+                            disabled={!props.editable}
+                            required
+                        />
+                    </Grid>
+                }
+
+                {
+                    !usesManualOptions &&
+                    <Grid size={{xs: 12, lg: 6}}>
+                        <CodeListColumnSelectField
+                            label="Wert-Spalte"
+                            hint="Die Werte dieser Spalte werden gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben."
+                            value={props.element.codeListValueColumnKey}
+                            onChange={(codeListValueColumnKey) => props.onPatch({codeListValueColumnKey})}
+                            columnOptions={codeListColumns.options}
+                            columnOptionsLoaded={codeListColumns.loaded}
+                            disabled={!props.editable}
+                            required
+                        />
+                    </Grid>
+                }
+
+                {
+                    !usesManualOptions &&
+                    <Grid size={{xs: 12, lg: 6}}>
+                        <CodeListColumnSelectField
+                            label="Beschriftungs-Spalte"
+                            hint="Die Werte dieser Spalte werden als Beschriftung der Optionen angezeigt. Einträge mit demselben Wert werden zu einer Option zusammengefasst."
+                            value={props.element.codeListLabelColumnKey}
+                            onChange={(codeListLabelColumnKey) => props.onPatch({codeListLabelColumnKey})}
+                            columnOptions={codeListColumns.options}
+                            columnOptionsLoaded={codeListColumns.loaded}
                             disabled={!props.editable}
                             required
                         />

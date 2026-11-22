@@ -588,7 +588,23 @@ export function FormNodeEditorPage() {
         setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
-    const saveForm = async (): Promise<void> => {
+    const saveInFlightRef = useRef<Promise<void> | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // A second save before the first returns would send the same lock version and fail as a conflict, so callers
+    // (save button, PDF preview, test) share the running save.
+    const saveForm = (): Promise<void> => {
+        if (saveInFlightRef.current == null) {
+            setIsSaving(true);
+            saveInFlightRef.current = performSaveForm().finally(() => {
+                saveInFlightRef.current = null;
+                setIsSaving(false);
+            });
+        }
+        return saveInFlightRef.current;
+    };
+
+    const performSaveForm = async (): Promise<void> => {
         if (node == null || formLayout == null || !isEditable) {
             return;
         }
@@ -1052,7 +1068,7 @@ export function FormNodeEditorPage() {
             iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            disabled: !hasChanged || !isEditable,
+            disabled: !hasChanged || !isEditable || isSaving,
         },
     ];
 

@@ -2,6 +2,8 @@ import React from 'react';
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+import {CodeListColumnSelectField} from '../modules/code-lists/components/code-list-column-select-field';
+import {useCodeListColumnOptions} from '../modules/code-lists/hooks/use-code-list-column-options';
 import {ChipInputFieldComponent} from '../components/chip-input-field/chip-input-field-component';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
@@ -21,6 +23,7 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
         hasSummaryLayoutParent,
         configurationErrors,
     } = props;
+    const codeListColumns = useCodeListColumnOptions(element.optionsSource === OptionsSourceType.CodeList ? element.codeListKey : null);
 
     if (hasSummaryLayoutParent) {
         return null;
@@ -177,9 +180,11 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                     {element.optionsSource === OptionsSourceType.CodeList ? <Grid size={{xs: 12, lg: 6}}>
                         <CodeListSelectField
                             value={element.codeListKey}
-                            onChange={(codeListKey) => onPatch({codeListKey})}
+                            onChange={(codeListKey) => onPatch(codeListKey === element.codeListKey ? {codeListKey} : {
+                                codeListKey,
+                                codeListLabelColumnKey: undefined,
+                            })}
                             error={configurationErrors?.codeListKey?.join(' ')}
-                            hint="Die Beschriftungen werden als Text vorgeschlagen. Eigene Eingaben bleiben möglich."
                             disabled={!editable}
                             required
                         />
@@ -190,6 +195,18 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                             onChange={(suggestions) => onPatch({suggestions: suggestions ?? []})}
                             disabled={!editable}
                             hint="Geben Sie Vorschläge einzeln ein oder fügen Sie mehrere Zeilen aus der Zwischenablage ein."
+                        />
+                    </Grid>}
+                    {element.optionsSource === OptionsSourceType.CodeList && <Grid size={{xs: 12, lg: 6}}>
+                        <CodeListColumnSelectField
+                            label="Vorschlagsspalte"
+                            hint="Die Werte dieser Spalte werden als Text vorgeschlagen. Eigene Eingaben bleiben möglich."
+                            value={element.codeListLabelColumnKey}
+                            onChange={(codeListLabelColumnKey) => onPatch({codeListLabelColumnKey})}
+                            columnOptions={codeListColumns.options}
+                            columnOptionsLoaded={codeListColumns.loaded}
+                            disabled={!editable}
+                            required
                         />
                     </Grid>}
                 </>}
