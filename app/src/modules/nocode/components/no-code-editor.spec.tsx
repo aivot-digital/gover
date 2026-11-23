@@ -6,7 +6,7 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {NoCodeDryRunStatus} from '../../../models/dtos/no-code-dry-run-dto';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {NoCodeDataType, NoCodeDataTypeLabels} from '../../../data/no-code-data-type';
-import {type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeDateInput, type NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {NoCodeEditor} from './no-code-editor';
 
@@ -241,6 +241,7 @@ function Harness(props: {
     busy?: boolean;
     operators?: NoCodeOperatorDetailsDTO[];
     returnType?: NoCodeDataType;
+    dateInput?: NoCodeDateInput;
 }) {
     // Clones like a parent that copies its state, which must not rebuild the tree.
     const [operand, setOperand] = useState<NoCodeOperand | null | undefined>(props.initial === undefined ? expression : props.initial);
@@ -250,6 +251,7 @@ function Harness(props: {
             busy={props.busy}
             parameter={{
                 type: props.returnType ?? NoCodeDataType.Boolean,
+                dateInput: props.dateInput,
                 label: 'Bedingung',
                 description: null,
                 options: [],
@@ -463,6 +465,35 @@ describe('NoCodeEditor', () => {
         expect(screen.getByText('Noch kein Ausdruck festgelegt')).toBeInTheDocument();
         expect(empty).toHaveFocus();
     });
+
+    it('focuses the Boolean selector with its options closed after choosing a fixed value', async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={null} onChange={vi.fn()}/>);
+        await user.click(screen.getByRole('button', {name: 'Ausdruck hinzufügen'}));
+        await user.click(screen.getByRole('button', {name: 'Wert selbst festlegen'}));
+
+        const input = screen.getByRole('combobox', {name: 'Bedingung'});
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it.each([NoCodeDataType.Date, NoCodeDataType.Time, NoCodeDataType.DateTime])(
+        'accepts typing in the first section after choosing a fixed %s',
+        async (returnType) => {
+            const user = userEvent.setup();
+            render(<Harness initial={null} returnType={returnType} onChange={vi.fn()}
+                            dateInput={returnType === NoCodeDataType.Date ? NoCodeDateInput.Calendar : undefined}/>);
+            await user.click(screen.getByRole('button', {name: 'Ausdruck hinzufügen'}));
+            await user.click(screen.getByRole('button', {name: 'Wert selbst festlegen'}));
+
+            const field = screen.getByRole('group', {name: 'Bedingung'});
+            const [firstSection] = within(field).getAllByRole('spinbutton');
+            expect(firstSection).toHaveFocus();
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            await user.keyboard('12');
+            expect(firstSection).toHaveTextContent('12');
+        },
+    );
 
     it('selects a declared option directly, focuses the result and keeps editing and history available', async () => {
         const user = userEvent.setup();
@@ -1047,14 +1078,15 @@ describe('NoCodeEditor', () => {
     });
 
     it('fills a socket from the keyboard', async () => {
+        const user = userEvent.setup();
         const onChange = vi.fn();
         render(<Harness onChange={onChange}/>);
         const first = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'});
         first.focus();
-        fireEvent.keyDown(first, {key: 'Delete'});
-
-        fireEvent.keyDown(screen.getByRole('treeitem', {name: 'Wert 1: leer, Beliebiger Wert'}), {key: 'Enter'});
-        fireEvent.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
+        await user.keyboard('{Delete}{Enter}');
+        await user.tab();
+        expect(screen.getByRole('button', {name: 'Wert selbst festlegen'})).toHaveFocus();
+        await user.keyboard('{Enter}');
 
         expect(onChange).toHaveBeenLastCalledWith({
             ...expression,
@@ -1066,10 +1098,12 @@ describe('NoCodeEditor', () => {
                 value: 'b',
             }],
         });
-        // The new value opens its editor right away; closing it returns focus to the new tree item.
         const valueInput = await screen.findByRole('textbox', {name: /^Wert 1/});
-        fireEvent.keyDown(valueInput, {key: 'Escape'});
-        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Wert 1: Leerer Text, Beliebiger Wert'})).toHaveFocus());
+        expect(valueInput).toHaveFocus();
+        await user.keyboard('neu');
+        expect(valueInput).toHaveValue('neu');
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.getByRole('treeitem', {name: 'Wert 1: neu, Beliebiger Wert'})).toHaveFocus());
     });
 
     it('ignores tree shortcuts typed into a value editor', async () => {

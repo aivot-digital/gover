@@ -23,6 +23,7 @@ import {isLocalDateIso, isYearIso, isYearMonthIso} from '../../../utils/temporal
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
+    autoFocus?: boolean;
     hint?: string;
     value: NoCodeStaticValue;
     onChange: (value: NoCodeStaticValue | undefined) => void;
@@ -187,6 +188,7 @@ function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
+                autoFocus: props.autoFocus,
                 margin: 'none',
             }}
         />
@@ -269,7 +271,7 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                     <TextFieldComponent
                         preserveWhitespace={props.preserveWhitespace}
                         showOptionalIndicator={false}
-                        muiPassTroughProps={params}
+                        muiPassTroughProps={{...params, autoFocus: props.autoFocus}}
                         label={props.label}
                         hint={props.hint}
                         error={getStaticValueError(props)}
@@ -330,6 +332,7 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
             startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
+                autoFocus: props.autoFocus,
                 margin: 'none',
             }}
             options={props.options}
@@ -384,6 +387,7 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             }}
         />}
         <DateFieldComponent
+            autoFocus={props.autoFocus}
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
@@ -408,6 +412,7 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
 function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <DateTimeFieldComponent
+            autoFocus={props.autoFocus}
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}
@@ -426,6 +431,7 @@ function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
 function TimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TimeFieldComponent
+            autoFocus={props.autoFocus}
             showOptionalIndicator={false}
             label={props.label}
             hint={props.hint}

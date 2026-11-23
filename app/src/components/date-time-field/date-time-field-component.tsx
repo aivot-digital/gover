@@ -25,6 +25,7 @@ export interface DateTimeFieldComponentProps extends FormFieldLayoutProps {
     allowLegacyLocalValue?: boolean;
     onChange: (value: InstantIso | null) => void;
     onBlur?: (value: InstantIso | null) => void;
+    autoFocus?: boolean;
     hint?: string;
     hideHelperText?: boolean;
     required?: boolean;
@@ -205,6 +206,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
                 >
                     <DateTimePicker
                         ampm={false}
+                        autoFocus={props.autoFocus}
                         timezone={applicationTimeZone}
                         format={mode === TimeFieldComponentModelMode.Second ? "dd.MM.yyyy HH:mm:ss 'Uhr'" : "dd.MM.yyyy HH:mm 'Uhr'"}
                         views={mode === TimeFieldComponentModelMode.Second ? ['year', 'month', 'day', 'hours', 'minutes', 'seconds'] : ['year', 'month', 'day', 'hours', 'minutes']}

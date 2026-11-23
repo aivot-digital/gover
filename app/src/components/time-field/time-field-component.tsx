@@ -22,6 +22,7 @@ export interface TimeFieldComponentProps extends FormFieldLayoutProps {
     onChange: (value: LocalTimeIso | null) => void;
     onBlur?: (val: LocalTimeIso | null) => void;
     autocomplete?: string;
+    autoFocus?: boolean;
     hint?: string;
     hideHelperText?: boolean;
     required?: boolean;
@@ -165,6 +166,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 >
                     <TimePicker
                         ampm={false}
+                        autoFocus={props.autoFocus}
                         // Floating times are zone-free. UTC is only a stable MUI carrier that
                         // prevents DST or the browser timezone from changing their clock fields.
                         timezone="UTC"

@@ -155,6 +155,7 @@ interface EditorContext {
     removeOperand: (parentId: string, index: number, label: string) => void;
     /** An incomplete leaf inserted into an empty slot opens its value editor right away. */
     autoEditId: string | null;
+    finishAutoEditRequest: () => void;
     /** Key of the single tree item in the tab sequence (roving tab index). */
     activeKey: string | null;
     grab: GrabState | null;
@@ -572,6 +573,7 @@ export function NoCodeEditor(props: NoCodeEditorProps) {
         contextType,
         dispatch,
         autoEditId,
+        finishAutoEditRequest: () => setAutoEditId(null),
         activeKey,
         grab,
         startGrab,
@@ -1806,12 +1808,13 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
     const pillRef = useRef<HTMLButtonElement>(null);
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
+    const editAfterInsert = ctx.autoEditId === node.id;
     useEffect(() => {
-        if (!ctx.readOnly && ctx.autoEditId === node.id) {
+        if (!ctx.readOnly && editAfterInsert) {
             setAnchor(pillRef.current);
         }
         if (ctx.readOnly) setAnchor(null);
-    }, [ctx.autoEditId, node.id, ctx.readOnly]);
+    }, [editAfterInsert, ctx.readOnly]);
 
     const {
         label,
@@ -1883,6 +1886,7 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
             <Popover
                 open={!ctx.readOnly && anchor != null}
                 anchorEl={anchor}
+                onTransitionEnter={editAfterInsert ? ctx.finishAutoEditRequest : undefined}
                 onClose={() => {
                     ctx.touch(node.id);
                     setAnchor(null);
@@ -1906,6 +1910,7 @@ function NoCodeEditorLeafView(props: SlotProps & { node: NoCodeEditorLeafNode })
                 }}>
                     <NoCodeOperandEditor
                         parameter={parameter}
+                        autoFocusStaticValue={editAfterInsert}
                         suggestions={props.suggestions}
                         operand={toNoCodeOperand(node)}
                         onChange={(operand) => {

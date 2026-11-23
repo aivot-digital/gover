@@ -31,6 +31,21 @@ const props = {
 beforeEach(() => api.get.mockReset().mockResolvedValue([]));
 
 describe('NoCodeEditorDialog', () => {
+    it('accepts typing immediately after choosing a fixed number for the root expression', async () => {
+        const user = userEvent.setup();
+        const onApply = vi.fn();
+        render(<NoCodeEditorDialog {...props} value={null} returnType={NoCodeDataType.Number}
+                                   onApply={onApply} onClose={vi.fn()}/>);
+        await user.click(await screen.findByRole('button', {name: 'Ausdruck hinzufügen'}));
+        await user.click(screen.getByRole('button', {name: 'Wert selbst festlegen'}));
+
+        const input = screen.getByRole('textbox', {name: 'Ausdruck'});
+        expect(input).toHaveFocus();
+        await user.keyboard('42{Escape}');
+        await user.click(await screen.findByRole('button', {name: 'Übernehmen'}));
+        expect(onApply).toHaveBeenCalledWith({type: 'NoCodeStaticValue', value: '42'});
+    });
+
     it('closes an unchanged dialog with Escape from the reading controls', async () => {
         api.get.mockResolvedValue([{
             identifier: 'choice',

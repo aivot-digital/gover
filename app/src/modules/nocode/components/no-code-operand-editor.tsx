@@ -28,6 +28,7 @@ export type NoCodeOperandEditorContextType = 'BOTH' | 'FORM' | 'PROCESS';
 
 interface NoCodeOperandEditorProps {
     parameter: NoCodeParameter;
+    autoFocusStaticValue?: boolean;
     suggestions?: NoCodeParameterOption[];
     operand: NoCodeOperand | undefined | null;
     onChange: (operand: NoCodeOperand | undefined | null) => void;
@@ -70,6 +71,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                 isNoCodeStaticValue(operand) &&
                 <NoCodeOperandEditorStaticValue
                     label={parameter.label}
+                    autoFocus={props.autoFocusStaticValue}
                     hint={parameter.description ?? undefined}
                     value={operand}
                     onChange={onChange}

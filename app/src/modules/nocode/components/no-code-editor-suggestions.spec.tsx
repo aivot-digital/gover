@@ -101,6 +101,23 @@ async function editComparison() {
 describe('NoCodeEditor suggestions', () => {
     afterEach(() => vi.restoreAllMocks());
 
+    it('accepts a typed comparison immediately after choosing a fixed value with suggestions', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Editor onChange={onChange} initial={{...expression, operands: [expression.operands![0], null]}}/>);
+        await user.click(screen.getByRole('button', {name: 'Vergleichswert festlegen'}));
+        await user.click(screen.getByRole('button', {name: 'Wert selbst festlegen'}));
+
+        const input = screen.getByRole('combobox', {name: 'Vergleichswert'});
+        expect(input).toHaveFocus();
+        await user.keyboard('BW');
+        expect(input).toHaveValue('BW');
+        expect(onChange).toHaveBeenLastCalledWith({
+            ...expression,
+            operands: [expression.operands![0], {type: 'NoCodeStaticValue', value: 'BW'}],
+        });
+    });
+
     it('labels a configured option, stores its technical value and still allows free text', async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();
