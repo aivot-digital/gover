@@ -32,7 +32,7 @@ public class WebhookTriggerConfigV1 {
     // Basic auth credentials
     public static final String AUTH_USERNAME_CONFIG_KEY = "auth_username";
     public static final String AUTH_PASSWORD_CONFIG_KEY = "auth_password";
-    // Bearer or query param token
+    // Token passed as query parameter
     public static final String AUTH_TOKEN_CONFIG_KEY = "auth_token";
 
     // Additional request body configuration group
@@ -43,14 +43,6 @@ public class WebhookTriggerConfigV1 {
     public static final String REQUEST_BODY_TYPE_OPTION_JSON = "json";
     public static final String REQUEST_BODY_TYPE_OPTION_FORM = "form";
     public static final String REQUEST_BODY_TYPE_OPTION_XML = "xml";
-
-    // Processing configuration. Weather if automatic or code-based processing is used
-    public static final String PROCESSING_TYPE_CONFIG_KEY = "processing_type";
-    // Options for processing type
-    public static final String PROCESSING_TYPE_OPTION_AUTOMATIC = "automatic";
-    public static final String PROCESSING_TYPE_OPTION_CODE = "code";
-    // Field for the code to process the incoming data
-    public static final String PROCESSING_CODE_CONFIG_KEY = "processing_code";
 
     // Flag to copy data to process data
     public static final String COPY_TO_PROCESS_DATA_CONFIG_KEY = "copy_to_process_data";
@@ -115,7 +107,7 @@ public class WebhookTriggerConfigV1 {
         @Nullable
         @InputElementPOJOBinding(id = AUTH_TOKEN_CONFIG_KEY, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Token"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Token für die Bearer-Authentifizierung oder als Query-Parameter."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Token, das beim Aufruf als Query-Parameter übergeben werden muss."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String authToken;
@@ -130,21 +122,6 @@ public class WebhookTriggerConfigV1 {
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String requestBodyType;
-
-        @Nullable
-        @InputElementPOJOBinding(id = PROCESSING_TYPE_CONFIG_KEY, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Verarbeitungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Die Art der Verarbeitung der empfangenen Webhook-Daten."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true),
-        })
-        public String processingType;
-
-        @Nullable
-        @InputElementPOJOBinding(id = PROCESSING_CODE_CONFIG_KEY, type = ElementType.CodeInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Verarbeitungscode"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der JavaScript-Code, der zur Verarbeitung der empfangenen Webhook-Daten verwendet werden soll."),
-        })
-        public String processingCode;
 
         @Nullable
         @InputElementPOJOBinding(id = COPY_TO_PROCESS_DATA_CONFIG_KEY, type = ElementType.Checkbox, properties = {

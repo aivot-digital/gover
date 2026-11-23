@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.LinkButtonContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -40,6 +41,7 @@ import de.aivot.prosuna.backend.payment.models.PaymentTaskRuntimeDataKeys;
 import de.aivot.prosuna.backend.payment.models.XBezahldienstePaymentInformation;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -64,6 +66,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.prosuna.backend.services.PdfService;
+import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
@@ -75,19 +78,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import de.aivot.prosuna.backend.process.services.ProcessTaskExecutionService;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static de.aivot.prosuna.backend.TestData.effective;
@@ -799,7 +807,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ThemeService.class),
                 customerTaskIdentityService,
                 mock(IdentitySlotService.class),
-                passthrough()
+                passthrough(),
+                mock(ProcessInstanceAttachmentService.class),
+                mock(StorageService.class)
         );
 
         var response = controller.update(
@@ -910,7 +920,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ThemeService.class),
                 mockCustomerTaskIdentityService(),
                 mock(IdentitySlotService.class),
-                passthrough()
+                passthrough(),
+                mock(ProcessInstanceAttachmentService.class),
+                mock(StorageService.class)
         );
 
         var response = controller.update(
@@ -1173,6 +1185,206 @@ class CustomerProcessInstanceTaskViewControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
     }
 
+    @Test
+    void downloadAttachment_StreamsAnAttachmentThatAnUploadFieldOfTheTaskViewReferences() throws Exception {
+        var fixture = createAttachmentDownloadFixture();
+        var content = new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8));
+        when(fixture.storageService().getDocumentContent(3, "attachments/antrag.pdf")).thenReturn(content);
+
+        var response = fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, "identity-session"
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_PDF, response.getHeaders().getContentType());
+        assertTrue(response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).startsWith("attachment"));
+        assertSame(content, response.getBody().getInputStream());
+        verify(fixture.customerTaskIdentityService()).requireAuthenticatedIdentity(
+                any(), any(), any(), eq("identity-session")
+        );
+    }
+
+    @Test
+    void downloadAttachment_RejectsAnAttachmentThatTheTaskViewDoesNotReference() throws Exception {
+        var fixture = createAttachmentDownloadFixture();
+        // E.g. an attachment of another task or a document of the instance that this task view does not show.
+        var otherAttachmentKey = UUID.fromString("00000000-0000-0000-0000-0000000000a2");
+        when(fixture.processInstanceAttachmentService().retrieve(otherAttachmentKey))
+                .thenReturn(Optional.of(storedAttachment(otherAttachmentKey, 42L)));
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), otherAttachmentKey, true, null, null
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verifyNoInteractions(fixture.storageService());
+    }
+
+    @Test
+    void downloadAttachment_RejectsAReferencedAttachmentOfAnotherInstance() throws ResponseException {
+        var fixture = createAttachmentDownloadFixture();
+        when(fixture.processInstanceAttachmentService().retrieve(REFERENCED_ATTACHMENT_KEY))
+                .thenReturn(Optional.of(storedAttachment(REFERENCED_ATTACHMENT_KEY, 43L)));
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verifyNoInteractions(fixture.storageService());
+    }
+
+    @Test
+    void downloadAttachment_RejectsAnAttachmentFlaggedAsRemoved() throws ResponseException {
+        var fixture = createAttachmentDownloadFixture();
+        when(fixture.processInstanceAttachmentService().retrieve(REFERENCED_ATTACHMENT_KEY))
+                .thenReturn(Optional.of(storedAttachment(REFERENCED_ATTACHMENT_KEY, 42L).setRemovedAt(Instant.now())));
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verifyNoInteractions(fixture.storageService());
+    }
+
+    @Test
+    void downloadAttachment_RequiresTheIdentitiesOfTheTaskView() throws ResponseException {
+        var fixture = createAttachmentDownloadFixture();
+        doThrow(ResponseException.unauthorized())
+                .when(fixture.customerTaskIdentityService())
+                .requireAuthenticatedIdentity(any(), any(), any(), any());
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        ));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        verifyNoInteractions(fixture.processInstanceAttachmentService(), fixture.storageService());
+    }
+
+    @Test
+    void downloadAttachment_RejectsAReferenceThatOnlyTheSavedValuesOfTheCustomerContain() throws Exception {
+        // E.g. a reference to another attachment of the instance that a manipulated autosave stored before this check.
+        var fixture = createAttachmentDownloadFixture(new AuthoredElementValues());
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        ));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+        verifyNoInteractions(fixture.storageService());
+    }
+
+    @Test
+    void downloadAttachment_StreamsAnOwnUploadOfTheTaskThatTheSavedValuesReference() throws Exception {
+        var fixture = createAttachmentDownloadFixture(new AuthoredElementValues());
+        fixture.fileUploadMultipartInputService().ownUploadKeys = Set.of(REFERENCED_ATTACHMENT_KEY);
+        when(fixture.storageService().getDocumentContent(3, "attachments/antrag.pdf"))
+                .thenReturn(new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8)));
+
+        var response = fixture.controller().downloadAttachment(
+                fixture.procAccess(), fixture.taskAccess(), REFERENCED_ATTACHMENT_KEY, true, null, null
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void update_RejectsAReferenceToAnAttachmentThatTheTaskViewDoesNotGrant() {
+        var fixture = createAttachmentDownloadFixture(new AuthoredElementValues());
+        var otherAttachmentKey = UUID.fromString("00000000-0000-0000-0000-0000000000a2");
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                uploadInputs(otherAttachmentKey),
+                null,
+                null,
+                null,
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        // Nothing is stored, so the reference cannot grant the download later.
+        assertNull(fixture.fileUploadMultipartInputService().receivedInputs);
+    }
+
+    @Test
+    void update_KeepsReferencesToTrustedAttachmentsAndOwnUploads() throws ResponseException {
+        var fixture = createAttachmentDownloadFixture();
+        var ownUploadKey = UUID.fromString("00000000-0000-0000-0000-0000000000a3");
+        // The own upload may be flagged as removed, the upload field may reference it again.
+        fixture.fileUploadMultipartInputService().ownUploadKeys = Set.of(ownUploadKey);
+
+        fixture.controller().update(
+                fixture.procAccess(),
+                fixture.taskAccess(),
+                uploadInputs(REFERENCED_ATTACHMENT_KEY, ownUploadKey),
+                null,
+                null,
+                null,
+                Map.of(),
+                null,
+                new MockHttpServletResponse()
+        );
+
+        assertNotNull(fixture.fileUploadMultipartInputService().receivedInputs);
+    }
+
+    private static String uploadInputs(UUID... attachmentKeys) {
+        var items = new LinkedList<String>();
+        for (var attachmentKey : attachmentKeys) {
+            items.add("{\"name\":\"antrag.pdf\",\"uri\":\"process-instance-attachment:" + attachmentKey + "\",\"size\":7}");
+        }
+        return "{\"upload\":{\"type\":\"Literal\",\"value\":[" + String.join(",", items) + "]}}";
+    }
+
+    private static final UUID REFERENCED_ATTACHMENT_KEY = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
+
+    private static CustomerTaskControllerFixture createAttachmentDownloadFixture() {
+        return createAttachmentDownloadFixture(null);
+    }
+
+    /**
+     * @param trustedData the data of the view without the values the customer saved, {@code null} for the same data
+     */
+    private static CustomerTaskControllerFixture createAttachmentDownloadFixture(AuthoredElementValues trustedData) {
+        var upload = new FileUploadInputElement();
+        upload.setId("upload");
+        var layout = new GroupLayoutElement();
+        layout.setId("customer-root");
+        layout.setChildren(List.of(upload));
+        var data = new AuthoredElementValues();
+        data.putLiteral("upload", List.of(Map.of(
+                "name", "antrag.pdf",
+                "uri", "process-instance-attachment:" + REFERENCED_ATTACHMENT_KEY,
+                "size", 7
+        )));
+
+        var provider = new NoOpCustomerProcessNodeDefinition();
+        provider.customerView = new ProcessNodeCustomerView(layout, List.of(), data, null, null, trustedData == null ? data : trustedData);
+        var fixture = createFixture(provider, new AuthoredElementValues());
+        try {
+            when(fixture.processInstanceAttachmentService().retrieve(REFERENCED_ATTACHMENT_KEY))
+                    .thenReturn(Optional.of(storedAttachment(REFERENCED_ATTACHMENT_KEY, 42L)));
+        } catch (ResponseException e) {
+            throw new IllegalStateException(e);
+        }
+        return fixture;
+    }
+
+    private static ProcessInstanceAttachmentEntity storedAttachment(UUID key, Long processInstanceId) {
+        return new ProcessInstanceAttachmentEntity()
+                .setKey(key)
+                .setFileName("antrag.pdf")
+                .setProcessInstanceId(processInstanceId)
+                .setStorageProviderId(3)
+                .setStoragePathFromRoot("attachments/antrag.pdf");
+    }
+
     private static CustomerTaskControllerFixture createFixture(ProcessNodeDefinition<?> provider,
                                                                AuthoredElementValues normalizedInputs) {
         return createFixture(
@@ -1300,6 +1512,8 @@ class CustomerProcessInstanceTaskViewControllerTest {
         var customerTaskIdentityService = mockCustomerTaskIdentityService();
         var identitySlotService = mock(IdentitySlotService.class);
         var fileUploadMultipartInputService = new TestTaskViewMultipartInputService(normalizedInputs);
+        var processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        var storageService = mock(StorageService.class);
         var controller = new CustomerProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -1318,7 +1532,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 mock(ThemeService.class),
                 customerTaskIdentityService,
                 identitySlotService,
-                execution
+                execution,
+                processInstanceAttachmentService,
+                storageService
         );
 
         return new CustomerTaskControllerFixture(
@@ -1331,7 +1547,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 identitySlotService,
                 elementDerivationService,
                 fileUploadMultipartInputService,
-                processExecutionData
+                processExecutionData,
+                processInstanceAttachmentService,
+                storageService
         );
     }
 
@@ -1428,7 +1646,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
                 themeService,
                 customerTaskIdentityService,
                 mock(IdentitySlotService.class),
-                passthrough()
+                passthrough(),
+                mock(ProcessInstanceAttachmentService.class),
+                mock(StorageService.class)
         );
 
         return new PaymentConfirmationControllerFixture(
@@ -1507,7 +1727,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
             IdentitySlotService identitySlotService,
             TestElementDerivationService elementDerivationService,
             TestTaskViewMultipartInputService fileUploadMultipartInputService,
-            ProcessExecutionData processExecutionData
+            ProcessExecutionData processExecutionData,
+            ProcessInstanceAttachmentService processInstanceAttachmentService,
+            StorageService storageService
     ) {
     }
 
@@ -1594,6 +1816,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
         private AuthoredElementValues receivedInputs;
         private ComputedElementStates receivedElementStates;
         private List<UUID> removableAttachmentKeys = List.of();
+        private Set<UUID> ownUploadKeys = Set.of();
         private Long removableAttachmentsTaskId;
 
         private TestTaskViewMultipartInputService(AuthoredElementValues normalizedInputs) {
@@ -1621,6 +1844,16 @@ class CustomerProcessInstanceTaskViewControllerTest {
                                                       Long processInstanceTaskId) {
             removableAttachmentsTaskId = processInstanceTaskId;
             return removableAttachmentKeys;
+        }
+
+        @Override
+        public Set<UUID> findAuthorizedAttachmentKeys(BaseElement layout,
+                                                      AuthoredElementValues trustedData,
+                                                      Long processInstanceId,
+                                                      Long processInstanceTaskId) {
+            var attachmentKeys = findReferencedAttachmentKeys(layout, trustedData);
+            attachmentKeys.addAll(ownUploadKeys);
+            return attachmentKeys;
         }
     }
 
@@ -1754,6 +1987,7 @@ class CustomerProcessInstanceTaskViewControllerTest {
     private static final class NoOpCustomerProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private int taskViewInvocationCount;
         private final IdentityConfigElementSlot newIdentitySlot;
+        private ProcessNodeCustomerView customerView;
 
         private NoOpCustomerProcessNodeDefinition() {
             this(null);
@@ -1820,6 +2054,9 @@ class CustomerProcessInstanceTaskViewControllerTest {
         @Override
         public ProcessNodeCustomerView getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer<AuthoredElementValues> context) {
             taskViewInvocationCount++;
+            if (customerView != null) {
+                return customerView;
+            }
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             var persistedData = new AuthoredElementValues();

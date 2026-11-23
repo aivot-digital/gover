@@ -115,6 +115,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
             permissions: access.permissions,
             created: access.created,
             updated: access.updated,
+            lockVersion: access.lockVersion,
         };
     }, []);
 

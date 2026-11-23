@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.storage.repositories;
 
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntityId;
+import de.aivot.prosuna.backend.storage.projections.StorageIndexItemStateProjection;
 import jakarta.annotation.Nonnull;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,11 +11,34 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 public interface StorageIndexItemRepository extends JpaRepository<StorageIndexItemEntity, StorageIndexItemEntityId>, JpaSpecificationExecutor<StorageIndexItemEntity> {
-    List<StorageIndexItemEntity> findAllByStorageProviderId(Integer storageProviderId);
+    // A projection, so the sync's later reads of these rows still come from the database, not the persistence context.
+    @Query("""
+            select new de.aivot.prosuna.backend.storage.projections.StorageIndexItemStateProjection(
+                item.pathFromRoot, item.directory, item.updated)
+            from StorageIndexItemEntity item
+            where item.storageProviderId = :storageProviderId
+            """)
+    List<StorageIndexItemStateProjection> findStatesByStorageProviderId(@Param("storageProviderId") Integer storageProviderId);
+
+    /** Marks the item missing only if it was not changed since {@code expectedUpdated} was read. */
+    @Modifying
+    @Transactional
+    @Query("""
+            update StorageIndexItemEntity item
+            set item.missing = true, item.updated = :updated
+            where item.storageProviderId = :storageProviderId
+              and item.pathFromRoot = :pathFromRoot
+              and item.updated = :expectedUpdated
+            """)
+    int markMissingIfUnchanged(@Param("storageProviderId") Integer storageProviderId,
+                               @Param("pathFromRoot") String pathFromRoot,
+                               @Param("expectedUpdated") Instant expectedUpdated,
+                               @Param("updated") Instant updated);
 
     List<StorageIndexItemEntity> findAllByStorageProviderIdAndDirectoryIsTrue(Integer storageProviderId);
 

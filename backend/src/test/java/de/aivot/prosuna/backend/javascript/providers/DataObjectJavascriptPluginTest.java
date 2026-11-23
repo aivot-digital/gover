@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.dataObject.services.DataObjectSchemaService;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.prosuna.backend.javascript.models.JavascriptCode;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngine;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.plugins.core.v1.javascript.DataObjectJavascriptV1;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -122,11 +125,14 @@ class DataObjectJavascriptPluginTest {
     @Test
     void retrieve() {
         try (var jsService = new JavascriptEngine(new DataObjectJavascriptV1(dataObjectSchemaService, dataObjectItemService))) {
+            var stored = item("contacts", "item-1", mapOf("name", "Ada"));
             when(dataObjectItemService.retrieve(new DataObjectItemEntityId("contacts", "item-1")))
-                    .thenReturn(Optional.of(item("contacts", "item-1", mapOf("name", "Ada"))));
+                    .thenReturn(Optional.of(stored));
 
             var result = jsService.evaluateCode(new JavascriptCode().setCode("_data_objects_v1.retrieve('contacts', 'item-1');"));
             var item = assertInstanceOf(Map.class, result.asObject());
+            // Reading must not change the stored item, which a transaction would otherwise write back.
+            assertEquals(Map.of("name", "Ada"), stored.getData());
 
             assertEquals("Ada", item.get("name"));
             assertEquals("item-1", item.get("$id"));
@@ -189,6 +195,41 @@ class DataObjectJavascriptPluginTest {
                 .setCreated(CREATED)
                 .setUpdated(UPDATED)
                 .setDisplayFields(List.of("name"));
+    }
+
+    @Test
+    void updateOfAnItemReadBeforeSendsItsLockVersion() {
+        try (var jsService = new JavascriptEngine(new DataObjectJavascriptV1(dataObjectSchemaService, dataObjectItemService))) {
+            var id = new DataObjectItemEntityId("contacts", "item-1");
+            when(dataObjectSchemaService.retrieve("contacts")).thenReturn(Optional.of(schemaEntity()));
+            when(dataObjectItemService.retrieve(id)).thenReturn(Optional.of(item("contacts", "item-1", mapOf("name", "Ada")).setLockVersion(3L)));
+            when(dataObjectItemService.update(eq(id), any(DataObjectItemEntity.class)))
+                    .thenReturn(item("contacts", "item-1", mapOf("name", "Grace")).setLockVersion(4L));
+
+            jsService.evaluateCode(new JavascriptCode().setCode(
+                    "var item = _data_objects_v1.retrieve('contacts', 'item-1');"
+                            + " item.name = 'Grace';"
+                            + " _data_objects_v1.update('contacts', item.$id, item);"));
+
+            var entityCaptor = ArgumentCaptor.forClass(DataObjectItemEntity.class);
+            verify(dataObjectItemService).update(eq(id), entityCaptor.capture());
+            assertEquals(3L, entityCaptor.getValue().getLockVersion());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updateConflictFailsInsteadOfReturningNull() throws Exception {
+        var id = new DataObjectItemEntityId("contacts", "item-1");
+        when(dataObjectSchemaService.retrieve("contacts")).thenReturn(Optional.of(schemaEntity()));
+        when(dataObjectItemService.update(eq(id), any(DataObjectItemEntity.class)))
+                .thenThrow(ResponseException.conflictWithDetails(LockVersioned.CONFLICT_MESSAGE, LockVersioned.CONFLICT_DETAILS));
+
+        try (var jsService = new JavascriptEngine(new DataObjectJavascriptV1(dataObjectSchemaService, dataObjectItemService))) {
+            assertThrows(Exception.class, () -> jsService.evaluateCode(new JavascriptCode()
+                    .setCode("_data_objects_v1.update('contacts', 'item-1', {name: 'Grace', $lockVersion: 2});")));
+        }
     }
 
     private static GroupLayoutElement schemaElement() {

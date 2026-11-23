@@ -127,6 +127,13 @@ spring:
     username: "${PROSUNA_RABBITMQ_USERNAME}"
     password: "${PROSUNA_RABBITMQ_PASSWORD}"
 
+  # All @Scheduled jobs share this pool. With Spring Boot's default of a single thread, a job waiting for an external
+  # system would delay every other job, including the process engine. A job never runs in parallel with itself.
+  task:
+    scheduling:
+      pool:
+        size: "${PROSUNA_SCHEDULING_POOL_SIZE:8}"
+
 management:
   server:
     # The actuator exposes health and metrics, so this port must not be published. A blank address fails at startup

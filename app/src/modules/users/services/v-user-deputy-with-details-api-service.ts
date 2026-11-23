@@ -26,6 +26,7 @@ export class VUserDeputyWithDetailsApiService extends BaseCrudApiService<
 
     public initialize(): VUserDeputyWithDetailsEntity {
         return {
+            lockVersion: 0,
             deputyUserId: "",
             deputyUserDeletedInIdp: false,
             deputyUserEmail: "",

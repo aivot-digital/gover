@@ -7,4 +7,5 @@ export interface ProcessInstanceAccessControlPresetEntity {
     permissions: string[];
     created: string; // ISO date string
     updated: string; // ISO date string
+    lockVersion?: number | null;
 }

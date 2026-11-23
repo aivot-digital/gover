@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.storage;
 
+import de.aivot.prosuna.backend.core.properties.HttpServiceProperties;
 import de.aivot.prosuna.backend.plugins.core.v1.storage.S3StorageProviderDefinitionV1;
+import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import de.aivot.prosuna.backend.storage.exceptions.StorageException;
 import de.aivot.prosuna.backend.storage.models.StorageDocument;
@@ -8,6 +10,7 @@ import de.aivot.prosuna.backend.storage.models.StorageFolder;
 import de.aivot.prosuna.backend.storage.models.StorageItemMetadata;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import de.aivot.prosuna.backend.storage.services.KnownExtensionsService;
+import io.minio.BucketExistsArgs;
 import io.minio.CopyObjectArgs;
 import io.minio.Directive;
 import io.minio.Http;
@@ -21,14 +24,19 @@ import io.minio.messages.Item;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -37,6 +45,31 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class S3StorageProviderDefinitionV1Test {
+
+    @Test
+    void clientGivesUpWhenTheStorageDoesNotAnswer() throws Exception {
+        // MinIO would otherwise wait 5 minutes per request, e.g. in the scheduled retry of attachment deletions.
+        // The socket is never accepted, so the connection opens but the storage never answers.
+        try (var silentStorage = new ServerSocket(0, 50, InetAddress.getLoopbackAddress())) {
+            var secretService = mock(SecretService.class);
+            var secret = new SecretEntity();
+            when(secretService.retrieve(any(UUID.class))).thenReturn(Optional.of(secret));
+            when(secretService.decrypt(secret)).thenReturn("secret-key");
+            var properties = new HttpServiceProperties();
+            properties.setConnectionTimeoutSeconds(1);
+            properties.setReadTimeoutSeconds(1);
+            var provider = new S3StorageProviderDefinitionV1(secretService, mock(KnownExtensionsService.class),
+                    mock(StorageProviderRepository.class), properties);
+            var config = createConfig();
+            config.endpoint = "http://127.0.0.1:" + silentStorage.getLocalPort();
+            config.accessKey = "access-key";
+            config.secretKeySecret = UUID.randomUUID().toString();
+            var client = provider.getClient(config);
+
+            assertTimeoutPreemptively(Duration.ofSeconds(10), () -> assertThrows(Exception.class,
+                    () -> client.bucketExists(BucketExistsArgs.builder().bucket("bucket").build())));
+        }
+    }
 
     @Test
     void createFolderUploadsZeroByteMarkerObject() throws Exception {
@@ -92,6 +125,34 @@ class S3StorageProviderDefinitionV1Test {
         assertEquals("/empty/", folder.getPathFromRoot());
         assertTrue(folder.getDocuments().isEmpty());
         assertTrue(folder.getSubfolders().isEmpty());
+    }
+
+    @Test
+    void retrieveFolderReturnsEmptyRootForEmptyBucket() throws Exception {
+        var client = mock(MinioClient.class);
+        Iterable<Result<Item>> noObjects = List.of();
+        when(client.listObjects(any(ListObjectsArgs.class))).thenReturn(noObjects);
+
+        var provider = new ClientOnlyS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        var root = provider.rootFolder(config, true);
+
+        assertEquals("/", root.getPathFromRoot());
+        assertTrue(root.getDocuments().isEmpty());
+        assertTrue(root.getSubfolders().isEmpty());
+    }
+
+    @Test
+    void retrieveFolderReturnsEmptyForMissingSubfolder() throws Exception {
+        var client = mock(MinioClient.class);
+        Iterable<Result<Item>> noObjects = List.of();
+        when(client.listObjects(any(ListObjectsArgs.class))).thenReturn(noObjects);
+
+        var provider = new ClientOnlyS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        assertTrue(provider.retrieveFolder(config, "/missing/", false).isEmpty());
     }
 
     @Test
@@ -201,7 +262,8 @@ class S3StorageProviderDefinitionV1Test {
         private final List<String> deletedFolders = new LinkedList<>();
 
         private TestS3StorageProviderDefinitionV1(MinioClient client) {
-            super(mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
+            super(mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class),
+                    new HttpServiceProperties());
             this.client = client;
         }
 
@@ -231,7 +293,8 @@ class S3StorageProviderDefinitionV1Test {
         private final MinioClient client;
 
         private ClientOnlyS3StorageProviderDefinitionV1(MinioClient client) {
-            super(mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
+            super(mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class),
+                    new HttpServiceProperties());
             this.client = client;
         }
 

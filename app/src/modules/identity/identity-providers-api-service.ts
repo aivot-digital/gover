@@ -71,6 +71,16 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
         return response.redirectUrl;
     }
 
+    // Loaded through the backend, because Keycloak sends no CORS headers for the metadata of brokered providers.
+    public async getSamlMetadata(key: string): Promise<string> {
+        const response = await this.fetch('GET', `${this.buildPath(key)}saml-metadata/`, undefined, {
+            headers: {
+                'Accept': 'application/xml, application/json',
+            },
+        });
+        return await response.text();
+    }
+
     public static async fetchIdentity(clear: boolean, relatedNodeId: number | undefined): Promise<IdentityDataMap> {
         const qp = new URLSearchParams();
         if (clear) {

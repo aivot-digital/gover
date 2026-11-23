@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import de.aivot.prosuna.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
+import de.aivot.prosuna.backend.core.properties.HttpServiceProperties;
 import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
@@ -79,7 +80,8 @@ class EPayBLPaymentProviderDefinitionV1Test {
         return new ePayBLPaymentProviderDefinitionV1(
                 mock(SecretService.class),
                 mock(StorageService.class),
-                mock(VStorageIndexItemWithAssetRepository.class)
+                mock(VStorageIndexItemWithAssetRepository.class),
+                new HttpServiceProperties()
         );
     }
 
@@ -89,7 +91,8 @@ class EPayBLPaymentProviderDefinitionV1Test {
         var definition = new ePayBLPaymentProviderDefinitionV1(
                 mock(SecretService.class),
                 mock(StorageService.class),
-                assetRepository
+                assetRepository,
+                new HttpServiceProperties()
         );
 
         var layout = definition.getPaymentConfigLayout();

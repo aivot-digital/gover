@@ -3,9 +3,9 @@ import {FileUploadElement, FileUploadElementItem} from '../../models/elements/fo
 import {humanizeFileSize} from '../../utils/humanization-utils';
 import {BaseSummaryProps} from '../../summaries/base-summary';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
-import {BaseApiService} from '../../services/base-api-service';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
+import {useFileUploadAttachmentDownload} from './file-upload-attachment-download-context';
 
 const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
 
@@ -15,6 +15,7 @@ export function FileUploadSummary({
                                   }: BaseSummaryProps<FileUploadElement, FileUploadElementItem[]>) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
+    const downloadAttachment = useFileUploadAttachmentDownload();
 
     const handleDownload = async (file: FileUploadElementItem) => {
         const attachmentKey = resolveProcessInstanceAttachmentKey(file);
@@ -23,7 +24,7 @@ export function FileUploadSummary({
         }
 
         try {
-            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachmentKey)}/file/?download=true`);
+            const blob = await downloadAttachment(attachmentKey);
             const objectUrl = URL.createObjectURL(blob);
 
             const link = document.createElement('a');

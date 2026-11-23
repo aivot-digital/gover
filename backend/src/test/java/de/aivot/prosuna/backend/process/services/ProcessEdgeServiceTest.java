@@ -270,7 +270,7 @@ class ProcessEdgeServiceTest {
         assertThrows(ResponseException.class, () -> service.create(edge));
         when(nodes.resolvePorts(node)).thenReturn(new ProcessNodePortResolution(List.of(new ProcessNodePort("dynamic", "Ausgang", "Fortsetzung")), List.of()));
         when(repository.findByFromNodeIdAndViaPort(1, "dynamic")).thenReturn(Optional.of(new ProcessEdgeEntity(4, 10, 2, 1, 3, "dynamic")));
-        assertThrows(ResponseException.class, () -> service.create(edge));
+        assertStatus(HttpStatus.CONFLICT, () -> service.create(edge));
         verify(repository, never()).save(any());
     }
 
