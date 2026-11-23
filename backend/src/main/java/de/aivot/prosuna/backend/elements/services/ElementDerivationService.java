@@ -374,7 +374,8 @@ public class ElementDerivationService {
                                 options,
                                 validatedValue,
                                 elementState,
-                                logger
+                                logger,
+                                inputModeContext
                         );
 
                         if (err != null) {
@@ -1418,7 +1419,8 @@ public class ElementDerivationService {
             @Nonnull ElementDerivationOptions options,
             @Nullable Object effectiveValue,
             @Nonnull ComputedElementState elementState,
-            @Nonnull ElementDerivationLogger logger
+            @Nonnull ElementDerivationLogger logger,
+            @Nonnull InputModeEvaluationContext inputModeContext
     ) {
         if (options.containsSkipErrors(inputElement.getId())) {
             return null;
@@ -1437,6 +1439,9 @@ public class ElementDerivationService {
 
         try {
             inputElement.validate(effectiveValue);
+            if (inputModeContext == InputModeEvaluationContext.Authoring) {
+                inputElement.validateAuthoring(effectiveValue);
+            }
             if (inputElement instanceof AssetSelectInputElement assetSelect) {
                 assetSelectionValidationService.validate(assetSelect, effectiveValue);
             }

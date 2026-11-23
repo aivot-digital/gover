@@ -28,16 +28,6 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
     const usesManualOptions = optionsSource === OptionsSourceType.Manual;
     const codeListColumns = useCodeListColumnOptions(usesManualOptions ? null : props.element.codeListKey);
 
-    const minRequiredError = (
-        usesManualOptions &&
-        props.element.minimumRequiredOptions != null &&
-        props.element.options != null &&
-        props.element.minimumRequiredOptions > props.element.options.length
-    );
-
-    const limitsConflict = (props.element.maximumOptions ?? 0) > 0
-        && (props.element.minimumRequiredOptions ?? 0) > props.element.maximumOptions!;
-
     const options = props.element.options ?? [];
 
     return (
@@ -86,6 +76,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     <Grid size={{xs: 12, lg: 6}}>
                         <CodeListSelectField
                             value={props.element.codeListKey}
+                            error={props.configurationErrors?.codeListKey?.join(' ')}
                             onChange={(codeListKey) => {
                                 // Column keys belong to one code list, so they do not carry over to another one.
                                 props.onPatch(codeListKey === props.element.codeListKey ? {codeListKey} : {
@@ -137,6 +128,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 usesManualOptions &&
                 <OptionListInput
                     label="Optionen"
+                    error={props.configurationErrors?.options?.join(' ')}
                     addLabel="Option hinzufügen"
                     hint="Die ausfüllende Person kann eine oder mehrere dieser Optionen auswählen."
                     noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
@@ -162,7 +154,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                                 minimumRequiredOptions: val === 0 ? undefined : val,
                             });
                         }}
-                        error={limitsConflict ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : minRequiredError ? 'Sie fordern mehr Optionen als Sie definiert haben.' : undefined}
+                        error={props.configurationErrors?.minimumRequiredOptions?.join(' ')}
                         hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
                         disabled={!props.editable}
                     />
@@ -174,7 +166,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                         onChange={(value) => props.onPatch({maximumOptions: value === 0 ? undefined : value})}
                         minValue={0}
                         hint="Geben Sie 0 oder nichts ein, um die Anzahl der ausgewählten Optionen nicht zu begrenzen."
-                        error={limitsConflict ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                        error={props.configurationErrors?.maximumOptions?.join(' ')}
                         disabled={!props.editable}
                     />
                 </Grid>

@@ -7,13 +7,6 @@ import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component
 import {Grid} from '@mui/material';
 
 export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
-    const minRequiredError = (
-        props.element.minimumRequiredSets != null &&
-        props.element.maximumSets != null &&
-        props.element.maximumSets > 0 &&
-        props.element.minimumRequiredSets > props.element.maximumSets
-    );
-
     return (
         <Grid
             container
@@ -87,7 +80,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                             minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
                         });
                     }}
-                    error={minRequiredError ? 'Sie fordern mehr Datensätze, als Sie maximal zulassen.' : undefined}
+                    error={props.configurationErrors?.minimumRequiredSets?.join(' ')}
                     disabled={!props.editable}
                 />
             </Grid>
@@ -100,7 +93,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     value={props.element.maximumSets ?? undefined}
                     label="Maximalanzahl der hinzuzufügenden Datensätze"
                     hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                    error={minRequiredError ? 'Sie fordern mehr Datensätze, als Sie maximal zulassen.' : undefined}
+                    error={props.configurationErrors?.maximumSets?.join(' ')}
                     onChange={(val) => {
                         props.onPatch({
                             maximumSets: val,

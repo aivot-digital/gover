@@ -69,6 +69,9 @@ public class CodeListElementOptionsService {
 
     @Nonnull
     private SelectInputElement resolveSelect(@Nonnull SelectInputElement element) throws ResponseException {
+        if (lacksCodeList(element.getCodeListKey())) {
+            return copy(element, SelectInputElement.class).setOptions(List.of());
+        }
         var codeList = requireConfiguredCodeList(element.getCodeListKey());
         // Only a dependent select needs group values; its options are then filtered by the referenced select.
         var groupColumnKey = StringUtils.isNullOrEmpty(element.getDependsOnSelectFieldId())
@@ -88,6 +91,9 @@ public class CodeListElementOptionsService {
 
     @Nonnull
     private MultiCheckboxInputElement resolveMultiCheckbox(@Nonnull MultiCheckboxInputElement element) throws ResponseException {
+        if (lacksCodeList(element.getCodeListKey())) {
+            return copy(element, MultiCheckboxInputElement.class).setOptions(List.of());
+        }
         var options = listOptions(
                 requireConfiguredCodeList(element.getCodeListKey()),
                 requireColumnKey(element.getCodeListValueColumnKey(), MISSING_OPTION_COLUMNS_MESSAGE),
@@ -107,6 +113,9 @@ public class CodeListElementOptionsService {
 
     @Nonnull
     private TextInputElement resolveText(@Nonnull TextInputElement element) throws ResponseException {
+        if (lacksCodeList(element.getCodeListKey())) {
+            return copy(element, TextInputElement.class).setSuggestions(List.of());
+        }
         var suggestions = listSuggestions(
                 requireConfiguredCodeList(element.getCodeListKey()),
                 requireColumnKey(element.getCodeListLabelColumnKey(), MISSING_SUGGESTION_COLUMN_MESSAGE)
@@ -119,6 +128,9 @@ public class CodeListElementOptionsService {
 
     @Nonnull
     private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
+        if (lacksCodeList(element.getCodeListKey())) {
+            return copy(element, ChipInputElement.class).setSuggestions(List.of());
+        }
         var suggestions = listSuggestions(
                 requireConfiguredCodeList(element.getCodeListKey()),
                 requireColumnKey(element.getCodeListLabelColumnKey(), MISSING_SUGGESTION_COLUMN_MESSAGE)
@@ -199,6 +211,14 @@ public class CodeListElementOptionsService {
                 .stream()
                 .map(row -> row.toItem(codeList.getColumns()))
                 .toList();
+    }
+
+    /**
+     * The configuration validation reports a missing selection at the element, so it is derived without entries
+     * instead of showing the error at the field and in the error summary of the form.
+     */
+    private static boolean lacksCodeList(@Nullable String codeListKey) {
+        return codeListKey == null || codeListKey.isBlank();
     }
 
     @Nonnull

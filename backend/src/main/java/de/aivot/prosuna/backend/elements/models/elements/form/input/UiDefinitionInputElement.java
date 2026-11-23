@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.elements.models.elements.form.input;
 
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.enums.ElementDisplayContext;
+import de.aivot.prosuna.backend.elements.models.ElementConfigurationErrors;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.LayoutElement;
@@ -12,6 +13,7 @@ import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
 import jakarta.annotation.Nullable;
 
+import java.util.Map;
 import java.util.Objects;
 
 public class UiDefinitionInputElement extends BaseInputElement<BaseElement> implements PrintableElement<BaseElement> {
@@ -51,6 +53,30 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
         if (elementType != null && value.getType() != elementType) {
             throw new ValidationException(this, "Die UI-Definition muss vom Typ " + elementType.name() + " sein.");
         }
+    }
+
+    @Override
+    public void validateAuthoring(@Nullable Object rawValue) throws ValidationException {
+        var value = formatValue(rawValue);
+        if (value == null) {
+            return;
+        }
+
+        var configurationErrors = ElementConfigurationErrors.of(value);
+        if (configurationErrors.isEmpty()) {
+            return;
+        }
+
+        var messages = configurationErrors.describe(value);
+        // Keep the error tree for the element editor and add readable summaries for field and node error lists.
+        throw new ValidationException(
+                this,
+                String.join(" ", messages),
+                Map.of(
+                        "configurationErrors", configurationErrors,
+                        "messages", messages
+                )
+        );
     }
 
     @Override

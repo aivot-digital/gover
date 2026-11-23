@@ -254,15 +254,27 @@ class CodeListElementOptionsServiceTest {
     }
 
     @Test
-    void rejectsMissingCodeListKey() {
+    void resolvesMissingCodeListKeyWithoutOptions() throws ResponseException {
+        // The configuration validation reports the missing selection, so derivation must not fail the field.
         var service = new CodeListElementOptionsService(null, null);
-        var element = new SelectInputElement()
-                .setOptionsSource(OptionsSourceType.CodeList);
+        var select = new SelectInputElement()
+                .setOptionsSource(OptionsSourceType.CodeList)
+                .setOptions(List.of(SelectInputElementOption.of("old", "Old")));
+        var multiCheckbox = new MultiCheckboxInputElement()
+                .setOptionsSource(OptionsSourceType.CodeList)
+                .setOptions(List.of(new MultiCheckboxInputElementOption().setValue("old").setLabel("Old")));
+        var text = new TextInputElement()
+                .setOptionsSource(OptionsSourceType.CodeList)
+                .setSuggestions(List.of("Old"));
+        var chipInput = new ChipInputElement()
+                .setOptionsSource(OptionsSourceType.CodeList)
+                .setCodeListKey(" ")
+                .setSuggestions(List.of("Old"));
 
-        var error = assertThrows(ResponseException.class, () -> service.resolve(element));
-
-        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
-        assertEquals("Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.", error.getMessage());
+        assertEquals(List.of(), assertInstanceOf(SelectInputElement.class, service.resolve(select)).getOptions());
+        assertEquals(List.of(), assertInstanceOf(MultiCheckboxInputElement.class, service.resolve(multiCheckbox)).getOptions());
+        assertEquals(List.of(), assertInstanceOf(TextInputElement.class, service.resolve(text)).getSuggestions());
+        assertEquals(List.of(), assertInstanceOf(ChipInputElement.class, service.resolve(chipInput)).getSuggestions());
     }
 
     @Test
