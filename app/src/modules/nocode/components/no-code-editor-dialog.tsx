@@ -18,6 +18,11 @@ interface NoCodeEditorDialogProps {
     returnType: NoCodeDataType;
     value: NoCodeOperand | null | undefined;
     required?: boolean;
+    /**
+     * Applies only complete expressions. Without it, incomplete or removed expressions are applied as well and reported
+     * as errors of the element, so users can return to an unconfigured field or complete the expression later.
+     */
+    requireComplete?: boolean;
     reference?: ReactNode;
     readOnly?: boolean;
     busy?: boolean;
@@ -117,7 +122,7 @@ export function NoCodeEditorDialog(props: NoCodeEditorDialogProps) {
                                             disabled={Boolean(locked) || !available || props.rootElement == null}
                                             onClick={() => {
                                                 setValidationRequest((current) => current + 1);
-                                                if (!locked && available && valid && props.rootElement != null) props.onApply(draft);
+                                                if (!locked && available && (valid || !props.requireComplete) && props.rootElement != null) props.onApply(draft);
                                             }}>
                     Übernehmen
                 </Button>}

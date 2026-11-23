@@ -77,6 +77,8 @@ export function FunctionInputView(props: BaseViewProps<FunctionInputElement, Fun
                                                returnType={returnType}
                                                value={null}
                                                required
+                                               // Applying replaces the legacy rule, which must not be lost to an unfinished draft.
+                                               requireComplete
                                                readOnly={locked}
                                                reference={<>
                                                    <Typography sx={{

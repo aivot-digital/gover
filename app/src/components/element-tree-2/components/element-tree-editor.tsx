@@ -152,7 +152,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
         setIsBusy(true);
         setNoCodeSaveError(null);
-        const functions = elementNoCodeFunctions(current);
+        // Incomplete expressions are applied and reported as configuration errors of the element. Only the new version
+        // of a legacy rule must be complete, because applying it replaces the legacy rule.
+        const functions = elementNoCodeFunctions(current)
+            .filter(({section}) => section !== 'value' && migration.migrations[section] != null);
         if (functions.length > 0) {
             try {
                 const operators = await new NoCodeApiService(api).getNoCodeOperators();

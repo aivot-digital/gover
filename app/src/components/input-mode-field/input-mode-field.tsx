@@ -373,6 +373,8 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         showOptionalIndicator: props.showOptionalIndicator,
         sx: props.sx,
     };
+    // Removing an applied expression returns to an empty fixed value, so it needs a fixed value to be allowed.
+    const canRemoveNoCode = value.type === InputMode.NoCode && (props.allowedModes == null || props.allowedModes.includes(InputMode.Literal));
     const variablePickerSources = variablePickerPurpose === 'placeholder'
         ? dynamicTextVariableSources
         : allowedVariableSources;
@@ -417,13 +419,15 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             rootElement={props.rootElement}
             returnType={props.noCodeReturnType ?? NoCodeDataType.Runtime}
             value={drafts.NoCode}
-            required={Boolean(required) || value.type !== InputMode.NoCode || (props.allowedModes != null && !props.allowedModes.includes(InputMode.Literal))}
+            required={Boolean(required) || !canRemoveNoCode}
             contextType="PROCESS"
             readOnly={Boolean(disabled || readOnly)}
             busy={busy}
             onClose={() => setNoCodeEditorOpen(false)}
             onApply={(noCode) => {
                 if (editingDisabled) return;
+                // Without a removable expression, the dialog stays open and shows that an expression is required.
+                if (noCode == null && !canRemoveNoCode) return;
                 if (noCode == null) {
                     setDrafts((current) => ({
                         ...current,
