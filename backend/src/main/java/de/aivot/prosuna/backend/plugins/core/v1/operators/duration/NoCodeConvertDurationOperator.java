@@ -54,7 +54,7 @@ public class NoCodeConvertDurationOperator extends NoCodeOperator {
                 # Was ist zu beachten?
                 Es wird die gesamte Zeitdauer umgerechnet. **9000 Sekunden** ergeben **150 Minuten**, nicht nur die nach zwei vollen Stunden verbleibenden **30 Minuten**.
 
-                Ein Tag entspricht immer **24 Stunden**. Ergebnisse werden auf acht Nachkommastellen gerundet. Fehlende oder leere Sekundenwerte werden als **0** behandelt. Für einen bereits in Stunden vorliegenden Wert verwenden Sie zunächst **„Zeitdauer bilden“**.
+                Ein Tag entspricht immer **24 Stunden**. Ergebnisse werden auf acht Nachkommastellen gerundet. Fehlende oder leere Sekundenwerte werden als **0** behandelt. Der Sekundenwert muss eine ganze Zahl sein; auch **0.999999999** führt zu einer Fehlermeldung. Für einen bereits in Stunden vorliegenden Wert verwenden Sie zunächst **„Zeitdauer bilden“**.
                 """;
     }
 

@@ -52,7 +52,7 @@ public class NoCodeFormatDurationOperator extends NoCodeOperator {
                 Das Ergebnis ist der Text **„1 Tag 3 Stunden 30 Minuten“**. Zugeklappt lesen Sie: **„99000 Sekunden als Text mit größter Einheit Tage“**.
 
                 # Was ist zu beachten?
-                Ein Tag entspricht immer **24 Stunden**; Kalenderdaten und Zeitumstellungen werden nicht berücksichtigt. Ein leerer Wert für **„Größte Einheit“** verwendet **„Stunden“**. Fehlende oder leere Sekundenwerte werden als **0** behandelt.
+                Ein Tag entspricht immer **24 Stunden**; Kalenderdaten und Zeitumstellungen werden nicht berücksichtigt. Ein leerer Wert für **„Größte Einheit“** verwendet **„Stunden“**. Fehlende oder leere Sekundenwerte werden als **0** behandelt. Der Sekundenwert muss eine ganze Zahl sein; auch **0.999999999** führt zu einer Fehlermeldung.
 
                 Das Ergebnis ist Text. Verwenden Sie für weitere Berechnungen den ursprünglichen Sekundenwert.
                 """;

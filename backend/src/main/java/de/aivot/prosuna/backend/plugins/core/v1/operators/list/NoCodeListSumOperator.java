@@ -48,7 +48,7 @@ public class NoCodeListSumOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `Summe von „Beträge“`. Das Ergebnis ist `350`. Um nur Beträge aus einer Tabelle zu addieren, können Sie zuvor mit **„Feldwerte aus Liste“** die betreffende Spalte ermitteln.
 
                 # Was ist zu beachten?
-                Jeder Eintrag wird in einen Zahlenwert umgewandelt und auf acht Nachkommastellen gerundet. Nichtnumerische Einträge werden nicht übersprungen. Verwenden Sie deshalb Zahlen oder Texte, die eine Zahl enthalten.
+                Jeder Eintrag geht in die Summe ein; Einträge ohne Wert und leerer Text zählen als `0`. Verwenden Sie Zahlen oder Zahlen als Text wie `1.5` oder `1,5`; andere Einträge führen zu einer Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }
 

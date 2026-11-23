@@ -53,7 +53,7 @@ public class NoCodeCreateDurationOperator extends NoCodeOperator {
                 # Was ist zu beachten?
                 Ein Tag entspricht immer **24 Stunden**. Die Funktion berechnet eine Zeitdauer und berücksichtigt weder Kalenderdaten noch Zeitumstellungen.
 
-                Die Anzahl darf Nachkommastellen haben, sofern daraus ganze Sekunden entstehen. Fehlende oder leere Zahlenwerte werden als **0** behandelt. Für Dezimalzahlen in einer selbst festgelegten Eingabe verwenden Sie einen Punkt, zum Beispiel **1.5**.
+                Die Anzahl darf Nachkommastellen haben, sofern daraus genau ganze Sekunden entstehen; **0.999999999** Sekunden führen beispielsweise zu einer Fehlermeldung. Fehlende oder leere Zahlenwerte werden als **0** behandelt. Für Dezimalzahlen in einer selbst festgelegten Eingabe verwenden Sie einen Punkt, zum Beispiel **1.5**. Aus einer anderen Wertquelle wird auch ein Dezimalkomma wie **1,5** erkannt.
                 """;
     }
 

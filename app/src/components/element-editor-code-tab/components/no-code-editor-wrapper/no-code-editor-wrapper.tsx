@@ -18,6 +18,7 @@ import {NoCodeEditor} from '../../../../modules/nocode/components/no-code-editor
 import {AnyElement} from '../../../../models/elements/any-element';
 
 import {noCodeEditorElements} from '../../../../modules/nocode/utils/no-code-editor-elements';
+import {readsFormElementState} from '../../../../modules/nocode/utils/no-code-options';
 import {validateNoCode} from '../../../../modules/nocode/utils/validate-no-code';
 
 interface NoCodeEditorWrapperProps {
@@ -69,7 +70,8 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         new NoCodeApiService(api)
             .getNoCodeOperators()
             .then((loaded) => {
-                if (active) setOperators(loaded);
+                // Processes compute no visibility of form elements, so checking it there would always yield visible.
+                if (active) setOperators(contextType === 'PROCESS' ? loaded.filter((operator) => !readsFormElementState(operator.identifier)) : loaded);
             })
             .catch(err => {
                 if (!active) return;

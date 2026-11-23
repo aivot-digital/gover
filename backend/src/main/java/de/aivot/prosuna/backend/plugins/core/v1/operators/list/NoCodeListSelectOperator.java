@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
+import java.util.ArrayList;
+
 public class NoCodeListSelectOperator extends NoCodeOperator {
     @Override
     public String getIdentifier() {
@@ -45,7 +47,7 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `Werte des Feldes „betrag“ aus „Positionen“`. Das Ergebnis ist `[100, 50]`. Setzen Sie diese Funktion als **Liste** in **„Summe einer Liste“** ein, um die Gesamtsumme `150` zu berechnen.
 
                 # Was ist zu beachten?
-                Verwenden Sie den technischen Feldnamen mit passender Groß- und Kleinschreibung. Es wird nur ein direktes Feld gelesen; ein Name wie `person.name` ist kein Zugriff auf ein verschachteltes Feld. Die Reihenfolge und Anzahl der Einträge bleiben erhalten.
+                Verwenden Sie den technischen Feldnamen mit passender Groß- und Kleinschreibung. Es wird nur ein direktes Feld gelesen; ein Name wie `person.name` ist kein Zugriff auf ein verschachteltes Feld. Die Reihenfolge und Anzahl der Einträge bleiben erhalten; ein fehlender Eintrag ergibt an seiner Stelle einen fehlenden Wert. Jeder andere Eintrag muss ein Objekt sein, sonst erhalten Sie eine Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }
 
@@ -84,11 +86,12 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
         var list = listOperandOrEmpty(args[0]);
         var field = castToString(args[1]);
 
-        var result = list
-                .stream()
-                .map(this::castToMap)
-                .map(map -> map == null ? null : map.get(field))
-                .toList();
+        var result = new ArrayList<>(list.size());
+        for (var row : list) {
+            // A missing row keeps its position; any other row must be an object.
+            var map = row == null ? null : castToMap(row);
+            result.add(map == null ? null : map.get(field));
+        }
 
         return new NoCodeResult(result);
     }

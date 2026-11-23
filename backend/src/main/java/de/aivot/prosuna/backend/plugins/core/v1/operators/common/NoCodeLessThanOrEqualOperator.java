@@ -45,7 +45,7 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
                 Der Ausdruck `10 ist kleiner als oder gleich 10` ergibt „Wahr“. Statt der ersten festen Zahl können Sie eine passende Wertquelle wählen.
 
                 # Was ist zu beachten?
-                Verwenden Sie Zahlen. Die Auswertung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden numerisch verglichen. Andere Texte können anhand ihrer Länge verglichen werden; eine alphabetische Sortierung findet nicht statt. Fehlende Werte werden wie die Zahl `0` behandelt. Für fachliche Datums-, Uhrzeit- oder Zeitpunktvergleiche verwenden Sie die dafür vorgesehenen Funktionen.
+                Verwenden Sie Zahlen. Zahlen als Text werden numerisch verglichen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung. Für fachliche Datums-, Uhrzeit- oder Zeitpunktvergleiche verwenden Sie die dafür vorgesehenen Funktionen.
                 """;
     }
 

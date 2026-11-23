@@ -28,20 +28,21 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
                 Prüfen Sie, ob ein Formularelement laut seinem berechneten Sichtbarkeitszustand nicht sichtbar ist. So kann eine weitere Bedingung auf dessen Sichtbarkeit aufbauen.
 
                 # Welche Werte werden benötigt?
-                Die interne Kennung des Formularelements. Geben Sie diese bei „Formularelement“ frei als Text ein; es gibt keine vorgegebene Auswahl. Über „Andere Wertquelle verwenden …“ kann die Kennung auch aus einer Wertquelle oder Funktion stammen. Benötigt wird die Kennung, nicht der Inhalt des Formularelements.
+                Das Formularelement, dessen Sichtbarkeit geprüft wird. Bei „Formularelement“ werden die Formularelemente des Formulars beziehungsweise der UI-Definition zur Auswahl angeboten. Gespeichert wird die interne Kennung des gewählten Formularelements, nicht sein Inhalt. Über „Andere Wertquelle verwenden …“ kann die Kennung auch aus einer Wertquelle oder Funktion stammen.
 
                 # Welches Ergebnis erhalten Sie?
                 Ein Wahrheitswert: „Wahr“, wenn das Formularelement im berechneten Zustand nicht sichtbar ist, andernfalls „Falsch“.
 
                 # Beispiel im No-Code-Editor
-                1. Ermitteln Sie die interne Kennung des Formularelements, dessen Sichtbarkeit geprüft werden soll, beispielsweise `telefonnummer`.
-                2. Wählen Sie „Ist nicht sichtbar“ als Funktion für eine Bedingung.
-                3. Tragen Sie bei „Formularelement“ `telefonnummer` ein.
+                1. Wählen Sie „Ist nicht sichtbar“ als Funktion für eine Bedingung.
+                2. Wählen Sie bei „Formularelement“ das Formularelement aus, dessen Sichtbarkeit geprüft werden soll, beispielsweise „Telefonnummer“.
 
-                Ist dieses Formularelement nicht sichtbar, ergibt die Bedingung „Wahr“. Verwenden Sie das Ergebnis beispielsweise für einen zusätzlichen Hinweis.
+                Im fertigen Ausdruck sehen Sie den Namen „Telefonnummer“; gespeichert wird die interne Kennung des Formularelements. Ist dieses Formularelement nicht sichtbar, ergibt die Bedingung „Wahr“. Verwenden Sie das Ergebnis beispielsweise für einen zusätzlichen Hinweis.
 
                 # Was ist zu beachten?
-                Geprüft wird der berechnete Sichtbarkeitszustand, nicht, ob das Formularelement gerade im sichtbaren Bildschirmausschnitt liegt. Ist zur Kennung kein Zustand vorhanden, wird das Formularelement als sichtbar behandelt. Eine unbekannte Kennung ergibt daher „Falsch“.
+                Geprüft wird der berechnete Sichtbarkeitszustand, nicht, ob das Formularelement gerade im sichtbaren Bildschirmausschnitt liegt. Ist für das Formularelement kein berechneter Zustand vorhanden, wird es als sichtbar behandelt; die Funktion ergibt dann „Falsch“. Passt die gespeicherte Kennung zu keinem Formularelement, weist der Editor mit „Das ausgewählte Formularelement ist nicht verfügbar.“ darauf hin.
+
+                Die Funktion wird nur dort angeboten, wo Formularelemente einen berechneten Zustand haben, etwa in „Sichtbarkeit“, „Validierung“ und „Dynamischer Wert“ von Formularelementen in Formularen und UI-Definitionen. In der Konfiguration von Prozesselementen, etwa für Verzweigungen, steht sie nicht zur Verfügung.
                 """;
     }
 

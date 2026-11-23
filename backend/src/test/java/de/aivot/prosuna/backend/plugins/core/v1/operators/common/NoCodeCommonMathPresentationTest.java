@@ -57,21 +57,22 @@ class NoCodeCommonMathPresentationTest {
     void roundingShouldSupportWholeNumbersAndNegativePlacesAsDescribed() throws NoCodeException {
         assertEquals(new BigDecimal("3"), new NoCodeRoundUpOperator().evaluate(runtime(), "2.5", 0).getValue());
         assertEquals(new BigDecimal("2"), new NoCodeRoundDownOperator().evaluate(runtime(), "2.5", 0).getValue());
-        assertEquals(new BigDecimal("1.3E+2"), new NoCodeRoundUpOperator().evaluate(runtime(), 125, -1).getValue());
-        assertEquals(new BigDecimal("1.2E+2"), new NoCodeRoundDownOperator().evaluate(runtime(), 125, -1).getValue());
+        assertEquals(new BigDecimal("130"), new NoCodeRoundUpOperator().evaluate(runtime(), 125, -1).getValue());
+        assertEquals(new BigDecimal("120"), new NoCodeRoundDownOperator().evaluate(runtime(), 125, -1).getValue());
         for (var operator : List.of(new NoCodeRoundUpOperator(), new NoCodeRoundDownOperator())) {
-            assertEquals(new BigDecimal("0E+4"), operator.evaluate(runtime(), "-12.3", -4).getValue());
+            assertEquals(BigDecimal.ZERO, operator.evaluate(runtime(), "-12.3", -4).getValue());
         }
     }
 
     @Test
-    void roundingRequiresAnExactlyRepresentableIntegerForDecimalPlaces() {
+    void roundingRequiresAnExactlyRepresentableIntegerForDecimalPlaces() throws NoCodeException {
         for (var operator : List.of(new NoCodeRoundUpOperator(), new NoCodeRoundDownOperator())) {
             var constraints = operator.getSignatures()[0].parameters()[1].numberConstraints();
             assertTrue(constraints.integerOnly());
-            assertEquals((double) Integer.MIN_VALUE, constraints.minimum());
-            assertEquals((double) Integer.MAX_VALUE, constraints.maximum());
-            for (var invalid : List.of("2.000000001", "2147483648", "-2147483649", "abc")) {
+            assertEquals(-15.0, constraints.minimum());
+            assertEquals(15.0, constraints.maximum());
+            assertEquals(new BigDecimal("2300"), operator.evaluate(runtime(), 2345, -2).getValue());
+            for (var invalid : List.of("2.000000001", "2147483648", "-2147483649", "abc", "16", "-16")) {
                 var error = assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), 2.345, invalid));
                 assertTrue(error.getMessage().contains("Nachkommastellen"));
             }
@@ -90,8 +91,8 @@ class NoCodeCommonMathPresentationTest {
     @Test
     void subtractionShouldUseTheFirstOperandAsTheStartingNumber() throws NoCodeException {
         var operator = new NoCodeSubtractOperator();
-        assertEquals(new BigDecimal("12.00000000"), operator.evaluate(runtime(), 20, 5, 3).getValue());
-        assertEquals(new BigDecimal("-18.00000000"), operator.evaluate(runtime(), 5, 20, 3).getValue());
+        assertEquals(new BigDecimal("12"), operator.evaluate(runtime(), 20, 5, 3).getValue());
+        assertEquals(new BigDecimal("-18"), operator.evaluate(runtime(), 5, 20, 3).getValue());
     }
 
     static Stream<Arguments> arithmeticExamples() {

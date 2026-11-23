@@ -5,6 +5,7 @@ import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {ElementType} from '../../../data/element-type/element-type';
 import {InputVariableSource} from '../../../models/input-mode';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {humanizeNoCode} from './humanize-no-code';
 
 const operator: NoCodeOperatorDetailsDTO = {
@@ -35,6 +36,44 @@ const expr = (...operands: Array<NoCodeOperand | null>): NoCodeOperand => ({
     operands,
 });
 const humanize = (operand: NoCodeOperand | null, op = operator) => humanizeNoCode(operand, [], [op]);
+
+describe('visibility checks', () => {
+    it('show the name of the checked element instead of its ID', () => {
+        const section = {
+            ...generateElementWithDefaultValues(ElementType.GroupLayout),
+            id: 'section',
+            name: 'Angaben zur Person',
+        };
+        const field = {
+            ...generateElementWithDefaultValues(ElementType.Text),
+            id: 'field',
+        };
+        const form = {
+            ...(generateElementWithDefaultValues(ElementType.FormLayout) as unknown as FormLayoutElement),
+            id: 'form',
+            children: [{...section, children: [field]}],
+        };
+        const isVisible: NoCodeOperatorDetailsDTO = {
+            identifier: 'is-visible',
+            packageName: 'core',
+            label: 'Ist sichtbar',
+            description: '',
+            abstractDescription: '',
+            humanReadableTemplate: 'das Formularelement #0 ist sichtbar',
+            tags: [],
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [{type: NoCodeDataType.String, label: 'Formularelement', description: '', options: []}],
+            }],
+        };
+
+        expect(humanizeNoCode({
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'is-visible',
+            operands: [{type: 'NoCodeStaticValue', value: 'section'}],
+        }, [{element: field, parents: [form, section]}], [isVisible])).toBe('das Formularelement „Angaben zur Person“ (section) ist sichtbar');
+    });
+});
 
 describe('humanizeNoCode', () => {
     it('replaces placeholders atomically and removes only the template quotes around them', () => {

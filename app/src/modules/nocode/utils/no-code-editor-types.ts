@@ -16,14 +16,13 @@ import {NoCodeEditorNode} from './no-code-editor-store';
 const T = NoCodeDataType;
 
 /**
- * Mirrors the casts of the backend NoCodeOperator (castToBoolean, castToNumber, castToDate, …). The backend converts
- * almost every value, but for these source types the cast to the target type ignores the value and falls back to a
- * default such as 0, an empty list or today. Text, Runtime parameters and Runtime values never conflict.
- * DateTime to Time stays allowed: temporal operator results convert, only text from fields would fall back.
+ * Mirrors the casts of the backend NoCodeOperator (castToBoolean, castToNumber, castToDate, …). Values of these source
+ * types cannot be converted to the target type and stop the evaluation. Text, Runtime parameters and Runtime values
+ * never conflict, because only their content decides. DateTime to Time stays allowed: times are read from timestamps.
  */
 const INCOMPATIBLE_SOURCES: Partial<Record<NoCodeDataType, NoCodeDataType[]>> = {
-    [T.Boolean]: [T.Date, T.DateTime, T.Time],
-    [T.Number]: [T.Boolean],
+    [T.Boolean]: [T.Number, T.Date, T.DateTime, T.Time, T.List, T.Object],
+    [T.Number]: [T.Boolean, T.Date, T.DateTime, T.Time, T.List, T.Object],
     [T.Date]: [T.Boolean, T.Number, T.Time, T.List, T.Object],
     [T.DateTime]: [T.Boolean, T.Number, T.Date, T.Time, T.List, T.Object],
     [T.Time]: [T.Boolean, T.Number, T.Date, T.List, T.Object],
@@ -33,6 +32,8 @@ const INCOMPATIBLE_SOURCES: Partial<Record<NoCodeDataType, NoCodeDataType[]>> = 
 
 // Text formats the backend parses, see NoCodeOperator and IsoTimestampUtils.
 const NUMBER_TEXT = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
+const DECIMAL_COMMA_TEXT = /^[+-]?\d+,\d+$/;
+const BOOLEAN_TEXT = /^(true|false|wahr|falsch)$/i;
 
 export function getNoCodeEditorNodeType(
     node: NoCodeEditorNode,
@@ -84,15 +85,16 @@ export function getNoCodeEditorTypeConflict(
 
 function staticValueFits(value: string, expectedType: NoCodeDataType, strictCalendar: boolean): boolean {
     switch (expectedType) {
+        case T.Boolean:
+            return BOOLEAN_TEXT.test(value.trim());
         case T.Number:
-            // castToNumber also turns dates and times into numbers; other text would become its length.
-            return NUMBER_TEXT.test(value) || isLocalDateIso(value) || dateTimeFits(value) || isLocalTimeIso(value);
+            return NUMBER_TEXT.test(value.trim()) || DECIMAL_COMMA_TEXT.test(value.trim());
         case T.Date:
             return isLocalDateIso(value) || isYearMonthIso(value) || isYearIso(value) || (!strictCalendar && dateTimeFits(value));
         case T.DateTime:
             return dateTimeFits(value);
         case T.Time:
-            return isLocalTimeIso(value);
+            return isLocalTimeIso(value) || dateTimeFits(value);
         case T.List:
             return Array.isArray(parseJson(value));
         case T.Object: {

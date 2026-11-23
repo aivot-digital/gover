@@ -46,7 +46,7 @@ public class NoCodeListGetOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `Eintrag an Position 2 aus „Städte“ (Zählung ab 0)`. Das Ergebnis ist der Text `München`. Verwenden Sie die Funktion beispielsweise als Text einer weiteren Textfunktion.
 
                 # Was ist zu beachten?
-                Die Zählung beginnt bei `0`, nicht bei `1`. Negative Positionen zählen vom Ende der Liste aus. Eine leere Liste liefert keinen Eintrag.
+                Die Zählung beginnt bei `0`, nicht bei `1`. Negative Positionen zählen vom Ende der Liste aus. Eine leere Liste liefert keinen Eintrag. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }
 

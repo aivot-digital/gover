@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.core.services.BusinessTime;
 import de.aivot.prosuna.backend.nocode.dtos.NoCodeOperatorDetailsDTO;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 import static de.aivot.prosuna.backend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NoCodeDateDurationPhonePresentationTest {
@@ -155,8 +157,8 @@ class NoCodeDateDurationPhonePresentationTest {
     }
 
     @Test
-    void roundsDurationInputBeforeCheckingForWholeSeconds() throws Exception {
-        assertEquals(0, new BigDecimal("1").compareTo((BigDecimal) new NoCodeConvertDurationOperator()
-                .evaluate(runtime(), new BigDecimal("0.999999999"), "seconds").getValue()));
+    void checksDurationInputForWholeSecondsWithoutRounding() {
+        assertThrows(NoCodeException.class, () -> new NoCodeConvertDurationOperator()
+                .evaluate(runtime(), new BigDecimal("0.999999999"), "seconds"));
     }
 }

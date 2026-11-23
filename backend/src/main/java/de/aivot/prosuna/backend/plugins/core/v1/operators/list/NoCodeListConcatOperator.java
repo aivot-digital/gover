@@ -45,7 +45,7 @@ public class NoCodeListConcatOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `„Bisherige Kategorien“ gefolgt von „Weitere Kategorien“`. Das Ergebnis ist `["A", "B", "B", "C"]`. Diese Liste kann anschließend als Eingabe einer weiteren Listenfunktion dienen.
 
                 # Was ist zu beachten?
-                Die Reihenfolge bleibt erhalten. Doppelte Einträge bleiben enthalten. Die beiden ursprünglichen Listen werden nicht verändert.
+                Die Reihenfolge bleibt erhalten. Doppelte Einträge bleiben enthalten. Die beiden ursprünglichen Listen werden nicht verändert. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }
 

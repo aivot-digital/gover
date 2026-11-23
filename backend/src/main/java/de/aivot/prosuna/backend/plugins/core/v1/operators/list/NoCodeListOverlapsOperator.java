@@ -46,7 +46,7 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ und „Zulässige Kategorien“ haben mindestens einen gemeinsamen Wert`. Das Ergebnis ist **Wahr**.
 
                 # Was ist zu beachten?
-                Eine leere Liste ergibt **Falsch**. Um alle gesuchten Werte zu prüfen, verwenden Sie **„Liste enthält alle Werte“**. Zahlen und Texte mit derselben Zahl können als gleich gelten, etwa `2` und `"2"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
+                Eine leere Liste ergibt **Falsch**. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Um alle gesuchten Werte zu prüfen, verwenden Sie **„Liste enthält alle Werte“**. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 

@@ -145,11 +145,11 @@ class NoCodeDateArithmeticPresentationTest {
         var date = LocalDate.of(2026, 8, 15);
 
         for (var amount : new int[]{Integer.MIN_VALUE, Integer.MAX_VALUE}) {
-            assertEquals(
-                    date.plusDays((long) amount * direction),
-                    operator.evaluate(runtime(), date, amount, "tage").getValue()
-            );
+            // The amount is accepted, but the result leaves the supported four-digit years.
+            var error = assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), date, amount, "tage"));
+            assertEquals("Der Datumswert liegt außerhalb des unterstützten Bereichs.", error.getMessage());
         }
+        assertEquals(LocalDate.of(9999, 12, 31), operator.evaluate(runtime(), LocalDate.of(9999, 12, 30), direction, "tage").getValue());
 
         for (var invalidAmount : new String[]{"2147483648", "-2147483649", "5.5", "5,0", "keine Zahl"}) {
             assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), date, invalidAmount, "tage"));

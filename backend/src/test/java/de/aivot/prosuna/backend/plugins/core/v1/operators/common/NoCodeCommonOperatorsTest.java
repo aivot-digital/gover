@@ -145,13 +145,13 @@ class NoCodeCommonOperatorsTest {
     }
 
     @Test
-    void ifShouldReturnThenOrElseBranchBasedOnTruthyValue() throws NoCodeException {
+    void ifShouldReturnThenOrElseBranchBasedOnTheCondition() throws NoCodeException {
         var data = runtime();
         var operator = new NoCodeIfOperator();
 
         assertEquals("then", operator.evaluate(data, true, "then", "else").getValue());
         assertEquals("else", operator.evaluate(data, "false", "then", "else").getValue());
-        assertEquals("then", operator.evaluate(data, 1, "then", "else").getValue());
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, 1, "then", "else"));
     }
 
     @Test

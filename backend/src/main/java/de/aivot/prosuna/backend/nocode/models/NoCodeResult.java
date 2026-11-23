@@ -1,11 +1,8 @@
 package de.aivot.prosuna.backend.nocode.models;
 
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-
-import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Represents the result of a NoCode evaluation.
@@ -39,35 +36,17 @@ public class NoCodeResult {
     }
 
     /**
-     * Returns the value of the result as a boolean.
-     * If the value is null, false is returned.
+     * Returns the value of the result as a condition, read like the conditions of operators.
      *
-     * @return the value of the result as a boolean.
+     * @throws IllegalStateException if the value is neither true nor false, with a message for the people who author
+     *                               the expression.
      */
     @Nonnull
     public Boolean getValueAsBoolean() {
-        if (isNull() || value == null) {
-            return false;
+        try {
+            return NoCodeOperator.castToBoolean(isNull() ? null : value);
+        } catch (NoCodeException e) {
+            throw new IllegalStateException(e.getMessage(), e);
         }
-
-        return switch (value) {
-            case String str -> {
-                if (str.isEmpty()) {
-                    yield false;
-                }
-                yield !str.equalsIgnoreCase("false") && !str.equalsIgnoreCase("falsch");
-            }
-            case Integer integer -> integer != 0;
-            case Float f -> f != 0.0;
-            case Double d -> d != 0.0;
-            case Long l -> l != 0;
-            case Short s -> s != 0;
-            case Byte b -> b != 0;
-            case BigDecimal bd -> bd.compareTo(BigDecimal.ZERO) != 0;
-            case Boolean bool -> bool;
-            case Collection<?> collection -> !collection.isEmpty();
-            case Map<?, ?> map -> !map.isEmpty();
-            default -> false;
-        };
     }
 }

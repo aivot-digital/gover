@@ -45,7 +45,7 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `Anzahl der Einträge in „Städte“`. Das Ergebnis ist `3`. Verwenden Sie die Funktion beispielsweise als ersten Wert von **„Größer als“** und vergleichen Sie mit `0`.
 
                 # Was ist zu beachten?
-                Jeder Eintrag zählt mit, auch doppelte Einträge und Einträge ohne Wert. Diese Funktion zählt alle Einträge; **„Vorkommen in Liste zählen“** zählt nur die passenden Einträge eines gesuchten Wertes.
+                Jeder Eintrag zählt mit, auch doppelte Einträge und Einträge ohne Wert. Diese Funktion zählt alle Einträge; **„Vorkommen in Liste zählen“** zählt nur die passenden Einträge eines gesuchten Wertes. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }
 

@@ -48,7 +48,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                 Das gebildete Datum ist **15.08.2026**. Zugeklappt lesen Sie: **„Datum aus Tag 15, Monat „August“ und Jahr 2026“**.
 
                 # Was ist zu beachten?
-                Die Kombination muss ein tatsächlich existierendes Datum ergeben. Der **31. Februar** wird beispielsweise abgelehnt. Die Funktion bildet einen Datumswert; für eine bestimmte Textdarstellung verwenden Sie **„Datum formatieren“**.
+                Die Kombination muss ein tatsächlich existierendes Datum ergeben. Der **31. Februar** wird beispielsweise abgelehnt. Das Jahr muss zwischen 1 und 9999 liegen. Die Funktion bildet einen Datumswert; für eine bestimmte Textdarstellung verwenden Sie **„Datum formatieren“**.
                 """;
     }
 
@@ -87,7 +87,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Jahr",
-                                "Das Jahr des gewünschten Datums, zum Beispiel 2026."
+                                "Das Jahr des gewünschten Datums von 1 bis 9999, zum Beispiel 2026."
                         ).withSentence("und Jahr")
                 )
         );
@@ -104,6 +104,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
         int day = requireInteger(args[0], "Der Tag muss eine ganze Zahl sein.");
         int month = requireInteger(args[1], "Der Monat muss eine ganze Zahl sein.");
         int year = requireInteger(args[2], "Das Jahr muss eine ganze Zahl sein.");
+        requireSupportedYear(year, "Das Jahr muss zwischen 1 und 9999 liegen.");
 
         final LocalDate date;
         try {

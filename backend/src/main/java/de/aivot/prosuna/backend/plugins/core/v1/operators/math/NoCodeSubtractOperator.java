@@ -46,7 +46,7 @@ public class NoCodeSubtractOperator extends NoCodeOperator {
                 Der Ausdruck `20 minus 5 minus 3` ergibt `12`. Verwenden Sie das Ergebnis beispielsweise als offenen Restbetrag.
 
                 # Was ist zu beachten?
-                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Die Reihenfolge der Zahlen beeinflusst das Ergebnis.
+                Verwenden Sie Zahlen. Zahlen als Text werden übernommen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung. Die Reihenfolge der Zahlen beeinflusst das Ergebnis.
                 """;
     }
 

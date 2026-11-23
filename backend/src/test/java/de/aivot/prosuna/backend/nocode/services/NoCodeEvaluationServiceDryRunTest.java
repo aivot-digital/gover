@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -255,13 +256,13 @@ class NoCodeEvaluationServiceDryRunTest {
     void orKeepsAllTenResultPositionsWithoutVisitingConditionsAfterTheThirdIsTrue() {
         var unread = spy(new NoCodeReference("unused"));
         var conditions = new ArrayList<NoCodeOperand>(List.of(
-                new NoCodeStaticValue(false), new NoCodeStaticValue(0), new NoCodeStaticValue("wahr")));
+                new NoCodeStaticValue(false), new NoCodeStaticValue("falsch"), new NoCodeStaticValue("wahr")));
         conditions.addAll(Collections.nCopies(7, new NoCodeExpression("secrets-get", unread)));
 
         var result = dryRun(new NoCodeExpression("or").setOperands(conditions));
 
         var expected = new ArrayList<>(List.of(NoCodeDryRunResultDTO.evaluated(false, List.of()),
-                NoCodeDryRunResultDTO.evaluated(0, List.of()), NoCodeDryRunResultDTO.evaluated("wahr", List.of())));
+                NoCodeDryRunResultDTO.evaluated("falsch", List.of()), NoCodeDryRunResultDTO.evaluated("wahr", List.of())));
         expected.addAll(Collections.nCopies(7, NoCodeDryRunResultDTO.skipped("Bedingung 3 ist wahr.", List.of())));
         assertEquals(NoCodeDryRunResultDTO.evaluated(true, expected), result);
         verify(unread, never()).getElementId();
@@ -275,6 +276,24 @@ class NoCodeEvaluationServiceDryRunTest {
         assertEquals(false, service.evaluate(expression, new DerivedRuntimeElementData()).getValue());
         var evaluatedConditions = Collections.nCopies(count, NoCodeDryRunResultDTO.evaluated(false, List.of()));
         assertEquals(NoCodeDryRunResultDTO.evaluated(false, evaluatedConditions), dryRun(expression));
+    }
+
+    @Test
+    void conditionsThatAreNeitherTrueNorFalseFailWithTheirMessage() {
+        var message = "Der Wert ist weder wahr noch falsch. Verwenden Sie eine Bedingung oder einen Wahrheitswert.";
+        var or = dryRun(new NoCodeExpression("or", new NoCodeStaticValue(false), new NoCodeStaticValue("Nein"), new NoCodeStaticValue(true)));
+        assertEquals(NoCodeDryRunStatus.Failed, or.status());
+        assertEquals(message, or.message());
+        assertEquals(3, or.operands().size());
+
+        var conditional = dryRun(new NoCodeExpression("if", new NoCodeStaticValue("0"), new NoCodeStaticValue("a"), new NoCodeStaticValue("b")));
+        assertEquals(NoCodeDryRunStatus.Failed, conditional.status());
+        assertEquals(message, conditional.message());
+        assertEquals(3, conditional.operands().size());
+
+        var error = assertThrows(IllegalStateException.class, () -> service.evaluate(
+                new NoCodeExpression("or", new NoCodeStaticValue(false), new NoCodeStaticValue("Nein")), new DerivedRuntimeElementData()));
+        assertTrue(error.getMessage().contains(message));
     }
 
     @ParameterizedTest

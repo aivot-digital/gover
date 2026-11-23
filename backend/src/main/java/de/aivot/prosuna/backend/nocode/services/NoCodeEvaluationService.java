@@ -289,7 +289,13 @@ public class NoCodeEvaluationService {
                     List.of(condition, limitResult.apply(skipped), limitResult.apply(skipped)));
         }
 
-        var selectedIndex = operator.selectedResultIndex(condition.value());
+        final int selectedIndex;
+        try {
+            selectedIndex = operator.selectedResultIndex(condition.value());
+        } catch (NoCodeException e) {
+            var skipped = limitResult.apply(NoCodeDryRunResultDTO.skipped(e.getMessage(), List.of()));
+            return NoCodeDryRunResultDTO.failed(e.getMessage(), List.of(condition, skipped, skipped));
+        }
         var selected = limitResult.apply(evaluateDryRun(
                 operands.get(selectedIndex), elementData, processDataContext, limitResult, parameterAt(signature, selectedIndex)));
         var conditionWasTrue = selectedIndex == 1;
@@ -328,7 +334,14 @@ public class NoCodeEvaluationService {
                 appendSkippedConditions(results, operands.size(), limitResult, message);
                 return NoCodeDryRunResultDTO.skipped(message, List.copyOf(results));
             }
-            if (operator.castToBoolean(condition.value()) == decisiveValue) {
+            final boolean conditionValue;
+            try {
+                conditionValue = NoCodeOperator.castToBoolean(condition.value());
+            } catch (NoCodeException e) {
+                appendSkippedConditions(results, operands.size(), limitResult, e.getMessage());
+                return NoCodeDryRunResultDTO.failed(e.getMessage(), List.copyOf(results));
+            }
+            if (conditionValue == decisiveValue) {
                 var message = decisiveValue ? "Bedingung " + (index + 1) + " ist wahr." : "Die erste Bedingung ist falsch.";
                 appendSkippedConditions(results, operands.size(), limitResult, message);
                 return NoCodeDryRunResultDTO.evaluated(decisiveValue, List.copyOf(results));
@@ -372,7 +385,12 @@ public class NoCodeEvaluationService {
         if (registeredOperator instanceof NoCodeIfOperator conditional && operands.size() == 3) {
             var inputs = new ArrayList<>(operands);
             var condition = evaluateArgument(inputs.getFirst(), elementData, processDataContext, wildcardIndices, parameterAt(signature, 0));
-            var selectedIndex = conditional.selectedResultIndex(condition);
+            final int selectedIndex;
+            try {
+                selectedIndex = conditional.selectedResultIndex(condition);
+            } catch (NoCodeException e) {
+                throw evaluationFailure(expression, e);
+            }
             return new NoCodeResult(evaluateArgument(
                     inputs.get(selectedIndex), elementData, processDataContext, wildcardIndices, parameterAt(signature, selectedIndex)));
         }
@@ -381,7 +399,13 @@ public class NoCodeEvaluationService {
             int index = 0;
             for (var operand : operands) {
                 var value = evaluateArgument(operand, elementData, processDataContext, wildcardIndices, parameterAt(signature, index));
-                if (registeredOperator.castToBoolean(value) == decisiveValue.booleanValue()) {
+                final boolean conditionValue;
+                try {
+                    conditionValue = NoCodeOperator.castToBoolean(value);
+                } catch (NoCodeException e) {
+                    throw evaluationFailure(expression, e);
+                }
+                if (conditionValue == decisiveValue) {
                     return new NoCodeResult(decisiveValue);
                 }
                 index++;
@@ -399,11 +423,18 @@ public class NoCodeEvaluationService {
         try {
             return operator.evaluate(elementData, operandValues);
         } catch (NoCodeException e) {
-            throw new IllegalStateException(
-                    "Failed to evaluate no-code operator '" + expression.getOperatorIdentifier() + "'",
-                    e
-            );
+            throw evaluationFailure(expression, e);
         }
+    }
+
+    /** Names the operator and keeps its message, which is written for the people who author or use the expression. */
+    @Nonnull
+    private static IllegalStateException evaluationFailure(@Nonnull NoCodeExpression expression,
+                                                           @Nonnull NoCodeException exception) {
+        return new IllegalStateException(
+                "Failed to evaluate no-code operator '%s': %s".formatted(expression.getOperatorIdentifier(), exception.getMessage()),
+                exception
+        );
     }
 
     @Nullable

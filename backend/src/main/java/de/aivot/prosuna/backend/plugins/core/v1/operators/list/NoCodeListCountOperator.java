@@ -45,7 +45,7 @@ public class NoCodeListCountOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `Anzahl der Vorkommen von „Ja“ in „Antworten“`. Das Ergebnis ist `2`. Sie können das Ergebnis mit einer Zahl vergleichen, beispielsweise mit **„Größer als“** und `1`.
 
                 # Was ist zu beachten?
-                Eine leere Liste ergibt `0`. Jeder passende Eintrag wird gezählt, auch wenn derselbe Wert mehrfach vorkommt. Zahlen und Texte mit derselben Zahl können als gleich gelten, etwa `2` und `"2"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
+                Eine leere Liste ergibt `0`. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Jeder passende Eintrag wird gezählt, auch wenn derselbe Wert mehrfach vorkommt. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 

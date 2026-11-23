@@ -46,7 +46,7 @@ public class NoCodeAndOperator extends NoCodeOperator {
                 # Was ist zu beachten?
                 Die Funktion prüft die Bedingungen von oben nach unten. Ist „Bedingung 1“ falsch, steht das Ergebnis fest und „Bedingung 2“ wird übersprungen. Im Testlauf sehen Sie dort „Nicht ausgewertet“ mit der Begründung. Ist „Bedingung 1“ wahr, wird auch „Bedingung 2“ ausgewertet.
 
-                Für weitere Bedingungen können Sie „Und“ verschachteln. Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt. Der Text „Nein“ gilt dabei als wahr.
+                Für weitere Bedingungen können Sie „Und“ verschachteln. Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung.
                 """;
     }
 

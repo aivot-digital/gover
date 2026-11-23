@@ -10,7 +10,7 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {getInputVariableReference, InputVariableSuggestion, InputVariableSource} from '../../../models/input-mode';
 import {formatNoCodeValue} from './format-no-code-value';
-import {getNoCodeParameterSuggestions, getReferencedElementOptions} from './no-code-options';
+import {getNoCodeParameterSuggestions, getReferencedElementOptions, withFormElementSuggestions} from './no-code-options';
 import {getNoCodeReadableTemplate} from './no-code-parameter-presentation';
 
 export interface NoCodePresentationContext {
@@ -57,7 +57,7 @@ export function humanizeNoCode(operand: NoCodeOperand | null, allElements: Eleme
                     const element = child?.type === 'NoCodeReference' ? allElements.find(({element}) => element.id === child.elementId)?.element : null;
                     return element == null ? [] : getReferencedElementOptions(element, context.codeListOptions ?? new Map());
                 });
-                const suggestions = getNoCodeParameterSuggestions(parameters, referenceOptions);
+                const suggestions = withFormElementSuggestions(operator.identifier, getNoCodeParameterSuggestions(parameters, referenceOptions), allElements);
                 const argument = (index: number, inSentence = false) => {
                     const text = describe(operands[index], parameters[index] ?? {
                         label: `Parameter ${index + 1}`,

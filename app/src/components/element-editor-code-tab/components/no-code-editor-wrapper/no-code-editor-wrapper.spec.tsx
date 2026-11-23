@@ -56,6 +56,43 @@ describe('NoCodeEditorWrapper', () => {
         fireEvent.keyDown(item, {key: 'Enter'});
         expect(await screen.findByRole('dialog')).toHaveTextContent('Wert selbst festlegen');
     });
+
+    it.each([
+        ['FORM', true],
+        ['PROCESS', false],
+    ] as const)('offers visibility checks only where forms compute visibility (%s)', async (contextType, available) => {
+        api.get.mockResolvedValue([{
+            identifier: 'is-visible',
+            packageName: 'core',
+            label: 'Ist sichtbar',
+            description: '',
+            abstractDescription: '',
+            humanReadableTemplate: null,
+            tags: [],
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [{type: NoCodeDataType.String, label: 'Formularelement', description: '', options: []}],
+            }],
+        }]);
+        const onValidityChange = vi.fn();
+        render(<NoCodeEditorWrapper
+            parents={[root]}
+            noCode={{
+                type: 'NoCodeExpression',
+                operatorIdentifier: 'is-visible',
+                operands: [{type: 'NoCodeStaticValue', value: 'field'}],
+            }}
+            onChange={vi.fn()}
+            editable={true}
+            desiredReturnType={NoCodeDataType.Boolean}
+            contextType={contextType}
+            label="Ausdruck"
+            onValidityChange={onValidityChange}
+        />);
+        await screen.findByRole('tree', {name: 'Ausdruck'});
+
+        expect(screen.queryAllByText('Die ausgewählte Funktion ist nicht verfügbar.').length > 0).toBe(!available);
+    });
 });
 
 it.each([null, 'old_editor', 'pill-no-code', 'no-code-editor'])('uses the new editor without relying on the legacy switch %s', async (flag) => {
