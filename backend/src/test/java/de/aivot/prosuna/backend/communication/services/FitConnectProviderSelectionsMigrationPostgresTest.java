@@ -103,7 +103,7 @@ class FitConnectProviderSelectionsMigrationPostgresTest {
                     }
                 }
 
-                var migration = new ClassPathResource("db/migration/V1_11_0__require_fit_connect_provider_selections.sql");
+                var migration = new ClassPathResource("db/migration/V1_13_0__require_fit_connect_provider_selections.sql");
                 ScriptUtils.executeSqlScript(connection, migration);
                 assertProviders(connection, cases);
                 ScriptUtils.executeSqlScript(connection, migration);
