@@ -16,6 +16,7 @@ import java.util.Map;
 
 public class ProcessNodeExecutionLogger {
     private static final Logger logger = LoggerFactory.getLogger(ProcessNodeExecutionLogger.class);
+    public static final String REPRESENTED_USER_ID_DETAIL = "representedUserId";
 
     @Nonnull
     private final Long processInstanceId;
@@ -25,6 +26,8 @@ public class ProcessNodeExecutionLogger {
     private final String userId;
     @Nullable
     private final String identityId;
+    @Nullable
+    private final String representedUserId;
 
     @Nonnull
     private final ProcessInstanceHistoryEventRepository repository;
@@ -34,10 +37,24 @@ public class ProcessNodeExecutionLogger {
                                       @Nullable String userId,
                                       @Nullable String identityId,
                                       @Nonnull ProcessInstanceHistoryEventRepository repository) {
+        this(processInstanceId, processInstanceTaskId, userId, identityId, null, repository);
+    }
+
+    /**
+     * @param representedUserId The assignee of the task when the user acts as their active deputy. Every event of
+     *                          this logger records it, so the history keeps it after the deputy period.
+     */
+    public ProcessNodeExecutionLogger(@Nonnull Long processInstanceId,
+                                      @Nullable Long processInstanceTaskId,
+                                      @Nullable String userId,
+                                      @Nullable String identityId,
+                                      @Nullable String representedUserId,
+                                      @Nonnull ProcessInstanceHistoryEventRepository repository) {
         this.processInstanceId = processInstanceId;
         this.processInstanceTaskId = processInstanceTaskId;
         this.userId = userId;
         this.identityId = identityId;
+        this.representedUserId = representedUserId;
         this.repository = repository;
     }
 
@@ -47,6 +64,7 @@ public class ProcessNodeExecutionLogger {
                 taskId,
                 userId,
                 identityId,
+                representedUserId,
                 repository
         );
     }
@@ -179,6 +197,10 @@ public class ProcessNodeExecutionLogger {
                           @Nullable String concernedUserId,
                           @Nullable String concernedIdentityId,
                           @Nullable String concernedIdentityTitle) {
+        var eventDetails = new LinkedHashMap<>(details);
+        if (representedUserId != null) {
+            eventDetails.put(REPRESENTED_USER_ID_DETAIL, representedUserId);
+        }
         try {
             repository.save(new ProcessInstanceEventEntity(
                     null,
@@ -190,7 +212,7 @@ public class ProcessNodeExecutionLogger {
                     isHistoryRelevant,
                     title,
                     message,
-                    new LinkedHashMap<>(details),
+                    eventDetails,
                     timestamp,
                     userId,
                     concernedUserId,

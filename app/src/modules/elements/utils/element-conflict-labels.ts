@@ -120,6 +120,7 @@ const ElementPropertyLabels = {
     scopeProcessDataKeyInputElementId: 'Untergeordnete Schlüssel von',
     showOnFormIndexPage: 'Im öffentlichen Formularverzeichnis anzeigen',
     small: 'Kompakte Überschrift verwenden',
+    sortable: 'Sortieren der Datensätze erlauben',
     src: 'URL (Link zur Grafikdatei)',
     staffTaskEvent: 'Ereigniskennung',
     storageProviderId: 'Speicheranbieter',

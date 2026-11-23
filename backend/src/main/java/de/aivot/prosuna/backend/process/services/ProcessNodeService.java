@@ -1,6 +1,9 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.process.models.ProcessTaskDeadlineExceededData;
+import de.aivot.prosuna.backend.process.dtos.ProcessDataStructureResponseDTO;
+import de.aivot.prosuna.backend.process.dtos.ProcessDataStructureResponseDTO.Category;
+import de.aivot.prosuna.backend.process.models.ProcessSystemDataFields;
 import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
 import de.aivot.prosuna.backend.department.permissions.DepartmentPermissionProvider;
@@ -129,7 +132,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     public <C> ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node,
-                                                       @Nonnull ProcessNodeDefinition<C> provider) {
+                                                      @Nonnull ProcessNodeDefinition<C> provider) {
         return portResolutionCache.resolve(node, () -> {
             try {
                 var derived = deriveConfiguration(node, provider, null, false);
@@ -141,21 +144,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     /**
-     * Resolves ports from an already derived configuration, e.g. the runtime configuration of an executing node.
-     * Ports only depend on literal values, so this matches the authoring resolution without deriving it again.
+     * Resolves ports from an already derived configuration, e.g. the runtime configuration of an executing node. Ports only depend on literal values, so this matches the authoring
+     * resolution without deriving it again.
      */
     @Nonnull
     public <C> ProcessNodePortResolution resolvePorts(@Nonnull ProcessNodeEntity node,
-                                                       @Nonnull ProcessNodeDefinition<C> provider,
-                                                       @Nonnull C configuration) {
+                                                      @Nonnull ProcessNodeDefinition<C> provider,
+                                                      @Nonnull C configuration) {
         return portResolver.resolve(node, provider, configuration);
     }
 
     @Nonnull
     public ProcessNodePortResolution resolveCandidatePorts(@Nonnull UserEntity user,
-                                                            @Nonnull ProcessNodeEntity node,
-                                                            boolean forImport,
-                                                            boolean useInitialConfiguration) throws ResponseException {
+                                                           @Nonnull ProcessNodeEntity node,
+                                                           boolean forImport,
+                                                           boolean useInitialConfiguration) throws ResponseException {
         permissionService.requireProcessPermission(user.getId(), node.getProcessId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ);
         if (!processDefinitionVersionRepository.existsById(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))) {
             throw ResponseException.notFound();
@@ -381,8 +384,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     /**
      * Derives a UI definition that is configured in a UI definition field of the node.
      * <p>
-     * The field must exist in the trusted node configuration layout. Callers must only pass an unsaved UI definition
-     * for users who may update the node, because its element functions are executed on the server.
+     * The field must exist in the trusted node configuration layout. Callers must only pass an unsaved UI definition for users who may update the node, because its element
+     * functions are executed on the server.
      *
      * @param draftUiDefinition the unsaved UI definition, or {@code null} to derive the stored UI definition
      * @param identities        the identities of the caller that are related to this node
@@ -629,9 +632,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     /**
-     * Validates nodes before a whole process version is copied into an empty target version. This preflight keeps
-     * imports and draft creation from leaving behind a process shell when the module or limit policy rejects a later
-     * node in the batch.
+     * Validates nodes before a whole process version is copied into an empty target version. This preflight keeps imports and draft creation from leaving behind a process shell
+     * when the module or limit policy rejects a later node in the batch.
      */
     public void validateNewProcessNodeBatch(@Nonnull List<ProcessNodeEntity> nodes) throws ResponseException {
         var countsByType = new EnumMap<ProcessNodeType, Integer>(ProcessNodeType.class);
@@ -652,6 +654,155 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         for (var entry : countsByType.entrySet()) {
             validateProcessNodeTypeBatchCapacity(entry.getKey(), entry.getValue());
         }
+    }
+
+    @Nonnull
+    public ProcessDataStructureResponseDTO getDataStructure(@Nonnull String userId,
+                                                            @Nonnull Integer processId,
+                                                            @Nonnull Integer processVersion) throws ResponseException {
+        permissionService.requireProcessPermission(userId, processId, ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+        processDefinitionVersionRepository.findById(ProcessVersionEntityId.of(processId, processVersion))
+                .orElseThrow(ResponseException::notFound);
+
+        var nodesById = new LinkedHashMap<Integer, ProcessNodeEntity>();
+        processNodeRepository.findAllByProcessIdAndProcessVersion(processId, processVersion).stream()
+                .sorted(Comparator.comparing(ProcessNodeEntity::getId))
+                .forEach(node -> nodesById.put(node.getId(), node));
+        var incomingEdges = buildIncomingEdgesByNodeId(
+                processEdgeRepository.findAllByProcessIdAndProcessVersion(processId, processVersion));
+        var entries = new LinkedHashSet<ProcessDataStructureResponseDTO.Entry>();
+        var issues = new LinkedHashSet<ProcessDataStructureResponseDTO.Issue>();
+        for (var field : ProcessSystemDataFields.PROTECTED) {
+            entries.add(new ProcessDataStructureResponseDTO.Entry(Category.ProtectedProcessData,
+                    field.path(), field.label(), field.description(), null, field.unexpandedStructure()));
+        }
+        for (var node : nodesById.values()) {
+            for (var field : ProcessSystemDataFields.ELEMENT_METADATA) {
+                addDataStructureEntry(entries, issues, Category.ProtectedProcessData,
+                        "taskMetadata." + node.getDataKey() + "." + field.path(), field.label(),
+                        field.description(), node, field.unexpandedStructure());
+            }
+            // Declared outputs and their saved mappings do not depend on configuration derivation.
+            // Keep both visible even if the provider cannot derive its metadata.
+            try {
+                var provider = processNodeProviderService.getProcessNodeDefinition(node)
+                        .orElseThrow(ResponseException::badRequest);
+                for (var output : provider.getOutputs()) {
+                    // Only recognize explicit primitive unions. Do not guess fields from TypeScript expressions.
+                    var primitive = java.util.Arrays.stream(output.typeDefinition().split("\\|"))
+                            .map(String::trim).allMatch(Set.of("string", "number", "boolean", "null", "undefined", "void", "never")::contains);
+                    addDataStructureEntry(entries, issues, Category.ElementData,
+                            node.getDataKey() + "." + output.key(), output.label(), output.description(), node, !primitive);
+                    var mappedPath = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
+                    if (mappedPath != null) {
+                        addDataStructureEntry(entries, issues, Category.ProcessData,
+                                mappedPath, output.label(), output.description(), node, !primitive);
+                    }
+                }
+            } catch (ResponseException | RuntimeException exception) {
+                issues.add(new ProcessDataStructureResponseDTO.Issue(
+                        ProcessDataStructureResponseDTO.IssueKind.MetadataUnavailable, dataStructureOrigin(node), null, Category.ElementData));
+                logger.warn("Could not read declared outputs for process node {}.", node.getId(), exception);
+            }
+        }
+        var knownElementPaths = new HashMap<Integer, Set<String>>();
+        for (var entry : entries) {
+            if (entry.category() == Category.ElementData && entry.origin() != null) {
+                knownElementPaths.computeIfAbsent(entry.origin().nodeId(), ignored -> new HashSet<>()).add(entry.path());
+            }
+        }
+        // Cache complete traversal prefixes within this request. Shared chains are derived once,
+        // while a different upstream context still produces its own provider evaluation.
+        var contexts = new HashMap<List<Integer>, ProcessNodeDefinitionMetadata>();
+
+        // Each target uses its upstream context. A single fold over all nodes would leak
+        // unrelated branches into provider metadata. Include every node, even disconnected and terminal ones.
+        for (var target : nodesById.values()) {
+            var contextNodes = new ArrayList<ProcessNodeEntity>();
+            collectPreviousNodes(target.getId(), target.getId(), incomingEdges, nodesById,
+                    new HashSet<>(), new HashSet<>(), contextNodes);
+            contextNodes.add(target);
+            var metadata = ProcessNodeDefinitionMetadata.empty();
+            var prefix = new ArrayList<Integer>();
+            for (var node : contextNodes) {
+                prefix.add(node.getId());
+                var contextKey = List.copyOf(prefix);
+                var cached = contexts.get(contextKey);
+                if (cached != null) {
+                    metadata = cached;
+                    continue;
+                }
+                try {
+                    // Isolate failed providers that mutate their input before throwing.
+                    metadata = calculateProcessDataKeyHintsForNode(node, ProcessNodeDefinitionMetadata.reuse(metadata));
+                } catch (ResponseException | RuntimeException exception) {
+                    for (var category : List.of(Category.ProcessData, Category.ElementData)) {
+                        issues.add(new ProcessDataStructureResponseDTO.Issue(
+                                ProcessDataStructureResponseDTO.IssueKind.MetadataUnavailable, dataStructureOrigin(node), null, category));
+                    }
+                    logger.warn("Could not calculate data structure metadata for process node {}.", node.getId(), exception);
+                    contexts.put(contextKey, metadata);
+                    continue;
+                }
+                contexts.put(contextKey, metadata);
+                // Collect before finalization so invalid paths remain visible as diagnostics. Preserve
+                // definitions seen earlier even if a later provider removes them from forwarded metadata.
+                for (var hint : metadata.forwardedProcessDataKeys()) {
+                    addDataStructureEntry(entries, issues, Category.ProcessData, hint.processDataKey(),
+                            hint.label(), hint.subLabel(), hint.origin(), false);
+                }
+                // Include additional provider suggestions, such as conditional deadline results.
+                for (var suggestion : metadata.inputVariables()) {
+                    if (suggestion.source() != InputVariableSource.ElementData || suggestion.origin() == null) continue;
+                    var path = suggestion.nodeDataKey() + "." + suggestion.path();
+                    var segments = parseForwardedProcessDataKey(path);
+                    if (segments != null && !knownElementPaths
+                            .computeIfAbsent(suggestion.origin().getId(), ignored -> new HashSet<>())
+                            .add(ProcessDataValueUtils.formatDestinationKeySegments(segments))) continue;
+                    addDataStructureEntry(entries, issues, Category.ElementData, path, suggestion.label(),
+                            suggestion.description(), suggestion.origin(),
+                            !suggestion.path().startsWith(ProcessTaskDeadlineExceededData.NODE_DATA_KEY + "."));
+                }
+            }
+        }
+        // Forwarded hints do not retain output types. Restore the flag after path canonicalization
+        // and merge duplicate hints so their collection order cannot hide an open mapped output.
+        var unexpandedProcessPaths = new HashMap<Integer, Set<String>>();
+        for (var entry : entries) {
+            if (entry.category() == Category.ProcessData && entry.unexpandedStructure() && entry.origin() != null) {
+                unexpandedProcessPaths.computeIfAbsent(entry.origin().nodeId(), ignored -> new HashSet<>()).add(entry.path());
+            }
+        }
+        var normalizedEntries = entries.stream().map(entry -> {
+            if (entry.category() == Category.ProcessData && entry.origin() != null &&
+                    unexpandedProcessPaths.getOrDefault(entry.origin().nodeId(), Set.of()).contains(entry.path())) {
+                return new ProcessDataStructureResponseDTO.Entry(entry.category(), entry.path(), entry.label(),
+                        entry.description(), entry.origin(), true);
+            }
+            return entry;
+        }).distinct().toList();
+        return new ProcessDataStructureResponseDTO(normalizedEntries, List.copyOf(issues));
+    }
+
+    private static void addDataStructureEntry(@Nonnull Set<ProcessDataStructureResponseDTO.Entry> entries,
+                                              @Nonnull Set<ProcessDataStructureResponseDTO.Issue> issues,
+                                              @Nonnull Category category, @Nullable String path,
+                                              @Nonnull String label, @Nullable String description,
+                                              @Nonnull ProcessNodeEntity node, boolean unexpandedStructure) {
+        var segments = parseForwardedProcessDataKey(path);
+        if (segments == null) {
+            issues.add(new ProcessDataStructureResponseDTO.Issue(
+                    ProcessDataStructureResponseDTO.IssueKind.InvalidPath, dataStructureOrigin(node), path, category));
+        } else {
+            entries.add(new ProcessDataStructureResponseDTO.Entry(category,
+                    ProcessDataValueUtils.formatDestinationKeySegments(segments), label, description,
+                    dataStructureOrigin(node), unexpandedStructure));
+        }
+    }
+
+    @Nonnull
+    private static ProcessDataStructureResponseDTO.Origin dataStructureOrigin(@Nonnull ProcessNodeEntity node) {
+        return new ProcessDataStructureResponseDTO.Origin(node.getId(), node.getDataKey(), node.getName());
     }
 
     @Nonnull
@@ -904,18 +1055,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             ));
         }
 
-        addProtectedProcessDataSuggestion(metadata, "processInstanceId", "Vorgangs-ID");
-        addProtectedProcessDataSuggestion(metadata, "accessKey", "Zugriffsschlüssel");
-        addProtectedProcessDataSuggestion(metadata, "caseNumber", "Aktenzeichen");
-        addProtectedProcessDataSuggestion(metadata, "started", "Startzeitpunkt");
-        addProtectedProcessDataSuggestion(metadata, "initialPayload", "Initiale Vorgangsdaten");
-        addProtectedProcessDataSuggestion(metadata, "assignedFileNumbers", "Zugeordnete Aktenzeichen");
-        addProtectedProcessDataSuggestion(metadata, "identities", "Identitäten");
-        addProtectedProcessDataSuggestion(metadata, "assignedUserId", "Zugeordnete Person");
-        addProtectedProcessDataSuggestion(metadata, "initialNodeDataKey", "Datenschlüssel des Startelements");
-        addProtectedProcessDataSuggestion(metadata, "previousNodeDataKey", "Datenschlüssel des vorherigen Elements");
-        addProtectedProcessDataSuggestion(metadata, "attachmentSets", "Anlagensätze");
-        addProtectedProcessDataSuggestion(metadata, "currentTaskId", "Aktuelle Aufgaben-ID");
+        for (var field : ProcessSystemDataFields.PROTECTED) {
+            // Individual element metadata are already suggested with their node context.
+            if (field.path().equals("taskMetadata")) continue;
+            metadata.addInputVariable(new InputVariableSuggestion(InputVariableSource.ProtectedProcessData,
+                    field.path(), null, field.label(), field.description(), null));
+        }
         return metadata;
     }
 
@@ -929,40 +1074,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
     }
 
-    private void addProtectedProcessDataSuggestion(@Nonnull ProcessNodeDefinitionMetadata metadata,
-                                                   @Nonnull String path,
-                                                   @Nonnull String label) {
-        metadata.addInputVariable(new InputVariableSuggestion(
-                InputVariableSource.ProtectedProcessData,
-                path,
-                null,
-                label,
-                null,
-                null
-        ));
-    }
-
     private void addElementMetadataSuggestions(@Nonnull ProcessNodeDefinitionMetadata metadata,
                                                @Nonnull ProcessNodeEntity node) {
-        var suggestions = new LinkedHashMap<String, String>();
-        suggestions.put("nodeId", "Element-ID");
-        suggestions.put("taskId", "Aufgaben-ID");
-        suggestions.put("assignedUserId", "Zugeordnete Person");
-        suggestions.put("started", "Startzeitpunkt");
-        suggestions.put("updated", "Änderungszeitpunkt");
-        suggestions.put("finished", "Abschlusszeitpunkt");
-        suggestions.put("runtime", "Laufzeit");
-        suggestions.put("previousProcessNodeId", "Vorherige Element-ID");
-        suggestions.put("previousProcessNodePortKey", "Vorheriger Ausgangsport");
-        suggestions.put("previousProcessInstanceTaskId", "Vorherige Aufgaben-ID");
-        suggestions.forEach((path, label) -> metadata.addInputVariable(new InputVariableSuggestion(
-                InputVariableSource.ElementMetadata,
-                path,
-                node.getDataKey(),
-                label,
-                null,
-                node
-        )));
+        for (var field : ProcessSystemDataFields.ELEMENT_METADATA) {
+            metadata.addInputVariable(new InputVariableSuggestion(InputVariableSource.ElementMetadata,
+                    field.path(), node.getDataKey(), field.label(), field.description(), node));
+        }
     }
 
     @Nonnull
@@ -973,8 +1090,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     /**
-     * Validates a node of an already loaded process version, so validating all nodes of a version loads the process
-     * and the version once instead of once per node.
+     * Validates a node of an already loaded process version, so validating all nodes of a version loads the process and the version once instead of once per node.
      */
     @Nonnull
     public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
@@ -1421,8 +1537,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     /**
-     * @param complete Whether every upstream node contributed its metadata. Skipped nodes make missing entries
-     *                 inconclusive.
+     * @param complete Whether every upstream node contributed its metadata. Skipped nodes make missing entries inconclusive.
      */
     private record IncomingProcessNodeDefinitionMetadata(
             @Nonnull ProcessNodeDefinitionMetadata metadata,

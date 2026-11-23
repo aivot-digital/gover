@@ -41,6 +41,7 @@ import {
     useRefreshPermissionSet,
 } from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {listCellSecondaryTextSx} from '../../../../components/generic-list/generic-list-cell-styles';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -447,13 +448,7 @@ function buildColumns(canReadDomainRoles: boolean): Array<GridColDef<VDepartment
                     </Typography>
                     {
                         params.row.membershipHasDeputies && (
-                            <Typography
-                                variant="caption"
-
-                                sx={{
-                                    color: "text.secondary"
-                                }}
-                            >
+                            <Typography component="span" sx={listCellSecondaryTextSx}>
                                 (Stellvertretung durch {
                                     params
                                         .row

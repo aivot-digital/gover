@@ -18,6 +18,8 @@ import jakarta.annotation.Nullable;
  * @param thisTask The completed task, before it is saved with its summary.
  * @param previousTask The preceding task, or {@code null} for an initial task.
  * @param triggeringUser The staff user triggering completion, or {@code null} for automatic or customer execution.
+ * @param representedUser The assignee of the task if the triggering user completed it as their active deputy,
+ *                        otherwise {@code null}.
  * @param viaPort The selected outgoing port, or {@code null} when completing the whole instance.
  */
 public record ProcessNodeExecutionSummaryContext<NodeConfig>(
@@ -27,6 +29,7 @@ public record ProcessNodeExecutionSummaryContext<NodeConfig>(
         @Nonnull ProcessInstanceTaskEntity thisTask,
         @Nullable ProcessInstanceTaskEntity previousTask,
         @Nullable UserEntity triggeringUser,
+        @Nullable UserEntity representedUser,
         @Nullable String viaPort
 ) {
 }

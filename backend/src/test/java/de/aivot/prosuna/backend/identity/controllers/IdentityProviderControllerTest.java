@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -32,6 +33,7 @@ class IdentityProviderControllerTest {
     private final Jwt jwt = mock(Jwt.class);
     private final IdentityService identityService = mock(IdentityService.class);
     private final PermissionService permissionService = mock(PermissionService.class);
+    private final IdentityProviderService identityProviderService = mock(IdentityProviderService.class);
 
     private IdentityProviderController controller;
 
@@ -39,7 +41,7 @@ class IdentityProviderControllerTest {
     void setUp() {
         controller = new IdentityProviderController(
                 mock(AuditService.class, RETURNS_DEEP_STUBS),
-                mock(IdentityProviderService.class),
+                identityProviderService,
                 identityService,
                 mock(UserService.class),
                 permissionService
@@ -87,5 +89,26 @@ class IdentityProviderControllerTest {
 
         verifyNoInteractions(identityService);
         assertNull(response.getCookie(IdentityCookieUtils.IDENTITY_FLOW_COOKIE_NAME));
+    }
+
+    @Test
+    void samlMetadataIsReturnedAsXml() throws ResponseException {
+        var providerKey = UUID.randomUUID();
+        when(identityProviderService.fetchSamlMetadata(providerKey)).thenReturn("<md:EntityDescriptor/>");
+
+        var response = controller.retrieveSamlMetadata(jwt, providerKey);
+
+        assertEquals(MediaType.APPLICATION_XML, response.getHeaders().getContentType());
+        assertEquals("<md:EntityDescriptor/>", response.getBody());
+    }
+
+    @Test
+    void samlMetadataRequiresTheReadPermission() throws ResponseException {
+        doThrow(ResponseException.forbidden()).when(permissionService)
+                .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ);
+
+        assertThrows(ResponseException.class, () -> controller.retrieveSamlMetadata(jwt, UUID.randomUUID()));
+
+        verifyNoInteractions(identityProviderService);
     }
 }

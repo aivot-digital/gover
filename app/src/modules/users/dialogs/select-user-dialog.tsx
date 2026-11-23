@@ -12,6 +12,7 @@ import {isApiError} from '../../../models/api-error';
 
 interface SelectUserDialogProps {
     open: boolean;
+    title?: string;
     onClose: () => void;
     onSelect: (user: User) => void;
     idsToExclude?: string[];
@@ -27,6 +28,7 @@ export function SelectUserDialog(props: SelectUserDialogProps) {
 
     const {
         open,
+        title = 'Mitarbeiter:in auswählen',
         onClose,
         onSelect,
         idsToExclude,
@@ -111,7 +113,7 @@ export function SelectUserDialog(props: SelectUserDialogProps) {
         <SearchBaseDialog
             open={open}
             onClose={onClose}
-            title="Mitarbeiter:in auswählen"
+            title={title}
             tabs={tabs}
         />
     );

@@ -169,7 +169,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         );
 
         assertEquals("Fachbereich Leistungen", zbpMessage.sender());
-        assertEquals(" Fachbereich Leistungen ", zbpMessage.service());
+        assertEquals("Fachbereich Leistungen", zbpMessage.service());
         assertEquals("<p>Body</p>", zbpMessage.content());
         assertEquals("Subject", zbpMessage.title());
         assertEquals(mailboxId, zbpMessage.mailboxUuid());
@@ -177,7 +177,7 @@ class FitConnectZbpCommunicationProviderV1Test {
     }
 
     @Test
-    void createsZbpMessageWithProsunaSenderAndNoServiceWhenOnlySendingUserIsSet() throws Exception {
+    void createsZbpMessageWithProsunaAsSenderAndServiceWhenOnlySendingUserIsSet() throws Exception {
         var user = new UserEntity().setId("user-1").setFullName("Sender User");
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
@@ -194,7 +194,7 @@ class FitConnectZbpCommunicationProviderV1Test {
         );
 
         assertEquals("Prosuna", zbpMessage.sender());
-        assertNull(zbpMessage.service());
+        assertEquals("Prosuna", zbpMessage.service());
         assertEquals("<p>Body</p>", zbpMessage.content());
     }
 

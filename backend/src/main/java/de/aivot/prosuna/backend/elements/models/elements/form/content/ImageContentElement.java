@@ -2,8 +2,12 @@ package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ImageContentElement extends BaseFormElement {
@@ -20,6 +24,17 @@ public class ImageContentElement extends BaseFormElement {
 
     public ImageContentElement() {
         super(ElementType.Image);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // A missing alternative text stays an editor hint, because purely decorative images do not need one.
+        if (StringUtils.isNullOrEmpty(src) && !hasOverride()) {
+            addConfigurationError(errors, "src", "Geben Sie die URL des Bildes an oder wählen Sie ein Bild aus.");
+        }
+        return errors;
     }
 
     @Override

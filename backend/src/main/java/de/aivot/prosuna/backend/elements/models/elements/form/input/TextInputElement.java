@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -17,6 +18,7 @@ import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -97,6 +99,20 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         if (minCharacters != null && minCharacters > 0 && value.length() < minCharacters) {
             throw new ValidationException(this, "Zu wenige Zeichen. Mindestens " + minCharacters + " Zeichen erforderlich.");
         }
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minCharacters", minCharacters, "maxCharacters", maxCharacters,
+                "Sie fordern mehr Zeichen, als Sie maximal zulassen.");
+        // Like the editor, suggestions only apply to single-line fields without a dynamic text policy.
+        if (!Boolean.TRUE.equals(isMultiline) && dynamicTextPolicy == null
+                && optionsSource == OptionsSourceType.CodeList && StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        return errors;
     }
 
     @Nonnull
