@@ -41,6 +41,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
 
     public initialize(): VDepartmentMembershipWithDetailsEntity {
         return {
+            lockVersion: 0,
             membershipDeputies: [],
             departmentPostalAddress: null,
             departmentCommonPrivacy: null,

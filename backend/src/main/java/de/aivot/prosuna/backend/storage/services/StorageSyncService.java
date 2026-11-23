@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,6 +67,10 @@ public class StorageSyncService {
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.assetRepository = assetRepository;
         this.transaction = new TransactionTemplate(transactionManager);
+        // The run reads the provider long before it locks it to record the result. Under REPEATABLE READ, any provider
+        // or index item change committed meanwhile (an edit, a resync request, an upload) would fail the whole run with
+        // a serialization error; the run ownership check after the lock already detects a superseded run.
+        this.transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     /**
@@ -192,6 +197,10 @@ public class StorageSyncService {
                                 " konnte nicht gefunden werden. Bitte stellen Sie sicher, dass die entsprechende Erweiterung installiert ist und Sie die Anwendung neu gestartet haben."
                 ));
 
+        // Read before the listing. At READ COMMITTED the run also sees rows committed later (an upload during the run);
+        // the listing misses them, but they are not missing. Only rows unchanged since this read may be marked missing.
+        var indexedBeforeListing = storageIndexItemRepository.findStatesByStorageProviderId(storageProvider.getId());
+
         var root = getRoot(storageProvider, storageDefinition);
         var supportsMetadataAttributes = storageDefinition.getSupportsMetadataAttributes();
 
@@ -303,24 +312,32 @@ public class StorageSyncService {
         );
 
         // Mark old entries as missing
-        var allItems = storageIndexItemRepository.
-                findAllByStorageProviderId(storageProvider.getId());
+        for (var item : indexedBeforeListing) {
+            if (syncedPaths.contains(item.pathFromRoot())) {
+                continue;
+            }
 
-        for (var item : allItems) {
-            if (!syncedPaths.contains(item.getPathFromRoot())) {
-                logger
-                        .atInfo()
-                        .setMessage("Removing stale storage index item at path '{}' for storage provider '{}' ({})")
-                        .addArgument(item::getPathFromRoot)
-                        .addArgument(storageProvider::getName)
-                        .addArgument(storageProvider::getId)
-                        .log();
+            // An item changed, moved or deleted during the run is skipped.
+            var marked = storageIndexItemRepository.markMissingIfUnchanged(
+                    storageProvider.getId(),
+                    item.pathFromRoot(),
+                    item.updated(),
+                    Instant.now()
+            );
+            if (marked == 0) {
+                continue;
+            }
 
-                storageIndexItemRepository.save(item
-                        .setMissing(true)
-                        .setUpdated(Instant.now()));
+            logger
+                    .atInfo()
+                    .setMessage("Removing stale storage index item at path '{}' for storage provider '{}' ({})")
+                    .addArgument(item::pathFromRoot)
+                    .addArgument(storageProvider::getName)
+                    .addArgument(storageProvider::getId)
+                    .log();
 
-                removeAssetEntityForMissingDocument(storageProvider, item);
+            if (!item.directory()) {
+                removeAssetEntityForMissingDocument(storageProvider, item.pathFromRoot());
             }
         }
     }
@@ -458,13 +475,13 @@ public class StorageSyncService {
     }
 
     private void removeAssetEntityForMissingDocument(@Nonnull StorageProviderEntity storageProvider,
-                                                     @Nonnull StorageIndexItemEntity indexItem) {
-        if (storageProvider.getType() != StorageProviderType.Assets || Boolean.TRUE.equals(indexItem.getDirectory())) {
+                                                     @Nonnull String pathFromRoot) {
+        if (storageProvider.getType() != StorageProviderType.Assets) {
             return;
         }
 
         assetRepository
-                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), indexItem.getPathFromRoot())
+                .findByStorageProviderIdAndStoragePathFromRoot(storageProvider.getId(), pathFromRoot)
                 .ifPresent(assetRepository::delete);
     }
 }

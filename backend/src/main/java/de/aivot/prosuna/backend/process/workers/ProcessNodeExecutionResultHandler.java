@@ -29,6 +29,7 @@ import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.process.services.ProcessWorkRequestService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
@@ -63,6 +64,7 @@ public class ProcessNodeExecutionResultHandler {
     private final DepartmentService departmentService;
     private final ProcessInstanceMailService processInstanceMailService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final UserDeputyService deputyService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(ProcessAssignmentService assignmentService,
@@ -80,7 +82,8 @@ public class ProcessNodeExecutionResultHandler {
                                              DepartmentService departmentService, ProcessInstanceMailService processInstanceMailService,
                                              ProcessNodeService processNodeService,
                                              BusinessTime businessTime,
-                                             ProcessInstanceAttachmentService processInstanceAttachmentService) {
+                                             ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                             UserDeputyService deputyService) {
         this.assignmentService = assignmentService;
         this.workRequestService = workRequestService;
         this.communicationService = communicationService;
@@ -98,6 +101,7 @@ public class ProcessNodeExecutionResultHandler {
         this.departmentService = departmentService;
         this.processInstanceMailService = processInstanceMailService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.deputyService = deputyService;
     }
 
     public <NodeConfig> void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -794,28 +798,26 @@ public class ProcessNodeExecutionResultHandler {
             return;
         }
 
-        if (context.triggeringUser == null || !assignedUser.getId().equals(context.triggeringUser.getId())) {
-            try {
-                processTaskMailService.sendAssigned(
-                        context.triggeringUser,
-                        assignedUser,
-                        context.processInstance,
-                        context.processInstanceTask,
-                        context.currentNode,
-                        context.provider,
-                        previousAssignedUserId != null
-                );
-            } catch (Exception e) {
-                context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
-                        e,
-                        "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
-                        ProcessHistoryLabels.quotedUser(assignedUser)
-                ));
-            }
+        // The mail service skips the triggering user but still notifies their deputies, so always call it.
+        try {
+            processTaskMailService.sendAssigned(
+                    context.triggeringUser,
+                    assignedUser,
+                    context.processInstance,
+                    context.processInstanceTask,
+                    context.currentNode,
+                    context.provider,
+                    previousAssignedUserId != null
+            );
+        } catch (Exception e) {
+            context.logger.logException(new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an %s konnte nicht versendet werden.",
+                    ProcessHistoryLabels.quotedUser(assignedUser)
+            ));
         }
 
-        if (previousAssignedUser != null && (context.triggeringUser == null
-                || !previousAssignedUser.getId().equals(context.triggeringUser.getId()))) {
+        if (previousAssignedUser != null) {
             try {
                 processTaskMailService.sendUnassigned(
                         context.triggeringUser,
@@ -860,10 +862,14 @@ public class ProcessNodeExecutionResultHandler {
                     context.result.getNodeData() != null ? context.result.getNodeData() : Map.of(), processData);
         }
 
-        if (context.result.getAssignedUserId() != null) {
+        var selectedUserId = context.result.getAssignedUserId();
+        if (selectedUserId != null) {
             try {
-                assignmentService.requireRuntimeInstanceAssignee(
-                        context.processInstance.getId(), context.result.getAssignedUserId());
+                if (context.result.isDirectMembershipRequired()) {
+                    assignmentService.requireManualInstanceAssignee(context.processInstance.getId(), selectedUserId);
+                } else {
+                    assignmentService.requireRuntimeInstanceAssignee(context.processInstance.getId(), selectedUserId);
+                }
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionInvalidAssignment(e,
                         "Die ausgewählte Person kann diesem Vorgang nicht zugewiesen werden.");
@@ -871,7 +877,7 @@ public class ProcessNodeExecutionResultHandler {
         }
 
         var previousAssignedUser = requireOptionalUser(context, context.processInstance.getAssignedUserId());
-        var newlyAssignedUser = requireOptionalUser(context, context.result.getAssignedUserId());
+        var newlyAssignedUser = requireOptionalUser(context, selectedUserId);
         var triggeringUser = Optional.ofNullable(context.triggeringUser);
         var assignmentSnapshot = new LinkedHashMap<String, Object>();
         previousAssignedUser.ifPresent(user -> {
@@ -1305,6 +1311,7 @@ public class ProcessNodeExecutionResultHandler {
                     context.processInstanceTask,
                     context.previousTask,
                     context.triggeringUser,
+                    representedUser(context.triggeringUser, context.processInstanceTask.getAssignedUserId()),
                     viaPort
             ));
         } catch (Exception exception) {
@@ -1314,6 +1321,19 @@ public class ProcessNodeExecutionResultHandler {
         }
         context.processInstanceTask.setExecutionSummaryMarkdown(summary == null || summary.isBlank() ? null : summary);
         processInstanceTaskRepository.save(context.processInstanceTask);
+    }
+
+    /**
+     * The summary is stored when the task ends, so it keeps naming the represented person after the deputy period.
+     */
+    @Nullable
+    private UserEntity representedUser(@Nullable UserEntity triggeringUser, @Nullable String assignedUserId)
+            throws ResponseException {
+        if (triggeringUser == null || assignedUserId == null || triggeringUser.getId().equals(assignedUserId)
+                || !deputyService.isActiveDeputyFor(triggeringUser.getId(), assignedUserId)) {
+            return null;
+        }
+        return userService.retrieve(assignedUserId).orElse(null);
     }
 
     @Nullable

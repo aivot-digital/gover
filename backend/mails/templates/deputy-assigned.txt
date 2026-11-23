@@ -1,0 +1,18 @@
+Hallo,
+
+Sie wurden in Prosuna als Stellvertreter:in für [(${originalUser.getFullName()})] eingetragen.
+
+Zeitraum: [(${periodLabel})]
+Eingetragen durch: [(${admin.getFullName()})]
+
+Während der Vertretung finden Sie die Aufgaben von [(${originalUser.getFullName()})] in Ihrer Aufgabenliste unter „Mir zugewiesen oder in Vertretung“ und können sie bearbeiten. Dafür erhalten Sie für diesen Zeitraum alle Berechtigungen dieser Person. Benachrichtigungen zu ihren Aufgaben und Vorgängen erhalten Sie ebenfalls.
+
+Vertretungen ansehen:
+[(${base.config.createUrl(deputiesPath)})]
+
+[# th:if="${mailSignature != null}"]
+
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

@@ -21,11 +21,13 @@ import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 import de.aivot.prosuna.backend.process.models.ProcessNodePortResolution;
 import de.aivot.prosuna.backend.process.models.executionResult.*;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
+import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.repositories.*;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.prosuna.backend.process.services.ProcessNodeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,7 @@ class ProcessNodeExecutionSummaryTest {
     private final ProcessEdgeRepository edges = mock(ProcessEdgeRepository.class);
     private final ProcessWorkRequestService workRequests = mock(ProcessWorkRequestService.class);
     private final UserService users = mock(UserService.class);
+    private final UserDeputyService deputies = mock(UserDeputyService.class);
     private final ProcessNodeExecutionLogger executionLogger = mock(ProcessNodeExecutionLogger.class);
     @SuppressWarnings("unchecked")
     private final ProcessNodeDefinition<Configuration> definition = mock(ProcessNodeDefinition.class, CALLS_REAL_METHODS);
@@ -71,7 +74,7 @@ class ProcessNodeExecutionSummaryTest {
             mock(ProcessAssignmentService.class), workRequests, null, instances, versions, tasks, edges, users,
             mock(ProcessTaskMailService.class), mock(ProcessNodeRepository.class),
             mock(ProcessNodeDefinitionService.class), null, null, mock(ProcessInstanceMailService.class), nodeService, null,
-            mock(ProcessInstanceAttachmentService.class));
+            mock(ProcessInstanceAttachmentService.class), deputies);
 
     @BeforeEach
     void setup() throws Exception {
@@ -122,6 +125,54 @@ class ProcessNodeExecutionSummaryTest {
         order.verify(tasks).save(task);
         order.verify(workRequests).enqueueTransition(anyLong(), anyLong(), anyString(), anyInt());
         verify(definition, times(1)).generateExecutionSummary(any());
+    }
+
+    @Test
+    void completionByAnActiveDeputyNamesTheRepresentedAssignee() throws Exception {
+        var assignee = new UserEntity().setId("assignee").setFullName("Philipp Schröder");
+        task.setAssignedUserId("assignee");
+        when(deputies.isActiveDeputyFor("actor", "assignee")).thenReturn(true);
+        when(users.retrieve("assignee")).thenReturn(Optional.of(assignee));
+        when(definition.generateExecutionSummary(any())).thenAnswer(invocation -> {
+            ProcessNodeExecutionSummaryContext<Configuration> context = invocation.getArgument(0);
+            return "Erledigt durch " + new ExecutionSummaryMarkdown(context).actor() + ".";
+        });
+
+        handler.handleResult(executionLogger, actor, definition, configuration, node, instance, task, null,
+                new ProcessNodeExecutionResultTaskCompleted("next"));
+
+        assertEquals("Erledigt durch „Ada Beispiel“ in Vertretung für „Philipp Schröder“.", task.getExecutionSummaryMarkdown());
+    }
+
+    @Test
+    void completionByAnotherPersonThanTheAssigneeIsNotMarkedAsDeputyWork() throws Exception {
+        task.setAssignedUserId("assignee");
+        when(definition.generateExecutionSummary(any())).thenAnswer(invocation -> {
+            ProcessNodeExecutionSummaryContext<Configuration> context = invocation.getArgument(0);
+            assertNull(context.representedUser());
+            return "Erledigt durch " + new ExecutionSummaryMarkdown(context).actor() + ".";
+        });
+
+        handler.handleResult(executionLogger, actor, definition, configuration, node, instance, task, null,
+                new ProcessNodeExecutionResultTaskCompleted("next"));
+
+        assertEquals("Erledigt durch „Ada Beispiel“.", task.getExecutionSummaryMarkdown());
+        verify(deputies).isActiveDeputyFor("actor", "assignee");
+    }
+
+    @Test
+    void completionByTheAssigneeSkipsTheDeputyLookup() throws Exception {
+        task.setAssignedUserId("actor");
+        when(definition.generateExecutionSummary(any())).thenAnswer(invocation -> {
+            ProcessNodeExecutionSummaryContext<Configuration> context = invocation.getArgument(0);
+            assertNull(context.representedUser());
+            return "Erledigt.";
+        });
+
+        handler.handleResult(executionLogger, actor, definition, configuration, node, instance, task, null,
+                new ProcessNodeExecutionResultTaskCompleted("next"));
+
+        verifyNoInteractions(deputies);
     }
 
     @Test

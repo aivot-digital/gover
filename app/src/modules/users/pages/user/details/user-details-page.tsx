@@ -94,7 +94,7 @@ export function UserDetailsPage() {
                     },
                     {
                         path: '/users/:id/deputies',
-                        label: 'Stellvertreter:innen',
+                        label: 'Stellvertretung',
                         onlyExisting: true,
                         requiredPermission: Permission.DEPUTY_READ,
                     },

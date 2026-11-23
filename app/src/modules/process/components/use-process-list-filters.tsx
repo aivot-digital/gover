@@ -56,7 +56,8 @@ export function useProcessListFilters(tasks: boolean, instanceId?: number) {
         },
         {
             value: 'mine',
-            label: 'Mir zugewiesen',
+            // Only the task list includes tasks taken over as a deputy.
+            label: tasks ? 'Mir zugewiesen oder in Vertretung' : 'Mir zugewiesen',
         },
         {
             value: 'unassigned',

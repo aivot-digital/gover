@@ -17,10 +17,12 @@ import {SelectFieldPresentation} from '../../models/elements/form/input/select-f
 import {ConditionSetOperator} from '../../data/condition-set-operator';
 
 const recalculateReferencedIds = vi.hoisted(() => vi.fn(async (element: unknown) => element));
+const validateConfiguration = vi.hoisted(() => vi.fn(async (): Promise<unknown> => ({properties: {}, children: {}})));
 
 vi.mock('../../modules/elements/elements-api-service', () => ({
     ElementsApiService: class {
         recalculateReferencedIds = recalculateReferencedIds;
+        validateConfiguration = validateConfiguration;
     },
 }));
 
@@ -113,6 +115,41 @@ vi.mock('../element-tree-2/element-tree', () => ({
 }));
 
 describe('UiDefinitionInputFieldComponent', () => {
+    it('preserves a reopened draft and cancels transition callbacks on unmount', async () => {
+        vi.useFakeTimers();
+        const value: GroupLayout = {
+            ...generateElementWithDefaultValues(ElementType.GroupLayout),
+            id: 'root',
+            children: [{...generateElementWithDefaultValues(ElementType.Text), id: 'name', label: 'Name'}],
+        };
+        const onChange = vi.fn();
+        const {unmount} = render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={value}
+            onChange={onChange}
+            displayContext={ElementDisplayContext.StaffFacing}
+        />);
+        try {
+            const open = screen.getByRole('button', {name: 'Bearbeiten'});
+            fireEvent.click(open);
+            await act(async () => { await vi.advanceTimersByTimeAsync(400); });
+            fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
+            fireEvent.click(open);
+            fireEvent.click(screen.getByRole('button', {name: 'Mindestlänge ändern'}));
+            await act(async () => { await vi.advanceTimersByTimeAsync(400); });
+            fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+            expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+                children: [expect.objectContaining({id: 'name', minCharacters: 3})],
+            }));
+            unmount();
+            expect(vi.getTimerCount()).toBe(0);
+        } finally {
+            unmount();
+            vi.clearAllTimers();
+            vi.useRealTimers();
+        }
+    });
+
     it('opens legacy radio definitions as Select and emits the canonical definition only on apply', async () => {
         const user = userEvent.setup();
         const value = JSON.parse(JSON.stringify({
@@ -432,6 +469,29 @@ describe('UiDefinitionInputFieldComponent', () => {
         await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
 
         expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('marks the root settings button when the root element has configuration errors', async () => {
+        const user = userEvent.setup();
+        validateConfiguration.mockResolvedValueOnce({
+            properties: {title: ['Geben Sie einen Titel ein.']},
+            children: {},
+        });
+
+        render(<UiDefinitionInputFieldComponent
+            label="Testoberfläche"
+            value={null}
+            onChange={vi.fn()}
+            displayContext={ElementDisplayContext.StaffFacing}
+        />);
+        await user.click(screen.getByRole('button', {name: 'Bearbeiten'}));
+
+        expect(screen.getByRole('button', {name: 'Einstellungen des Wurzelelements öffnen'})).toBeInTheDocument();
+        expect(await screen.findByRole(
+            'button',
+            {name: 'Einstellungen des Wurzelelements öffnen (fehlerhafte Konfiguration)'},
+            {timeout: 2000},
+        )).toBeInTheDocument();
     });
 
     it('keeps the summary and editor action separate from the field name', () => {

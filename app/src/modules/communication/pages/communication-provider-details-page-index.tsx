@@ -204,6 +204,7 @@ export function CommunicationProviderDetailsPageIndex() {
             configuration: provider.configuration ?? {},
             isEnabled: provider.isEnabled,
             isTestProvider: provider.isTestProvider,
+            lockVersion: originalProvider?.lockVersion,
         };
 
         setIsBusy(true);

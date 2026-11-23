@@ -142,6 +142,7 @@ describe('Permissions on process detail navigation', () => {
         }));
         vi.spyOn(ProcessInstanceApiService.prototype, 'retrieve').mockResolvedValue(instance);
         vi.spyOn(ProcessInstanceTaskApiService.prototype, 'retrieveDetails').mockResolvedValue({
+            assignedUserDeputies: [],
             task: {
                 ...new ProcessInstanceTaskApiService().initialize(),
                 id: 8,

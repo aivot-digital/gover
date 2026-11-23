@@ -254,6 +254,7 @@ const addressListElement: ReplicatingContainerLayout = {
     headlineTemplate: 'Anschrift #',
     addLabel: 'Anschrift hinzufügen',
     removeLabel: 'Anschrift löschen',
+    sortable: null,
     children: [addressStreetElement, addressCityElement],
 };
 

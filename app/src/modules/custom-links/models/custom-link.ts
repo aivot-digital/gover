@@ -13,6 +13,7 @@ export interface CustomLink {
     enabled: boolean;
     created: string;
     updated: string;
+    lockVersion?: number | null;
 }
 
 export interface CustomLinkRequest {
@@ -22,4 +23,5 @@ export interface CustomLinkRequest {
     icon: string | null;
     type: CustomLinkType;
     enabled: boolean;
+    lockVersion?: number | null;
 }

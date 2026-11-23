@@ -1,11 +1,17 @@
-import React, {type ReactNode, useCallback, useContext, useMemo, useState} from 'react';
+import React, {type ReactNode, type RefObject, useCallback, useContext, useId, useMemo, useRef, useState} from 'react';
+import {useDrag, useDrop} from 'react-dnd';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
+import {type Theme} from '@mui/material/styles';
+import DragIndicator from '@aivot/mui-material-symbols-400-n25-outlined/DragIndicator';
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import AddCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AddCircle';
@@ -69,11 +75,17 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     const minRequiredSets = element.required === true ? Math.max(1, minimumSets) : 0;
     const displayedMinimumSets = Math.max(minimumSets, minRequiredSets);
     const hasEntries = (value?.length ?? 0) > 0;
+    // Any entry may be removed, including the first, as long as the required minimum remains.
+    const canRemoveEntries = (value?.length ?? 0) > minRequiredSets;
     const isAddDisabled = isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets);
     const shouldShowEmptyState = !hasEntries;
     const isContainerBusy = isDeriving && hasDerivableAspects(element);
     const fieldError = errors != null && errors.length > 0 ? errors.join(' ') : undefined;
     const inputModeFieldProps = props.inputModeLiteralContext?.fieldProps;
+    // Only unset or false counts as unsortable, so containers saved before the option existed keep their order.
+    const isSortable = element.sortable === true && !isDisabled && (value?.length ?? 0) > 1;
+    // Scoping the drag type to this container instance keeps rows from moving between containers.
+    const rowDragType = `replicating-container-row:${useId()}`;
 
     const handleAdd = useCallback(() => {
         const updatedValue: ReplicatingContainerElementValues = [
@@ -99,6 +111,22 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
 
         setValue(newValue.length === 0 ? null : newValue, allChildIds);
         setConfirmDelete(undefined);
+    }, [element, setValue, value]);
+
+    const handleMove = useCallback((fromIndex: number, toIndex: number) => {
+        const rows = [...(value ?? [])];
+        if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= rows.length || toIndex < 0 || toIndex >= rows.length) {
+            return;
+        }
+
+        const [movedRow] = rows.splice(fromIndex, 1);
+        rows.splice(toIndex, 0, movedRow);
+
+        // Derived row data is resolved by position, so all rows must be derived again after a move.
+        const allChildIds = flattenElements(element, false)
+            .map(child => child.id);
+
+        setValue(rows, allChildIds);
     }, [element, setValue, value]);
 
     return (
@@ -137,22 +165,28 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             const itemLabel = stringOrDefault(element.headlineTemplate, 'Datensatz #')
                                 .replace('#', (valueIndex + 1).toFixed());
 
-                            return derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? (
+                            if (derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`)) {
+                                return (
+                                    <Box
+                                        key={rowKey}
+                                        role="status"
+                                        aria-label={`${itemLabel} wird geladen`}
+                                        aria-busy="true"
+                                        sx={{
+                                            borderTop: valueIndex > 0 ? '1px solid' : undefined,
+                                            borderColor: 'divider',
+                                        }}
+                                    >
+                                        <DatasetSkeleton size={children?.length}/>
+                                    </Box>
+                                );
+                            }
+
+                            const renderRow = (sortable?: SortableRowSlots) => (
                                 <Box
                                     key={rowKey}
-                                    role="status"
-                                    aria-label={`${itemLabel} wird geladen`}
-                                    aria-busy="true"
-                                    sx={{
-                                        borderTop: valueIndex > 0 ? '1px solid' : undefined,
-                                        borderColor: 'divider',
-                                    }}
-                                >
-                                    <DatasetSkeleton size={children?.length}/>
-                                </Box>
-                            ) : (
-                                <Box
-                                    key={rowKey}
+                                    ref={sortable?.rowRef}
+                                    data-replicating-container-row
                                     role="group"
                                     aria-labelledby={itemLabelId}
                                     sx={{
@@ -161,6 +195,11 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         pb: 2.5,
                                         borderTop: valueIndex > 0 ? '1px solid' : undefined,
                                         borderColor: 'divider',
+                                        opacity: sortable?.isDragging ? 0.5 : undefined,
+                                        // Marks the edge at which the dragged row would be inserted.
+                                        boxShadow: sortable?.dropEdge != null ?
+                                            (theme: Theme) => `inset 0 ${sortable.dropEdge === 'top' ? 2 : -2}px 0 ${theme.palette.primary.main}` :
+                                            undefined,
                                     }}
                                 >
                                     <Box
@@ -187,8 +226,9 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                 },
                                             }}
                                         />
+                                        {sortable?.handle}
 
-                                        {(minRequiredSets === 0 || valueIndex >= minRequiredSets) && (
+                                        {canRemoveEntries && (
                                             <Box
                                                 sx={{
                                                     ml: 'auto',
@@ -203,7 +243,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                     onClick={() => {
                                                         setConfirmDelete(() => () => handleDelete(val, valueIndex));
                                                     }}
-                                                    disabled={isDisabled || (minRequiredSets > 0 && (value ?? []).length <= minRequiredSets)}
+                                                    disabled={isDisabled}
                                                     sx={{
                                                         minHeight: 24,
                                                         px: 0.75,
@@ -254,6 +294,19 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                     </Grid>
                                 </Box>
                             );
+
+                            return isSortable ? (
+                                <SortableRow
+                                    key={rowKey}
+                                    dragType={rowDragType}
+                                    index={valueIndex}
+                                    rowCount={value?.length ?? 0}
+                                    itemLabel={itemLabel}
+                                    onMove={handleMove}
+                                >
+                                    {renderRow}
+                                </SortableRow>
+                            ) : renderRow();
                         })}
 
                         {shouldShowEmptyState && (
@@ -339,6 +392,135 @@ function ReplicatingContainerRowScope(props: ReplicatingContainerRowScopeProps) 
         >
             {children}
         </ViewDispatcherContextProvider>
+    );
+}
+
+interface SortableRowSlots {
+    rowRef: RefObject<HTMLDivElement | null>;
+    handle: ReactNode;
+    isDragging: boolean;
+    dropEdge: 'top' | 'bottom' | undefined;
+}
+
+interface SortableRowDragItem {
+    index: number;
+}
+
+interface SortableRowProps {
+    dragType: string;
+    index: number;
+    rowCount: number;
+    itemLabel: string;
+    onMove: (fromIndex: number, toIndex: number) => void;
+    children: (sortable: SortableRowSlots) => ReactNode;
+}
+
+/**
+ * Makes a row draggable by its handle and a drop target for the other rows of the same container. The handle also
+ * opens a menu that moves the row by one position, which works with keyboard and touch input, where dragging does not.
+ */
+function SortableRow(props: SortableRowProps) {
+    const {
+        dragType,
+        index,
+        rowCount,
+        itemLabel,
+        onMove,
+        children,
+    } = props;
+
+    const rowRef = useRef<HTMLDivElement | null>(null);
+    const handleId = useId();
+    const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+
+    const [{isDragging}, drag, preview] = useDrag<SortableRowDragItem, void, {isDragging: boolean}>(() => ({
+        type: dragType,
+        item: {index},
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+    }), [dragType, index]);
+
+    const [{sourceIndex}, drop] = useDrop<SortableRowDragItem, void, {sourceIndex: number | undefined}>(() => ({
+        accept: dragType,
+        drop: (item) => onMove(item.index, index),
+        collect: (monitor) => ({
+            sourceIndex: monitor.isOver() ? monitor.getItem()?.index : undefined,
+        }),
+    }), [dragType, index, onMove]);
+
+    preview(drop(rowRef));
+
+    const dropEdge = sourceIndex == null || sourceIndex === index ? undefined : sourceIndex < index ? 'bottom' : 'top';
+
+    const handleMenuMove = (toIndex: number) => {
+        setMenuAnchor(null);
+        onMove(index, toIndex);
+    };
+
+    const handle = (
+        <>
+            <IconButton
+                id={handleId}
+                // Firefox does not reliably start drags from native button elements, so the handle renders as a
+                // span, which MUI still exposes and operates as a button.
+                component="span"
+                ref={(node: HTMLElement | null) => {
+                    drag(node);
+                }}
+                aria-label={`${itemLabel} verschieben`}
+                aria-haspopup="menu"
+                aria-expanded={menuAnchor != null ? true : undefined}
+                onClick={(event) => setMenuAnchor(event.currentTarget)}
+                sx={{
+                    p: 0.25,
+                    ml: 0.5,
+                    color: 'text.secondary',
+                    cursor: 'grab',
+                    opacity: menuAnchor != null ? 1 : 0,
+                    transition: (theme: Theme) => theme.transitions.create('opacity'),
+                    // Only the handle of the hovered or focused row appears, not those of nested containers.
+                    '[data-replicating-container-row]:hover > * > &, [data-replicating-container-row]:focus-within > * > &': {
+                        opacity: 1,
+                    },
+                    '@media (hover: none)': {
+                        opacity: 1,
+                    },
+                }}
+            >
+                <DragIndicator fontSize="small"/>
+            </IconButton>
+            <Menu
+                anchorEl={menuAnchor}
+                open={menuAnchor != null}
+                onClose={() => setMenuAnchor(null)}
+                slotProps={{list: {'aria-labelledby': handleId}}}
+            >
+                <MenuItem
+                    disabled={index === 0}
+                    onClick={() => handleMenuMove(index - 1)}
+                >
+                    Nach oben verschieben
+                </MenuItem>
+                <MenuItem
+                    disabled={index >= rowCount - 1}
+                    onClick={() => handleMenuMove(index + 1)}
+                >
+                    Nach unten verschieben
+                </MenuItem>
+            </Menu>
+        </>
+    );
+
+    return (
+        <>
+            {children({
+                rowRef,
+                handle,
+                isDragging,
+                dropEdge,
+            })}
+        </>
     );
 }
 

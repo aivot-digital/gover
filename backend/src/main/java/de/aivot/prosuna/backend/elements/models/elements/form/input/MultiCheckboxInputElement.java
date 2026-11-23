@@ -14,6 +14,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class MultiCheckboxInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
@@ -25,6 +26,13 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     @Nullable
     private String codeListKey;
+
+    // Keys of the code list columns that provide the values and labels.
+    @Nullable
+    private String codeListValueColumnKey;
+
+    @Nullable
+    private String codeListLabelColumnKey;
 
     @Nullable
     private Integer minimumRequiredOptions;
@@ -40,6 +48,28 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement() {
         super(ElementType.MultiCheckbox);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // Only manually defined options are known while authoring; code lists are resolved at runtime.
+        var usesManualOptions = optionsSource != OptionsSourceType.CodeList;
+        var optionCount = options == null ? 0 : options.size();
+        // performValidation rejects every value while the options are missing or incomplete.
+        if (usesManualOptions) {
+            addOptionErrors(errors, "options", options, MultiCheckboxInputElementOption::getValue, MultiCheckboxInputElementOption::getLabel);
+        } else if (StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        // An override can supply further options, so only the authored count is known.
+        if (usesManualOptions && !hasOverride() && minimumRequiredOptions != null && minimumRequiredOptions > optionCount) {
+            addConfigurationError(errors, "minimumRequiredOptions", "Sie fordern mehr Optionen, als Sie definiert haben.");
+        }
+        addMinimumExceedsMaximumError(errors, "minimumRequiredOptions", minimumRequiredOptions, "maximumOptions", maximumOptions,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        return errors;
     }
 
     @Nullable
@@ -180,6 +210,8 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         return Objects.equals(presentation, that.presentation) && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
                 && Objects.equals(codeListKey, that.codeListKey)
+                && Objects.equals(codeListValueColumnKey, that.codeListValueColumnKey)
+                && Objects.equals(codeListLabelColumnKey, that.codeListLabelColumnKey)
                 && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
                 && Objects.equals(maximumOptions, that.maximumOptions)
                 && Objects.equals(displayInline, that.displayInline);
@@ -192,6 +224,8 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         result = 31 * result + Objects.hashCode(presentation);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListValueColumnKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
         result = 31 * result + Objects.hashCode(minimumRequiredOptions);
         result = 31 * result + Objects.hashCode(maximumOptions);
         result = 31 * result + Objects.hashCode(displayInline);
@@ -229,6 +263,26 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement setCodeListKey(@Nullable String codeListKey) {
         this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListValueColumnKey() {
+        return codeListValueColumnKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListValueColumnKey(@Nullable String codeListValueColumnKey) {
+        this.codeListValueColumnKey = codeListValueColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
         return this;
     }
 

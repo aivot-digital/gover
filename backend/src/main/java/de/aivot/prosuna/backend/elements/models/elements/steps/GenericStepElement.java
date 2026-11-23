@@ -9,6 +9,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class GenericStepElement extends BaseStepElement implements LayoutElement<BaseFormElement> {
@@ -21,6 +22,17 @@ public class GenericStepElement extends BaseStepElement implements LayoutElement
 
     public GenericStepElement() {
         super(ElementType.Step);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // The title names the step in the stepper and the tab in tab layouts.
+        if (StringUtils.isNullOrEmpty(title) && !hasOverride()) {
+            addConfigurationError(errors, "title", "Geben Sie einen Titel für den Abschnitt ein.");
+        }
+        return errors;
     }
 
     // region Hash & Equals

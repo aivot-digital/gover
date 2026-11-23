@@ -3,16 +3,10 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {NumberFieldComponent} from '../number-field/number-field-component';
+import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {Grid} from '@mui/material';
 
 export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
-    const minRequiredError = (
-        props.element.minimumRequiredSets != null &&
-        props.element.maximumSets != null &&
-        props.element.maximumSets > 0 &&
-        props.element.minimumRequiredSets > props.element.maximumSets
-    );
-
     return (
         <Grid
             container
@@ -86,7 +80,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                             minimumRequiredSets: (val ?? 0) > 0 ? val : undefined,
                         });
                     }}
-                    error={minRequiredError ? 'Sie fordern mehr Datensätze, als Sie maximal zulassen.' : undefined}
+                    error={props.configurationErrors?.minimumRequiredSets?.join(' ')}
                     disabled={!props.editable}
                 />
             </Grid>
@@ -99,10 +93,27 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                     value={props.element.maximumSets ?? undefined}
                     label="Maximalanzahl der hinzuzufügenden Datensätze"
                     hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                    error={minRequiredError ? 'Sie fordern mehr Datensätze, als Sie maximal zulassen.' : undefined}
+                    error={props.configurationErrors?.maximumSets?.join(' ')}
                     onChange={(val) => {
                         props.onPatch({
                             maximumSets: val,
+                        });
+                    }}
+                    disabled={!props.editable}
+                />
+            </Grid>
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}>
+                <CheckboxFieldComponent
+                    label="Sortieren der Datensätze erlauben"
+                    hint="Bei der Eingabe lassen sich die Datensätze per Drag-and-drop oder über das Verschieben-Symbol neben der Überschrift neu anordnen. Ohne diese Option bleiben sie in der Reihenfolge, in der sie hinzugefügt wurden."
+                    value={props.element.sortable ?? undefined}
+                    onChange={(checked) => {
+                        props.onPatch({
+                            sortable: checked,
                         });
                     }}
                     disabled={!props.editable}

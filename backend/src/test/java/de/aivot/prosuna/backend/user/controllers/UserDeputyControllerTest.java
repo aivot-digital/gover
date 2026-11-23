@@ -1,5 +1,8 @@
 package de.aivot.prosuna.backend.user.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.doThrow;
+import de.aivot.prosuna.backend.mail.services.UserDeputyMailService;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
@@ -38,6 +41,7 @@ class UserDeputyControllerTest {
     private final UserService userService = mock(UserService.class);
     private final UserDeputyService userDeputyService = mock(UserDeputyService.class);
     private final PermissionService permissionService = mock(PermissionService.class);
+    private final UserDeputyMailService mailService = mock(UserDeputyMailService.class);
     private final UserEntity user = mock(UserEntity.class);
 
     private UserDeputyController controller;
@@ -50,7 +54,8 @@ class UserDeputyControllerTest {
                 mock(AuditService.class, RETURNS_DEEP_STUBS),
                 userService,
                 userDeputyService,
-                permissionService
+                permissionService,
+                mailService
         );
     }
 
@@ -82,6 +87,17 @@ class UserDeputyControllerTest {
         grantSystemPermission(UserPermissionProvider.DEPUTY_CREATE);
 
         assertDoesNotThrow(() -> controller.checkCreatePermissions(user, createRelation(ADMIN_USER_ID, OTHER_USER_ID)));
+    }
+
+    @Test
+    void createNotifiesTheDeputyAndKeepsTheRelationWhenTheMailFails() throws Exception {
+        grantSystemPermission(UserPermissionProvider.DEPUTY_CREATE);
+        var relation = createRelation(ADMIN_USER_ID, OTHER_USER_ID);
+        when(userDeputyService.create(relation)).thenReturn(relation);
+        doThrow(new jakarta.mail.MessagingException("SMTP unavailable")).when(mailService).sendAssigned(user, relation);
+
+        assertSame(relation, controller.create(jwt, relation));
+        verify(mailService).sendAssigned(user, relation);
     }
 
     @Test
