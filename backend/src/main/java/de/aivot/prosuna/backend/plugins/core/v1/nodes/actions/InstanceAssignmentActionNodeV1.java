@@ -26,6 +26,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -47,6 +48,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -80,7 +82,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     private static final String TASK_VIEW_ID = "instance-assignment-task-view";
     private static final String TASK_DESCRIPTION_HEADLINE_ID = "instance-assignment-description-headline";
     private static final String TASK_DESCRIPTION_CONTENT_ID = "instance-assignment-description-content";
-    private static final String TASK_ASSIGNEE_FIELD_ID = "assignedUserId";
+    private static final String TASK_ASSIGNEE_FIELD_ID = ManualAssignmentRecipientUnavailableException.FIELD_ID;
 
     private static final List<String> INSTANCE_RECIPIENT_PERMISSIONS = List.of(
             ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ
@@ -99,11 +101,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ProcessAssignmentService assignmentService;
+    private final UserDeputyService deputyService;
 
     public InstanceAssignmentActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
-                                          ProcessAssignmentService assignmentService) {
+                                          ProcessAssignmentService assignmentService,
+                                          UserDeputyService deputyService) {
         this.assigneeResolverService = assigneeResolverService;
         this.assignmentService = assignmentService;
+        this.deputyService = deputyService;
     }
 
     @Nonnull
@@ -353,7 +358,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         }
         requireAssignedTaskUser(context);
 
-        var options = assignmentService.instanceOptions(context.getCallingUser().getId(),
+        var options = assignmentService.manualInstanceOptions(context.getCallingUser().getId(),
                 context.getThisProcessInstance().getId());
         var layout = new GroupLayoutElement();
         layout.setId(TASK_VIEW_ID);
@@ -372,7 +377,16 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
             children.add(descriptionContent);
         }
 
-        var assigneeField = new SelectInputElement();
+        var assigneeField = new SelectInputElement() {
+            @Override
+            public void performValidation(@Nullable String value) throws ValidationException {
+                if (value != null && !containsOptionValue(value)) {
+                    var unavailable = new ManualAssignmentRecipientUnavailableException(value);
+                    throw new ValidationException(this, unavailable.getMessage(), unavailable.getDetails());
+                }
+                super.performValidation(value);
+            }
+        };
         assigneeField.setId(TASK_ASSIGNEE_FIELD_ID);
         assigneeField.setLabel("Zuständige Person");
         assigneeField.setHint(options.isEmpty()
@@ -394,6 +408,36 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
     @Nonnull
     @Override
+    public ResponseException unavailableStaffTaskEvent(@Nonnull String event, @Nonnull AuthoredElementValues inputs) {
+        // The assignment action disappears from the regenerated view when its last option is withdrawn.
+        var selected = StringUtils.toNullableTrimmedString(inputs.getLiteral(TASK_ASSIGNEE_FIELD_ID));
+        if (EVENT_ASSIGN.equals(event) && selected != null) {
+            return new ManualAssignmentRecipientUnavailableException(selected);
+        }
+        return ProcessNodeDefinition.super.unavailableStaffTaskEvent(event, inputs);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context,
+                                                                          @Nonnull AuthoredElementValues update)
+            throws ResponseException, ProcessNodeExecutionException {
+        requireAssignedTaskUser(context);
+        var selected = StringUtils.toNullableTrimmedString(update.getLiteral(TASK_ASSIGNEE_FIELD_ID));
+        if (selected != null) {
+            try {
+                assignmentService.requireManualInstanceAssignee(context.getCallingUser().getId(),
+                        context.getThisProcessInstance().getId(), selected);
+            } catch (ManualAssignmentRecipientUnavailableException ignored) {
+                update = update.clone();
+                update.remove(TASK_ASSIGNEE_FIELD_ID);
+            }
+        }
+        return ProcessNodeDefinition.super.onAutoSaveFromStaffTaskView(context, update);
+    }
+
+    @Nonnull
+    @Override
     public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context,
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException {
@@ -408,15 +452,11 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
             throw ResponseException.badRequest("Wählen Sie eine zuständige Person aus.");
         }
 
-        var validOption = assignmentService.instanceOptions(context.getCallingUser().getId(),
-                        context.getThisProcessInstance().getId())
-                .stream()
-                .anyMatch(option -> option.id().equals(selectedUserId));
-        if (!validOption) {
-            throw ResponseException.badRequest("Die ausgewählte Person kann diesem Vorgang nicht zugewiesen werden. Wählen Sie eine andere Person aus.");
-        }
+        assignmentService.requireManualInstanceAssignee(context.getCallingUser().getId(),
+                context.getThisProcessInstance().getId(), selectedUserId);
 
-        return Optional.of(assignmentResult(selectedUserId, context.getThisTask().getProcessData()));
+        return Optional.of(assignmentResult(selectedUserId, context.getThisTask().getProcessData())
+                .requireDirectMembership());
     }
 
     @Nonnull
@@ -472,9 +512,14 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                 .setDisableAssignmentContextRepeatExecutionAssigneePreferenceOptions(true);
     }
 
-    private static void requireAssignedTaskUser(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context)
+    private void requireAssignedTaskUser(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context)
             throws ResponseException {
-        if (!context.getCallingUser().getId().equals(context.getThisTask().getAssignedUserId())) {
+        var callingUserId = context.getCallingUser().getId();
+        var assignedUserId = context.getThisTask().getAssignedUserId();
+        // Only the assignee decides the assignment, other staff do not even with instance rights. An active deputy
+        // takes over the assignee's tasks, so the process does not stall during an absence.
+        if (assignedUserId == null || !(callingUserId.equals(assignedUserId)
+                || deputyService.isActiveDeputyFor(callingUserId, assignedUserId))) {
             throw ResponseException.forbidden();
         }
     }

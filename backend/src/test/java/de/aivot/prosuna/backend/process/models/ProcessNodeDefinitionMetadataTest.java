@@ -354,6 +354,8 @@ class ProcessNodeDefinitionMetadataTest {
         radio.setDestinationKey("status");
         radio.setOptionsSource(OptionsSourceType.CodeList);
         radio.setCodeListKey(" marital_status ");
+        radio.setCodeListValueColumnKey(" code ");
+        radio.setCodeListLabelColumnKey("name");
         radio.setOptions(List.of(SelectInputElementOption.of("stale", "Veraltet")));
 
         var chipInput = new ChipInputElement();
@@ -361,6 +363,7 @@ class ProcessNodeDefinitionMetadataTest {
         chipInput.setDestinationKey("languages");
         chipInput.setOptionsSource(OptionsSourceType.CodeList);
         chipInput.setCodeListKey("languages");
+        chipInput.setCodeListLabelColumnKey("language");
 
         var forwardedKeys = ProcessNodeDefinitionMetadata
                 .empty()
@@ -369,11 +372,16 @@ class ProcessNodeDefinitionMetadataTest {
 
         var radioKey = forwardedKeys.get(0);
         assertEquals("marital_status", radioKey.codeListKey());
+        assertEquals("code", radioKey.codeListValueColumnKey());
+        assertEquals("name", radioKey.codeListLabelColumnKey());
         assertEquals(CodeListValueMode.ValueAndLabel, radioKey.codeListValueMode());
         assertNull(radioKey.valueOptions());
 
         var chipInputKey = forwardedKeys.get(1);
         assertEquals("languages", chipInputKey.codeListKey());
+        // Chip inputs store the text of their suggestion column, which therefore provides value and label.
+        assertEquals("language", chipInputKey.codeListValueColumnKey());
+        assertEquals("language", chipInputKey.codeListLabelColumnKey());
         assertEquals(CodeListValueMode.LabelOnly, chipInputKey.codeListValueMode());
         assertNull(chipInputKey.valueOptions());
     }
@@ -385,6 +393,7 @@ class ProcessNodeDefinitionMetadataTest {
         select.setDestinationKey("status");
         select.setOptionsSource(OptionsSourceType.Manual);
         select.setCodeListKey("unused");
+        select.setCodeListValueColumnKey("unused");
         select.setOptions(List.of(SelectInputElementOption.of("1", "Ledig")));
 
         var forwardedKey = ProcessNodeDefinitionMetadata
@@ -398,6 +407,7 @@ class ProcessNodeDefinitionMetadataTest {
                 forwardedKey.valueOptions()
         );
         assertNull(forwardedKey.codeListKey());
+        assertNull(forwardedKey.codeListValueColumnKey());
         assertNull(forwardedKey.codeListValueMode());
     }
 

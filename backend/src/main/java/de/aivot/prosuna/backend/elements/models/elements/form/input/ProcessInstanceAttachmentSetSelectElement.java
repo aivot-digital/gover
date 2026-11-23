@@ -10,6 +10,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ProcessInstanceAttachmentSetSelectElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
@@ -24,6 +25,15 @@ public class ProcessInstanceAttachmentSetSelectElement extends BaseInputElement<
 
     public ProcessInstanceAttachmentSetSelectElement() {
         super(ElementType.ProcessInstanceAttachmentSetSelect);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        return errors;
     }
 
     @Nullable

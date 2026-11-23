@@ -127,7 +127,7 @@ describe('IdentityProviderDetailsPageCommunication', () => {
     });
 
     it('edits bindings without submitting a manual position', async () => {
-        mockBindings([binding()]);
+        mockBindings([{...binding(), lockVersion: 4}]);
         const update = vi.spyOn(CommunicationProvidersApiService.prototype, 'updateBinding').mockResolvedValue(binding());
         render(<IdentityProviderDetailsPageCommunication/>);
         fireEvent.click(await screen.findByRole('button', {name: 'Mein Postfach bearbeiten'}));
@@ -138,6 +138,7 @@ describe('IdentityProviderDetailsPageCommunication', () => {
         await waitFor(() => expect(update).toHaveBeenCalled());
         expect(update.mock.calls[0][1]).not.toHaveProperty('position');
         expect(update.mock.calls[0][1].name).toBe('Neu');
+        expect(update.mock.calls[0][1].lockVersion).toBe(4);
     });
 
     it('reorders the complete list and prevents overlapping mutations', async () => {

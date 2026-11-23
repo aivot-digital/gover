@@ -95,10 +95,16 @@ function formatRuntime(runtime: number | null): string {
 }
 
 function getEventSource(event: ProcessInstanceEventLogEntry): string {
-    if (event.triggeringUserName != null && event.triggeringUserName.trim().length > 0) {
-        return event.triggeringUserName;
+    const source = getUserLabel(event.triggeringUserId, event.triggeringUserName) ?? 'System';
+    const represented = getUserLabel(event.representedUserId, event.representedUserName);
+    return represented == null ? source : `${source} in Vertretung für ${represented}`;
+}
+
+function getUserLabel(id: string | null, name: string | null): string | null {
+    if (name != null && name.trim().length > 0) {
+        return name;
     }
-    return event.triggeringUserId == null ? 'System' : 'Unbekannte Person';
+    return id == null ? null : 'Unbekannte Person';
 }
 
 export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProps) {

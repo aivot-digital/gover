@@ -1,12 +1,13 @@
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../components/generic-details-page/generic-details-page';
+import {type GenericDetailsPageControlRef} from '../../../components/generic-details-page/generic-details-page-props';
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
 import InsertDriveFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
 import DriveFileMoveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/DriveFileMove';
 import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -49,6 +50,7 @@ export function AssetDetailsPage() {
     const canUpdateAsset = useHasSystemPermission(Permission.ASSET_UPDATE);
 
     const [asset, setAsset] = useState<Asset | null>(null);
+    const detailsControlRef = useRef<GenericDetailsPageControlRef | null>(null);
     const [storageProvider, setStorageProvider] = useState<AssetStorageProvider | null>(null);
 
     const [file, setFile] = useState<File[] | null>(null);
@@ -265,8 +267,10 @@ export function AssetDetailsPage() {
                 storageProvider.id,
                 file,
             )
-            .then((updatedAsset) => {
+            .then(() => {
                 dispatch(showSuccessSnackbar('Datei erfolgreich ersetzt.'));
+                // The replacement changes the file's timestamp, which the details form must send with its next save.
+                detailsControlRef.current?.refresh();
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Ersetzen der Datei.'));
@@ -337,6 +341,7 @@ export function AssetDetailsPage() {
         >
             <GenericDetailsPage<Asset, string, AssetDetailsPageAdditionalData>
                 onItemChange={setAsset}
+                controlRef={detailsControlRef}
                 onAdditionalDataChange={(res) => {
                     if (res?.storageProvider != null) {
                         setStorageProvider(res.storageProvider);

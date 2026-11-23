@@ -10,6 +10,8 @@ public class ProcessNodeExecutionResultInstanceAssigned extends ProcessNodeExecu
     @Nullable
     private String viaPort;
 
+    private boolean directMembershipRequired;
+
     // region constructor
 
     private ProcessNodeExecutionResultInstanceAssigned(@Nullable String assignedUserId) {
@@ -53,6 +55,15 @@ public class ProcessNodeExecutionResultInstanceAssigned extends ProcessNodeExecu
 
     public ProcessNodeExecutionResultInstanceAssigned setViaPort(@Nullable String viaPort) {
         this.viaPort = viaPort;
+        return this;
+    }
+
+    public boolean isDirectMembershipRequired() {
+        return directMembershipRequired;
+    }
+
+    public ProcessNodeExecutionResultInstanceAssigned requireDirectMembership() {
+        this.directMembershipRequired = true;
         return this;
     }
 

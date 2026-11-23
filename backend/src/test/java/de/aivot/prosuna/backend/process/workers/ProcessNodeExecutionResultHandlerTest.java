@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -16,6 +17,8 @@ import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.identity.enums.IdentityType;
 import de.aivot.prosuna.backend.identity.models.IdentityData;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.mail.enums.MailTemplate;
+import de.aivot.prosuna.backend.mail.services.MailService;
 import de.aivot.prosuna.backend.mail.services.ProcessTaskMailService;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
@@ -71,6 +74,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -87,6 +91,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -993,24 +998,23 @@ class ProcessNodeExecutionResultHandlerTest {
     }
 
     @Test
-    void handleResult_DoesNotSendAssignmentMail_ForSelfAssignment() throws ProcessNodeExecutionException {
-        var triggeringUser = user("user-1", "Trigger User");
-        var mailService = new RecordingProcessTaskMailService();
-        var handler = createHandler(new ArrayList<>(), Map.of(triggeringUser.getId(), triggeringUser), mailService);
+    void handleResult_NotifiesOnlyTheDeputies_ForSelfAssignment() throws Exception {
+        var assignee = user("user-1", "Philipp Schröder");
+        var deputy = user("user-2", "Daniel Müller");
+        var mailService = mock(MailService.class);
+        var handler = createHandler(new ArrayList<>(), Map.of(assignee.getId(), assignee),
+                taskMailServiceWithDeputies(mailService, Map.of(assignee.getId(), List.of(deputy))), null, new ArrayList<>(),
+                new TestProcessService(Optional.of(process())), new TestDepartmentService(department()));
+        var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(),
-                triggeringUser,
-                new TestProcessNodeDefinition("Fallback task"),
-                new AuthoredElementValues(),
-                processNode("Prüfung"),
-                processInstance(),
-                processInstanceTask(null),
-                null,
-                ProcessNodeExecutionResultTaskAssigned.of(triggeringUser.getId())
-        );
+        handler.handleResult(logger, assignee, new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(), processNode("Prüfung"), processInstance(), processInstanceTask(null), null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignee.getId()));
 
-        assertEquals(0, mailService.sendCount);
+        verify(mailService, never()).sendMailToUser(any(), eq(assignee.getId()), any(), any(), any());
+        verify(mailService).sendMailToUser(any(), eq(deputy), eq("[Prosuna] In Vertretung: Aufgabe zugewiesen"),
+                eq(MailTemplate.ProcessTaskAssigned), any());
+        assertEquals(0, logger.exceptionCount);
     }
 
     @Test
@@ -1078,22 +1082,29 @@ class ProcessNodeExecutionResultHandlerTest {
     }
 
     @Test
-    void handleResult_DoesNotMailTheTriggeringUserOnTaskReassignment() throws ProcessNodeExecutionException {
-        var previousUser = user("user-1", "Previous User");
-        var assignedUser = user("user-2", "Assigned User");
-        var mailService = new RecordingProcessTaskMailService();
+    void handleResult_NotifiesTheDeputiesButNotTheTriggeringUser_WhenTheyReassignTheirOwnTask() throws Exception {
+        var previousUser = user("user-1", "Philipp Schröder");
+        var deputy = user("user-2", "Daniel Müller");
+        var assignedUser = user("user-3", "Assigned User");
+        var mailService = mock(MailService.class);
         var handler = createHandler(new ArrayList<>(), Map.of(
-                previousUser.getId(), previousUser,
-                assignedUser.getId(), assignedUser
-        ), mailService);
+                        previousUser.getId(), previousUser,
+                        assignedUser.getId(), assignedUser
+                ), taskMailServiceWithDeputies(mailService, Map.of(previousUser.getId(), List.of(deputy))), null,
+                new ArrayList<>(), new TestProcessService(Optional.of(process())), new TestDepartmentService(department()));
+        var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(new RecordingProcessNodeExecutionLogger(), previousUser,
+        handler.handleResult(logger, previousUser,
                 new TestProcessNodeDefinition("Fallback task"), new AuthoredElementValues(), processNode("Prüfung"),
                 processInstance(), processInstanceTask(previousUser.getId()), null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
-        assertEquals(1, mailService.sendCount);
-        assertEquals(0, mailService.unassignedSendCount);
+        verify(mailService).sendMailToUser(any(), eq(assignedUser.getId()), eq("[Prosuna] Ihnen wurde eine Aufgabe neu zugewiesen"),
+                eq(MailTemplate.ProcessTaskAssigned), any());
+        verify(mailService, never()).sendMailToUser(any(), eq(previousUser.getId()), any(), any(), any());
+        verify(mailService).sendMailToUser(any(), eq(deputy), eq("[Prosuna] In Vertretung: Zuweisung zur Aufgabe aufgehoben"),
+                eq(MailTemplate.ProcessTaskUnassigned), any());
+        assertEquals(0, logger.exceptionCount);
     }
 
     @Test
@@ -1111,7 +1122,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 processInstance(), processInstanceTask(previousUser.getId()), null,
                 ProcessNodeExecutionResultTaskAssigned.of(assignedUser.getId()));
 
-        assertEquals(0, mailService.sendCount);
+        // The mail service skips the triggering new assignee itself.
+        assertEquals(1, mailService.sendCount);
         assertEquals(1, mailService.unassignedSendCount);
         assertEquals(previousUser.getId(), mailService.lastUnassignedUserId);
     }
@@ -1224,7 +1236,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
     private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
                                                                    Map<String, UserEntity> users,
-                                                                   RecordingProcessTaskMailService mailService,
+                                                                   ProcessTaskMailService mailService,
                                                                    CommunicationService communicationService,
                                                                    List<ProcessInstanceEntity> savedInstances,
                                                                    ProcessService processService,
@@ -1252,7 +1264,7 @@ class ProcessNodeExecutionResultHandlerTest {
 
     private static ProcessNodeExecutionResultHandler createHandler(List<ProcessInstanceTaskEntity> savedTasks,
                                                                    Map<String, UserEntity> users,
-                                                                   RecordingProcessTaskMailService mailService,
+                                                                   ProcessTaskMailService mailService,
                                                                    CommunicationService communicationService,
                                                                    List<ProcessInstanceEntity> savedInstances,
                                                                    ProcessService processService,
@@ -1286,8 +1298,21 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 null,
-                attachmentService
+                attachmentService,
+                mock(UserDeputyService.class)
         );
+    }
+
+    private static ProcessTaskMailService taskMailServiceWithDeputies(MailService mailService,
+                                                                      Map<String, List<UserEntity>> activeDeputies) throws Exception {
+        var processService = mock(ProcessService.class);
+        when(processService.retrieve(process().getId())).thenReturn(Optional.of(process()));
+        var departmentService = mock(DepartmentService.class);
+        when(departmentService.retrieve(department().getId())).thenReturn(Optional.of(department()));
+        var deputyService = mock(UserDeputyService.class);
+        activeDeputies.forEach((userId, deputies) ->
+                when(deputyService.findActiveDeputies(Set.of(userId))).thenReturn(Map.of(userId, deputies)));
+        return new ProcessTaskMailService(mailService, processService, departmentService, deputyService);
     }
 
     private static ProcessInstanceRepository createInstanceRepository(
@@ -1534,7 +1559,7 @@ class ProcessNodeExecutionResultHandlerTest {
         private boolean throwOnUnassigned;
 
         private RecordingProcessTaskMailService() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         @Override

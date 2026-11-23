@@ -1,6 +1,16 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineDefinition;
+import de.aivot.prosuna.backend.process.dtos.ProcessDataStructureResponseDTO.Category;
+import de.aivot.prosuna.backend.process.models.ProcessSystemDataFields;
+import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
+import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
+import de.aivot.prosuna.backend.permissions.repositories.VUserDepartmentPermissionRepository;
+import de.aivot.prosuna.backend.permissions.repositories.VUserTeamPermissionRepository;
+import de.aivot.prosuna.backend.permissions.repositories.VUserSystemPermissionRepository;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
+import de.aivot.prosuna.backend.teams.repositories.TeamRepository;
+import org.junit.jupiter.params.provider.CsvSource;
 import de.aivot.prosuna.backend.process.utils.ProcessNodeDataKeyUtils;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDeadlineConfiguration;
 import de.aivot.prosuna.backend.communication.services.IdentityCommunicationAvailabilityService;
@@ -167,6 +177,213 @@ class ProcessNodeServiceTest {
                 new ProcessNodePortResolutionCache(de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils.createMapper()),
                 new ProcessVersionDraftGuard(processVersionRepository, processTestClaimRepository)
         );
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false,10,true", "false,11,false", "true,11,true", "false,-1,false"})
+    void dataStructureHonorsScopedAndSystemReadGrants(boolean system, int grantedProcess, boolean allowed) throws Exception {
+        var systemPermissions = mock(VUserSystemPermissionRepository.class);
+        permissionService = new PermissionService(mock(VUserDepartmentPermissionRepository.class),
+                mock(VUserTeamPermissionRepository.class), systemPermissions, mock(DepartmentRepository.class),
+                mock(TeamRepository.class), processRepository, mock(ProcessInstanceRepository.class));
+        service = createService(new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition())), prosunaConfig);
+        when(processRepository.hasPermission("reader", grantedProcess, ProcessPermissionProvider.PROCESS_DEFINITION_READ)).thenReturn(true);
+        when(systemPermissions.hasPermission("reader", ProcessPermissionProvider.PROCESS_DEFINITION_READ)).thenReturn(system);
+        if (allowed) {
+            assertTrue(service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION).entries().stream()
+                    .allMatch(entry -> entry.category() == Category.ProtectedProcessData));
+        } else {
+            var error = assertThrows(ResponseException.class, () -> service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION));
+            assertEquals(HttpStatus.FORBIDDEN, error.getStatus());
+            verifyNoInteractions(processNodeRepository, processEdgeRepository);
+        }
+    }
+
+    @Test
+    void dataStructureReusesSharedPrefixesAndDoesNotLeakDisconnectedContext() throws Exception {
+        var calls = new ArrayList<Integer>();
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity node,
+                                                             @Nonnull TestNodeConfig configuration,
+                                                             @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+                calls.add(node.getId());
+                if (node.getId() == 4) assertTrue(previousMetadata.forwardedProcessDataKeys().isEmpty());
+                return super.getMetadata(node, configuration, previousMetadata);
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createNode(1, "first"), createNode(2, "left"), createNode(3, "right"), createNode(4, "isolated")));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 1, 3)));
+        assertEquals(4, service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION).entries().stream()
+                .filter(entry -> entry.category() == Category.ProcessData).count());
+        assertEquals(List.of(1, 2, 3, 4), calls);
+    }
+
+    @Test
+    void dataStructureIncludesTerminalDisconnectedAndCyclicNodesWithAllOrigins() throws Exception {
+        var first = createNode(1, "first");
+        var second = createNode(2, "second");
+        var terminal = createNode(3, "terminal");
+        var disconnected = createNode(4, "disconnected");
+        first.getOutputMappings().put("result", "people[*].name");
+        second.getOutputMappings().put("result", "people[*].name");
+        terminal.getOutputMappings().put("result", "finished.value");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(disconnected, terminal, second, first));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 1), createEdge(3, 2, 3)));
+
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+
+        assertTrue(result.issues().isEmpty());
+        assertEquals(List.of(1, 2), result.entries().stream().filter(entry -> entry.path().equals("people[*].name"))
+                .map(entry -> entry.origin().nodeId()).sorted().toList());
+        assertTrue(result.entries().stream().anyMatch(entry -> entry.path().equals("finished.value")));
+        assertTrue(result.entries().stream().anyMatch(entry -> entry.path().equals("disconnected")));
+        verify(permissionService).requireProcessPermission("reader", PROCESS_ID,
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+        verify(processNodeRepository).findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION);
+        verify(processEdgeRepository).findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION);
+    }
+
+    @Test
+    void dataStructureReportsBrokenNodesAndInvalidPathsWithoutDiscardingValidEntries() throws Exception {
+        useBrokenMetadataProvider();
+        var first = createNode(1, "first");
+        var broken = createNode(2, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        var terminal = createNode(3, "terminal");
+        terminal.getOutputMappings().put("result", "invalid-path");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(first, broken, terminal));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2), createEdge(2, 2, 3)));
+
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+
+        assertEquals(Set.of("first", "terminal"), result.entries().stream().filter(entry -> entry.category() == Category.ProcessData).map(entry -> entry.path()).collect(Collectors.toSet()));
+        assertEquals(3, result.issues().size());
+        assertTrue(result.issues().stream().anyMatch(issue -> issue.origin().nodeId() == 2 && issue.path() == null));
+        assertTrue(result.issues().stream().anyMatch(issue -> "invalid-path".equals(issue.path())));
+    }
+
+    @Test
+    void dataStructureIncludesOutputsWithoutMappingsAndKeepsSystemMetadataOnBrokenNodes() throws Exception {
+        useBrokenMetadataProvider();
+        var node = createNode(1, "broken").setProcessNodeDefinitionKey("test.process.broken-node");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(List.of(node));
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+        var output = result.entries().stream().filter(entry -> entry.category() == Category.ElementData && entry.path().equals("broken.result"))
+                .findFirst().orElseThrow();
+        assertEquals(1, output.origin().nodeId());
+        assertEquals(false, output.unexpandedStructure());
+        assertTrue(result.entries().stream().anyMatch(entry -> entry.path().equals("taskMetadata.broken.finished") &&
+                entry.category() == Category.ProtectedProcessData && entry.origin().nodeId() == 1));
+        assertTrue(result.issues().stream().noneMatch(issue -> issue.category() == Category.ProtectedProcessData));
+        assertTrue(result.entries().stream().filter(entry -> entry.category() == Category.ProtectedProcessData && entry.origin() == null)
+                .map(entry -> entry.path()).collect(Collectors.toSet()).containsAll(
+                        ProcessSystemDataFields.PROTECTED.stream().map(ProcessSystemDataFields.Field::path).toList()));
+    }
+
+    @Test
+    void dataStructureKeepsSavedOutputMappingsWhenMetadataDerivationFails() throws Exception {
+        useBrokenMetadataProvider();
+        var mapped = createNode(1, "mapped").setProcessNodeDefinitionKey("test.process.broken-node");
+        mapped.getOutputMappings().put("result", " person . name ");
+        var invalid = createNode(2, "invalid").setProcessNodeDefinitionKey("test.process.broken-node");
+        invalid.getOutputMappings().put("result", "invalid-path");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(mapped, invalid));
+
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+
+        var paths = result.entries().stream().filter(entry -> entry.category() == Category.ProcessData).toList();
+        assertEquals(1, paths.size());
+        assertEquals("person.name", paths.getFirst().path());
+        assertEquals(mapped.getId(), paths.getFirst().origin().nodeId());
+        assertTrue(result.issues().stream().anyMatch(issue -> issue.category() == Category.ProcessData
+                && issue.origin().nodeId().equals(invalid.getId()) && "invalid-path".equals(issue.path())));
+        assertEquals(4, result.issues().stream().filter(issue -> issue.path() == null).count());
+    }
+
+    @Test
+    void dataStructureKeepsOpenOutputsOpaqueAndIncludesConditionalDeadlineFields() throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public List<ProcessNodeOutput> getOutputs() {
+                return List.of(new ProcessNodeOutput("response", "Antwort", "Dynamische Antwort", "unknown"),
+                        new ProcessNodeOutput("record", "Objekt", null, "{ id: number }"),
+                        new ProcessNodeOutput("status", "Status", null, "number | null"));
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createNode(1, "http"), createNode(2, "isolated")));
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+        var outputs = result.entries().stream().filter(entry -> entry.category() == Category.ElementData).toList();
+        assertTrue(outputs.stream().filter(entry -> entry.path().endsWith(".response") || entry.path().endsWith(".record"))
+                .allMatch(entry -> entry.unexpandedStructure()));
+        assertEquals(2, outputs.stream().filter(entry -> entry.path().endsWith(".status") && !entry.unexpandedStructure()).count());
+        assertTrue(outputs.stream().noneMatch(entry -> entry.path().endsWith(".record.id")));
+        assertTrue(outputs.stream().anyMatch(entry -> entry.path().equals("http._deadlineExceeded.deadlineKey")));
+        assertTrue(result.entries().stream().anyMatch(entry -> entry.path().equals("initialPayload") && entry.unexpandedStructure()));
+        assertEquals(outputs.size(), outputs.stream().map(entry -> entry.path()).distinct().count());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"unknown", "Record<string, unknown>", "{ id: number }", "Array<string>"})
+    void dataStructurePreservesOpenMappedOutputsAcrossForwardedHints(String outputType) throws Exception {
+        var provider = new HintingTestNodeDefinition() {
+            @Override
+            public List<ProcessNodeOutput> getOutputs() {
+                return List.of(new ProcessNodeOutput("response", "Antwort", null, outputType),
+                        new ProcessNodeOutput("status", "Status", null, "number | null"));
+            }
+
+            @Override
+            public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity node,
+                                                             @Nonnull TestNodeConfig configuration,
+                                                             @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+                if (node.getId() == 3) throw new IllegalStateException("Unavailable metadata");
+                return super.getMetadata(node, configuration, previousMetadata);
+            }
+        };
+        service = createService(new ProcessNodeDefinitionService(List.of(provider)), prosunaConfig);
+        var open = createNode(1, "http");
+        open.getOutputMappings().put("response", " result . response ");
+        var scalar = createNode(2, "scalar");
+        scalar.getOutputMappings().put("status", "result.response");
+        var broken = createNode(3, "broken");
+        broken.getOutputMappings().put("response", "result.response");
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(open, scalar, broken));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createEdge(1, 1, 2)));
+
+        var result = service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION);
+        var mappings = result.entries().stream().filter(entry -> entry.category() == Category.ProcessData
+                && entry.path().equals("result.response")).toList();
+
+        assertEquals(3, mappings.size(), "Forwarded hints must not create conflicting duplicate entries");
+        assertEquals(Map.of(1, true, 2, false, 3, true), mappings.stream().collect(Collectors.toMap(
+                entry -> entry.origin().nodeId(), entry -> entry.unexpandedStructure())));
+        assertTrue(result.issues().stream().anyMatch(issue -> issue.origin().nodeId() == 3));
+    }
+
+    @Test
+    void dataStructureRejectsUnauthorizedAccessBeforeReadingTheGraph() throws Exception {
+        doThrow(ResponseException.forbidden()).when(permissionService).requireProcessPermission(
+                "reader", PROCESS_ID, ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+        assertThrows(ResponseException.class, () -> service.getDataStructure("reader", PROCESS_ID, PROCESS_VERSION));
+        verifyNoInteractions(processNodeRepository, processEdgeRepository);
+    }
+
+    @Test
+    void dataStructureRequiresAnExistingVersion() {
+        assertThrows(ResponseException.class, () -> service.getDataStructure("reader", PROCESS_ID, 999));
+        verifyNoInteractions(processNodeRepository, processEdgeRepository);
     }
 
     @Test
@@ -436,7 +653,7 @@ class ProcessNodeServiceTest {
         var layout = new GroupLayoutElement();
         layout.setId("form");
         var hints = Arrays.asList(null, "", " ", "person-name", "people..name", "people[",
-                "people[2147483648]", "[0].name", "person.name", "people[0].name", "people[*].name", "person.name")
+                        "people[2147483648]", "[0].name", "person.name", "people[0].name", "people[*].name", "person.name")
                 .stream().map(key -> new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(key, "Name", "Hint", source))
                 .toList();
         // Providers may supply immutable lists; finalization must not remove entries from them.
@@ -495,7 +712,7 @@ class ProcessNodeServiceTest {
         var target = createNode(2, "target");
         var metadata = ProcessNodeDefinitionMetadata.empty()
                 .addForwardedProcessDataKey(new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
-                        " languages ", "Sprachen", null, source, null, "languages",
+                        " languages ", "Sprachen", null, source, null, "languages", "language", "language",
                         ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly))
                 .addForwardedProcessDataKey("status", "Status", null, source, List.of(
                         new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")));
@@ -509,10 +726,10 @@ class ProcessNodeServiceTest {
 
         assertEquals(List.of(
                 new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey(
-                        "languages", "Sprachen", null, source, null, "languages",
+                        "languages", "Sprachen", null, source, null, "languages", "language", "language",
                         ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.CodeListValueMode.LabelOnly),
                 new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("status", "Status", null, source, List.of(
-                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")), null, null)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey.ValueOption("1", "Ledig")), null, null, null, null)
         ), result.forwardedProcessDataKeys());
     }
 
@@ -797,6 +1014,7 @@ class ProcessNodeServiceTest {
                 layout.addChild(field);
                 return layout;
             }
+
             @Override
             public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeConfigurationValidationContext<TestNodeConfig> context) {
                 return Map.of("payment", List.of("Provider error."));

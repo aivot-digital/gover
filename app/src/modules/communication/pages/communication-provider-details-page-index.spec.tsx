@@ -331,8 +331,9 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         await waitFor(() => expect(createProvider).toHaveBeenCalledOnce());
     });
 
-    it('updates the test status of an existing provider', async () => {
+    it('updates the test status of an existing provider with its lock version', async () => {
         testState.provider.id = 17;
+        testState.provider.lockVersion = 3;
         testState.isNewItem = false;
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
             .mockResolvedValue(testState.layout as any);
@@ -354,6 +355,7 @@ describe('CommunicationProviderDetailsPageIndex', () => {
 
         await waitFor(() => expect(updateProvider).toHaveBeenCalledWith(17, expect.objectContaining({
             isTestProvider: true,
+            lockVersion: 3,
         })));
     });
 

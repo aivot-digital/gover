@@ -14,6 +14,15 @@ vi.mock('../modules/code-lists/code-lists-api-service', () => ({
         async listAllOrdered() {
             return {content: [{key: 'places', name: 'Orte'}]};
         }
+
+        async retrieve() {
+            return {
+                key: 'places',
+                columns: ['ags', 'name'],
+                columnMappings: [{key: 'ags', name: 'AGS', index: 1}, {key: 'place', name: 'Ortsname', index: 2}],
+                keyColumnKey: 'ags',
+            };
+        }
     },
 }));
 
@@ -60,6 +69,16 @@ describe.each([ElementType.Text, ElementType.ChipInput] as const)('suggestion ed
         await user.click(screen.getByRole('option', {name: 'Manuelle Eingabe'}));
         expect(screen.getByRole('combobox', {name: 'Vorschläge – optional'})).toHaveValue('');
         expect(screen.queryAllByRole('button', {name: ''})).toHaveLength(0);
+    });
+
+    it('offers the columns of the selected codelist as the suggestion column', async () => {
+        const user = userEvent.setup();
+        render(<SourceSwitchEditor type={type}/>);
+
+        await user.click(await screen.findByRole('combobox', {name: 'Vorschlagsspalte'}));
+
+        expect(await screen.findByRole('option', {name: /Ortsname/})).toBeVisible();
+        expect(screen.getByRole('option', {name: /AGS/})).toBeVisible();
     });
 
     it('retains nonempty suggestions across source changes and saves only actual entries', async () => {

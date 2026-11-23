@@ -16,6 +16,7 @@ import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
+import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,8 @@ import java.util.*;
  */
 @Component
 public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
+    private static final String LOCK_VERSION_FIELD_NAME = "$lockVersion";
+
     private final DataObjectSchemaService dataObjectSchemaService;
     private final DataObjectItemService dataObjectItemService;
 
@@ -243,15 +246,23 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
 
         var dataObjectItemId = new DataObjectItemEntityId(schemaKey, itemId);
 
+        // An item passed back from list() or retrieve() carries the version it was read in, so a change saved meanwhile
+        // is rejected instead of overwritten. Without it, the update stays last-write-wins. Derivation against the
+        // schema drops the key from the stored data.
         var updatedEntity = new DataObjectItemEntity()
                 .setData(valueMap)
-                .setSchemaKey(schemaKey);
+                .setSchemaKey(schemaKey)
+                .setLockVersion(valueMap.get(LOCK_VERSION_FIELD_NAME) instanceof Number lockVersion ? lockVersion.longValue() : null);
 
         DataObjectItemEntity updatedItemEntity;
         try {
             updatedItemEntity = dataObjectItemService
                     .update(dataObjectItemId, updatedEntity);
         } catch (ResponseException e) {
+            if (e.getStatus() == HttpStatus.CONFLICT) {
+                // A conflict must not look like a missing item: the script can catch it, otherwise the step fails.
+                throw new IllegalStateException(e.getTitle(), e);
+            }
             return null;
         }
 
@@ -261,10 +272,12 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nonnull
     private static Map<String, Object> getItemData(@Nonnull DataObjectItemEntity entity) {
-        var data = entity.getData();
+        // A copy: the entity may be managed, so changing its map would store the keys and raise its lock version.
+        var data = new HashMap<>(entity.getData());
         data.put("$id", entity.getId());
         data.put("$created", entity.getCreated());
         data.put("$updated", entity.getUpdated());
+        data.put(LOCK_VERSION_FIELD_NAME, entity.getLockVersion());
         return data;
     }
 

@@ -4,18 +4,23 @@ import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.dtos.ProcessDeputyDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceDetailsDTO;
 import de.aivot.prosuna.backend.process.dtos.ProcessTaskDetailsDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.*;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ProcessInstanceDetailsService {
@@ -26,11 +31,12 @@ public class ProcessInstanceDetailsService {
     private final ProcessNodeRepository nodes;
     private final ProcessInstanceTaskRepository tasks;
     private final ProcessNodeDefinitionService definitions;
+    private final UserDeputyService deputies;
 
     public ProcessInstanceDetailsService(PermissionService permissions, ProcessInstanceRepository instances,
                                          ProcessRepository processes, DepartmentRepository departments,
                                          ProcessNodeRepository nodes, ProcessInstanceTaskRepository tasks,
-                                         ProcessNodeDefinitionService definitions) {
+                                         ProcessNodeDefinitionService definitions, UserDeputyService deputies) {
         this.permissions = permissions;
         this.instances = instances;
         this.processes = processes;
@@ -38,6 +44,7 @@ public class ProcessInstanceDetailsService {
         this.nodes = nodes;
         this.tasks = tasks;
         this.definitions = definitions;
+        this.deputies = deputies;
     }
 
     @Nonnull
@@ -50,12 +57,17 @@ public class ProcessInstanceDetailsService {
         var activeStatuses = Set.of(ProcessTaskStatus.Running, ProcessTaskStatus.InProgress, ProcessTaskStatus.AwaitingStaff,
                 ProcessTaskStatus.Paused, ProcessTaskStatus.AwaitingCustomer, ProcessTaskStatus.AwaitingPayment);
         // Only labels needed by the instance view are exposed, never the process configuration.
-        var activeTasks = tasks.findAllByProcessInstanceId(id).stream()
+        var openTasks = tasks.findAllByProcessInstanceId(id).stream()
                 .filter(task -> activeStatuses.contains(task.getStatus()))
                 .sorted(Comparator.comparing(task -> task.getId()))
+                .toList();
+        var activeDeputies = deputies.findActiveDeputies(openTasks.stream()
+                .map(task -> task.getAssignedUserId()).filter(Objects::nonNull).collect(Collectors.toSet()));
+        var activeTasks = openTasks.stream()
                 .map(task -> new ProcessInstanceDetailsDTO.ActiveTask(task.getId(),
                         nodes.findById(task.getProcessNodeId()).map(this::nodeName).orElse("Unbenannte Aufgabe"),
                         task.getStatus(), task.getStatusOverride(), task.getAssignedUserId(),
+                        ProcessDeputyDTO.of(activeDeputies, task.getAssignedUserId()),
                         task.getAssignedCustomerIdentityId(), task.getDeadline()))
                 .toList();
         return new ProcessInstanceDetailsDTO(instance, process.getInternalTitle(), process.getDepartmentId(),
@@ -73,7 +85,11 @@ public class ProcessInstanceDetailsService {
         var instance = instances.findById(task.getProcessInstanceId()).orElseThrow(ResponseException::notFound);
         var process = processes.findById(task.getProcessId()).orElseThrow(ResponseException::notFound);
         var node = nodes.findById(task.getProcessNodeId());
-        return new ProcessTaskDetailsDTO(task, instance,
+        // Deputies take over open tasks only; for ended tasks a current deputy would wrongly appear involved.
+        var assignedUserDeputies = task.getAssignedUserId() == null || !ProcessListService.OPEN_TASK_STATUSES.contains(task.getStatus())
+                ? List.<ProcessDeputyDTO>of()
+                : ProcessDeputyDTO.of(deputies.findActiveDeputies(Set.of(task.getAssignedUserId())), task.getAssignedUserId());
+        return new ProcessTaskDetailsDTO(task, assignedUserDeputies, instance,
                 new ProcessTaskDetailsDTO.ProcessSummary(process.getId(), process.getInternalTitle()),
                 node.map(value -> new ProcessTaskDetailsDTO.NodeSummary(value.getName(), value.getDescription())).orElse(null),
                 node.flatMap(definitions::getProcessNodeDefinition).map(value -> new ProcessTaskDetailsDTO.ProviderSummary(

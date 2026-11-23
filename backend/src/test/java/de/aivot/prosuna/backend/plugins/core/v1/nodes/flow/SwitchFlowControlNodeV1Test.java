@@ -61,6 +61,8 @@ class SwitchFlowControlNodeV1Test {
         var selection = cases.findChild(FlowConditionSupport.CONDITION_TYPE_FIELD_ID, SelectInputElement.class).orElseThrow();
 
         assertEquals(Boolean.TRUE, cases.getRequired());
+        // Cases are checked in order, so authors must be able to reorder them.
+        assertEquals(Boolean.TRUE, cases.getSortable());
         assertEquals(SelectInputPresentation.Radio, selection.getPresentation());
         assertEquals(Boolean.TRUE, selection.getToggleButtons());
         assertEquals(List.of("no-code", "low-code"), selection.getOptions().stream().map(SelectInputElementOption::getValue).toList());

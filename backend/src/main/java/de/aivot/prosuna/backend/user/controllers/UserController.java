@@ -24,7 +24,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -241,7 +241,7 @@ public class UserController {
         } catch (ResponseException e) {
             // An outdated lock version keeps its 409, so clients can tell a conflict from a failed save.
             throw e.getStatus() == HttpStatus.CONFLICT ? e : ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
-        } catch (OptimisticLockingFailureException | OptimisticLockException e) {
+        } catch (ConcurrencyFailureException | OptimisticLockException e) {
             // The GlobalExceptionHandler answers a concurrent commit with 409.
             throw e;
         } catch (Exception e) {

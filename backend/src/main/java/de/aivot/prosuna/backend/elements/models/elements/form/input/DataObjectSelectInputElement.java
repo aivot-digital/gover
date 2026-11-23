@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class DataObjectSelectInputElement extends BaseInputElement<String> implements PrintableElement<String> {
@@ -23,6 +25,17 @@ public class DataObjectSelectInputElement extends BaseInputElement<String> imple
 
     public DataObjectSelectInputElement() {
         super(ElementType.DataObjectSelect);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // performValidation rejects every selection without a data model.
+        if (StringUtils.isNullOrEmpty(dataModelKey)) {
+            addConfigurationError(errors, "dataModelKey", "Wählen Sie ein Datenmodell aus.");
+        }
+        return errors;
     }
 
     @Nullable

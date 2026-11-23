@@ -267,6 +267,7 @@ const elementConstructors: {
         maximumSets: undefined,
         addLabel: undefined,
         removeLabel: undefined,
+        sortable: undefined,
     }),
     [ElementType.RichText]: (id) => ({
         ...makeFormBase(ElementType.RichText, id),

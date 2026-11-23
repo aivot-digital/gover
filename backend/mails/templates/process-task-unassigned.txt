@@ -1,6 +1,6 @@
 Hallo,
 
-Die Ihnen zugewiesene Aufgabe wurde einer anderen Person zugewiesen.
+[(${intro})]
 Prozess: [(${process.internalTitle})] - Version [(${processInstanceTask.processVersion})]
 Aufgabe: [(${taskName})]
 [# th:if="${fileNumbersDisplay != null}"]Aktenzeichen: [(${fileNumbersDisplay})]

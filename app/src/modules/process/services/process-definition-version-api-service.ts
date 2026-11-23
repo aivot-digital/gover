@@ -1,3 +1,4 @@
+import {type ProcessDataStructure} from '../entities/process-data-structure';
 import {CaseNumberType} from '../enums/case-number-type';
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
@@ -60,6 +61,10 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
             published: null,
             revoked: null,
         };
+    }
+
+    public getDataStructure(id: ProcessDefinitionVersionEntityId): Promise<ProcessDataStructure> {
+        return this.get<ProcessDataStructure>(this.buildPath(id) + 'data-structure/');
     }
 
     public validate(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionProblems> {

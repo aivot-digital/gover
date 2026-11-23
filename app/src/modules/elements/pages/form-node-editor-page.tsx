@@ -1,6 +1,6 @@
 import {normalizeElementDefinition} from '../../../utils/normalize-element-definition';
 import {getCustomerPageSurfaceColor} from '../../../theming/customer-page-surface';
-import {Alert, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Alert, Badge, Box, CircularProgress, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -51,6 +51,7 @@ import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import QrCode from '@aivot/mui-material-symbols-400-n25-outlined/QrCode';
 import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
+import {useElementConfigurationErrors} from '../hooks/use-element-configuration-errors';
 import {type Action} from '../../../components/actions/actions-props';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import Link from '@aivot/mui-material-symbols-400-n25-outlined/Link';
@@ -531,6 +532,9 @@ export function FormNodeEditorPage() {
     const notImplemented = useNotImplemented();
 
     const isEditable = processVersion?.status === ProcessStatus.Drafted;
+    // Validated here, not only in the tree, because the settings button also shows the errors while the tree is hidden.
+    const configurationErrors = useElementConfigurationErrors(formLayout, isEditable);
+    const hasRootConfigurationErrors = Object.keys(configurationErrors?.properties ?? {}).length > 0;
     const canUpdateProcess = useHasProcessPermission(node?.processId, Permission.PROCESS_DEFINITION_UPDATE);
     const previewTheme = useMemo(() => {
         const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
@@ -584,7 +588,23 @@ export function FormNodeEditorPage() {
         setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
-    const saveForm = async (): Promise<void> => {
+    const saveInFlightRef = useRef<Promise<void> | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // A second save before the first returns would send the same lock version and fail as a conflict, so callers
+    // (save button, PDF preview, test) share the running save.
+    const saveForm = (): Promise<void> => {
+        if (saveInFlightRef.current == null) {
+            setIsSaving(true);
+            saveInFlightRef.current = performSaveForm().finally(() => {
+                saveInFlightRef.current = null;
+                setIsSaving(false);
+            });
+        }
+        return saveInFlightRef.current;
+    };
+
+    const performSaveForm = async (): Promise<void> => {
         if (node == null || formLayout == null || !isEditable) {
             return;
         }
@@ -1004,8 +1024,19 @@ export function FormNodeEditorPage() {
         },
         'separator' as const,
         {
-            tooltip: 'Formular-Einstellungen öffnen',
-            icon: <Settings/>,
+            tooltip: hasRootConfigurationErrors ?
+                'Formular-Einstellungen öffnen (fehlerhafte Konfiguration)' :
+                'Formular-Einstellungen öffnen',
+            icon: (
+                <Badge
+                    color="error"
+                    variant="dot"
+                    overlap="circular"
+                    invisible={!hasRootConfigurationErrors}
+                >
+                    <Settings/>
+                </Badge>
+            ),
             onClick: () => {
                 if (formLayout == null) {
                     return;
@@ -1037,7 +1068,7 @@ export function FormNodeEditorPage() {
             iconPosition: 'start' as const,
             onClick: handleSave,
             variant: 'contained' as const,
-            disabled: !hasChanged || !isEditable,
+            disabled: !hasChanged || !isEditable || isSaving,
         },
     ];
 
@@ -1451,6 +1482,7 @@ export function FormNodeEditorPage() {
                                                 onHoveredElementIdChange={setHoveredTreeElementId}
                                                 openRootAddElementSignal={openAddSectionSignal}
                                                 identityMappingInformation={identityMappingInformation}
+                                                configurationErrors={configurationErrors}
                                             />
                                         </Paper>
                                     </Allotment.Pane>

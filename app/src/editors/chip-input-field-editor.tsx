@@ -8,6 +8,8 @@ import {ChipInputFieldComponent} from '../components/chip-input-field/chip-input
 import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+import {CodeListColumnSelectField} from '../modules/code-lists/components/code-list-column-select-field';
+import {useCodeListColumnOptions} from '../modules/code-lists/hooks/use-code-list-column-options';
 import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
 import {ChipInputPasteSeparatorOptions, DefaultChipInputPasteSeparators} from '../data/chip-input-paste-separators';
 import {ElementEditorSectionHeader} from '../components/element-editor-section-header/element-editor-section-header';
@@ -29,6 +31,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
         editable,
         onPatch,
         hasSummaryLayoutParent,
+        configurationErrors,
     } = props;
 
     if (hasSummaryLayoutParent) {
@@ -37,25 +40,9 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
 
     const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
     const usesManualSuggestions = optionsSource === OptionsSourceType.Manual;
+    const codeListColumns = useCodeListColumnOptions(usesManualSuggestions ? null : element.codeListKey);
     // Empty rows saved by the former table editor are not actual suggestions.
     const suggestions = (element.suggestions ?? []).filter((suggestion) => suggestion.trim().length > 0);
-    const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
-
-    const effectiveMinItems = element.minItems != null && element.minItems > 0
-        ? element.minItems
-        : undefined;
-
-    const minItemsError = (
-        effectiveMaxItems != null &&
-        effectiveMinItems != null &&
-        effectiveMinItems > effectiveMaxItems
-    );
-
-    const maxItemsError = (
-        effectiveMaxItems != null &&
-        effectiveMinItems != null &&
-        effectiveMaxItems < effectiveMinItems
-    );
 
     return (
         <Grid
@@ -100,7 +87,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                     onChange={minItems => onPatch({minItems})}
                     minValue={0}
                     hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
-                    error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                    error={configurationErrors?.minItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>
@@ -121,7 +108,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                         });
                     }}
                     hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
-                    error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                    error={configurationErrors?.maxItems?.join(' ')}
                     disabled={!editable}
                 />
             </Grid>
@@ -176,9 +163,11 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                     onChange={(value) => {
                         const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
 
+                        const usesCodeList = nextSource === OptionsSourceType.CodeList;
                         onPatch({
                             optionsSource: nextSource,
-                            codeListKey: nextSource === OptionsSourceType.CodeList ? element.codeListKey : undefined,
+                            codeListKey: usesCodeList ? element.codeListKey : undefined,
+                            codeListLabelColumnKey: usesCodeList ? element.codeListLabelColumnKey : undefined,
                         });
                     }}
                     options={optionsSourceOptions}
@@ -197,12 +186,34 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                 >
                     <CodeListSelectField
                         value={element.codeListKey}
-                        hint="Aus der Codeliste werden die Beschriftungen als Vorschläge übernommen. Die technischen Werte werden für Chip-Eingaben nicht verwendet."
+                        error={configurationErrors?.codeListKey?.join(' ')}
                         onChange={(codeListKey) => {
-                            onPatch({
+                            onPatch(codeListKey === element.codeListKey ? {codeListKey} : {
                                 codeListKey,
+                                codeListLabelColumnKey: undefined,
                             });
                         }}
+                        disabled={!editable}
+                        required
+                    />
+                </Grid>
+            }
+
+            {
+                !usesManualSuggestions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <CodeListColumnSelectField
+                        label="Vorschlagsspalte"
+                        hint="Die Werte dieser Spalte werden als Text vorgeschlagen. Eigene Eingaben bleiben möglich."
+                        value={element.codeListLabelColumnKey}
+                        onChange={(codeListLabelColumnKey) => onPatch({codeListLabelColumnKey})}
+                        columnOptions={codeListColumns.options}
+                        columnOptionsLoaded={codeListColumns.loaded}
                         disabled={!editable}
                         required
                     />
