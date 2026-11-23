@@ -41,6 +41,8 @@ const field = {
     ...generateElementWithDefaultValues(ElementType.Select),
     id: 'state',
     label: 'Bundesland',
+    codeListValueColumnKey: 'code',
+    codeListLabelColumnKey: 'name',
     options: [{
         label: 'Berlin',
         value: 'BE',
@@ -153,7 +155,7 @@ describe('NoCodeEditor suggestions', () => {
         const response = new Promise<NoCodeParameterOption[]>((resolve) => {
             resolveOptions = resolve;
         });
-        vi.spyOn(BaseApiService.prototype, 'get').mockReturnValue(response);
+        const get = vi.spyOn(BaseApiService.prototype, 'get').mockReturnValue(response);
         render(<Editor onChange={onChange}
                        initial={{
                            ...expression,
@@ -169,6 +171,7 @@ describe('NoCodeEditor suggestions', () => {
                        }]}/>);
 
         expect(screen.getByRole('treeitem', {name: /^Vergleichswert: BY,/})).toBeInTheDocument();
+        expect(get).toHaveBeenCalled();
         expect(onChange).not.toHaveBeenCalled();
 
         await act(async () => {
@@ -201,7 +204,7 @@ describe('NoCodeEditor suggestions', () => {
         const response = new Promise<NoCodeParameterOption[]>((_, reject) => {
             rejectOptions = reject;
         });
-        vi.spyOn(BaseApiService.prototype, 'get').mockReturnValue(response);
+        const get = vi.spyOn(BaseApiService.prototype, 'get').mockReturnValue(response);
         const onChange = vi.fn();
         render(<Editor onChange={onChange}
                        elements={[{
@@ -214,6 +217,7 @@ describe('NoCodeEditor suggestions', () => {
                        }]}/>);
         await editComparison();
         expect(await screen.findByRole('textbox', {name: /^Vergleichswert/})).toHaveValue('BE');
+        expect(get).toHaveBeenCalled();
 
         await act(async () => {
             rejectOptions(new Error('unavailable'));
