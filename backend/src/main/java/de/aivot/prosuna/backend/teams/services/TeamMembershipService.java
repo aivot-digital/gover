@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.teams.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.lib.models.Filter;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import de.aivot.prosuna.backend.lib.services.EntityService;
 import de.aivot.prosuna.backend.teams.entities.TeamMembershipEntity;
 import de.aivot.prosuna.backend.teams.filters.TeamMembershipFilter;
@@ -19,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,6 +48,7 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
     @Override
     public TeamMembershipEntity create(@Nonnull TeamMembershipEntity entity) throws ResponseException {
         entity.setId(null);
+        entity.setLockVersion(null);
 
         // Check if the team exists
         if (!teamRepository.existsById(entity.getTeamId()))  {
@@ -121,6 +124,26 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
     @Override
     public boolean exists(@Nonnull Specification<TeamMembershipEntity> specification) {
         return teamMembershipRepository.exists(specification);
+    }
+
+    /**
+     * Replaces the roles of a membership if the request is based on its current lock version. The membership's lock
+     * version is raised as well, so a role dialog that loaded the previous state can no longer save over this change.
+     */
+    @Nonnull
+    @Transactional(rollbackFor = ResponseException.class)
+    public UserRoleAssignmentService.RoleChanges updateRoles(@Nonnull Integer id,
+                                                             @Nonnull Long lockVersion,
+                                                             @Nonnull List<Integer> roleIds) throws ResponseException {
+        var membership = teamMembershipRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
+        LockVersioned.requireCurrent((LockVersioned) () -> lockVersion, membership);
+
+        membership.setUpdated(Instant.now());
+        teamMembershipRepository.saveAndFlush(membership);
+
+        return userRoleAssignmentService.replaceTeamMembershipRoles(id, roleIds);
     }
 
     @Nonnull

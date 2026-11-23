@@ -493,7 +493,8 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 .content(renderMessageHtml(message))
                 .sender(sender)
                 .reference(message.referenceId())
-                .service(departmentName)
+                // The ZBP rejects messages without a service, e.g. test messages without a sending department.
+                .service(sender)
                 .title(message.subject())
                 //.retrievalConfirmationAddress("retrieval@mail.net")
                 //.replyAddress("reply@mail.net")

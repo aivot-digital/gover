@@ -11,11 +11,13 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class DefaultStorageAssetsSystemConfigDefinitionTest {
@@ -50,6 +52,35 @@ class DefaultStorageAssetsSystemConfigDefinitionTest {
         var exception = assertThrows(ResponseException.class, () -> definition.parseValueFromDB("assets"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+    }
+
+    @Test
+    void validateChangeShouldRejectReadOnlyProvider() {
+        var storageProviderRepository = mock(StorageProviderRepository.class);
+        when(storageProviderRepository.existsByIdAndReadOnlyStorageTrue(2)).thenReturn(true);
+        var definition = new DefaultStorageAssetsSystemConfigDefinition(storageProviderRepository);
+
+        var exception = assertThrows(ResponseException.class, () -> definition.validateChange("1", "2", true));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+    }
+
+    @Test
+    void validateChangeShouldAllowWritableProvider() {
+        var storageProviderRepository = mock(StorageProviderRepository.class);
+        when(storageProviderRepository.existsByIdAndReadOnlyStorageTrue(2)).thenReturn(false);
+        var definition = new DefaultStorageAssetsSystemConfigDefinition(storageProviderRepository);
+
+        assertDoesNotThrow(() -> definition.validateChange("1", "2", false));
+    }
+
+    @Test
+    void validateChangeShouldIgnoreUnchangedValue() {
+        var storageProviderRepository = mock(StorageProviderRepository.class);
+        var definition = new DefaultStorageAssetsSystemConfigDefinition(storageProviderRepository);
+
+        assertDoesNotThrow(() -> definition.validateChange("2", "2", false));
+        verifyNoInteractions(storageProviderRepository);
     }
 
     private static SystemConfigService createService(SystemConfigRepository repository) {

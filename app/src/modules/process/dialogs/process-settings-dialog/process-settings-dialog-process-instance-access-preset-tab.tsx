@@ -125,6 +125,7 @@ export const ProcessSettingsDialogProcessInstanceAccessPresetTab = forwardRef<Pr
             permissions: accessPreset.permissions,
             created: accessPreset.created,
             updated: accessPreset.updated,
+            lockVersion: accessPreset.lockVersion,
         };
     }, []);
 

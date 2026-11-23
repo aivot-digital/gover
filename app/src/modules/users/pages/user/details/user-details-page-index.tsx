@@ -1,6 +1,5 @@
 import {Box, Button, Grid, InputAdornment, TextField, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
-import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import React, {useContext, useEffect, useState} from 'react';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import LockResetOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LockReset';
 import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
@@ -27,7 +26,6 @@ import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 import {useChangeBlocker} from '../../../../../hooks/use-change-blocker';
-import {createOidcPath} from '../../../../../utils/create-oidc-path';
 import {ProcessInstanceTaskApiService} from '../../../../process/services/process-instance-task-api-service';
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/enums/process-task-status';
 import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
@@ -137,17 +135,6 @@ export function UserDetailsPageIndex() {
     const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
     const [sendInitialCredentialsByEmail, setSendInitialCredentialsByEmail] = useState(false);
     const [userProvisioningResult, setUserProvisioningResult] = useState<CreateUserResponseDTO | null>(null);
-
-    const keycloakAdminConsoleUrl = useMemo(() => {
-        if (editedUser?.id == null || editedUser.id.length === 0) {
-            return undefined;
-        }
-
-        const realm = encodeURIComponent(AppConfig.oidc.realm);
-        const userId = encodeURIComponent(editedUser.id);
-
-        return createOidcPath(`/admin/${realm}/console/#/${realm}/users/${userId}/settings`);
-    }, [editedUser?.id]);
 
     const canEditUser = isEditable && !user?.deletedInIdp && !user?.artificialUser;
     const canResetUserPassword = canEditUser && !isNewUser;
@@ -595,7 +582,21 @@ export function UserDetailsPageIndex() {
                             required
                         />
                     </Grid>
-                    <Grid size={6}>
+                    {
+                        !isNewUser &&
+                        <Grid size={6}>
+                            <TextFieldComponent
+                                label="Konto-ID"
+                                value={editedUser.id}
+                                onChange={() => undefined}
+                                readonly
+                                copyable
+                                showOptionalIndicator={false}
+                                hint="Geben Sie diese Kennung z. B. im Support an, damit das Konto eindeutig zugeordnet werden kann."
+                            />
+                        </Grid>
+                    }
+                    <Grid size={12} sx={{mt: 2}}>
                         <CheckboxFieldComponent
                             label="Konto aktiviert"
                             value={editedUser.enabled}
@@ -623,66 +624,16 @@ export function UserDetailsPageIndex() {
                 </Grid>
 
                 {
-                    editedUser.deletedInIdp ? (
-                        <AlertComponent
-                            color="warning"
-                            sx={{
-                                my: 3,
-                            }}
-                        >
-                            Dieses Konto wurde beim Identitätsanbieter bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
-                            Der Datensatz bleibt in Prosuna erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
-                        </AlertComponent>
-                    ) : (
-                        !isNewUser &&
-                        <Box
-                            sx={{
-                                mt: 2,
-                                mb: 3,
-                                display: 'flex',
-                                flexWrap: 'wrap',
-                                alignItems: 'center',
-                                gap: 2,
-                            }}
-                        >
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: "text.secondary",
-                                    maxWidth: 900
-                                }}>
-                                Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak.
-                                Konto-ID:{' '}
-                                <Box
-                                    component="span"
-                                    sx={{
-                                        fontFamily: 'monospace',
-                                        fontSize: '0.95em',
-                                    }}
-                                >
-                                    {editedUser.id}
-                                </Box>
-                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IdP
-                                löschen.
-                            </Typography>
-
-                            {
-                                isEditable && keycloakAdminConsoleUrl != null &&
-                                <Button
-                                    component="a"
-                                    href={keycloakAdminConsoleUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    variant="text"
-                                    size="small"
-                                    startIcon={<OpenInNewIcon/>}
-                                    sx={{whiteSpace: 'nowrap'}}
-                                >
-                                    In Keycloak öffnen
-                                </Button>
-                            }
-                        </Box>
-                    )
+                    editedUser.deletedInIdp &&
+                    <AlertComponent
+                        color="warning"
+                        sx={{
+                            my: 3,
+                        }}
+                    >
+                        Dieses Konto wurde beim Identitätsanbieter bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
+                        Der Datensatz bleibt in Prosuna erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
+                    </AlertComponent>
                 }
 
                 <Box

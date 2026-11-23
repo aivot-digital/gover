@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -17,6 +18,7 @@ import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -60,6 +62,10 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     @Nullable
     private String codeListKey;
 
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    @Nullable
+    private String codeListLabelColumnKey;
+
     public TextInputElement() {
         super(ElementType.Text);
     }
@@ -93,6 +99,20 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         if (minCharacters != null && minCharacters > 0 && value.length() < minCharacters) {
             throw new ValidationException(this, "Zu wenige Zeichen. Mindestens " + minCharacters + " Zeichen erforderlich.");
         }
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minCharacters", minCharacters, "maxCharacters", maxCharacters,
+                "Sie fordern mehr Zeichen, als Sie maximal zulassen.");
+        // Like the editor, suggestions only apply to single-line fields without a dynamic text policy.
+        if (!Boolean.TRUE.equals(isMultiline) && dynamicTextPolicy == null
+                && optionsSource == OptionsSourceType.CodeList && StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        return errors;
     }
 
     @Nonnull
@@ -192,6 +212,7 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
                 && Objects.equals(copyValueTemplate, textField.copyValueTemplate)
                 && optionsSource == textField.optionsSource
                 && Objects.equals(codeListKey, textField.codeListKey)
+                && Objects.equals(codeListLabelColumnKey, textField.codeListLabelColumnKey)
                 && Objects.equals(suggestions, textField.suggestions)
                 && Objects.equals(dynamicTextPolicy, textField.dynamicTextPolicy);
     }
@@ -210,6 +231,7 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         result = 31 * result + Objects.hashCode(suggestions);
         result = 31 * result + Objects.hashCode(optionsSource);
         result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
         result = 31 * result + Objects.hashCode(dynamicTextPolicy);
         return result;
     }
@@ -341,6 +363,17 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     @Nonnull
     public TextInputElement setCodeListKey(@Nullable String codeListKey) {
         this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    @Nonnull
+    public TextInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
         return this;
     }
 

@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.storage.services;
 
+import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntityId;
@@ -10,6 +11,7 @@ import de.aivot.prosuna.backend.storage.models.StorageDocument;
 import de.aivot.prosuna.backend.storage.models.StorageFolder;
 import de.aivot.prosuna.backend.storage.models.StorageItemMetadata;
 import de.aivot.prosuna.backend.storage.models.StorageProviderDefinition;
+import de.aivot.prosuna.backend.storage.projections.StorageIndexItemStateProjection;
 import de.aivot.prosuna.backend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -18,8 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.time.Instant;
@@ -28,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,6 +50,7 @@ import static org.mockito.Mockito.when;
 class StorageSyncServiceTest {
     private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     private static final Instant STALE_BEFORE = Instant.parse("2030-05-01T11:00:00Z");
+    private static final Instant INDEXED = Instant.parse("2030-04-01T10:00:00Z");
 
     @Mock
     private KnownExtensionsService knownExtensions;
@@ -71,10 +77,12 @@ class StorageSyncServiceTest {
 
     private final List<SimpleTransactionStatus> transactions = new ArrayList<>();
 
+    private PlatformTransactionManager transactionManager;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        var transactionManager = mock(PlatformTransactionManager.class);
+        transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenAnswer(call -> {
             var transaction = new SimpleTransactionStatus();
             transactions.add(transaction);
@@ -129,6 +137,18 @@ class StorageSyncServiceTest {
 
         assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "failed").count());
         assertEquals(0, meterRegistry.counter("prosuna.sync.runs", "type", "storage", "outcome", "success").count());
+    }
+
+    @Test
+    void syncRunsAtReadCommitted() {
+        claims(provider("missing"));
+        when(storageProviderRepository.findById(7)).thenReturn(Optional.of(provider("missing")));
+
+        storageSyncService.syncRequestedStorageProvider(7, STALE_BEFORE);
+
+        var definition = ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactionManager).getTransaction(definition.capture());
+        assertEquals(TransactionDefinition.ISOLATION_READ_COMMITTED, definition.getValue().getIsolationLevel());
     }
 
     @Test
@@ -251,7 +271,10 @@ class StorageSyncServiceTest {
             }
             return Optional.empty();
         });
-        when(storageIndexItemRepository.findAllByStorageProviderId(provider.getId())).thenReturn(List.of(existingRoot, existingDocument));
+        when(storageIndexItemRepository.findStatesByStorageProviderId(provider.getId())).thenReturn(List.of(
+                new StorageIndexItemStateProjection("/", true, existingUpdated),
+                new StorageIndexItemStateProjection("/file.txt", false, existingUpdated)
+        ));
         when(storageProviderRepository.findById(7)).thenReturn(Optional.of(provider));
 
         assertFalse(storageSyncService.syncRequestedStorageProvider(7, STALE_BEFORE));
@@ -268,6 +291,70 @@ class StorageSyncServiceTest {
         assertEquals("/file.txt", savedItem.getPathFromRoot());
         assertEquals(remoteCreated, savedItem.getCreated());
         assertEquals(remoteUpdated, savedItem.getUpdated());
+    }
+
+    @Test
+    void uploadCommittedDuringTheSyncIsNotMarkedMissing() throws Exception {
+        var current = provider("test");
+        claims(current);
+        var listed = new AtomicBoolean();
+        syncs(assetProvider(), call -> {
+            listed.set(true);
+            return emptyRoot();
+        });
+        var root = new StorageIndexItemStateProjection("/", true, INDEXED);
+        var upload = new StorageIndexItemStateProjection("/upload.pdf", false, Instant.parse("2030-05-01T12:00:00Z"));
+        // At READ COMMITTED a read after the listing sees the upload, which the listing misses.
+        when(storageIndexItemRepository.findStatesByStorageProviderId(7))
+                .thenAnswer(call -> listed.get() ? List.of(root, upload) : List.of(root));
+
+        assertFalse(storageSyncService.syncRequestedStorageProvider(7, STALE_BEFORE));
+
+        assertEquals(StorageProviderStatus.Synced, current.getStatus());
+        verify(storageIndexItemRepository, never()).markMissingIfUnchanged(any(), any(), any(), any());
+        verify(assetRepository, never()).delete(any(AssetEntity.class));
+    }
+
+    @Test
+    void onlyItemsUnchangedSinceTheListingAreMarkedMissing() throws Exception {
+        var current = provider("test");
+        claims(current);
+        syncs(assetProvider(), call -> emptyRoot());
+        when(storageIndexItemRepository.findStatesByStorageProviderId(7)).thenReturn(List.of(
+                new StorageIndexItemStateProjection("/", true, INDEXED),
+                new StorageIndexItemStateProjection("/deleted.pdf", false, INDEXED),
+                new StorageIndexItemStateProjection("/replaced.pdf", false, INDEXED)
+        ));
+        // "/replaced.pdf" was uploaded again during the run, so its conditional update matches no row.
+        when(storageIndexItemRepository.markMissingIfUnchanged(eq(7), eq("/deleted.pdf"), eq(INDEXED), any())).thenReturn(1);
+        var deletedAsset = new AssetEntity();
+        when(assetRepository.findByStorageProviderIdAndStoragePathFromRoot(7, "/deleted.pdf")).thenReturn(Optional.of(deletedAsset));
+
+        assertFalse(storageSyncService.syncRequestedStorageProvider(7, STALE_BEFORE));
+
+        assertEquals(StorageProviderStatus.Synced, current.getStatus());
+        verify(storageIndexItemRepository).markMissingIfUnchanged(eq(7), eq("/replaced.pdf"), eq(INDEXED), any());
+        verify(storageIndexItemRepository, never()).markMissingIfUnchanged(any(), eq("/"), any(), any());
+        verify(assetRepository).delete(deletedAsset);
+        verify(assetRepository, never()).findByStorageProviderIdAndStoragePathFromRoot(7, "/replaced.pdf");
+    }
+
+    /** Lets provider 7 sync with the given storage listing. */
+    private void syncs(StorageProviderEntity provider, Answer<StorageFolder> listing) throws Exception {
+        var config = new Object();
+        when(storageProviderRepository.findById(7)).thenReturn(Optional.of(provider));
+        when(storageProviderDefinitionService.retrieveProviderDefinition("test", 1)).thenReturn(Optional.of(storageProviderDefinition));
+        when(storageProviderConfigurationService.mapToConfig(provider, storageProviderDefinition)).thenReturn(config);
+        when(storageProviderDefinition.rootFolder(config, true)).thenAnswer(listing);
+        when(storageProviderDefinition.getSupportsMetadataAttributes()).thenReturn(false);
+    }
+
+    private static StorageProviderEntity assetProvider() {
+        return provider("test").setType(StorageProviderType.Assets);
+    }
+
+    private static StorageFolder emptyRoot() {
+        return new StorageFolder("/", "Root", new LinkedList<>(), new LinkedList<>(), true);
     }
 
     /** Claims the synchronization of provider 7 as the locked current state. Returns the claimed runs. */

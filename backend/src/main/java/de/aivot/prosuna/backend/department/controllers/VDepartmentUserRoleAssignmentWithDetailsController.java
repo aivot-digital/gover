@@ -12,6 +12,9 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.user.services.UserService;
+import de.aivot.prosuna.backend.department.entities.DepartmentMembershipEntity;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.userRoles.dtos.MembershipRolesUpdateRequestDTO;
 import de.aivot.prosuna.backend.userRoles.entities.UserRoleAssignmentEntity;
 import de.aivot.prosuna.backend.userRoles.services.UserRoleAssignmentService;
 import de.aivot.prosuna.backend.utils.StringUtils;
@@ -148,29 +151,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
         var created = userRoleAssignmentService
                 .create(newAssignment);
 
-        auditService.create()
-                .withUser(user)
-                .withAuditAction(
-                        AuditAction.Create,
-                        UserRoleAssignmentEntity.class,
-                        created.getId(),
-                        "id",
-                        Map.of(
-                                "userRoleId", created.getUserRoleId(),
-                                "departmentMembershipId", created.getDepartmentMembershipId(),
-                                "departmentId", membership.getDepartmentId(),
-                                "userId", membership.getUserId()
-                        ))
-                .withMessage(
-                        "Die Domänenrollenzuweisung mit der ID %s zur Mitgliedschaft %s in der Organisationseinheit %s (Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s erstellt.",
-                        StringUtils.quote(String.valueOf(created.getId())),
-                        StringUtils.quote(String.valueOf(created.getDepartmentMembershipId())),
-                        StringUtils.quote(String.valueOf(membership.getDepartmentId())),
-                        StringUtils.quote(membership.getUserId()),
-                        StringUtils.quote(String.valueOf(created.getUserRoleId())),
-                        StringUtils.quote(user.getFullName())
-                )
-                .log();
+        logCreated(user, created, membership);
 
         return vDepartmentUserRoleAssignmentWithDetailsService
                 .retrieve(created.getId())
@@ -251,26 +232,102 @@ public class VDepartmentUserRoleAssignmentWithDetailsController {
         userRoleAssignmentService
                 .deleteEntity(entity);
 
+        logDeleted(user, entity, membership);
+    }
+
+    @PutMapping("memberships/{membershipId}/")
+    @Operation(
+            summary = "Replace the roles of a department membership",
+            description = "Replaces all role assignments of a department membership with the given roles. The request must carry " +
+                    "the current lock version of the membership; an outdated one is answered with 409. " +
+                    "Requires the permission `" + DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE +
+                    "` for the membership's organisation unit or at system level."
+    )
+    public DepartmentMembershipEntity updateRoles(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer membershipId,
+            @Nonnull @RequestBody @Valid MembershipRolesUpdateRequestDTO request
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var membership = departmentMembershipService
+                .retrieve(membershipId)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.requireDepartmentPermission(
+                user.getId(),
+                membership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE
+        );
+
+        var changes = departmentMembershipService
+                .updateRoles(membershipId, request.lockVersion(), request.roleIds());
+
+        for (var assignment : changes.deleted()) {
+            logDeleted(user, assignment, membership);
+        }
+        for (var assignment : changes.created()) {
+            logCreated(user, assignment, membership);
+        }
+
+        return departmentMembershipService
+                .retrieve(membershipId)
+                .orElseThrow(ResponseException::notFound);
+    }
+
+    private void logCreated(@Nonnull UserEntity user,
+                            @Nonnull UserRoleAssignmentEntity assignment,
+                            @Nonnull DepartmentMembershipEntity membership) {
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Create,
+                        UserRoleAssignmentEntity.class,
+                        assignment.getId(),
+                        "id",
+                        Map.of(
+                                "userRoleId", assignment.getUserRoleId(),
+                                "departmentMembershipId", assignment.getDepartmentMembershipId(),
+                                "departmentId", membership.getDepartmentId(),
+                                "userId", membership.getUserId()
+                        ))
+                .withMessage(
+                        "Die Domänenrollenzuweisung mit der ID %s zur Mitgliedschaft %s in der Organisationseinheit %s (Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(assignment.getId())),
+                        StringUtils.quote(String.valueOf(assignment.getDepartmentMembershipId())),
+                        StringUtils.quote(String.valueOf(membership.getDepartmentId())),
+                        StringUtils.quote(membership.getUserId()),
+                        StringUtils.quote(String.valueOf(assignment.getUserRoleId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
+    }
+
+    private void logDeleted(@Nonnull UserEntity user,
+                            @Nonnull UserRoleAssignmentEntity assignment,
+                            @Nonnull DepartmentMembershipEntity membership) {
         auditService.create()
                 .withUser(user)
                 .withAuditAction(
                         AuditAction.Delete,
                         UserRoleAssignmentEntity.class,
-                        entity.getId(),
+                        assignment.getId(),
                         "id",
                         Map.of(
-                                "userRoleId", entity.getUserRoleId(),
-                                "departmentMembershipId", entity.getDepartmentMembershipId(),
+                                "userRoleId", assignment.getUserRoleId(),
+                                "departmentMembershipId", assignment.getDepartmentMembershipId(),
                                 "departmentId", membership.getDepartmentId(),
                                 "userId", membership.getUserId()
                         ))
                 .withMessage(
                         "Die Domänenrollenzuweisung mit der ID %s zur Mitgliedschaft %s in der Organisationseinheit %s (Mitarbeiter:in %s, Domänenrolle %s) wurde von der Mitarbeiter:in %s gelöscht.",
-                        StringUtils.quote(String.valueOf(entity.getId())),
-                        StringUtils.quote(String.valueOf(entity.getDepartmentMembershipId())),
+                        StringUtils.quote(String.valueOf(assignment.getId())),
+                        StringUtils.quote(String.valueOf(assignment.getDepartmentMembershipId())),
                         StringUtils.quote(String.valueOf(membership.getDepartmentId())),
                         StringUtils.quote(membership.getUserId()),
-                        StringUtils.quote(String.valueOf(entity.getUserRoleId())),
+                        StringUtils.quote(String.valueOf(assignment.getUserRoleId())),
                         StringUtils.quote(user.getFullName())
                 )
                 .log();

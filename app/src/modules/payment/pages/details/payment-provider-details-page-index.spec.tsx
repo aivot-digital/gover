@@ -175,7 +175,10 @@ describe('PaymentProviderDetailsPageIndex', () => {
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         await waitFor(() => expect(testState.dispatch).toHaveBeenCalledWith(expect.objectContaining({
-            payload: expect.objectContaining({message}),
+            payload: expect.objectContaining({
+                message: `${message} Beim Neuladen gehen nicht gespeicherte Änderungen auf dieser Seite verloren.`,
+                action: 'reloadPage',
+            }),
         })));
         expect(testState.changedInputs).not.toContainEqual(expect.objectContaining({field: 'isEnabled'}));
     });

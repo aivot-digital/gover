@@ -5,11 +5,14 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+
 /**
  * Task readers receive display metadata, never the configuration of the underlying process model.
  */
 public record ProcessTaskDetailsDTO(
         @Nonnull ProcessInstanceTaskEntity task,
+        @Nonnull List<ProcessDeputyDTO> assignedUserDeputies,
         @Nonnull ProcessInstanceEntity instance,
         @Nonnull ProcessSummary process,
         @Nullable NodeSummary node,

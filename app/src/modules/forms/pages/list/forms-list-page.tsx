@@ -44,6 +44,7 @@ import {downloadQrCode} from '../../../../utils/download-qrcode';
 import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {resolvePrintablePdfFilename} from '../../utils/printable-pdf-filename';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {listCellSecondaryTextSx} from '../../../../components/generic-list/generic-list-cell-styles';
 
 const overviewFilters = [
     {
@@ -178,9 +179,10 @@ export function FormsListPage(): React.ReactElement {
                 return (
                     <Box sx={{py: 1, minWidth: 0, width: '100%'}}>
                         <Typography
-                            variant="h5"
+                            variant="h6"
+                            component="h5"
                             noWrap
-                            sx={{mb: 0.5, fontSize: '1rem'}}
+                            sx={{mb: 0.5}}
                         >
                             <Link
                                 style={{color: 'inherit', textDecoration: 'none'}}
@@ -194,10 +196,9 @@ export function FormsListPage(): React.ReactElement {
                             variant="body2"
                             noWrap
                             title={secondaryLabel}
-                            color="textSecondary"
                             sx={{
+                                ...listCellSecondaryTextSx,
                                 mt: -0.75,
-                                fontSize: '0.875rem',
                                 lineHeight: '1.5rem',
                             }}
                         >
@@ -216,9 +217,10 @@ export function FormsListPage(): React.ReactElement {
             renderCell: (params) => (
                 <Box sx={{py: 1, minWidth: 0, width: '100%'}}>
                     <Typography
-                        variant="h5"
+                        variant="h6"
+                        component="h5"
                         noWrap
-                        sx={{mb: 0.5, fontSize: '1rem'}}
+                        sx={{mb: 0.5}}
                     >
                         <Link
                             style={{color: 'inherit', textDecoration: 'none'}}
@@ -232,8 +234,7 @@ export function FormsListPage(): React.ReactElement {
                         variant="body2"
                         noWrap
                         title={`Version ${params.row.processVersion}`}
-                        color="textSecondary"
-                        sx={{mt: -0.75, fontSize: '0.875rem', lineHeight: '1.5rem'}}
+                        sx={{...listCellSecondaryTextSx, mt: -0.75, lineHeight: '1.5rem'}}
                     >
                         Version {params.row.processVersion}
                     </Typography>
@@ -257,16 +258,14 @@ export function FormsListPage(): React.ReactElement {
                         <Typography
                             noWrap
                             title={isPublished ? 'Veröffentlicht' : 'In Bearbeitung'}
-                            sx={{fontSize: '0.875rem'}}
                         >
                             {isPublished ? 'Veröffentlicht' : 'In Bearbeitung'}
                         </Typography>
                         {isPublished && (
                             <Typography
                                 noWrap
-                                color="textSecondary"
                                 title={availabilityLabel}
-                                sx={{fontSize: '0.875rem'}}
+                                sx={listCellSecondaryTextSx}
                             >
                                 {availabilityLabel}
                             </Typography>
@@ -290,14 +289,13 @@ export function FormsListPage(): React.ReactElement {
 
                 return (
                     <Box sx={{py: 1, display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%'}}>
-                        <Typography noWrap title={date != null ? `${date} Uhr` : 'Keine Angabe'} sx={{fontSize: '0.875rem'}}>
+                        <Typography noWrap title={date != null ? `${date} Uhr` : 'Keine Angabe'}>
                             {date != null ? `${date} Uhr` : 'Keine Angabe'}
                         </Typography>
                         <Typography
                             noWrap
-                            color="textSecondary"
                             title={isPublished ? 'Veröffentlicht am' : 'Zuletzt bearbeitet'}
-                            sx={{fontSize: '0.875rem'}}
+                            sx={listCellSecondaryTextSx}
                         >
                             {isPublished ? 'Veröffentlicht am' : 'Zuletzt bearbeitet'}
                         </Typography>

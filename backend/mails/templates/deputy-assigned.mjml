@@ -1,0 +1,51 @@
+<mjml lang="de">
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-html-attributes>
+            <mj-selector path=".primary-action a">
+                <mj-html-attribute name="th:href">${base.config.createUrl(deputiesPath)}</mj-html-attribute>
+            </mj-selector>
+        </mj-html-attributes>
+
+        <mj-preview>Information zu Ihrer Stellvertretung</mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        Sie wurden in Prosuna als Stellvertreter:in für
+                        <b th:text="${originalUser.getFullName()}">Philipp Schröder</b> eingetragen.
+                        <br/>
+                        <br/>
+                        Zeitraum: <b th:text="${periodLabel}">vom 02.11.2026 bis 15.11.2026</b>
+                        <br/>
+                        Eingetragen durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
+                    </p>
+                    <p>
+                        Während der Vertretung finden Sie die Aufgaben von
+                        <span th:text="${originalUser.getFullName()}">Philipp Schröder</span>
+                        in Ihrer Aufgabenliste unter „Mir zugewiesen oder in Vertretung“ und können sie bearbeiten. Dafür
+                        erhalten Sie für diesen Zeitraum alle Berechtigungen dieser Person. Benachrichtigungen zu ihren
+                        Aufgaben und Vorgängen erhalten Sie ebenfalls.
+                    </p>
+                </mj-text>
+
+                <mj-button align="left"
+                           css-class="primary-action"
+                           href="#"
+                           padding="24px 0 0">
+                    Vertretungen ansehen
+                </mj-button>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/default-mail-signature.mjml"/>
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

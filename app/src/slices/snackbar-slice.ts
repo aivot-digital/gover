@@ -1,5 +1,5 @@
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from './shell-slice';
-import {isApiError} from '../models/api-error';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarAction, SnackbarSeverity, SnackbarType} from './shell-slice';
+import {isApiError, isLockVersionConflictError} from '../models/api-error';
 
 export const showSuccessSnackbar = (message: string) => {
     return addSnackbarMessage({
@@ -28,7 +28,24 @@ export const showErrorSnackbar = (message: string, persist: boolean = false) => 
     });
 };
 
+/**
+ * Shows a conflict with a newer saved state and offers to reload the page. Reloading is the one recovery that works on
+ * every page: the edited copies of pages, dialogs and editors keep the outdated lock version until they are reloaded.
+ */
+export const showLockConflictSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message: `${message} Beim Neuladen gehen nicht gespeicherte Änderungen auf dieser Seite verloren.`,
+        severity: SnackbarSeverity.Error,
+        type: SnackbarType.Dismissable,
+        action: SnackbarAction.ReloadPage,
+    });
+};
+
 export const showApiErrorSnackbar = (error: any, defaultMessage: string, persist: boolean = false) => {
+    if (isLockVersionConflictError(error)) {
+        return showLockConflictSnackbar(error.message);
+    }
     if (isApiError(error) && error.displayableToUser) {
         return showErrorSnackbar(error.message, persist);
     }

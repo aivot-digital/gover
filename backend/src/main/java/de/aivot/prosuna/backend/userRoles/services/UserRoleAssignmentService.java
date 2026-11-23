@@ -13,7 +13,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Service
 public class UserRoleAssignmentService implements EntityService<UserRoleAssignmentEntity, Integer> {
@@ -69,5 +74,46 @@ public class UserRoleAssignmentService implements EntityService<UserRoleAssignme
     @Override
     public boolean exists(@Nonnull Specification<UserRoleAssignmentEntity> specification) {
         return repository.exists(specification);
+    }
+
+    public record RoleChanges(@Nonnull List<UserRoleAssignmentEntity> created,
+                              @Nonnull List<UserRoleAssignmentEntity> deleted) {
+    }
+
+    @Nonnull
+    public RoleChanges replaceDepartmentMembershipRoles(@Nonnull Integer membershipId,
+                                                        @Nonnull Collection<Integer> roleIds) throws ResponseException {
+        return replaceRoles(repository.findAllByDepartmentMembershipId(membershipId), roleIds, roleId -> new UserRoleAssignmentEntity()
+                .setDepartmentMembershipId(membershipId)
+                .setUserRoleId(roleId));
+    }
+
+    @Nonnull
+    public RoleChanges replaceTeamMembershipRoles(@Nonnull Integer membershipId,
+                                                  @Nonnull Collection<Integer> roleIds) throws ResponseException {
+        return replaceRoles(repository.findAllByTeamMembershipId(membershipId), roleIds, roleId -> new UserRoleAssignmentEntity()
+                .setTeamMembershipId(membershipId)
+                .setUserRoleId(roleId));
+    }
+
+    @Nonnull
+    private RoleChanges replaceRoles(@Nonnull List<UserRoleAssignmentEntity> current,
+                                     @Nonnull Collection<Integer> roleIds,
+                                     @Nonnull Function<Integer, UserRoleAssignmentEntity> newAssignment) throws ResponseException {
+        var wanted = roleIds.stream().filter(Objects::nonNull).distinct().toList();
+        var deleted = current.stream().filter(assignment -> !wanted.contains(assignment.getUserRoleId())).toList();
+        var kept = current.stream().map(UserRoleAssignmentEntity::getUserRoleId).toList();
+
+        for (var assignment : deleted) {
+            deleteEntity(assignment);
+        }
+
+        var created = new ArrayList<UserRoleAssignmentEntity>();
+        for (var roleId : wanted) {
+            if (!kept.contains(roleId)) {
+                created.add(create(newAssignment.apply(roleId)));
+            }
+        }
+        return new RoleChanges(created, deleted);
     }
 }
