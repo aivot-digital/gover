@@ -3,7 +3,7 @@ import {Link, useLocation, useSearchParams} from 'react-router-dom';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {activeHistoryTaskStatuses, resolveHistoryTaskTarget} from '../../utils/process-history-navigation';
-import {getHistoryEventActor, isManualHistoryIntervention} from '../../utils/process-history-events';
+import {getHistoryEventActor, getTaskHistoryEvents, isManualHistoryIntervention, type TaskHistoryEvent} from '../../utils/process-history-events';
 import {ProcessHistoryEventDetailsDialog} from '../../dialogs/process-history-event-details-dialog';
 import UnfoldMore from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
 import UnfoldLess from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
@@ -485,7 +485,7 @@ interface UpcomingStepsPreview {
 type TaskWithNodeAndEvents = ProcessInstanceTaskEntity & {
     node: ProcessNodeEntity | null;
     nodeDefinition: ProcessNodeProvider | null;
-    taskEvents: ProcessInstanceEventEntity[];
+    taskEvents: TaskHistoryEvent[];
     previousProcessData: Record<string, unknown> | null;
     failureEvent: ProcessInstanceEventEntity | null;
     failureLoadFailed: boolean;
@@ -537,7 +537,7 @@ async function fetchHistory(processId: number, processInstanceId: number, initia
             const nodeDefinition = definitions.find(definition => definition.key === node?.processNodeDefinitionKey && definition.majorVersion === node?.processNodeDefinitionVersion) ?? null;
             return {
                 ...task, node, nodeDefinition,
-                taskEvents: events.content.filter(event => event.processInstanceTaskId === task.id),
+                taskEvents: getTaskHistoryEvents(task, tasksById, events.content),
                 failureEvent: failureEvents.get(task.id)?.event ?? null,
                 failureLoadFailed: failureEvents.get(task.id)?.loadFailed ?? false,
                 previousProcessData: task.previousProcessInstanceTaskId == null ? {} : tasksById.get(task.previousProcessInstanceTaskId)?.processData ?? null,
@@ -756,7 +756,7 @@ function TimelineItem({index, node, nodeDefinition, task, identities, processIns
                                 <Paper variant="outlined" component="ol" aria-label="Ereignisse und Zwischenergebnisse" sx={{listStyle: 'none', m: 0, p: 0}}>
                                     {task.taskEvents.map(event => (
                                         <Box key={event.id} component="li" sx={{p: 1.5, '& + li': {borderTop: '1px solid', borderColor: 'divider'}}}>
-                                            {isManualHistoryIntervention(event) && <Typography variant="caption" color="text.secondary">Manueller Eingriff</Typography>}
+                                            {isManualHistoryIntervention(event) && <Typography variant="caption" sx={{color: 'text.secondary'}}>{event.fromPreviousAttempt ? 'Manueller Eingriff · vorheriger Ausführungsversuch' : 'Manueller Eingriff'}</Typography>}
                                             <Stack direction="row" spacing={2} sx={{alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap'}}>
                                                 <Typography variant="body2" sx={{fontWeight: 600, minWidth: 0, overflowWrap: 'anywhere'}}>{event.title}</Typography>
                                                 <Typography component="time" dateTime={event.timestamp} variant="caption" color="text.secondary" sx={{flexShrink: 0}}>
