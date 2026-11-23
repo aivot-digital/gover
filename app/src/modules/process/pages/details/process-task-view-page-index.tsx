@@ -185,7 +185,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
             {
                 label: 'Aufgabe zugewiesen an',
                 icon: <AssignmentIndOutlinedIcon />,
-                children: <ProcessAssignee userId={item.task.assignedUserId} />,
+                children: <ProcessAssignee userId={item.task.assignedUserId} deputies={item.assignedUserDeputies} />,
             },
             {
                 label: 'Fälligkeit (spätestens)',

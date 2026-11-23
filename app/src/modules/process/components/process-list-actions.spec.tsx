@@ -41,6 +41,7 @@ const allPermissions = [
     Permission.PROCESS_DEFINITION_READ,
 ];
 const failedTask: ProcessTaskListEntry = {
+    assignedUserDeputies: [],
     ...instance,
     id: 23,
     processInstanceId: 17,
@@ -156,6 +157,7 @@ describe('Process list actions', () => {
     it('offers task assignment only while active and preserves the instance link', () => {
         grant('system');
         const task: ProcessTaskListEntry = {
+            assignedUserDeputies: [],
             ...instance,
             id: 23,
             processInstanceId: 17,

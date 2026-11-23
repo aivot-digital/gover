@@ -82,7 +82,11 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
     @Query(value = """
             SELECT task.*
             FROM process_instance_tasks task
-            WHERE task.assigned_user_id = :userId
+            WHERE (task.assigned_user_id = :userId
+                   -- Deputies take over the tasks of the people they currently represent.
+                   OR task.assigned_user_id IN (SELECT deputy.original_user_id
+                                                FROM v_user_is_recursively_deputy_for deputy
+                                                WHERE deputy.deputy_user_id = :userId))
               AND task.status in (:statuses)
               AND (
                     :hasSystemAccess = true
@@ -107,7 +111,11 @@ public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInst
             SELECT COUNT(*) AS "totalCount",
                    COUNT(*) FILTER (WHERE task.deadline IS NOT NULL AND task.deadline < :now) AS "overdueCount"
             FROM process_instance_tasks task
-            WHERE task.assigned_user_id = :userId
+            WHERE (task.assigned_user_id = :userId
+                   -- Deputies take over the tasks of the people they currently represent.
+                   OR task.assigned_user_id IN (SELECT deputy.original_user_id
+                                                FROM v_user_is_recursively_deputy_for deputy
+                                                WHERE deputy.deputy_user_id = :userId))
               AND task.status in (:statuses)
               AND (
                     :hasSystemAccess = true

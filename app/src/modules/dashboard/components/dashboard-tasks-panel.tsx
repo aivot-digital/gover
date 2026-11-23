@@ -40,7 +40,7 @@ export function DashboardTasksPanel({summary, error = false, previewOnly = false
                     <Typography variant="body2" sx={{
                         color: "text.secondary"
                     }}>
-                        <Balancer>Aufgaben, die Ihnen aktuell persönlich zugewiesen sind</Balancer>
+                        <Balancer>Aufgaben, die Ihnen zugewiesen sind oder die Sie aktuell in Vertretung übernehmen</Balancer>
                     </Typography>
                 </Box>
                 {summary != null && summary.total > 0 && (

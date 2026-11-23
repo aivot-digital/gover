@@ -45,8 +45,10 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     columnIcon?: ReactNode | ((item: ItemType) => ReactNode);
     columnDefinitions: Array<GenericListColDef<ItemType> & { onlyFullScreen?: boolean; }>;
     getRowIdentifier: (item: ItemType) => string;
+    /** A string becomes the empty-state heading. A custom element can include a description and actions. */
     noDataPlaceholder?: ReactNode;
     noSearchResultsPlaceholder?: ReactNode;
+    /** Announced to screen readers while the grid displays its standard loading indicator. */
     loadingPlaceholder?: ReactNode;
     rowMenuItems?: Array<{
         label: string;

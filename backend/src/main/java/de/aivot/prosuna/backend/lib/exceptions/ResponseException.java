@@ -59,7 +59,7 @@ public class ResponseException extends Exception {
         this.details = elementData;
     }
 
-    private ResponseException(
+    protected ResponseException(
             @Nonnull HttpStatus status,
             @Nonnull String title,
             @Nonnull Map<String, ?> details

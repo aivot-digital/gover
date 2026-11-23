@@ -10,6 +10,7 @@ import {
 } from '../enums/process-instance-status';
 import {ProcessTaskStatus, ProcessTaskStatusColors} from '../enums/process-task-status';
 import {getProcessTaskStatusDisplay} from '../utils/process-task-status-label';
+import {getProcessDeputyLabel} from '../utils/process-deputy-label';
 import {
     formatInstantInApplicationTimeZone,
     formatRelativeInstantInApplicationTimeZone,
@@ -170,11 +171,27 @@ export function processListColumns<T extends Entry>(tasks: boolean, onChanged: (
         {
             field: 'assignedUserName',
             headerName: 'Zugewiesen an',
-            width: 165,
+            width: tasks ? 230 : 165,
             sortable: false,
             renderCell: ({row}) =>
                 row.assignedUserId ? (
-                    <ListText value={row.assignedUserName ?? 'Name nicht verfügbar'} />
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, minWidth: 0}}>
+                        <ListText value={row.assignedUserName ?? 'Name nicht verfügbar'} />
+                        {'assignedUserDeputies' in row && row.assignedUserDeputies.length > 0 && (
+                            <Tooltip
+                                arrow
+                                title={getProcessDeputyLabel(row.assignedUserDeputies)}
+                            >
+                                <Chip
+                                    sx={{flexShrink: 0}}
+                                    size="small"
+                                    mode="soft"
+                                    color="info"
+                                    label="In Vertretung"
+                                />
+                            </Tooltip>
+                        )}
+                    </Box>
                 ) : (
                     <ProcessEmptyValue>Nicht zugewiesen</ProcessEmptyValue>
                 ),
