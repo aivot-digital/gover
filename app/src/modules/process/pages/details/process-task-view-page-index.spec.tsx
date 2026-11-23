@@ -50,7 +50,7 @@ function createItem(): ProcessTaskDetailsPageItem {
     };
 }
 
-function renderItem(item: ProcessTaskDetailsPageItem) {
+function renderItem(item: ProcessTaskDetailsPageItem, isEditable = false) {
     return render(
         <MemoryRouter>
             <GenericDetailsPageContext.Provider
@@ -62,7 +62,7 @@ function renderItem(item: ProcessTaskDetailsPageItem) {
                     setIsBusy: vi.fn(),
                     refresh: vi.fn(),
                     subscribeEvent: vi.fn(() => vi.fn()),
-                    isEditable: false,
+                    isEditable,
                 }}
             >
                 <ProcessTaskViewPageIndex />
@@ -154,11 +154,28 @@ describe('ProcessTaskViewPageIndex metadata', () => {
     ])('links to task editing while the task has staff status %s', (status) => {
         const item = createItem();
         item.task.status = status;
-        renderItem(item);
+        renderItem(item, true);
 
         const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
         expect(edit).toHaveAttribute('href', '/edit');
         expect(edit).not.toHaveAttribute('aria-disabled');
+    });
+
+    it.each([
+        ProcessTaskStatus.Running,
+        ProcessTaskStatus.InProgress,
+        ProcessTaskStatus.AwaitingStaff,
+    ])('disables task editing without permission for staff status %s and names the missing permission', async (status) => {
+        const item = createItem();
+        item.task.status = status;
+        const user = userEvent.setup();
+        renderItem(item);
+
+        const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit).toHaveAttribute('aria-disabled', 'true');
+        expect(edit).toHaveAttribute('tabindex', '-1');
+        await user.hover(edit.parentElement!);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('process_instance.edit_task');
     });
 
     it.each([
@@ -171,11 +188,23 @@ describe('ProcessTaskViewPageIndex metadata', () => {
         const item = createItem();
         item.task.status = status;
         const user = userEvent.setup();
-        renderItem(item);
+        renderItem(item, true);
 
         const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
         expect(edit).toHaveAttribute('aria-disabled', 'true');
         expect(edit).toHaveAttribute('tabindex', '-1');
+        await user.hover(edit.parentElement!);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+            'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',
+        );
+    });
+
+    it('prioritizes the status explanation when both task status and permission prevent editing', async () => {
+        const user = userEvent.setup();
+        renderItem(createItem());
+
+        const edit = screen.getByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit).toHaveAttribute('aria-disabled', 'true');
         await user.hover(edit.parentElement!);
         expect(await screen.findByRole('tooltip')).toHaveTextContent(
             'Diese Aufgabe kann in ihrem aktuellen Status nicht bearbeitet werden.',

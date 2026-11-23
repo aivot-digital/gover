@@ -1,6 +1,8 @@
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
-import {Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
+import {Permission} from '../../../../data/permissions/permission';
+import {useHasDepartmentPermission, useHasProcessPermission} from '../../../permissions/hooks/use-permissions';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useEffect, useRef, useState} from 'react';
 import {VDepartmentShadowedApiService} from '../../../departments/services/v-department-shadowed-api-service';
@@ -22,6 +24,8 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {type ThemeResponseDTO} from '../../../themes/models/theme';
 import {useApi} from '../../../../hooks/use-api';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 interface ProcessSettingsDialogProps {
     open: boolean;
@@ -65,6 +69,18 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     const processInstanceAccessPresetTabRef = useRef<ProcessSettingsDialogProcessInstanceAccessPresetTabHandle | null>(null);
     const renderProcess = useRetainedDialogValue(open, process);
     const renderVersion = useRetainedDialogValue(open, version);
+    const canUpdateProcess = useHasProcessPermission(renderProcess.id, Permission.PROCESS_DEFINITION_UPDATE);
+    const canDeleteProcess = useHasProcessPermission(renderProcess.id, Permission.PROCESS_DEFINITION_DELETE);
+    // Delegated process grants do not count: only the managing department decides who has access to the process.
+    const canManageProcessAccess = useHasDepartmentPermission(renderProcess.departmentId, Permission.PROCESS_DEFINITION_UPDATE);
+    const missingUpdatePermissionTooltip = formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE);
+    // Only users with a delegated update grant reach this tab without canManageProcessAccess, so do not claim the permission is missing.
+    const managingDepartmentRequiredTooltip = `Die Prozessberechtigungen können Sie nur mit der Berechtigung „Prozess bearbeiten“ (${Permission.PROCESS_DEFINITION_UPDATE}) in der verwaltenden Organisationseinheit des Prozesses ändern.`;
+    const accessTabDisabledSx = !canUpdateProcess ? {
+        color: 'text.disabled',
+        cursor: 'not-allowed',
+        '&:hover': {color: 'text.disabled'},
+    } : undefined;
     const renderOnProcessChange = useRetainedDialogValue(open, onProcessChange);
     const renderOnVersionChange = useRetainedDialogValue(open, onVersionChange);
     const isSavingSettings = isSavingGeneralSettings || isSavingVersionSettings || isSavingProcessAccess || isSavingProcessInstanceAccessPreset;
@@ -129,7 +145,9 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     };
 
     const handleTabChange = async (newValue: number): Promise<void> => {
-        if (newValue === currentTab || isSavingSettings) {
+        // Access tabs use aria-disabled to keep permission tooltips reachable on hover.
+        // ARIA does not prevent activation, so reject unauthorized tab changes here.
+        if (newValue === currentTab || isSavingSettings || ((newValue === 2 || newValue === 3) && !canUpdateProcess)) {
             return;
         }
 
@@ -281,11 +299,27 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     />
                     <Tab
                         value={2}
-                        label="Prozessberechtigungen"
+                        aria-label="Prozessberechtigungen"
+                        label={(
+                            <DisabledTooltip disabled={!canUpdateProcess} title={missingUpdatePermissionTooltip}>
+                                Prozessberechtigungen
+                            </DisabledTooltip>
+                        )}
+                        aria-disabled={!canUpdateProcess}
+                        tabIndex={!canUpdateProcess ? -1 : undefined}
+                        sx={accessTabDisabledSx}
                     />
                     <Tab
                         value={3}
-                        label="Standardrechte für neue Vorgänge"
+                        aria-label="Standardrechte für neue Vorgänge"
+                        label={(
+                            <DisabledTooltip disabled={!canUpdateProcess} title={missingUpdatePermissionTooltip}>
+                                Standardrechte für neue Vorgänge
+                            </DisabledTooltip>
+                        )}
+                        aria-disabled={!canUpdateProcess}
+                        tabIndex={!canUpdateProcess ? -1 : undefined}
+                        sx={accessTabDisabledSx}
                     />
                     <Tab
                         value={4}
@@ -302,10 +336,23 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     }}
                 >
                     {
+                        // The tooltips only appear on hover; this alert gives keyboard and screen-reader users the same reason.
+                        !canUpdateProcess &&
+                        <Alert
+                            severity="info"
+                            sx={{mb: 2}}
+                        >
+                            Sie können die Einstellungen einsehen. Zum Bearbeiten benötigen Sie die Berechtigung „Prozess bearbeiten“. Prozessberechtigungen und Standardrechte für neue Vorgänge sind nur mit dieser Berechtigung verfügbar.
+                        </Alert>
+                    }
+                    {
                         currentTab === 0 &&
                         <ProcessSettingsDialogGeneralTab
                             ref={generalTabRef}
                             open={open}
+                            readOnly={!canUpdateProcess}
+                            canDeleteProcess={canDeleteProcess}
+                            canMoveProcess={canManageProcessAccess}
                             process={renderProcess}
                             departments={departments}
                             onProcessChange={renderOnProcessChange}
@@ -320,6 +367,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         <ProcessSettingsDialogVersionTab
                             ref={versionTabRef}
                             open={open}
+                            readOnly={!canUpdateProcess}
                             version={renderVersion}
                             departments={departments}
                             themes={themes}
@@ -334,6 +382,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         <ProcessSettingsDialogProcessAccessTab
                             ref={processAccessTabRef}
                             open={open}
+                            readOnly={!canManageProcessAccess}
                             process={renderProcess}
                             departments={departments}
                             teams={teams}
@@ -359,55 +408,75 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
             <DialogActions sx={{px: 2}}>
                 {
                     currentTab === 0 &&
-                    <Button
-                        variant="contained"
-                        startIcon={<Save/>}
-                        disabled={!hasUnsavedGeneralChanges || hasGeneralValidationError || isSavingGeneralSettings}
-                        onClick={() => {
-                            generalTabRef.current?.save();
-                        }}
+                    <DisabledTooltip
+                        disabled={!canUpdateProcess}
+                        title={missingUpdatePermissionTooltip}
                     >
-                        Speichern
-                    </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={<Save/>}
+                            disabled={!canUpdateProcess || !hasUnsavedGeneralChanges || hasGeneralValidationError || isSavingGeneralSettings}
+                            onClick={() => {
+                                generalTabRef.current?.save();
+                            }}
+                        >
+                            Speichern
+                        </Button>
+                    </DisabledTooltip>
                 }
                 {
                     currentTab === 1 &&
-                    <Button
-                        variant="contained"
-                        startIcon={<Save/>}
-                        disabled={!hasUnsavedVersionChanges || hasVersionValidationError || isSavingVersionSettings}
-                        onClick={() => {
-                            versionTabRef.current?.save();
-                        }}
+                    <DisabledTooltip
+                        disabled={!canUpdateProcess}
+                        title={missingUpdatePermissionTooltip}
                     >
-                        Speichern
-                    </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={<Save/>}
+                            disabled={!canUpdateProcess || !hasUnsavedVersionChanges || hasVersionValidationError || isSavingVersionSettings}
+                            onClick={() => {
+                                versionTabRef.current?.save();
+                            }}
+                        >
+                            Speichern
+                        </Button>
+                    </DisabledTooltip>
                 }
                 {
                     currentTab === 2 &&
-                    <Button
-                        variant="contained"
-                        startIcon={<Save/>}
-                        disabled={!hasUnsavedProcessAccessChanges || isSavingProcessAccess}
-                        onClick={() => {
-                            processAccessTabRef.current?.save();
-                        }}
+                    <DisabledTooltip
+                        disabled={!canManageProcessAccess}
+                        title={managingDepartmentRequiredTooltip}
                     >
-                        Speichern
-                    </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={<Save/>}
+                            disabled={!canManageProcessAccess || !hasUnsavedProcessAccessChanges || isSavingProcessAccess}
+                            onClick={() => {
+                                processAccessTabRef.current?.save();
+                            }}
+                        >
+                            Speichern
+                        </Button>
+                    </DisabledTooltip>
                 }
                 {
                     currentTab === 3 &&
-                    <Button
-                        variant="contained"
-                        startIcon={<Save/>}
-                        disabled={!hasUnsavedProcessInstanceAccessPresetChanges || isSavingProcessInstanceAccessPreset}
-                        onClick={() => {
-                            processInstanceAccessPresetTabRef.current?.save();
-                        }}
+                    <DisabledTooltip
+                        disabled={!canUpdateProcess}
+                        title={missingUpdatePermissionTooltip}
                     >
-                        Speichern
-                    </Button>
+                        <Button
+                            variant="contained"
+                            startIcon={<Save/>}
+                            disabled={!canUpdateProcess || !hasUnsavedProcessInstanceAccessPresetChanges || isSavingProcessInstanceAccessPreset}
+                            onClick={() => {
+                                processInstanceAccessPresetTabRef.current?.save();
+                            }}
+                        >
+                            Speichern
+                        </Button>
+                    </DisabledTooltip>
                 }
                 {
                     currentTab <= 3 &&

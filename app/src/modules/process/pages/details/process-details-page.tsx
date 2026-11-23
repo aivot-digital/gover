@@ -91,6 +91,8 @@ import {
     useHasSystemPermission,
     useRefreshPermissionSet,
 } from '../../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
@@ -491,6 +493,15 @@ export function getProcessNodeEditURL(processId: number, processVersion: number,
     return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}${tabPath}${query}`;
 }
 
+function toProcessFlowLoadError(error: unknown): ApiError {
+    return isApiError(error) ? error : {
+        status: 500,
+        message: 'Der Prozessfluss konnte nicht geladen werden.',
+        details: error,
+        displayableToUser: false,
+    };
+}
+
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -510,6 +521,7 @@ export function ProcessDetailsPage(): ReactNode {
     const revokeProcessVersion = useRevokeProcessVersion();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
+    const [processFlowLoadError, setProcessFlowLoadError] = useState<ApiError | null>(null);
     const canReadDataStructure = useHasProcessPermission(processFlow?.definition.id, Permission.PROCESS_DEFINITION_READ);
     const [showDataStructure, setShowDataStructure] = useState(false);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
@@ -606,6 +618,10 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, [params]);
 
+    const canUpdateProcess = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_UPDATE);
+    const canPublishLocal = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
+    const canPublishTest = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_PUBLISH_TEST);
+
     // Kept per tab and process version, so revealed problems survive leaving the page, e.g. for the form editor.
     const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useSessionStorageState<Record<number, boolean>>(
         `process_${processId}_${processVersion}_shown_node_problems`,
@@ -628,6 +644,7 @@ export function ProcessDetailsPage(): ReactNode {
 
         let cancelled = false;
         setProcessFlow(null);
+        setProcessFlowLoadError(null);
         setIsLoadingProcessFlow(true);
 
         new ProcessDefinitionApiService()
@@ -662,7 +679,7 @@ export function ProcessDetailsPage(): ReactNode {
                 }
 
                 setIsLoadingProcessFlow(false);
-                dispatch(showApiErrorSnackbar(error, 'Die neueste Prozessversion konnte nicht geladen werden.'));
+                setProcessFlowLoadError(toProcessFlowLoadError(error));
             });
 
         return () => {
@@ -905,6 +922,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
+        setProcessFlowLoadError(null);
         if (processId < 1 || processVersion < 1 || processVersionParam === 'latest') {
             setProcessFlow(null);
             setIsLoadingProcessFlow(processVersionParam === 'latest');
@@ -954,7 +972,7 @@ export function ProcessDetailsPage(): ReactNode {
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(error, 'Der Prozessfluss konnte nicht geladen werden.'));
+                setProcessFlowLoadError(toProcessFlowLoadError(error));
             })
             .finally(() => {
                 if (cancelled) {
@@ -2244,13 +2262,15 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Veröffentlichen',
                 tooltip: 'Prozessversion veröffentlichen',
-                disabledTooltip: 'Vor der Veröffentlichung muss der laufende Test beendet werden.',
+                disabledTooltip: canPublishLocal
+                    ? 'Vor der Veröffentlichung muss der laufende Test beendet werden.'
+                    : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_LOCAL),
                 icon: null,
                 onClick: () => {
                     setShowPublishDialog(true);
                 },
                 variant: 'contained',
-                disabled: processFlow == null || isInTestMode,
+                disabled: processFlow == null || isInTestMode || !canPublishLocal,
                 visible: processFlow?.version.status === ProcessStatus.Drafted || processFlow?.version.status === ProcessStatus.Revoked,
                 activeStyle: {
                     ml: 1,
@@ -2259,13 +2279,15 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Zurückziehen',
                 tooltip: 'Prozessversion zurückziehen',
-                disabledTooltip: 'Vor dem Zurückziehen muss der laufende Test beendet werden.',
+                disabledTooltip: canPublishLocal
+                    ? 'Vor dem Zurückziehen muss der laufende Test beendet werden.'
+                    : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_LOCAL),
                 icon: null,
                 onClick: () => {
                     void handleRevokeCurrentProcessVersion();
                 },
                 variant: 'contained',
-                disabled: processFlow == null || isInTestMode,
+                disabled: processFlow == null || isInTestMode || !canPublishLocal,
                 visible: processFlow?.version.status === ProcessStatus.Published,
                 activeStyle: {
                     ml: 1,
@@ -2286,6 +2308,7 @@ export function ProcessDetailsPage(): ReactNode {
         processInstanceAttachmentSetItems.length,
         runtimeData,
         isInTestMode,
+        canPublishLocal,
         notImplemented,
         handleDeleteProcess,
         handleRevokeCurrentProcessVersion,
@@ -2341,6 +2364,11 @@ export function ProcessDetailsPage(): ReactNode {
             });
     }, [dispatch, navigate]);
 
+    // Propagate essential load failures to the router so the staff shell renders its error screen.
+    if (processFlowLoadError != null) {
+        throw processFlowLoadError;
+    }
+
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
             return <ProcessDetailsPageSkeleton/>;
@@ -2361,7 +2389,7 @@ export function ProcessDetailsPage(): ReactNode {
         );
     }
 
-    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted;
+    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted && canUpdateProcess;
     const isProcessStructureEditable = isProcessEditable && currentTestClaim == null;
 
     return (
@@ -2464,26 +2492,32 @@ export function ProcessDetailsPage(): ReactNode {
                                                                 >
                                                                     Testmodus
                                                                 </Typography>
-                                                                <Button
-                                                                    size="small"
-                                                                    color="error"
-                                                                    variant="text"
-                                                                    onClick={handleEndTestClaim}
-                                                                    sx={{
-                                                                        minWidth: 0,
-                                                                        ml: 'auto',
-                                                                        px: 0.5,
-                                                                        py: 0.125,
-                                                                        borderRadius: 1,
-                                                                        fontSize: '0.75rem',
-                                                                        fontWeight: 600,
-                                                                        lineHeight: 1.2,
-                                                                        textTransform: 'none',
-                                                                        transform: 'translateY(-1px)',
-                                                                    }}
+                                                                <DisabledTooltip
+                                                                    disabled={!canPublishTest}
+                                                                    title={formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_TEST)}
+                                                                    wrapperSx={{ml: 'auto'}}
                                                                 >
-                                                                    Beenden
-                                                                </Button>
+                                                                    <Button
+                                                                        size="small"
+                                                                        color="error"
+                                                                        variant="text"
+                                                                        disabled={!canPublishTest}
+                                                                        onClick={handleEndTestClaim}
+                                                                        sx={{
+                                                                            minWidth: 0,
+                                                                            px: 0.5,
+                                                                            py: 0.125,
+                                                                            borderRadius: 1,
+                                                                            fontSize: '0.75rem',
+                                                                            fontWeight: 600,
+                                                                            lineHeight: 1.2,
+                                                                            textTransform: 'none',
+                                                                            transform: 'translateY(-1px)',
+                                                                        }}
+                                                                    >
+                                                                        Beenden
+                                                                    </Button>
+                                                                </DisabledTooltip>
                                                             </Box>
                                                             <Divider
                                                                 sx={{
@@ -2653,7 +2687,8 @@ export function ProcessDetailsPage(): ReactNode {
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,
-                                    testClaim: currentTestClaim?.claim ?? null,
+                                    // The node testing tab loads data that requires the update permission.
+                                    testClaim: canUpdateProcess ? currentTestClaim?.claim ?? null : null,
                                     nodeProblems: processNodeProblems,
                                     showNodeProblemsForNodes: showProcessNodeProblemsForNodes,
                                 }}
@@ -2837,6 +2872,7 @@ export function ProcessDetailsPage(): ReactNode {
                     setShowMenuAtEl(null);
                 }}
                 onMenuEvent={handleMenuEvent}
+                canStartTest={canPublishTest}
             />
 
             {showDataStructure && canReadDataStructure && <ProcessDataStructureDialog

@@ -7,6 +7,8 @@ import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 
 export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'notes';
 
@@ -15,6 +17,7 @@ interface ProcessDetailsPageMoreMenuProps {
     onClose: () => void;
 
     onMenuEvent: (event: ProcessDetailsPageMoreMenuEvent) => void;
+    canStartTest: boolean;
 }
 
 export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProps): ReactNode {
@@ -23,6 +26,7 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
         onClose,
 
         onMenuEvent,
+        canStartTest,
     } = props;
 
     const notImplemented = useNotImplemented();
@@ -41,11 +45,13 @@ export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProp
             label: entry.label,
             icon: entry.icon,
             isDangerous: entry.isDangerous,
+            disabled: entry.event === 'test' && !canStartTest,
+            disabledTooltip: formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_TEST),
             onClick: () => {
                 dispatchEvent(entry.event);
             },
         }));
-    }, [dispatchEvent]);
+    }, [canStartTest, dispatchEvent]);
 
     return (
         <ProcessActionMenu
