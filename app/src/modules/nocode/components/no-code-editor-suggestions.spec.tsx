@@ -1,10 +1,10 @@
-import {fireEvent, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {ElementType} from '../../../data/element-type/element-type';
-import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeOperatorDetailsDTO, type NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {NoCodeExpression, NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {BaseApiService} from '../../../services/base-api-service';
@@ -147,28 +147,61 @@ describe('NoCodeEditor suggestions', () => {
     });
 
     it('loads codelist labels and drops stale manual options', async () => {
-        vi.spyOn(BaseApiService.prototype, 'get').mockResolvedValue([{
-            label: 'Bayern',
-            value: 'BY',
-        }]);
-        render(<Editor elements={[{
-            element: {
-                ...field,
-                optionsSource: OptionsSourceType.CodeList,
-                codeListKey: 'states',
-            },
-            parents: [],
-        }]}/>);
-        await editComparison();
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        let resolveOptions!: (options: NoCodeParameterOption[]) => void;
+        const response = new Promise<NoCodeParameterOption[]>((resolve) => {
+            resolveOptions = resolve;
+        });
+        vi.spyOn(BaseApiService.prototype, 'get').mockReturnValue(response);
+        render(<Editor onChange={onChange}
+                       initial={{
+                           ...expression,
+                           operands: [expression.operands![0], {type: 'NoCodeStaticValue', value: 'BY'}],
+                       }}
+                       elements={[{
+                           element: {
+                               ...field,
+                               optionsSource: OptionsSourceType.CodeList,
+                               codeListKey: 'states',
+                           },
+                           parents: [],
+                       }]}/>);
+
+        expect(screen.getByRole('treeitem', {name: /^Vergleichswert: BY,/})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+
+        await act(async () => {
+            resolveOptions([{label: 'Bayern', value: 'BY'}]);
+            await response;
+        });
+
+        const item = await screen.findByRole('treeitem', {name: /^Vergleichswert: Bayern,/});
+        item.focus();
+        await user.keyboard('{Enter}');
         const input = await screen.findByRole('combobox', {name: /^Vergleichswert/});
-        fireEvent.change(input, {target: {value: ''}});
-        fireEvent.mouseDown(input);
-        expect(await screen.findByRole('option', {name: /Bayern/})).toBeInTheDocument();
+        expect(input).toHaveValue('BY');
+        expect(onChange).not.toHaveBeenCalled();
+
+        await user.clear(input);
+        await user.click(input);
+        const option = await screen.findByRole('option', {name: /Bayern/});
         expect(screen.queryByRole('option', {name: /Berlin/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: /Hamburg/})).not.toBeInTheDocument();
+        await user.click(option);
+        expect(onChange).toHaveBeenLastCalledWith({
+            ...expression,
+            operands: [expression.operands![0], {type: 'NoCodeStaticValue', value: 'BY'}],
+        });
     });
 
     it('keeps a saved literal editable if loading its codelist fails', async () => {
-        vi.spyOn(BaseApiService.prototype, 'get').mockRejectedValue(new Error('unavailable'));
+        const user = userEvent.setup();
+        let rejectOptions!: (reason: Error) => void;
+        const response = new Promise<NoCodeParameterOption[]>((_, reject) => {
+            rejectOptions = reject;
+        });
+        vi.spyOn(BaseApiService.prototype, 'get').mockReturnValue(response);
         const onChange = vi.fn();
         render(<Editor onChange={onChange}
                        elements={[{
@@ -180,10 +213,18 @@ describe('NoCodeEditor suggestions', () => {
                            parents: [],
                        }]}/>);
         await editComparison();
-        const input = await screen.findByRole('textbox', {name: /^Vergleichswert/});
+        expect(await screen.findByRole('textbox', {name: /^Vergleichswert/})).toHaveValue('BE');
+
+        await act(async () => {
+            rejectOptions(new Error('unavailable'));
+            await response.catch(() => undefined);
+        });
+
+        const input = screen.getByRole('textbox', {name: /^Vergleichswert/});
         expect(input).toHaveValue('BE');
         expect(onChange).not.toHaveBeenCalled();
-        fireEvent.change(input, {target: {value: 'HH'}});
+        await user.clear(input);
+        await user.type(input, 'HH');
         expect(onChange).toHaveBeenLastCalledWith({
             ...expression,
             operands: [expression.operands![0], {
