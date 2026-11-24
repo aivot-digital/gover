@@ -1,4 +1,4 @@
-import {act, fireEvent, render, screen, within} from '@testing-library/react';
+import {act, createEvent, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {ElementType} from '../../data/element-type/element-type';
@@ -146,6 +146,36 @@ describe('ReplicatingContainerView', () => {
             [threeAddresses[1], threeAddresses[2], threeAddresses[0]],
             ['addresses', 'street'],
         );
+    });
+
+    it('scrolls the surrounding scroll container while a data set is dragged towards its edge', () => {
+        const frames: FrameRequestCallback[] = [];
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => frames.push(callback));
+        vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+
+        renderView({element: {...element, sortable: true}, value: threeAddresses}, ({children}) => (
+            <DragAndDropProvider>
+                <div data-testid="scroll-container" style={{overflowY: 'auto'}}>{children}</div>
+            </DragAndDropProvider>
+        ));
+        const scrollContainer = screen.getByTestId('scroll-container');
+        Object.defineProperty(scrollContainer, 'scrollHeight', {value: 1200});
+        Object.defineProperty(scrollContainer, 'clientHeight', {value: 300});
+        vi.spyOn(scrollContainer, 'getBoundingClientRect').mockReturnValue({top: 0, bottom: 300, left: 0, right: 400} as DOMRect);
+
+        const handle = screen.getByRole('button', {name: 'Adresse 1 verschieben'});
+        const target = screen.getByRole('group', {name: 'Adresse 2'});
+        fireEvent.dragStart(handle, dragEvent);
+        // jsdom has no DragEvent and drops pointer coordinates from the init, so they are set on the event itself.
+        const dragOverNearBottom = createEvent.dragOver(target, dragEvent);
+        Object.defineProperties(dragOverNearBottom, {clientX: {value: 200}, clientY: {value: 295}});
+        fireEvent(target, dragOverNearBottom);
+        act(() => frames.shift()?.(0));
+
+        expect(scrollContainer.scrollTop).toBeGreaterThan(0);
+
+        fireEvent.dragEnd(handle, dragEvent);
+        vi.restoreAllMocks();
     });
 
     it('allows clearing an optional collection below its minimum', async () => {
