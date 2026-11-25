@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.controllers;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
@@ -39,11 +40,11 @@ class ProcessInstanceEventControllerTest {
         var scopedController = new ProcessInstanceEventController(users, mock(ProcessInstanceEventService.class), logs, scopedPermissions);
         var pageable = PageRequest.of(0, 999);
         if (grant.equals("other-instance")) {
-            assertThrows(ResponseException.class, () -> scopedController.getHistoryEvents(null, 12L, pageable));
+            assertThrows(ResponseException.class, () -> scopedController.getHistoryEvents(null, 12L, ProcessHistoryEventScope.ManualInterventions, null, pageable));
             verifyNoInteractions(logs);
         } else {
-            scopedController.getHistoryEvents(null, 12L, pageable);
-            verify(logs).getHistoryEvents(12L, pageable);
+            scopedController.getHistoryEvents(null, 12L, ProcessHistoryEventScope.ManualInterventions, null, pageable);
+            verify(logs).getHistoryEvents(12L, ProcessHistoryEventScope.ManualInterventions, null, pageable);
         }
     }
 
@@ -51,10 +52,10 @@ class ProcessInstanceEventControllerTest {
     void historyUsesTheRequestedInstancePermissionBeforeLoading() throws Exception {
         when(users.fromJWT(null)).thenReturn(Optional.of(new UserEntity().setId("actor")));
         var pageable = PageRequest.of(0, 999);
-        controller.getHistoryEvents(null, 12L, pageable);
+        controller.getHistoryEvents(null, 12L, ProcessHistoryEventScope.ManualInterventions, null, pageable);
         var order = inOrder(permissions, logs);
         order.verify(permissions).requireProcessInstancePermission("actor", 12L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
-        order.verify(logs).getHistoryEvents(12L, pageable);
+        order.verify(logs).getHistoryEvents(12L, ProcessHistoryEventScope.ManualInterventions, null, pageable);
     }
 
     @Test
@@ -62,14 +63,14 @@ class ProcessInstanceEventControllerTest {
         when(users.fromJWT(null)).thenReturn(Optional.of(new UserEntity().setId("actor")));
         doThrow(ResponseException.forbidden()).when(permissions)
                 .requireProcessInstancePermission("actor", 99L, ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
-        assertThrows(ResponseException.class, () -> controller.getHistoryEvents(null, 99L, PageRequest.of(0, 999)));
+        assertThrows(ResponseException.class, () -> controller.getHistoryEvents(null, 99L, ProcessHistoryEventScope.ManualInterventions, null, PageRequest.of(0, 999)));
         verifyNoInteractions(logs);
     }
 
     @Test
     void historyRequiresAuthentication() throws Exception {
         when(users.fromJWT(null)).thenReturn(Optional.empty());
-        assertThrows(ResponseException.class, () -> controller.getHistoryEvents(null, 12L, PageRequest.of(0, 999)));
+        assertThrows(ResponseException.class, () -> controller.getHistoryEvents(null, 12L, ProcessHistoryEventScope.ManualInterventions, null, PageRequest.of(0, 999)));
         verifyNoInteractions(permissions, logs);
     }
 

@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
 import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
@@ -69,13 +70,20 @@ public class ProcessInstanceEventLogService {
                                                    @Nullable String concernedIdentityTitle,
                                                    @Nonnull Pageable pageable) throws ResponseException {
         return loadEventLog(processInstanceId, processInstanceTaskId, includeRestartHistory, search, notableOnly,
-                historyRelevant, concernedUserId, concernedIdentityId, concernedIdentityTitle, pageable, false);
+                historyRelevant, concernedUserId, concernedIdentityId, concernedIdentityTitle, pageable, null);
     }
 
     @Nonnull
     public Page<ProcessInstanceEventLogDTO.Entry> getHistoryEvents(
-            long processInstanceId, @Nonnull Pageable pageable) throws ResponseException {
-        return loadEventLog(processInstanceId, null, false, null, false, null, null, null, null, pageable, true).events();
+            long processInstanceId, @Nonnull ProcessHistoryEventScope scope,
+            @Nullable Long taskId, @Nonnull Pageable pageable) throws ResponseException {
+        if (scope == ProcessHistoryEventScope.Task && taskId == null) {
+            throw ResponseException.badRequest("Für Aufgabenereignisse muss eine Aufgabe angegeben werden.");
+        }
+        if (scope != ProcessHistoryEventScope.Task && taskId != null) {
+            throw ResponseException.badRequest("Eine Aufgabe kann nur für Aufgabenereignisse angegeben werden.");
+        }
+        return loadEventLog(processInstanceId, taskId, true, null, false, null, null, null, null, pageable, scope).events();
     }
 
     @Nonnull
@@ -88,7 +96,7 @@ public class ProcessInstanceEventLogService {
                                                    @Nullable String concernedUserId,
                                                    @Nullable String concernedIdentityId,
                                                    @Nullable String concernedIdentityTitle,
-                                                   @Nonnull Pageable pageable, boolean historyOverview) throws ResponseException {
+                                                   @Nonnull Pageable pageable, @Nullable ProcessHistoryEventScope historyScope) throws ResponseException {
         if (search != null && search.length() > 200) {
             throw ResponseException.badRequest("Der Suchbegriff darf höchstens 200 Zeichen lang sein.");
         }
@@ -111,17 +119,23 @@ public class ProcessInstanceEventLogService {
                         .setConcernedIdentityId(concernedIdentityId)
                         .setConcernedIdentityTitle(concernedIdentityTitle)
                         .build());
-        if (historyOverview) {
-            specification = specification.and((root, query, builder) -> builder.or(
-                    builder.isTrue(root.get("isHistoryRelevant")),
-                    builder.and(builder.isNull(root.get("processInstanceTaskId")),
-                            builder.equal(root.get("level"), ProcessNodeExecutionLogLevel.Error)),
-                    builder.and(builder.isNotNull(root.get("triggeringUserId")), builder.isTrue(root.get("isAudit")),
-                            builder.equal(builder.function("jsonb_extract_path_text", String.class,
-                                    root.get("details"), builder.literal(ProcessHistoryInterventions.DETAILS_KEY)), "true"))
-            ));
+        if (historyScope != null) {
+            specification = specification.and((root, query, builder) -> {
+                var manual = builder.and(builder.isNotNull(root.get("triggeringUserId")), builder.isTrue(root.get("isAudit")),
+                        builder.equal(builder.coalesce(builder.function("jsonb_extract_path_text", String.class,
+                                root.get("details"), builder.literal(ProcessHistoryInterventions.DETAILS_KEY)), "false"), "true"));
+                return switch (historyScope) {
+                    // Restart ancestors contribute only manual interventions, never their old results or errors.
+                    case Task -> builder.or(manual, builder.and(
+                            builder.equal(root.get("processInstanceTaskId"), processInstanceTaskId),
+                            builder.isTrue(root.get("isHistoryRelevant"))));
+                    case ManualInterventions -> manual;
+                    case InstanceErrors -> builder.and(builder.isNull(root.get("processInstanceTaskId")),
+                            builder.equal(root.get("level"), ProcessNodeExecutionLogLevel.Error), builder.not(manual));
+                };
+            });
         }
-        var eventPage = eventRepository.findAll(specification, normalizePageable(pageable, historyOverview ? 999 : 100));
+        var eventPage = eventRepository.findAll(specification, normalizePageable(pageable, 100));
 
         // Resolve only references used by the current page. This avoids exposing or loading complete user and process lists.
         var tasksById = findTasksById(eventPage.getContent().stream()

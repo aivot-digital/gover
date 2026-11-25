@@ -1,3 +1,4 @@
+import {ProcessHistoryEventScope} from '../enums/process-history-event-scope';
 import {type Page} from '../../../models/dtos/page';
 import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {type ProcessInstanceEventEntity, type ProcessInstanceHistoryEvent, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
@@ -34,9 +35,19 @@ export class ProcessInstanceEventApiService extends BaseReadApiService<
         super('/api/process-instance-events/');
     }
 
-    async listHistory(processInstanceId: number): Promise<Page<ProcessInstanceHistoryEvent>> {
+    async listHistory(processInstanceId: number, options: {
+        scope: ProcessHistoryEventScope;
+        taskId?: number;
+        page?: number;
+        size?: number;
+        sortOrder?: ProcessInstanceEventLogSortOrder;
+    }): Promise<Page<ProcessInstanceHistoryEvent>> {
         const page = await this.get<Page<ProcessInstanceEventLogEntry>>(`${this.path}history/`, {
-            query: {processInstanceId, page: 0, size: 999, sort: ['timestamp,ASC', 'id,ASC']},
+            query: {
+                processInstanceId, scope: options.scope, processInstanceTaskId: options.taskId,
+                page: options.page ?? 0, size: options.size ?? 20,
+                sort: [`timestamp,${options.sortOrder ?? 'ASC'}`, `id,${options.sortOrder ?? 'ASC'}`],
+            },
         });
         return {
             ...page,

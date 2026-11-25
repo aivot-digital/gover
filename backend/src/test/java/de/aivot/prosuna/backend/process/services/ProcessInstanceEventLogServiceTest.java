@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -69,7 +70,7 @@ class ProcessInstanceEventLogServiceTest {
         when(events.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event, unmarked)));
         when(users.findAllById(Set.of("actor"))).thenReturn(List.of(new UserEntity().setId("actor").setFullName("Ada Beispiel").setEnabled(true).setDeletedInIdp(false)));
 
-        var result = service.getHistoryEvents(12L, PageRequest.of(0, requestedSize, Sort.by("timestamp")));
+        var result = service.getHistoryEvents(12L, ProcessHistoryEventScope.ManualInterventions, null, PageRequest.of(0, requestedSize, Sort.by("timestamp")));
         var entry = result.getContent().getFirst();
         assertEquals("Ada Beispiel", entry.triggeringUserName());
         assertEquals(true, entry.details().get("manualIntervention"));
@@ -79,7 +80,7 @@ class ProcessInstanceEventLogServiceTest {
         ArgumentCaptor<Specification<ProcessInstanceEventEntity>> query = ArgumentCaptor.forClass(Specification.class);
         ArgumentCaptor<Pageable> paging = ArgumentCaptor.forClass(Pageable.class);
         verify(events).findAll(query.capture(), paging.capture());
-        assertEquals(999, paging.getValue().getPageSize());
+        assertEquals(100, paging.getValue().getPageSize());
         assertEquals(Sort.Direction.ASC, paging.getValue().getSort().getOrderFor("id").getDirection());
         Root<ProcessInstanceEventEntity> root = mock(Root.class, invocation -> {
             if (invocation.getMethod().getName().equals("get") && invocation.getArgument(0) instanceof String field) {
@@ -90,15 +91,12 @@ class ProcessInstanceEventLogServiceTest {
         var builder = mock(CriteriaBuilder.class, RETURNS_DEEP_STUBS);
         query.getValue().toPredicate(root, mock(CriteriaQuery.class), builder);
         verify(builder).equal(root.get("processInstanceId"), 12L);
-        verify(builder).isTrue(root.get("isHistoryRelevant"));
-        verify(builder).isNull(root.get("processInstanceTaskId"));
-        verify(builder).equal(root.get("level"), ProcessNodeExecutionLogLevel.Error);
         verify(builder).isNotNull(root.get("triggeringUserId"));
         verify(builder).isTrue(root.get("isAudit"));
         verify(root, never()).get("title");
         var marker = builder.function("jsonb_extract_path_text", String.class,
                 root.get("details"), builder.literal("manualIntervention"));
-        verify(builder).equal(marker, "true");
+        verify(builder).equal(builder.coalesce(marker, "false"), "true");
     }
 
     @Test

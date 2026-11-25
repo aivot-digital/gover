@@ -1,3 +1,4 @@
+import {ProcessHistoryEventScope} from '../enums/process-history-event-scope';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {ProcessInstanceEventApiService} from './process-instance-event-api-service';
 
@@ -44,12 +45,27 @@ describe('ProcessInstanceEventApiService', () => {
         const service = new ProcessInstanceEventApiService();
         const get = vi.spyOn(service, 'get').mockResolvedValue({content: [{id: 7, technical: true, audit: false,
             triggeringUserName: 'Ada Beispiel', details: {manualIntervention: true}}], page: {number: 0}} as never);
-        const result = await service.listHistory(12);
+        const result = await service.listHistory(12, {scope: ProcessHistoryEventScope.ManualInterventions});
         expect(get).toHaveBeenCalledWith('/api/process-instance-events/history/', {query: {
-            processInstanceId: 12, page: 0, size: 999, sort: ['timestamp,ASC', 'id,ASC'],
+            processInstanceId: 12, scope: ProcessHistoryEventScope.ManualInterventions, processInstanceTaskId: undefined, page: 0, size: 20, sort: ['timestamp,ASC', 'id,ASC'],
         }});
         expect(result.content[0]).toEqual(expect.objectContaining({isTechnical: true, isAudit: false,
             triggeringUserName: 'Ada Beispiel', details: {manualIntervention: true}}));
+    });
+
+    it('requests a bounded task history separately from the paginated overview scopes', async () => {
+        const service = new ProcessInstanceEventApiService();
+        const get = vi.spyOn(service, 'get').mockResolvedValue({content: [], page: {number: 0}} as never);
+        await service.listHistory(12, {scope: ProcessHistoryEventScope.Task, taskId: 42, size: 20, sortOrder: 'DESC'});
+        expect(get).toHaveBeenLastCalledWith('/api/process-instance-events/history/', {query: {
+            processInstanceId: 12, scope: ProcessHistoryEventScope.Task, processInstanceTaskId: 42,
+            page: 0, size: 20, sort: ['timestamp,DESC', 'id,DESC'],
+        }});
+        await service.listHistory(12, {scope: ProcessHistoryEventScope.InstanceErrors, page: 2});
+        expect(get).toHaveBeenLastCalledWith('/api/process-instance-events/history/', {query: {
+            processInstanceId: 12, scope: ProcessHistoryEventScope.InstanceErrors, processInstanceTaskId: undefined,
+            page: 2, size: 20, sort: ['timestamp,ASC', 'id,ASC'],
+        }});
     });
 
     it('initializes history relevance to false', () => {

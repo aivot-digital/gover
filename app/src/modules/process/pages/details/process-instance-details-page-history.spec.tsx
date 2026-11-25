@@ -1,8 +1,11 @@
+import {ProcessHistoryEventScope} from '../../enums/process-history-event-scope';
+import {type ProcessInstanceHistoryTasks} from '../../models/process-instance-history-tasks';
+import {type ProcessInstanceHistoryEvent} from '../../entities/process-instance-event-entity';
 import {act, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from '@mui/material';
 import {BaseTheme} from '../../../../theming/base-theme';
-import {MemoryRouter} from 'react-router-dom';
+import {Link, MemoryRouter} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {createGenericDetailsPageEventChannel} from '../../../../components/generic-details-page/generic-details-page-events';
@@ -58,8 +61,25 @@ function deferred<T>() {
     return {promise, resolve, reject};
 }
 
-function page<T>(content: T[]): Page<T> {
-    return {content, page: {size: content.length, number: 0, totalElements: content.length, totalPages: 1}};
+function page<T>(content: T[], totalElements = content.length): Page<T> {
+    return {
+        content,
+        page: {
+            size: content.length,
+            number: 0,
+            totalElements,
+            totalPages: Math.max(1, Math.ceil(totalElements / Math.max(1, content.length))),
+        },
+    };
+}
+
+const historyEvents = vi.fn<() => Promise<Page<ProcessInstanceHistoryEvent>>>();
+let historyTasks: ProcessInstanceTaskEntity[] = [];
+
+function history(content: ProcessInstanceTaskEntity[], totalElements?: number): ProcessInstanceHistoryTasks {
+    historyTasks = content;
+    const visible = content.filter(task => task.status !== ProcessTaskStatus.Restarted);
+    return {tasks: page(visible, totalElements ?? visible.length), predecessors: content, activeTasks: content};
 }
 
 function provider(type: ProcessNodeType, key: string = type): ProcessNodeProvider {
@@ -118,11 +138,11 @@ async function renderHistory(
     nodes: ProcessNodeEntity[],
     edges: ProcessDefinitionEdgeEntity[],
     tasks: ProcessInstanceTaskEntity[],
-    {waitForLoad = true, instance, initialUrl = '/'}: {waitForLoad?: boolean; instance?: Partial<ProcessInstanceDetails['instance']>; initialUrl?: string} = {},
+    {waitForLoad = true, instance, initialUrl = '/', totalTasks, navigationTarget}: {waitForLoad?: boolean; instance?: Partial<ProcessInstanceDetails['instance']>; initialUrl?: string; totalTasks?: number; navigationTarget?: string} = {},
 ) {
     vi.spyOn(ProcessNodeApiService.prototype, 'listAll').mockResolvedValue(page(nodes));
     vi.spyOn(ProcessDefinitionEdgeApiService.prototype, 'listAll').mockResolvedValue(page(edges));
-    vi.spyOn(ProcessInstanceTaskApiService.prototype, 'listAllOrdered').mockResolvedValue(page(tasks));
+    vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getHistory').mockResolvedValue(history(tasks, totalTasks));
     const item: ProcessInstanceDetails = {
         instance: {...new ProcessInstanceApiService().initialize(), id: 17, processId: 10, initialProcessVersion: 1, ...instance},
         processName: 'Test process',
@@ -147,6 +167,7 @@ async function renderHistory(
                     subscribeEvent: eventChannel.subscribeEvent,
                     isEditable: false,
                 }}>
+                    {navigationTarget && <Link to={navigationTarget}>Neues Sprungziel</Link>}
                     <ProcessInstanceDetailsPageHistory/>
                 </GenericDetailsPageContext.Provider>
             </ThemeProvider>
@@ -155,6 +176,7 @@ async function renderHistory(
     const rendered = render(renderContent(item));
     if (waitForLoad) {
         await screen.findByRole('heading', {name: 'Verlauf des Vorgangs'});
+        await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).toBeNull());
     }
     return {
         ...rendered, eventChannel,
@@ -179,7 +201,23 @@ describe('Process instance history preview', () => {
         mocks.processGrantId = 10;
         mocks.instanceGrantId = 17;
         vi.spyOn(ProcessDefinitionApiService.prototype, 'retrieve').mockResolvedValue(ProcessDefinitionApiService.initialize());
-        vi.spyOn(ProcessInstanceEventApiService.prototype, 'listHistory').mockResolvedValue(page([]));
+        historyEvents.mockReset().mockResolvedValue(page([]));
+        vi.spyOn(ProcessInstanceEventApiService.prototype, 'listHistory').mockImplementation(async (_instanceId, options) => {
+            const response = await historyEvents();
+            const ancestors = new Set<number>();
+            let current = historyTasks.find(task => task.id === options.taskId);
+            while (current?.restartForTaskId != null && !ancestors.has(current.restartForTaskId)) {
+                ancestors.add(current.restartForTaskId);
+                current = historyTasks.find(task => task.id === current!.restartForTaskId);
+            }
+            const content = response.content.filter(event => options.scope === ProcessHistoryEventScope.ManualInterventions
+                ? event.details.manualIntervention === true
+                : options.scope === ProcessHistoryEventScope.InstanceErrors
+                    ? event.processInstanceTaskId == null && event.level === ProcessNodeExecutionLogLevel.Error && event.details.manualIntervention !== true
+                    : event.processInstanceTaskId === options.taskId ||
+                      (ancestors.has(event.processInstanceTaskId!) && event.details.manualIntervention === true));
+            return page(content);
+        });
         vi.spyOn(ProcessInstanceEventApiService.prototype, 'list').mockResolvedValue(page([]));
         vi.spyOn(ProcessNodeProviderApiService.prototype, 'getNodeProviders').mockResolvedValue([
             provider(ProcessNodeType.Action),
@@ -191,13 +229,13 @@ describe('Process instance history preview', () => {
 
     describe('loading and model failures', () => {
         it('replaces the initial skeleton with a retryable error and recovers', async () => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockRejectedValueOnce(new Error('Offline'));
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getHistory').mockRejectedValueOnce(new Error('Offline'));
             await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)], {waitForLoad: false});
             expect(await screen.findByRole('alert')).toHaveTextContent('Der Verlauf konnte nicht geladen werden.');
             expect(screen.queryByRole('status', {name: 'Verlauf wird geladen'})).not.toBeInTheDocument();
             await userEvent.click(screen.getByRole('button', {name: 'Erneut versuchen'}));
             expect(await screen.findByRole('heading', {name: 'Verlauf des Vorgangs'})).toBeVisible();
-            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledTimes(2);
+            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledTimes(3);
         });
 
         it('keeps stored task results available when the model providers cannot be loaded', async () => {
@@ -217,6 +255,100 @@ describe('Process instance history preview', () => {
             expect(screen.getByText('Die nächsten Schritte konnten nicht ermittelt werden. Der bisherige Verlauf bleibt verfügbar.')).toBeVisible();
             expect(ProcessNodeApiService.prototype.listAll).toHaveBeenCalledWith({processId: 10, processVersion: 1});
             expect(ProcessDefinitionEdgeApiService.prototype.listAll).toHaveBeenCalledWith({processDefinitionId: 10, processDefinitionVersion: 1});
+        });
+    });
+
+    describe('task pagination', () => {
+        function historyPage(tasks: ProcessInstanceTaskEntity[], number: number, totalElements: number): ProcessInstanceHistoryTasks {
+            const result = history(tasks);
+            result.tasks.page = {number, size: 20, totalElements, totalPages: Math.ceil(totalElements / 20)};
+            return result;
+        }
+
+        it('loads only the chosen task page and keeps the independent overview sections mounted', async () => {
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getHistory').mockResolvedValueOnce(historyPage([task(1, 1)], 0, 40));
+            await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
+            const next = historyPage([task(21, 1)], 1, 40);
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(next);
+            await userEvent.click(within(screen.getByRole('navigation', {name: 'Seiten des Vorgangsverlaufs'})).getByRole('button', {name: 'Nächste Seite'}));
+            expect(await screen.findByRole('button', {name: /^21\. Prüfung:/})).toBeVisible();
+            expect(screen.queryByRole('button', {name: /^1\. Prüfung:/})).not.toBeInTheDocument();
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenLastCalledWith(17, 1, 20, undefined);
+            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledWith(17, {
+                scope: ProcessHistoryEventScope.Task, taskId: 21, size: 20, sortOrder: 'DESC',
+            });
+            expect(vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mock.calls.filter(([, options]) => options.scope !== ProcessHistoryEventScope.Task)).toHaveLength(2);
+        });
+
+        it.each(['1021', 'active', 'current', 'failed', 'latest'])('opens the server-resolved page for %s and keeps it on refresh', async target => {
+            const selected = task(1021, 1, target === 'failed' ? ProcessTaskStatus.Failed : ProcessTaskStatus.Running);
+            const response = historyPage([selected], 51, 1021);
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getHistory').mockResolvedValueOnce(response);
+            const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [selected], {initialUrl: `/?taskId=${target}`});
+            expect(screen.getByRole('button', {name: /^1021\. Prüfung:/})).toHaveAttribute('aria-expanded', 'true');
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledExactlyOnceWith(17, 0, 20, target);
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(response);
+            act(() => eventChannel.emitEvent('refresh'));
+            await waitFor(() => expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenLastCalledWith(17, 51, 20, undefined));
+        });
+
+        it('waits for the new target response before resolving a generic link from an already visible page', async () => {
+            await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)], {navigationTarget: '/?taskId=latest'});
+            const pending = deferred<ProcessInstanceHistoryTasks>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockReturnValueOnce(pending.promise);
+            await userEvent.click(screen.getByRole('link', {name: 'Neues Sprungziel'}));
+            expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toHaveAttribute('aria-expanded', 'false');
+            await act(async () => pending.resolve(historyPage([task(1021, 1)], 51, 1021)));
+            expect(screen.getByRole('button', {name: /^1021\. Prüfung:/})).toHaveAttribute('aria-expanded', 'true');
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenLastCalledWith(17, 0, 20, 'latest');
+        });
+
+        it('uses off-page predecessor data and active task metadata for the preview', async () => {
+            const previous = {...task(20, 1, ProcessTaskStatus.Completed), processData: {value: 'input'}};
+            const current = {...task(21, 1, ProcessTaskStatus.Completed), previousProcessInstanceTaskId: 20, processData: {value: 'input'}};
+            vi.spyOn(ProcessInstanceTaskApiService.prototype, 'getHistory').mockResolvedValueOnce({
+                ...historyPage([current], 1, 40), predecessors: [previous], activeTasks: [task(40, 2)],
+            });
+            await renderHistory([node(1, 'Prüfung'), node(2, 'Aktuell'), node(3, 'Versand')], [edge(2, 3)], [current]);
+            expect(screen.getByRole('list', {name: 'Voraussichtliche nächste Schritte'})).toHaveTextContent('Versand');
+            await userEvent.click(screen.getByRole('button', {name: /^21\. Prüfung:/}));
+            await userEvent.click(screen.getByRole('button', {name: 'Datenänderungen anzeigen'}));
+            const dialog = screen.getByRole('dialog', {name: 'Änderungen an den Vorgangsdaten'});
+            expect(dialog).toHaveTextContent('Diese Aufgabe hat die Vorgangsdaten nicht verändert.');
+            expect(dialog).toHaveTextContent('21. Prüfung');
+        });
+
+        it('shows the latest bounded task events chronologically and links to the complete task log', async () => {
+            const events = Array.from({length: 20}, (_, index) => ({...historyEvent(),
+                id: 21 - index, processInstanceTaskId: 42, title: `Event ${21 - index}`,
+                timestamp: '2026-11-25T10:00:00Z',
+            }));
+            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockImplementation(async (_instance, options) =>
+                options.scope === ProcessHistoryEventScope.Task ? page(events, 100) : page([]));
+            const getEventLog = vi.spyOn(ProcessInstanceEventApiService.prototype, 'getEventLog').mockResolvedValue({
+                instance: {id: 17, caseNumber: 'V-17', started: '', finished: null, runtime: null}, task: null, events: page([]),
+            });
+            await renderHistory([node(1, 'Prüfung')], [], [task(42, 1)]);
+            await userEvent.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+            expect(screen.getByText(/Angezeigt werden die letzten 20 von 100 Ereignissen/)).toBeVisible();
+            const items = within(screen.getByRole('list', {name: 'Ereignisse und Zwischenergebnisse'})).getAllByRole('listitem');
+            expect(items).toHaveLength(20);
+            expect(items[0]).toHaveTextContent('Event 2');
+            expect(items[19]).toHaveTextContent('Event 21');
+            await userEvent.click(screen.getByRole('button', {name: 'Alle Ereignisse anzeigen'}));
+            await waitFor(() => expect(getEventLog).toHaveBeenCalledWith(expect.objectContaining({processInstanceId: 17, processInstanceTaskId: 42, includeRestartHistory: true})));
+        });
+
+        it('keeps task results accessible when only their event request fails', async () => {
+            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockImplementation(async (_instance, options) => {
+                if (options.scope === ProcessHistoryEventScope.Task) throw new Error('Offline');
+                return page([]);
+            });
+            await renderHistory([node(1, 'Prüfung')], [], [{...task(42, 1), executionSummaryMarkdown: 'Gespeichertes Ergebnis'}]);
+            await userEvent.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
+            expect(screen.getByText('Die Ereignisse dieser Aufgabe konnten nicht geladen werden.')).toBeVisible();
+            expect(screen.getByText('Gespeichertes Ergebnis')).toBeVisible();
+            expect(screen.getByText('Keine manuellen Eingriffe protokolliert.')).toBeVisible();
         });
     });
 
@@ -255,7 +387,7 @@ describe('Process instance history preview', () => {
         it('resolves a URL target after a temporarily empty history is refreshed', async () => {
             const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [], {initialUrl: '/?taskId=active'});
             expect(await screen.findByText(/Das Sprungziel ist im angezeigten Verlauf nicht verfügbar/)).toBeVisible();
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([task(1, 1)]));
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(history([task(1, 1)]));
             act(() => eventChannel.emitEvent('refresh'));
             const summary = await screen.findByRole('button', {name: /^1\. Prüfung:/});
             await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'true'));
@@ -269,7 +401,7 @@ describe('Process instance history preview', () => {
             await waitFor(() => expect(summary).toHaveAttribute('aria-expanded', 'true'));
             await userEvent.click(summary);
             act(() => eventChannel.emitEvent('refresh'));
-            await waitFor(() => expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2));
+            await waitFor(() => expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledTimes(2));
             expect(summary).toHaveAttribute('aria-expanded', 'false');
         });
 
@@ -320,7 +452,7 @@ describe('Process instance history preview', () => {
 
     describe('instance events and manual interventions', () => {
         it('keeps the chronology limited to tasks without changing their numbering', async () => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([{
+            historyEvents.mockResolvedValue(page([{
                 ...historyEvent(), id: 7, processInstanceTaskId: null,
                 title: 'Vorgangsereignis', message: 'Ein Ereignis zum gesamten Vorgang.', timestamp: '2026-10-01T10:05:00Z',
             }]));
@@ -337,7 +469,7 @@ describe('Process instance history preview', () => {
         });
 
         it('shows task interventions among task events and opens details directly from the overview', async () => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+            historyEvents.mockResolvedValue(page([
                 {...historyEvent(), id: 6, processInstanceTaskId: 100,
                     title: 'Aufgabe begonnen', timestamp: '2026-10-01T10:00:00Z'},
                 {...historyEvent(), id: 7, processInstanceTaskId: 100,
@@ -373,7 +505,7 @@ describe('Process instance history preview', () => {
         });
 
         it.each([null, 99])('keeps interventions with task reference %s accessible when no task is visible', async taskId => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([{
+            historyEvents.mockResolvedValue(page([{
                 ...historyEvent(), id: 7, processInstanceTaskId: taskId,
                 title: taskId == null ? 'Zuweisung des Vorgangs geändert' : 'Erneute Ausführung der Aufgabe angefordert',
                 message: 'Die Aktion wurde manuell angefordert.', triggeringUserId: 'actor',
@@ -388,7 +520,7 @@ describe('Process instance history preview', () => {
         });
 
         it('keeps normal task processing separate from manual interventions', async () => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+            historyEvents.mockResolvedValue(page([
                 {...historyEvent(), id: 1, processInstanceTaskId: 1, triggeringUserId: 'actor', title: 'Aufgabe bearbeitet'},
             ]));
             await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
@@ -400,7 +532,7 @@ describe('Process instance history preview', () => {
         });
 
         it.each([false, true])('shows instance errors outside the task chronology (tasks present: %s)', async hasTask => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+            historyEvents.mockResolvedValue(page([
                 {...historyEvent(), id: 2, processInstanceTaskId: null, level: ProcessNodeExecutionLogLevel.Error,
                     historyRelevant: false, title: 'Start fehlgeschlagen', message: 'Das Prozesselement ist nicht verfügbar.', timestamp: '2026-10-01T10:05:00Z'},
             ]));
@@ -417,7 +549,7 @@ describe('Process instance history preview', () => {
         });
 
         it('does not label task errors or manual interventions as instance errors', async () => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+            historyEvents.mockResolvedValue(page([
                 {...historyEvent(), id: 1, processInstanceTaskId: 1,
                     level: ProcessNodeExecutionLogLevel.Error, title: 'Aufgabenfehler'},
                 {...historyEvent(), id: 2, processInstanceTaskId: null,
@@ -469,12 +601,12 @@ describe('Process instance history preview', () => {
             const rerun = vi.spyOn(ProcessInstanceTaskApiService.prototype, 'rerunFailedTask').mockResolvedValue(task(42, 1, ProcessTaskStatus.Restarted));
             await renderHistory([node(1, 'Prüfung')], [], [task(42, 1, ProcessTaskStatus.Failed)]);
             await user.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(history([
                 task(42, 1, ProcessTaskStatus.Restarted), task(43, 1, ProcessTaskStatus.Running),
             ]));
             await user.click(screen.getByRole('button', {name: 'Aufgabe erneut ausführen'}));
             expect(rerun).toHaveBeenCalledWith(42);
-            await waitFor(() => expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2));
+            await waitFor(() => expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledTimes(2));
             await waitFor(() => expect(screen.queryByRole('button', {name: 'Aufgabe erneut ausführen'})).not.toBeInTheDocument());
             expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({payload: expect.objectContaining({severity: 'success', message: 'Die erneute Ausführung der Aufgabe wurde angefordert.'})}));
         });
@@ -484,7 +616,7 @@ describe('Process instance history preview', () => {
             vi.spyOn(ProcessInstanceTaskApiService.prototype, 'rerunFailedTask').mockResolvedValue(task(42, 1, ProcessTaskStatus.Restarted));
             const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [task(42, 1, ProcessTaskStatus.Failed)]);
             await userEvent.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(history([
                 task(42, 1, ProcessTaskStatus.Restarted),
             ]));
             await userEvent.click(screen.getByRole('button', {name: 'Aufgabe erneut ausführen'}));
@@ -492,7 +624,7 @@ describe('Process instance history preview', () => {
             expect(screen.queryByRole('button', {name: 'Alle ausklappen'})).not.toBeInTheDocument();
             expect(screen.getByRole('button', {name: 'Ereignisprotokoll öffnen'})).toBeEnabled();
 
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(history([
                 task(42, 1, ProcessTaskStatus.Restarted), task(43, 1, ProcessTaskStatus.Running),
             ]));
             act(() => eventChannel.emitEvent('refresh'));
@@ -512,7 +644,7 @@ describe('Process instance history preview', () => {
             expect(rerun).toHaveBeenCalledTimes(1);
             await act(async () => pending.reject(new Error('Offline')));
             expect(restart).toBeEnabled();
-            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(1);
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledTimes(1);
             expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({payload: expect.objectContaining({severity: 'error', message: 'Die erneute Ausführung der Aufgabe konnte nicht angefordert werden.'})}));
         });
 
@@ -660,7 +792,7 @@ describe('Process instance history preview', () => {
             await renderHistory([], [], [], {waitForLoad: false});
             expect(screen.getByRole('alert')).toHaveTextContent(/keine Berechtigung/);
             expect(screen.queryByRole('link', {name: 'Im Prozessmodell ansehen'})).not.toBeInTheDocument();
-            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).not.toHaveBeenCalled();
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).not.toHaveBeenCalled();
         });
 
         it('allows system permissions even with unrelated resource grants', async () => {
@@ -672,7 +804,7 @@ describe('Process instance history preview', () => {
         });
 
         it('indicates chronological order for task events', async () => {
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+            historyEvents.mockResolvedValue(page([
                 {...historyEvent(), id: 1, processInstanceTaskId: 1, title: 'Erstes Ereignis'},
                 {...historyEvent(), id: 2, processInstanceTaskId: 1, title: 'Zweites Ereignis'},
             ]));
@@ -681,7 +813,7 @@ describe('Process instance history preview', () => {
             const region = screen.getByRole('region', {name: /^1\. Prüfung:/});
             expect(region).toHaveTextContent(/Älteste zuerst.*Erstes Ereignis.*Zweites Ereignis/);
             expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledWith(
-                17,
+                17, {scope: ProcessHistoryEventScope.Task, taskId: 1, size: 20, sortOrder: 'DESC'},
             );
         });
     });
@@ -721,7 +853,7 @@ describe('Process instance history preview', () => {
     describe('restarted tasks', () => {
         it.each(['Erneute Ausführung der Aufgabe angefordert', 'Fortsetzung des Vorgangs angefordert'])(
             'shows %s from the replaced attempt with its original attribution', async title => {
-                vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+                historyEvents.mockResolvedValue(page([
                     {...historyEvent(), id: 7, processInstanceTaskId: 42, title,
                         message: 'Die erneute Ausführung wurde manuell angefordert.', details: {manualIntervention: true}, timestamp: '2026-10-01T10:01:00Z'},
                     {...historyEvent(), id: 8, processInstanceTaskId: 42, title: 'Fehler des vorherigen Versuchs', message: 'Altes Ergebnis', level: ProcessNodeExecutionLogLevel.Error},
@@ -748,7 +880,7 @@ describe('Process instance history preview', () => {
 
         it('omits restarted attempts and their details while keeping other tasks in consecutive order', async () => {
             const user = userEvent.setup();
-            vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([{
+            historyEvents.mockResolvedValue(page([{
                 ...historyEvent(),
                 id: 7,
                 processInstanceTaskId: 2,
@@ -813,7 +945,7 @@ describe('Process instance history preview', () => {
             await user.click(screen.getByRole('button', {name: /^1\. Prüfung:/}));
             expect(screen.getByText('Vorheriger Versuch')).toBeVisible();
 
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(history([
                 {...failed, status: ProcessTaskStatus.Restarted},
                 {...task(2, 1), executionSummaryMarkdown: 'Aktueller Versuch'},
             ]));
@@ -837,7 +969,7 @@ describe('Process instance history preview', () => {
         [ProcessTaskStatus.AwaitingCustomer, 'Dieses Prozesselement wartet auf eine Rückmeldung der zugewiesenen Person.'],
         [ProcessTaskStatus.Paused, 'Die Ausführung dieses Prozesselements ist pausiert.'],
     ])('explains an unfinished task with status %s alongside its events', async (status, notice) => {
-        vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([{
+        historyEvents.mockResolvedValue(page([{
             ...historyEvent(),
             id: 7,
             processInstanceTaskId: 1,
@@ -871,7 +1003,7 @@ describe('Process instance history preview', () => {
         await user.click(first);
         expect(first).toHaveAttribute('aria-expanded', 'false');
         expect(second).toHaveAttribute('aria-expanded', 'true');
-        vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockResolvedValueOnce(page([
+        vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockResolvedValueOnce(history([
             task(1, 1, ProcessTaskStatus.Completed), task(2, 1), task(3, 2),
         ]));
         await act(async () => eventChannel.emitEvent('refresh'));
@@ -890,7 +1022,7 @@ describe('Process instance history preview', () => {
         mocks.instanceGrantId = 18;
         rerenderInstance({id: 18});
         expect(await screen.findByRole('button', {name: /^1\. Prüfung:/})).toHaveAttribute('aria-expanded', 'false');
-        expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenLastCalledWith(['started', 'id'], 'ASC', {processInstanceId: 18});
+        expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenLastCalledWith(18, 0, 20, undefined);
     });
 
     it.each([ProcessInstanceStatus.Completed, ProcessInstanceStatus.Aborted])('hides the entire preview for a %s instance', async (status) => {
@@ -965,7 +1097,7 @@ describe('Process instance history preview', () => {
             expect(callback).toBeTypeOf('function');
             act(() => { if (typeof callback === 'function') callback(); });
             expect(metadata.getByText('Zwei Minuten')).toBeVisible();
-            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledTimes(1);
+            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledTimes(3);
         });
 
         it.each([ProcessTaskStatus.Completed, ProcessTaskStatus.Failed, ProcessTaskStatus.Aborted, ProcessTaskStatus.DeadlineExceeded])(
@@ -987,7 +1119,7 @@ describe('Process instance history preview', () => {
 
     it('groups manual interventions in rows with single-line titles and direct detail actions', async () => {
         const title = 'Eine sehr ausführliche Beschreibung des manuellen Eingriffs '.repeat(5);
-        vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([
+        historyEvents.mockResolvedValue(page([
             {...historyEvent(), id: 7, title,
                 triggeringUserId: 'actor', triggeringUserName: 'Ada Beispiel', details: {manualIntervention: true}},
             {...historyEvent(), id: 8, title: 'Fortsetzung angefordert', details: {manualIntervention: true}},
@@ -1005,7 +1137,7 @@ describe('Process instance history preview', () => {
     });
 
     it('separates task metadata and places event timestamps alongside the event title', async () => {
-        vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([{
+        historyEvents.mockResolvedValue(page([{
             ...historyEvent(), id: 1, processInstanceTaskId: 1,
             title: 'Aufgabe zugewiesen', message: 'Die Zuweisung erfolgte automatisch.', timestamp: '2026-10-01T10:00:00Z',
         }]));
@@ -1065,17 +1197,17 @@ describe('Process instance history preview', () => {
             expect(summary).toHaveAttribute('aria-expanded', 'true');
             const region = screen.getByRole('region', {name: /^1\. Prüfung:/});
             expect(within(region).getByText('Bisherige Zusammenfassung')).toBeVisible();
-            const refresh = deferred<Page<ProcessInstanceTaskEntity>>();
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockReturnValueOnce(refresh.promise);
+            const refresh = deferred<ProcessInstanceHistoryTasks>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockReturnValueOnce(refresh.promise);
 
             act(() => eventChannel.emitEvent('refresh'));
-            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledTimes(2);
             expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBe(summary);
             expect(summary).toHaveAttribute('aria-expanded', 'true');
             expect(within(region).getByText('Bisherige Zusammenfassung')).toBeVisible();
             expect(screen.queryByRole('status', {name: 'Verlauf wird geladen'})).not.toBeInTheDocument();
 
-            await act(async () => refresh.resolve(page([{
+            await act(async () => refresh.resolve(history([{
                 ...original, executionSummaryMarkdown: 'Aktualisierte Zusammenfassung',
             }])));
             expect(screen.getByRole('button', {name: /^1\. Prüfung:/})).toBe(summary);
@@ -1083,7 +1215,7 @@ describe('Process instance history preview', () => {
             expect(screen.getByRole('region', {name: /^1\. Prüfung:/})).toBe(region);
             expect(within(region).getByText('Aktualisierte Zusammenfassung')).toBeVisible();
             expect(within(region).queryByText('Bisherige Zusammenfassung')).not.toBeInTheDocument();
-            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledTimes(2);
+            expect(ProcessInstanceEventApiService.prototype.listHistory).toHaveBeenCalledTimes(6);
             expect(ProcessDefinitionEdgeApiService.prototype.listAll).toHaveBeenCalledTimes(2);
         });
 
@@ -1093,7 +1225,7 @@ describe('Process instance history preview', () => {
             const summary = screen.getByRole('button', {name: /^1\. Prüfung:/});
             await user.click(summary);
             const error = new Error('Refresh failed');
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockRejectedValueOnce(error);
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockRejectedValueOnce(error);
 
             await act(async () => eventChannel.emitEvent('refresh'));
             expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({
@@ -1109,20 +1241,20 @@ describe('Process instance history preview', () => {
 
         it('ignores superseded responses and errors when refreshes overlap', async () => {
             const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
-            const old = deferred<Page<ProcessInstanceTaskEntity>>();
-            const current = deferred<Page<ProcessInstanceTaskEntity>>();
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered)
+            const old = deferred<ProcessInstanceHistoryTasks>();
+            const current = deferred<ProcessInstanceHistoryTasks>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory)
                 .mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
             act(() => eventChannel.emitEvent('refresh'));
             act(() => eventChannel.emitEvent('refresh'));
-            await act(async () => current.resolve(page([task(1, 1), task(2, 1)])));
+            await act(async () => current.resolve(history([task(1, 1), task(2, 1)])));
             expect(screen.getByRole('button', {name: /^2\. Prüfung:/})).toBeInTheDocument();
 
-            await act(async () => old.resolve(page([task(1, 1)])));
+            await act(async () => old.resolve(history([task(1, 1)])));
             expect(screen.getByRole('button', {name: /^2\. Prüfung:/})).toBeInTheDocument();
 
-            const failed = deferred<Page<ProcessInstanceTaskEntity>>();
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockReturnValueOnce(failed.promise);
+            const failed = deferred<ProcessInstanceHistoryTasks>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockReturnValueOnce(failed.promise);
             act(() => eventChannel.emitEvent('refresh'));
             act(() => eventChannel.emitEvent('refresh'));
             await waitFor(() => expect(screen.queryByRole('button', {name: /^2\. Prüfung:/})).not.toBeInTheDocument());
@@ -1132,16 +1264,16 @@ describe('Process instance history preview', () => {
 
         it.each(['success', 'failure'] as const)('ignores late %s after leaving the history', async outcome => {
             const {eventChannel, unmount} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)]);
-            const pending = deferred<Page<ProcessInstanceTaskEntity>>();
-            vi.mocked(ProcessInstanceTaskApiService.prototype.listAllOrdered).mockReturnValueOnce(pending.promise);
+            const pending = deferred<ProcessInstanceHistoryTasks>();
+            vi.mocked(ProcessInstanceTaskApiService.prototype.getHistory).mockReturnValueOnce(pending.promise);
             act(() => eventChannel.emitEvent('refresh'));
-            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledTimes(2);
             unmount();
             eventChannel.emitEvent('refresh');
-            expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).toHaveBeenCalledTimes(2);
+            expect(ProcessInstanceTaskApiService.prototype.getHistory).toHaveBeenCalledTimes(2);
             await act(async () => {
                 if (outcome === 'success') {
-                    pending.resolve(page([task(2, 1)]));
+                    pending.resolve(history([task(2, 1)]));
                 } else {
                     pending.reject(new Error('Late failure'));
                 }
@@ -1156,7 +1288,7 @@ describe('Process instance history preview', () => {
                 const {eventChannel} = await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)], {waitForLoad: false});
                 expect(screen.getByRole('alert')).toHaveTextContent(/keine Berechtigung/);
                 await act(async () => eventChannel.emitEvent('refresh'));
-                expect(ProcessInstanceTaskApiService.prototype.listAllOrdered).not.toHaveBeenCalled();
+                expect(ProcessInstanceTaskApiService.prototype.getHistory).not.toHaveBeenCalled();
                 expect(ProcessDefinitionApiService.prototype.retrieve).not.toHaveBeenCalled();
                 expect(ProcessInstanceEventApiService.prototype.listHistory).not.toHaveBeenCalled();
             },
@@ -1242,7 +1374,7 @@ describe('Process instance history preview', () => {
             ...task(1, 1, ProcessTaskStatus.Completed),
             executionSummaryMarkdown: '**Zählerstand:** 17\n\n- Erhöht\n- Gespeichert\n\n[Details](https://example.org/details)',
         };
-        vi.mocked(ProcessInstanceEventApiService.prototype.listHistory).mockResolvedValue(page([{
+        historyEvents.mockResolvedValue(page([{
             ...historyEvent(),
             id: 7,
             processInstanceId: 17,

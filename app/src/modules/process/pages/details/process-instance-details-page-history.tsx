@@ -3,8 +3,12 @@ import {Link, useLocation, useSearchParams} from 'react-router-dom';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {activeHistoryTaskStatuses, resolveHistoryTaskTarget} from '../../utils/process-history-navigation';
-import {getHistoryEventActor, getTaskHistoryEvents, isManualHistoryIntervention, type TaskHistoryEvent} from '../../utils/process-history-events';
-import {ProcessHistoryEventDetailsDialog} from '../../dialogs/process-history-event-details-dialog';
+import {isManualHistoryIntervention, type TaskHistoryEvent} from '../../utils/process-history-events';
+import {ProcessHistoryEventSection} from '../../components/process-history-event-section';
+import {ProcessHistoryPagination} from '../../components/process-history-pagination';
+import {ProcessHistoryEventScope} from '../../enums/process-history-event-scope';
+import {type Page} from '../../../../models/dtos/page';
+import {type ProcessInstanceHistoryTasks} from '../../models/process-instance-history-tasks';
 import UnfoldMore from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
 import UnfoldLess from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
 import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
@@ -17,7 +21,6 @@ import {ProcessInstanceTaskDataDialog, type ProcessInstanceTaskDataKind} from '.
 import {Alert, Box, Button, Paper, Skeleton, Stack, AlertTitle, Typography} from '@mui/material';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Schedule from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
-import Person from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import {Accordion, AccordionDetails, AccordionSummary} from '../../../../components/accordion/accordion';
 import {ProcessExecutionSummary} from '../../components/process-execution-summary';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -165,11 +168,13 @@ function InstanceHistory(props: InstanceHistoryProps) {
     const location = useLocation();
     const requestedTask = searchParams.get('taskId');
     const handledTaskTarget = useRef<string | null>(null);
+    const loadedTaskTarget = useRef<string | null>(null);
     const [loadFailed, setLoadFailed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [jumpNotice, setJumpNotice] = useState<string>();
     const [scrollTarget, setScrollTarget] = useState<string>();
-    const [selectedEventId, setSelectedEventId] = useState<number>();
+    const pageNumber = useRef(0);
+    const [pageChangeCounter, setPageChangeCounter] = useState(0);
 
     const canRead = useHasProcessInstancePermission(processInstanceId, Permission.PROCESS_INSTANCE_READ);
     const canViewProcess = useHasProcessPermission(processDefinitionId, Permission.PROCESS_DEFINITION_READ);
@@ -196,10 +201,13 @@ function InstanceHistory(props: InstanceHistoryProps) {
         setIsLoading(true);
 
         // Keep the displayed timeline mounted during refreshes to preserve expanded entries.
-        fetchHistory(processDefinitionId, processInstanceId, processInstance.initialProcessVersion)
+        fetchHistory(processDefinitionId, processInstanceId, processInstance.initialProcessVersion, pageNumber.current,
+            requestedTask != null && handledTaskTarget.current !== `${location.key}:${requestedTask}` ? requestedTask : undefined)
             .then(history => {
                 if (isActive) {
+                    loadedTaskTarget.current = requestedTask == null ? null : `${location.key}:${requestedTask}`;
                     setResult(history);
+                    pageNumber.current = history.page.number;
                 }
             })
             .catch((error) => {
@@ -213,7 +221,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
         return () => {
             isActive = false;
         };
-    }, [canRead, canViewProcess, processInstanceId, processDefinitionId, processInstance.initialProcessVersion, dispatch, refreshCounter]);
+    }, [canRead, canViewProcess, processInstanceId, processDefinitionId, processInstance.initialProcessVersion, dispatch, refreshCounter, pageChangeCounter, requestedTask, location.key]);
 
     useEffect(() => {
         if (!canRead || !canViewProcess || result == null) return;
@@ -224,6 +232,8 @@ function InstanceHistory(props: InstanceHistoryProps) {
         }
         const requestKey = `${location.key}:${requestedTask}`;
         if (handledTaskTarget.current === requestKey) return;
+        // A new URL target must be resolved against its own response, not the still-visible previous page.
+        if (loadedTaskTarget.current !== requestKey) return;
         const ids = resolveHistoryTaskTarget(result.tasks, requestedTask);
         if (ids.length === 0) {
             setJumpNotice('Das Sprungziel ist im angezeigten Verlauf nicht verfügbar.');
@@ -276,10 +286,6 @@ function InstanceHistory(props: InstanceHistoryProps) {
     }
 
     const dataTask = result.tasks.find(task => task.id === dataTarget?.taskId);
-    const interventions = result.events.filter(isManualHistoryIntervention);
-    const instanceErrors = result.events.filter(event => event.processInstanceTaskId == null &&
-        event.level === ProcessNodeExecutionLogLevel.Error && !isManualHistoryIntervention(event));
-    const selectedEvent = result.events.find(event => event.id === selectedEventId);
 
     return (
         <Stack spacing={3}>
@@ -324,21 +330,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
 
             {loadFailed && <Alert severity="error" action={<Button color="inherit" loading={isLoading} onClick={() => setRefreshCounter(counter => counter + 1)}>Erneut versuchen</Button>}>Der angezeigte Verlauf konnte nicht aktualisiert werden.</Alert>}
             {jumpNotice != null && <Alert severity="info">{jumpNotice}</Alert>}
-
-            {instanceErrors.length > 0 && (
-                <Box component="section" aria-labelledby={`history-${processInstanceId}-errors`}>
-                    <Typography variant="h6" id={`history-${processInstanceId}-errors`} sx={{mb: 1}}>Fehler auf Vorgangsebene</Typography>
-                    <Stack spacing={1}>
-                        {instanceErrors.map(event => (
-                            <Alert key={event.id} severity="error" action={<Button color="inherit" size="small" onClick={() => setSelectedEventId(event.id)}>Details anzeigen</Button>}>
-                                <AlertTitle>{event.title}</AlertTitle>
-                                <Typography sx={{whiteSpace: 'pre-wrap', overflowWrap: 'anywhere'}}>{event.message}</Typography>
-                                <Typography component="time" dateTime={event.timestamp} variant="caption" sx={{display: 'block', mt: 0.5}}>{formatDateTimeWithRelative(event.timestamp)}</Typography>
-                            </Alert>
-                        ))}
-                    </Stack>
-                </Box>
-            )}
+            <ProcessHistoryEventSection instanceId={processInstanceId} scope={ProcessHistoryEventScope.InstanceErrors} refreshCounter={refreshCounter}/>
 
             {result.tasks.length === 0 ? (
                 <Box sx={{border: '1px dashed', borderColor: 'divider', borderRadius: 1, p: 3, textAlign: 'center'}}>
@@ -353,8 +345,9 @@ function InstanceHistory(props: InstanceHistoryProps) {
                     {result.tasks.map((task, index) => (
                         <TimelineItem
                             key={task.id}
-                            index={index}
+                            index={result.page.number * result.page.size + index}
                             task={task}
+                            eventsComplete={task.eventsComplete}
                             identities={processInstance.identities}
                             processInstanceAccessKey={processInstance.accessKey}
                             node={task.node}
@@ -373,6 +366,9 @@ function InstanceHistory(props: InstanceHistoryProps) {
                     ))}
                 </Stack>
             )}
+
+            <ProcessHistoryPagination page={result.page} label="Seiten des Vorgangsverlaufs" disabled={isLoading}
+                                      onChange={page => { pageNumber.current = page; setPageChangeCounter(value => value + 1); }}/>
 
             {!isProcessInstanceFinished(processInstance.status) && <Box>
                 <Typography variant="h5">
@@ -416,29 +412,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
                     </Box>
                 )}
             </Box>}
-            <Box component="section" aria-labelledby={`history-${processInstanceId}-interventions`}>
-                <Typography variant="h5" id={`history-${processInstanceId}-interventions`}>Manuelle Eingriffe</Typography>
-                <Typography sx={{mt: 1, mb: 2, maxWidth: 820, color: 'text.secondary'}}>Hier finden Sie manuelle Aktionen außerhalb des modellierten Ablaufs, zum Beispiel Neuzuweisungen und erneute Ausführungen. Eingriffe in eine Aufgabe erscheinen zusätzlich bei deren Ereignissen.</Typography>
-                {interventions.length === 0 ? (
-                    <Box sx={{border: '1px dashed', borderColor: 'divider', borderRadius: 1, p: 3, textAlign: 'center'}}>
-                        <Typography sx={{color: 'text.secondary'}}>Keine manuellen Eingriffe protokolliert.</Typography>
-                    </Box>
-                ) : (
-                    <Paper component="ol" aria-label="Manuelle Eingriffe" variant="outlined" sx={{listStyle: 'none', m: 0, p: 0, overflow: 'hidden'}}>
-                        {interventions.map(event => (
-                            <Box key={event.id} component="li" sx={{display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5, minWidth: 0, '& + li': {borderTop: '1px solid', borderColor: 'divider'}}}>
-                                <Person color="action" sx={{flexShrink: 0}}/>
-                                <Box sx={{flex: 1, minWidth: 0}}>
-                                    <Typography title={event.title} sx={{fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{event.title}</Typography>
-                                    <Typography variant="caption" component="div" sx={{color: 'text.secondary'}}>{getHistoryEventActor(event)} · {formatDateTimeWithRelative(event.timestamp)}</Typography>
-                                </Box>
-                                <Button size="small" sx={{flexShrink: 0}} onClick={() => setSelectedEventId(event.id)}>Details anzeigen</Button>
-                            </Box>
-                        ))}
-                    </Paper>
-                )}
-            </Box>
-            {selectedEvent != null && <ProcessHistoryEventDetailsDialog event={selectedEvent} onClose={() => setSelectedEventId(undefined)}/>}
+            <ProcessHistoryEventSection instanceId={processInstanceId} scope={ProcessHistoryEventScope.ManualInterventions} refreshCounter={refreshCounter}/>
             <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
                 <Button
                     component={Link}
@@ -461,7 +435,7 @@ function InstanceHistory(props: InstanceHistoryProps) {
             {dataTarget != null && dataTask != null && (
                 <ProcessInstanceTaskDataDialog
                     task={dataTask}
-                    taskLabel={`${result.tasks.indexOf(dataTask) + 1}. ${getTimelineNodeName(dataTask.node, dataTask.nodeDefinition)}`}
+                    taskLabel={`${result.page.number * result.page.size + result.tasks.indexOf(dataTask) + 1}. ${getTimelineNodeName(dataTask.node, dataTask.nodeDefinition)}`}
                     previousProcessData={dataTask.previousProcessData}
                     kind={dataTarget.kind}
                     onClose={() => setDataTarget(null)}
@@ -472,8 +446,8 @@ function InstanceHistory(props: InstanceHistoryProps) {
 }
 
 interface HistoryData {
-    events: ProcessInstanceHistoryEvent[];
     tasks: TaskWithNodeAndEvents[];
+    page: Page<unknown>['page'];
     preview: UpcomingStepsPreview;
 }
 
@@ -486,17 +460,19 @@ type TaskWithNodeAndEvents = ProcessInstanceTaskEntity & {
     node: ProcessNodeEntity | null;
     nodeDefinition: ProcessNodeProvider | null;
     taskEvents: TaskHistoryEvent[];
+    eventsComplete: boolean;
+    eventCount: number;
+    eventsLoadFailed: boolean;
     previousProcessData: Record<string, unknown> | null;
     failureEvent: ProcessInstanceEventEntity | null;
     failureLoadFailed: boolean;
 };
 
-async function fetchHistory(processId: number, processInstanceId: number, initialProcessVersion: number): Promise<HistoryData> {
-    const [tasks, events] = await Promise.all([
-        new ProcessInstanceTaskApiService().listAllOrdered(['started', 'id'], 'ASC', {processInstanceId}),
-        new ProcessInstanceEventApiService().listHistory(processInstanceId),
-    ]);
-    const versions = [...new Set([initialProcessVersion, ...tasks.content.map(task => task.processVersion)])];
+async function fetchHistory(processId: number, processInstanceId: number, initialProcessVersion: number,
+                            pageNumber: number, target?: string): Promise<HistoryData> {
+    const history = await new ProcessInstanceTaskApiService().getHistory(processInstanceId, pageNumber, 20, target);
+    const {tasks, predecessors, activeTasks} = history;
+    const versions = [...new Set([initialProcessVersion, ...tasks.content.map(task => task.processVersion), ...activeTasks.map(task => task.processVersion)])];
     const [nodeResults, providerResult, edgeResults] = await Promise.all([
         Promise.allSettled(versions.map(processVersion => new ProcessNodeApiService().listAll({processId, processVersion}))),
         new ProcessNodeProviderApiService().getNodeProviders().then(value => ({value})).catch(() => ({value: null})),
@@ -508,7 +484,7 @@ async function fetchHistory(processId: number, processInstanceId: number, initia
     let preview: UpcomingStepsPreview = {nodes: [], emptyReason: 'unavailable'};
     if (providerResult.value != null && nodeResults.every(result => result.status === 'fulfilled') && edgeResults.every(result => result.status === 'fulfilled')) {
         try {
-            preview = getUpcomingNodes(buildProcessFlowGraph(nodes, edges, definitions), tasks.content);
+            preview = getUpcomingNodes(buildProcessFlowGraph(nodes, edges, definitions), activeTasks);
         } catch {
             // Missing model metadata must not hide the tasks, their data or their execution summaries.
         }
@@ -529,24 +505,35 @@ async function fetchHistory(processId: number, processInstanceId: number, initia
                 return [task.id, {event: null, loadFailed: true}] as const;
             }
         })));
-    const tasksById = new Map(tasks.content.map(task => [task.id, task]));
-    const tasksWithNodes: TaskWithNodeAndEvents[] = tasks.content
-        .filter(task => task.status !== ProcessTaskStatus.Restarted)
-        .map(task => {
-            const node = nodes.find(node => node.id === task.processNodeId) ?? null;
-            const nodeDefinition = definitions.find(definition => definition.key === node?.processNodeDefinitionKey && definition.majorVersion === node?.processNodeDefinitionVersion) ?? null;
-            return {
-                ...task, node, nodeDefinition,
-                taskEvents: getTaskHistoryEvents(task, tasksById, events.content),
-                failureEvent: failureEvents.get(task.id)?.event ?? null,
-                failureLoadFailed: failureEvents.get(task.id)?.loadFailed ?? false,
-                previousProcessData: task.previousProcessInstanceTaskId == null ? {} : tasksById.get(task.previousProcessInstanceTaskId)?.processData ?? null,
-            };
-        });
-    return {tasks: tasksWithNodes, events: events.content, preview};
+    const tasksById = new Map([...predecessors, ...tasks.content].map(task => [task.id, task]));
+    const tasksWithNodes: TaskWithNodeAndEvents[] = await Promise.all(tasks.content.map(async task => {
+        const node = nodes.find(node => node.id === task.processNodeId) ?? null;
+        const nodeDefinition = definitions.find(definition => definition.key === node?.processNodeDefinitionKey && definition.majorVersion === node?.processNodeDefinitionVersion) ?? null;
+        let eventPage: Page<ProcessInstanceHistoryEvent> | null = null;
+        try {
+            eventPage = await new ProcessInstanceEventApiService().listHistory(processInstanceId, {
+                scope: ProcessHistoryEventScope.Task, taskId: task.id, size: 20, sortOrder: 'DESC',
+            });
+        } catch {
+            // A failed event request must not hide the task or its stored execution summary.
+        }
+        return {
+            ...task, node, nodeDefinition,
+            taskEvents: (eventPage?.content ?? []).map(event => ({...event,
+                fromPreviousAttempt: event.processInstanceTaskId !== task.id,
+            })).sort((left, right) => Date.parse(left.timestamp) - Date.parse(right.timestamp) || left.id - right.id),
+            eventsComplete: eventPage != null && eventPage.page.totalElements === eventPage.content.length,
+            eventCount: eventPage?.page.totalElements ?? 0,
+            eventsLoadFailed: eventPage == null,
+            failureEvent: failureEvents.get(task.id)?.event ?? null,
+            failureLoadFailed: failureEvents.get(task.id)?.loadFailed ?? false,
+            previousProcessData: task.previousProcessInstanceTaskId == null ? {} : tasksById.get(task.previousProcessInstanceTaskId)?.processData ?? null,
+        };
+    }));
+    return {tasks: tasksWithNodes, page: tasks.page, preview};
 }
 
-function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceTaskEntity[]): UpcomingStepsPreview {
+function getUpcomingNodes(graph: ProcessFlowGraph, tasks: ProcessInstanceHistoryTasks['activeTasks']): UpcomingStepsPreview {
     const nodesById = new Map(graph.nodes.map((node) => [node.node.id, node]));
     const upcoming = new Map<number, ProcessFlowGraphNode>();
     let hasOpenBranch = false;
@@ -645,6 +632,7 @@ const activeTaskNotices: Partial<Record<ProcessTaskStatus, string>> = {
 
 interface TimelineItemProps extends TimelineLabelProps {
     task: TaskWithNodeAndEvents;
+    eventsComplete: boolean;
     identities: IdentityDataMap;
     processInstanceAccessKey: string;
     expanded: boolean;
@@ -654,7 +642,20 @@ interface TimelineItemProps extends TimelineLabelProps {
     onShowData: (kind: ProcessInstanceTaskDataKind) => void;
 }
 
-function TimelineItem({index, node, nodeDefinition, task, identities, processInstanceAccessKey, expanded, onExpandedChange, onRestarted, onShowEvents, onShowData}: TimelineItemProps) {
+function TimelineItem({
+                          index,
+                          node,
+                          nodeDefinition,
+                          task,
+                          eventsComplete,
+                          identities,
+                          processInstanceAccessKey,
+                          expanded,
+                          onExpandedChange,
+                          onRestarted,
+                          onShowEvents,
+                          onShowData,
+                      }: TimelineItemProps) {
     const id = useId();
     const dispatch = useAppDispatch();
     const canRestart = useHasProcessInstancePermission(task.processInstanceId, Permission.PROCESS_INSTANCE_RESTART_FAILED);
@@ -681,9 +682,11 @@ function TimelineItem({index, node, nodeDefinition, task, identities, processIns
     const activeNotice = status.identityLabel
         ? `Dieses Prozesselement wartet auf eine Rückmeldung der Identität „${status.identityLabel}“.`
         : activeTaskNotices[task.status];
+    const emptyNotice = eventsComplete
+        ? 'Für diese Aufgabe liegen keine Zusammenfassung und keine verlaufsrelevanten Ereignisse vor.'
+        : 'Für diese Aufgabe ist keine Zusammenfassung verfügbar. Ihre Ereignisse sind möglicherweise nicht vollständig geladen.';
     const notice = task.status !== ProcessTaskStatus.Failed && !hasSummary
-        ? activeNotice ?? (task.taskEvents.length === 0
-            ? 'Für diese Aufgabe liegen keine Zusammenfassung und keine verlaufsrelevanten Ereignisse vor.' : undefined)
+        ? activeNotice ?? (task.taskEvents.length === 0 ? emptyNotice : undefined)
         : undefined;
 
     return (
@@ -734,6 +737,9 @@ function TimelineItem({index, node, nodeDefinition, task, identities, processIns
                                     : 'Für diese Aufgabe ist keine Fehlermeldung gespeichert. Weitere Details finden Sie gegebenenfalls im Ereignisprotokoll.'}
                             </Alert>
                         )}
+                        {task.eventsLoadFailed && <Alert severity="warning" action={<Button color="inherit" onClick={onShowEvents}>Ereignisprotokoll öffnen</Button>}>
+                            Die Ereignisse dieser Aufgabe konnten nicht geladen werden.
+                        </Alert>}
                         {notice != null && <Alert severity="info">{notice}</Alert>}
                         {hasSummary && (
                             <Box>
@@ -753,6 +759,10 @@ function TimelineItem({index, node, nodeDefinition, task, identities, processIns
                                         Älteste zuerst
                                     </Typography>
                                 </Stack>
+                                {!eventsComplete && <Typography variant="body2" sx={{mb: 1, color: 'text.secondary'}}>
+                                    Angezeigt werden die letzten {task.taskEvents.length} von {task.eventCount} Ereignissen.
+                                    {' '}<Button size="small" onClick={onShowEvents}>Alle Ereignisse anzeigen</Button>
+                                </Typography>}
                                 <Paper variant="outlined" component="ol" aria-label="Ereignisse und Zwischenergebnisse" sx={{listStyle: 'none', m: 0, p: 0}}>
                                     {task.taskEvents.map(event => (
                                         <Box key={event.id} component="li" sx={{p: 1.5, '& + li': {borderTop: '1px solid', borderColor: 'divider'}}}>
