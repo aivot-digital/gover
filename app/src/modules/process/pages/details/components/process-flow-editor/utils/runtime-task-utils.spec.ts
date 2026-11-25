@@ -117,8 +117,34 @@ describe('node executions', () => {
         const second = createTask(2, 10, {}, {started: last.started});
         const tasks = [last, createTask(3, 10, {}, {status: ProcessTaskStatus.Restarted}), second, first, createTask(5, 20, {})];
         expect(getExecutionsForNode(tasks, 10).map(task => task.id)).toEqual([1, 2, 4]);
-        expect(getLatestTaskForNode(tasks, 10)?.id).toBe(4);
         expect(tasks[0]).toBe(last);
+    });
+
+    it.each([false, true])('keeps a restarted attempt as the node state until its replacement exists (older loop: %s)', hasOlderLoop => {
+        const restarted = createTask(2, 10, {attempt: 'restarting'}, {status: ProcessTaskStatus.Restarted});
+        const tasks = [restarted, ...(hasOlderLoop ? [createTask(1, 10, {attempt: 'older loop'})] : [])];
+
+        expect(getLatestTaskForNode(tasks, 10)).toBe(restarted);
+        expect(getExecutionsForNode(tasks, 10)).not.toContain(restarted);
+
+        const replacement = createTask(3, 10, {attempt: 'replacement'}, {
+            status: ProcessTaskStatus.Running,
+            restartForTaskId: restarted.id,
+        });
+        expect(getLatestTaskForNode([replacement, ...tasks], 10)).toBe(replacement);
+    });
+
+    it('uses the ID to order a replacement with the same start time and ignores later updates of older attempts', () => {
+        const restarted = createTask(1, 10, {}, {
+            status: ProcessTaskStatus.Restarted,
+            updated: '2030-01-01T00:00:00Z',
+        });
+        const replacement = createTask(2, 10, {}, {
+            started: restarted.started,
+            restartForTaskId: restarted.id,
+        });
+
+        expect(getLatestTaskForNode([replacement, restarted, createTask(3, 20, {})], 10)).toBe(replacement);
     });
 
     it('selects the last traversal by start rather than a later update of an old traversal', () => {

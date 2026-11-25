@@ -62,16 +62,18 @@ function runtime(tasks = [task(1), task(2, ProcessTaskStatus.InProgress)]): Proc
 }
 
 function renderDialog(data = runtime(), onReload = vi.fn(), onDownloadAttachment = vi.fn()) {
-    const view = render(<ThemeProvider theme={BaseTheme}><MemoryRouter>
+    const content = (runtimeData: ProcessRuntimeData) => <ThemeProvider theme={BaseTheme}><MemoryRouter>
         <ProcessNodeExecutionsDialog nodeId={5}
                                      nodeName="Prüfung"
-                                     runtimeData={data}
+                                     runtimeData={runtimeData}
                                      onReload={onReload}
                                      onDownloadAttachment={onDownloadAttachment}
                                      onClose={vi.fn()}/>
-    </MemoryRouter></ThemeProvider>);
+    </MemoryRouter></ThemeProvider>;
+    const view = render(content(data));
     return {
         ...view,
+        rerenderRuntimeData: (runtimeData: ProcessRuntimeData) => view.rerender(content(runtimeData)),
         onReload,
         onDownloadAttachment,
     };
@@ -126,6 +128,28 @@ describe('ProcessNodeExecutionsDialog', () => {
         renderDialog();
         await userEvent.click(within(rows()[1]).getByRole('button', {name: 'Ereignisprotokoll'}));
         expect(screen.getByRole('dialog', {name: 'Ereignisprotokoll'})).toHaveTextContent('Vorgang 17, Aufgabe 1');
+    });
+
+    it('removes the model marker while a restart is pending and assigns it to the replacement after refreshing', () => {
+        const first = task(1);
+        const failed = task(2, ProcessTaskStatus.Failed);
+        const {rerenderRuntimeData} = renderDialog(runtime([first, failed]));
+        expect(within(rows()[0]).getByText('Neueste Ausführung')).toBeVisible();
+
+        const restarted = {
+            ...failed,
+            status: ProcessTaskStatus.Restarted,
+        };
+        rerenderRuntimeData(runtime([first, restarted]));
+        expect(rows()).toHaveLength(1);
+        expect(screen.queryByText('Neueste Ausführung')).not.toBeInTheDocument();
+
+        const replacement = task(3, ProcessTaskStatus.Running, {restartForTaskId: restarted.id});
+        rerenderRuntimeData(runtime([first, restarted, replacement]));
+        expect(rows()).toHaveLength(2);
+        expect(within(rows()[0]).getByText('Neueste Ausführung')).toBeVisible();
+        expect(within(rows()[0]).getByRole('link', {name: 'Im Vorgangsverlauf ansehen'})).toHaveAttribute('href', '/process-instances/17/history?taskId=3');
+        expect(within(rows()[1]).queryByText('Neueste Ausführung')).not.toBeInTheDocument();
     });
 
     it('compares against the referenced predecessor instead of the previous execution of this node', async () => {

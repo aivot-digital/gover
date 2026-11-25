@@ -128,14 +128,22 @@ function renderNode(task: Partial<ProcessInstanceTaskEntity>, overrides: Partial
             },
         },
     };
-    render(
+    const content = (value: ProcessFlowEditorContextType) => (
         <MemoryRouter>
-            <ProcessFlowEditorProvider value={{...context, ...overrides}}>
+            <ProcessFlowEditorProvider value={value}>
                 <ProcessFlowEditorNode {...props} />
             </ProcessFlowEditorProvider>
-        </MemoryRouter>,
+        </MemoryRouter>
     );
-    return {onReloadRuntimeData};
+    const value = {...context, ...overrides};
+    const view = render(content(value));
+    return {
+        onReloadRuntimeData,
+        rerenderRuntimeData: (runtimeData: ProcessFlowEditorContextType['runtimeData']) => view.rerender(content({
+            ...value,
+            runtimeData,
+        })),
+    };
 }
 
 function dispatchedSnackbar(message: string, severity: SnackbarSeverity) {
@@ -173,6 +181,55 @@ it('reruns a failed task and reloads the runtime data', async () => {
     expect(rerun).toHaveBeenCalledWith(12);
     await waitFor(() => expect(onReloadRuntimeData).toHaveBeenCalled());
     expect(mocks.dispatch).toHaveBeenCalledWith(dispatchedSnackbar('Die erneute Ausführung der Aufgabe wurde angefordert.', SnackbarSeverity.Success));
+});
+
+it.each([false, true])('keeps the restart status and event target until the new attempt arrives (older loop: %s)', async hasOlderLoop => {
+    const restarted = {
+        ...new ProcessInstanceTaskApiService().initialize(),
+        id: 2,
+        processNodeId: 1,
+        started: '2026-11-20T10:02:00Z',
+        status: ProcessTaskStatus.Restarted,
+    };
+    const olderLoop = {
+        ...restarted,
+        id: 1,
+        started: '2026-11-20T10:01:00Z',
+        status: ProcessTaskStatus.Completed,
+    };
+    const runtimeData = {
+        instance: new ProcessInstanceApiService().initialize(),
+        tasks: [restarted, ...(hasOlderLoop ? [olderLoop] : [])],
+        events: [],
+        attachments: [],
+        attachmentSets: [],
+    };
+    const onShowTaskEvents = vi.fn();
+    const {rerenderRuntimeData} = renderNode({}, {
+        runtimeData,
+        onShowTaskEvents,
+    });
+
+    expect(screen.getByLabelText('Neu gestartet')).toBeVisible();
+    expect(screen.queryByLabelText('Abgeschlossen')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', {name: 'Ereignisse'}));
+    expect(onShowTaskEvents).toHaveBeenLastCalledWith(restarted.id);
+
+    const replacement = {
+        ...restarted,
+        id: 3,
+        started: '2026-11-20T10:03:00Z',
+        status: ProcessTaskStatus.Running,
+        restartForTaskId: restarted.id,
+    };
+    rerenderRuntimeData({
+        ...runtimeData,
+        tasks: [replacement, ...runtimeData.tasks],
+    });
+    expect(screen.getByLabelText('Gestartet')).toBeVisible();
+    expect(screen.queryByLabelText('Neu gestartet')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', {name: 'Ereignisse'}));
+    expect(onShowTaskEvents).toHaveBeenLastCalledWith(replacement.id);
 });
 
 it('reports a rerun the server rejects instead of failing silently', async () => {

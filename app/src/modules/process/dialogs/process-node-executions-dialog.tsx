@@ -31,6 +31,7 @@ import {ProcessInstanceTaskApiService} from '../services/process-instance-task-a
 import {activeHistoryTaskStatuses} from '../utils/process-history-navigation';
 import {getProcessTaskStatusDisplay} from '../utils/process-task-status-label';
 import {getExecutionsForNode} from '../utils/process-task-executions';
+import {getLatestTaskForNode} from '../pages/details/components/process-flow-editor/utils/runtime-task-utils';
 import {ProcessInstanceEventDialog} from './process-instance-event-dialog';
 import {ProcessInstanceTaskDataDialog, type ProcessInstanceTaskDataKind} from './process-instance-task-data-dialog';
 
@@ -64,6 +65,7 @@ export function ProcessNodeExecutionsDialog({
     const [dataTarget, setDataTarget] = useState<{ taskId: number; kind: ProcessInstanceTaskDataKind } | null>(null);
     const [restartingId, setRestartingId] = useState<number | null>(null);
     const executions = getExecutionsForNode(tasks, nodeId);
+    const latestTask = getLatestTaskForNode(tasks, nodeId);
     const now = useDeadlineNow(canRead && executions.some(task => task.finished == null && activeHistoryTaskStatuses.has(task.status)));
     const dataTask = tasks.find(task => task.id === dataTarget?.taskId);
     const dataExecutionIndex = executions.findIndex(task => task.id === dataTask?.id);
@@ -154,7 +156,7 @@ export function ProcessNodeExecutionsDialog({
                                                               label={status.label}
                                                               sx={{maxWidth: '100%'}}/>
                                                     </Tooltip>
-                                                    {task.id === executions.at(-1)?.id && (
+                                                    {task.id === latestTask?.id && (
                                                         <Tooltip title="Im Prozessmodell werden der Status und die Daten dieser Ausführung angezeigt."
                                                                  arrow>
                                                             <Chip size="small"

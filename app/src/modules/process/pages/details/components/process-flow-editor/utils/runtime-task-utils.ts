@@ -1,5 +1,4 @@
 import {compareTaskExecutionOrder} from '../../../../../utils/process-task-executions';
-import {ProcessTaskStatus} from '../../../../../enums/process-task-status';
 import {type ProcessInstanceTaskEntity} from '../../../../../entities/process-instance-task-entity';
 
 function pickLatestTask(
@@ -25,7 +24,8 @@ export function getLatestTaskForNode(
     tasks: ProcessInstanceTaskEntity[],
     processNodeId: number,
 ): ProcessInstanceTaskEntity | null {
-    return pickLatestTask(tasks, (task) => task.processNodeId === processNodeId && task.status !== ProcessTaskStatus.Restarted);
+    // Keep the restart state until the worker creates its replacement; older loop runs must not become current again.
+    return pickLatestTask(tasks, (task) => task.processNodeId === processNodeId);
 }
 
 export function getLatestTaskForEdge(
