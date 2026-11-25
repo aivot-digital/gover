@@ -75,16 +75,29 @@ class NoCodeListOperatorsTest {
     void listSelectShouldProjectFieldValues() throws NoCodeException {
         var operator = new NoCodeListSelectOperator();
         var data = runtime();
-        var list = List.of(
+        var list = Arrays.asList(
                 Map.of("name", "A", "age", 20),
-                Map.of("name", "B", "age", 30),
-                "not-an-object"
+                null,
+                Map.of("name", "B", "age", 30)
         );
 
         var selected = operator.evaluate(data, list, "name").getValue();
 
-        assertEquals(Arrays.asList("A", "B", null), selected);
+        assertEquals(Arrays.asList("A", null, "B"), selected);
         assertEquals(NoCodeDataType.List, operator.getSignatures()[0].returnType());
+        var error = assertThrows(NoCodeException.class, () -> operator.evaluate(data, List.of(Map.of("name", "A"), "not-an-object"), "name"));
+        assertEquals("Der Wert ist kein Objekt.", error.getMessage());
+    }
+
+    @Test
+    void listFunctionsShouldRejectValuesThatAreNotLists() throws NoCodeException {
+        var operator = new NoCodeListContainsOperator();
+        assertFalse((Boolean) operator.evaluate(runtime(), null, "a").getValue());
+        assertFalse((Boolean) operator.evaluate(runtime(), "null", "a").getValue());
+        for (var invalid : List.of("kein JSON", "{}", 1, Map.of())) {
+            var error = assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), invalid, "a"), String.valueOf(invalid));
+            assertEquals("Der Wert ist keine Liste.", error.getMessage());
+        }
     }
 
     @Test

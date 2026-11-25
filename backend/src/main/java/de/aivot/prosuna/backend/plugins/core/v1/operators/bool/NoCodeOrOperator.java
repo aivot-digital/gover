@@ -56,7 +56,7 @@ public class NoCodeOrOperator extends NoCodeOperator {
                 # Was ist zu beachten?
                 Die Funktion prüft die Bedingungen von oben nach unten. Ist eine Bedingung wahr, überspringt sie alle folgenden Bedingungen. Im Testlauf steht an den dabei übersprungenen Bedingungen, welche Bedingung wahr war.
 
-                Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Andere Werttypen werden bei der Auswertung in Wahrheitswerte umgewandelt. Der Text „Nein“ gilt dabei als wahr.
+                Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung.
                 """;
     }
 

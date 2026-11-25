@@ -47,7 +47,7 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `gemeinsame Werte von „Ausgewählte Kategorien“ und „Zulässige Kategorien“`. Das Ergebnis ist `["B", "A"]`. Mit **„Anzahl der Listeneinträge“** können Sie anschließend die gemeinsamen Werte zählen.
 
                 # Was ist zu beachten?
-                Die Reihenfolge und die Darstellung der Werte folgen der ersten Liste. Ist eine der Listen leer, ist auch das Ergebnis leer. Zahlen und Texte mit derselben Zahl können als gleich gelten, etwa `2` und `"2"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
+                Die Reihenfolge und die Darstellung der Werte folgen der ersten Liste. Ist eine der Listen leer, ist auch das Ergebnis leer. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 

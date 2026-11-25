@@ -160,15 +160,15 @@ class NoCodeEvaluationServiceTest {
         var service = serviceWithConditionalOperators(valueOperator);
         var data = new DerivedRuntimeElementData();
         var conditionText = first ? "wahr" : "falsch";
-        var expression = new NoCodeExpression("and", value(conditionText), value("second"));
+        var expression = new NoCodeExpression("and", value(conditionText), value("true"));
 
         assertEquals(first, service.evaluate(expression, data).getValue());
         var calls = inOrder(valueOperator);
         calls.verify(valueOperator).evaluate(data, conditionText);
         if (first) {
-            calls.verify(valueOperator).evaluate(data, "second");
+            calls.verify(valueOperator).evaluate(data, "true");
         } else {
-            verify(valueOperator, never()).evaluate(data, "second");
+            verify(valueOperator, never()).evaluate(data, "true");
         }
     }
 

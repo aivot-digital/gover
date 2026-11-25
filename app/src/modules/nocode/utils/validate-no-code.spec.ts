@@ -4,6 +4,7 @@ import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {NoCodeOperatorDetailsDTO} from '../../../models/dtos/no-code-operator-details-dto';
 import {ElementType} from '../../../data/element-type/element-type';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {elementNoCodeFunctions, validateNoCode} from './validate-no-code';
 
 const operator: NoCodeOperatorDetailsDTO = {
@@ -133,6 +134,40 @@ describe('validateNoCode', () => {
             element,
             parents: [],
         }]).isValid).toBe(true);
+    });
+
+    it('requires that visibility checks name an element of the form, also one without input', () => {
+        const section = {
+            ...generateElementWithDefaultValues(ElementType.GroupLayout),
+            id: 'section',
+            children: [{
+                ...generateElementWithDefaultValues(ElementType.Text),
+                id: 'field',
+            }],
+        };
+        const form = {
+            ...(generateElementWithDefaultValues(ElementType.FormLayout) as unknown as FormLayoutElement),
+            id: 'form',
+            children: [section],
+        };
+        const isVisible: NoCodeOperatorDetailsDTO = {
+            ...operator,
+            identifier: 'is-visible',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [{type: NoCodeDataType.String, label: 'Formularelement', description: '', options: []}],
+            }],
+        };
+        const elements = [{element: section.children[0], parents: [form, section]}];
+        const check = (id: string) => validateNoCode({
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'is-visible',
+            operands: [{type: 'NoCodeStaticValue', value: id}],
+        }, [isVisible], elements);
+
+        expect(check('field').isValid).toBe(true);
+        expect(check('section').isValid).toBe(true);
+        expect(check('typo').subErrors?.[0].error).toBe('Das ausgewählte Formularelement ist nicht verfügbar.');
     });
 
     it.each([

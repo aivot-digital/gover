@@ -45,7 +45,7 @@ public class NoCodeIfOperator extends NoCodeOperator {
                 Bei einem Gesamtbetrag von `24` und einer Anzahl von `3` erhalten Sie die Zahl `8`. Bei einer Anzahl von `0` erhalten Sie den Text „Keine Einträge“. Die Division wird nur bei einer Anzahl größer als null ausgeführt.
 
                 # Was ist zu beachten?
-                Die Funktion wertet zuerst die Bedingung aus. Liefert sie einen Wert mit einem anderen Datentyp, wird er für diese Entscheidung in einen Wahrheitswert umgewandelt. Anschließend wertet die Funktion nur den gewählten Ergebniszweig aus. Im Testlauf steht am übersprungenen Zweig „Nicht ausgewertet“ mit der Begründung.
+                Die Funktion wertet zuerst die Bedingung aus. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung. Anschließend wertet die Funktion nur den gewählten Ergebniszweig aus. Im Testlauf steht am übersprungenen Zweig „Nicht ausgewertet“ mit der Begründung.
                 """;
     }
 
@@ -80,7 +80,7 @@ public class NoCodeIfOperator extends NoCodeOperator {
         return new NoCodeResult(args[selectedResultIndex(args[0])]);
     }
 
-    public int selectedResultIndex(@Nullable Object condition) {
+    public int selectedResultIndex(@Nullable Object condition) throws NoCodeException {
         return castToBoolean(condition) ? 1 : 2;
     }
 

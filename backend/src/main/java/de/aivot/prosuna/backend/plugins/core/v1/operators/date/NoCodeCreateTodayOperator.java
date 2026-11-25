@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
+import java.time.LocalDate;
+
 public class NoCodeCreateTodayOperator extends NoCodeOperator {
     private final BusinessTime businessTime;
 
@@ -63,7 +65,7 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
 
                 # Was ist zu beachten?
 
-                Das Datum wird bei jeder Auswertung neu ermittelt. Welcher Tag als heute gilt, richtet sich nach der für Prosuna eingestellten Zeitzone.
+                Das Datum wird bei jeder Auswertung neu ermittelt. Innerhalb einer Auswertung liefern alle Vorkommen von „Heutiges Datum“ dasselbe Datum; zwei Vorkommen in einem Ausdruck sind deshalb immer gleich. Welcher Tag als heute gilt, richtet sich nach der für Prosuna eingestellten Zeitzone.
                 """;
     }
 
@@ -84,6 +86,6 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(businessTime.today());
+        return new NoCodeResult(LocalDate.ofInstant(data.getEvaluationInstant(businessTime.clock()), businessTime.zoneId()));
     }
 }

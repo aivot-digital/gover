@@ -11,19 +11,25 @@ import jakarta.annotation.Nullable;
 import tools.jackson.core.JacksonException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * Represents an operator in the NoCode language.
  */
 public abstract class NoCodeOperator {
+    private static final String NOT_A_BOOLEAN = "Der Wert ist weder wahr noch falsch. Verwenden Sie eine Bedingung oder einen Wahrheitswert.";
+    private static final String NOT_A_LIST = "Der Wert ist keine Liste.";
+    private static final Pattern DECIMAL_COMMA = Pattern.compile("^[+-]?\\d+,\\d+$");
+    // Numbers with more integer or decimal digits are rejected before calculating with them.
+    private static final int MAX_NUMBER_DIGITS = 100;
     private static final DateTimeFormatter LOCAL_TIME_SECONDS_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -174,12 +180,25 @@ public abstract class NoCodeOperator {
         return false;
     }
 
+    /**
+     * Casts a value to the type of the reference. Returns null if either value is missing or the value cannot be cast,
+     * so it never equals the reference.
+     */
     @Nullable
     public Object castToTypeOfReference(@Nullable Object referenceObject, @Nullable Object objectToCast) {
         if (referenceObject == null || objectToCast == null) {
             return null;
         }
 
+        try {
+            return castToTypeOfReferenceOrThrow(referenceObject, objectToCast);
+        } catch (NoCodeException ignored) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private Object castToTypeOfReferenceOrThrow(@Nonnull Object referenceObject, @Nonnull Object objectToCast) throws NoCodeException {
         switch (referenceObject) {
             case String sReferenceObject -> {
                 return castToString(objectToCast);
@@ -241,29 +260,28 @@ public abstract class NoCodeOperator {
     /**
      * Checks whether a value equals the reference after casting it to the type of the reference.
      * <p>
-     * A number is compared by its value with another number or with text that is a number, in either order.
+     * A number only equals another number or text that is a number, in either order, and is compared by its value.
      * {@link BigDecimal#equals} also compares the scale, number fields keep their configured decimal places, and the
-     * no-code editor stores constants as text, which may also precede a number field. Integer casts would also drop
-     * decimals. Other values keep the cast to the type of the reference.
+     * no-code editor stores constants as text, which may also precede a number field. Other values keep the cast to
+     * the type of the reference. Values that cannot be cast are never equal.
      */
     public boolean isEqualToReference(@Nullable Object referenceObject, @Nullable Object objectToCompare) {
         if (referenceObject instanceof Number || objectToCompare instanceof Number) {
-            var referenceNumber = toExactNumber(referenceObject);
-            var comparedNumber = toExactNumber(objectToCompare);
-            if (referenceNumber != null && comparedNumber != null) {
-                return referenceNumber.compareTo(comparedNumber) == 0;
-            }
+            var referenceNumber = parseNumber(referenceObject);
+            var comparedNumber = parseNumber(objectToCompare);
+            return referenceNumber != null && comparedNumber != null && referenceNumber.compareTo(comparedNumber) == 0;
         }
 
         return Objects.equals(referenceObject, castToTypeOfReference(referenceObject, objectToCompare));
     }
 
     /**
-     * The exact value of a number or of text that is a number, otherwise null. The value is not rescaled like in
-     * {@link #castToNumber}, because text such as "1e999999999" would then expand to an enormous number.
+     * The exact value of a number or of text that is a number, otherwise null. Text may use a decimal comma, as entered
+     * in German text fields. The value is not rescaled, because text such as "1e999999999" would then expand to an
+     * enormous number.
      */
     @Nullable
-    private static BigDecimal toExactNumber(@Nullable Object value) {
+    public static BigDecimal parseNumber(@Nullable Object value) {
         return switch (value) {
             case Integer integerValue -> BigDecimal.valueOf(integerValue);
             case Long longValue -> BigDecimal.valueOf(longValue);
@@ -271,8 +289,9 @@ public abstract class NoCodeOperator {
             case Double doubleValue when Double.isFinite(doubleValue) -> BigDecimal.valueOf(doubleValue);
             case Float floatValue when Float.isFinite(floatValue) -> new BigDecimal(floatValue.toString());
             case String text -> {
+                var trimmed = text.trim();
                 try {
-                    yield new BigDecimal(text.trim());
+                    yield new BigDecimal(DECIMAL_COMMA.matcher(trimmed).matches() ? trimmed.replace(',', '.') : trimmed);
                 } catch (NumberFormatException ignored) {
                     yield null;
                 }
@@ -281,81 +300,50 @@ public abstract class NoCodeOperator {
         };
     }
 
+    /**
+     * Reads a condition. A missing value and empty text are false. Otherwise only true and false are accepted, also as
+     * English or German text, ignoring case and surrounding whitespace.
+     */
     @Nonnull
-    public Boolean castToBoolean(@Nullable Object value) {
-        if (value == null) {
-            return false;
-        }
-
+    public static Boolean castToBoolean(@Nullable Object value) throws NoCodeException {
         return switch (value) {
-            case Boolean bValue -> bValue;
-            case Integer iValue -> iValue != 0;
-            case Short sValue -> sValue != 0;
-            case Byte bValue -> bValue != 0;
-            case Float fValue -> fValue != 0;
-            case Double dValue -> dValue != 0;
-            case Long lValue -> lValue != 0;
-            case BigDecimal bdValue -> bdValue.compareTo(BigDecimal.ZERO) != 0;
-            case String sValue -> {
-                if (sValue.isEmpty()) {
-                    yield false;
-                } else if (sValue.equalsIgnoreCase("false")) {
-                    yield false;
-                } else yield !sValue.equalsIgnoreCase("falsch");
-            }
-            case List<?> lValue -> !lValue.isEmpty();
-            case Map<?, ?> mValue -> !mValue.isEmpty();
-            default -> false;
+            case null -> false;
+            case Boolean booleanValue -> booleanValue;
+            case String text -> switch (text.trim().toLowerCase(Locale.ROOT)) {
+                case "", "false", "falsch" -> false;
+                case "true", "wahr" -> true;
+                default -> throw new NoCodeException(NOT_A_BOOLEAN);
+            };
+            default -> throw new NoCodeException(NOT_A_BOOLEAN);
         };
     }
 
+    /**
+     * Reads a number. A missing value and empty text are 0, so optional fields can be used in calculations. Otherwise
+     * only numbers and text that is a number are accepted.
+     */
     @Nonnull
-    public BigDecimal castToNumber(@Nullable Object value) {
-        var res = switch (value) {
-            case null -> BigDecimal.ZERO;
-            case Integer iValue -> BigDecimal.valueOf(iValue);
-            case Float fValue -> BigDecimal.valueOf(fValue);
-            case Double dValue -> BigDecimal.valueOf(dValue);
-            case Long lValue -> BigDecimal.valueOf(lValue);
-            case BigDecimal bdValue -> bdValue;
-            case String sValue -> {
-                if (isDateTimeString(sValue)) {
-                    var dateTime = castToDateTime(sValue);
-                    yield BigDecimal.valueOf(dateTime.toEpochSecond());
-                } else if (isDateString(sValue)) {
-                    yield BigDecimal.valueOf(LocalDate.parse(sValue).toEpochDay());
-                } else {
-                    var parsedTime = parseTime(sValue);
-                    if (parsedTime != null) {
-                        yield BigDecimal.valueOf(parsedTime.toSecondOfDay());
-                    }
+    public BigDecimal castToNumber(@Nullable Object value) throws NoCodeException {
+        if (value == null || value instanceof String text && text.isBlank()) {
+            return BigDecimal.ZERO;
+        }
 
-                    try {
-                        yield new BigDecimal(sValue);
-                    } catch (NumberFormatException e) {
-                        yield BigDecimal.valueOf(sValue.length());
-                    }
-                }
-            }
-            case List<?> lValue -> BigDecimal.valueOf(lValue.size());
-            case Map<?, ?> mValue -> BigDecimal.valueOf(mValue.size());
-            case Instant iValue -> BigDecimal.valueOf(iValue.getEpochSecond());
-            case OffsetDateTime odtValue -> BigDecimal.valueOf(odtValue.toEpochSecond());
-            case LocalDate ldValue -> BigDecimal.valueOf(ldValue.toEpochDay());
-            case YearMonth ymValue -> BigDecimal.valueOf(ymValue.atDay(1).toEpochDay());
-            case Year yValue -> BigDecimal.valueOf(yValue.atDay(1).toEpochDay());
-            case LocalTime ltValue -> BigDecimal.valueOf(ltValue.toSecondOfDay());
-            case LocalDateTime ldtValue -> {
-                var resolved = resolveLocalDateTime(ldtValue);
-                yield resolved == null
-                        ? BigDecimal.ZERO
-                        : BigDecimal.valueOf(resolved.toEpochSecond());
-            }
-            case ZonedDateTime zdtValue -> BigDecimal.valueOf(zdtValue.toEpochSecond());
-            default -> BigDecimal.ZERO;
-        };
+        var number = parseNumber(value);
+        if (number == null) {
+            throw new NoCodeException("Der Wert ist keine Zahl. Verwenden Sie eine Zahl wie 1.5 oder 1,5.");
+        }
+        // Security: calculations with enormous exponents, e.g. from the text "1e999999999", would exhaust the memory.
+        if (number.precision() - number.scale() > MAX_NUMBER_DIGITS || number.scale() > MAX_NUMBER_DIGITS) {
+            throw new NoCodeException("Die Zahl ist zu groß oder hat zu viele Nachkommastellen.");
+        }
+        return number;
+    }
 
-        return res.setScale(8, RoundingMode.HALF_UP);
+    /** Dates and timestamps are stored and entered with four-digit years, so results must stay within them. */
+    protected static void requireSupportedYear(int year, @Nonnull String invalidValueMessage) throws NoCodeException {
+        if (year < 1 || year > 9999) {
+            throw new NoCodeException(invalidValueMessage);
+        }
     }
 
     protected int requireInteger(
@@ -427,24 +415,6 @@ public abstract class NoCodeOperator {
         };
     }
 
-    private boolean isDateTimeString(String sValue) {
-        try {
-            IsoTimestampUtils.parseIsoInstant(sValue);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean isDateString(String value) {
-        try {
-            LocalDate.parse(value);
-            return true;
-        } catch (DateTimeParseException ignored) {
-            return false;
-        }
-    }
-
     @Nullable
     private LocalTime parseTime(String value) {
         if (!value.matches("^\\d{2}:\\d{2}(?::\\d{2})?$")) {
@@ -466,11 +436,8 @@ public abstract class NoCodeOperator {
     }
 
     @Nonnull
-    public LocalDate castToDate(@Nullable Object value) {
-        var parsedValue = tryCastToDate(value);
-        return parsedValue != null
-                ? parsedValue
-                : LocalDate.now(ApplicationTimeZone.getZoneId());
+    public LocalDate castToDate(@Nullable Object value) throws NoCodeException {
+        return requireDate(value, "Der Wert ist kein gültiges Datum.");
     }
 
     @Nonnull
@@ -566,11 +533,8 @@ public abstract class NoCodeOperator {
     }
 
     @Nonnull
-    public LocalTime castToTime(@Nullable Object value) {
-        var parsedValue = tryCastToTime(value);
-        return parsedValue != null
-                ? parsedValue
-                : LocalTime.now(ApplicationTimeZone.getZoneId()).withNano(0);
+    public LocalTime castToTime(@Nullable Object value) throws NoCodeException {
+        return requireTime(value, "Der Wert ist keine gültige Uhrzeit.");
     }
 
     @Nonnull
@@ -597,19 +561,28 @@ public abstract class NoCodeOperator {
                     offsetDateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalTime().withNano(0);
             case ZonedDateTime zonedDateTime ->
                     zonedDateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalTime().withNano(0);
-            case String stringValue -> parseTime(stringValue);
+            case String stringValue -> {
+                var time = parseTime(stringValue);
+                if (time != null) {
+                    yield time;
+                }
+                // Stored timestamps are read like timestamp values: as the time in the application time zone.
+                try {
+                    yield IsoTimestampUtils.parseIsoInstant(stringValue)
+                            .atZone(ApplicationTimeZone.getZoneId())
+                            .toLocalTime()
+                            .withNano(0);
+                } catch (DateTimeParseException ignored) {
+                    yield null;
+                }
+            }
             default -> null;
         };
     }
 
     @Nonnull
-    public ZonedDateTime castToDateTime(@Nullable Object value) {
-        if (value == null) {
-            return ZonedDateTime.now(ApplicationTimeZone.getZoneId());
-        }
-
-        var parsedValue = tryCastToDateTime(value);
-        return parsedValue != null ? parsedValue : ZonedDateTime.now(ApplicationTimeZone.getZoneId());
+    public ZonedDateTime castToDateTime(@Nullable Object value) throws NoCodeException {
+        return requireDateTime(value, "Der Wert ist kein gültiger Zeitpunkt.");
     }
 
     @Nonnull
@@ -660,12 +633,20 @@ public abstract class NoCodeOperator {
         }
     }
 
+    /**
+     * Reads an object. A missing value and empty text are an empty object. A serialized JSON null is null, so it does
+     * not equal an empty object.
+     */
     @Nullable
-    public Map<String, Object> castToMap(@Nullable Object value) {
+    public Map<String, Object> castToMap(@Nullable Object value) throws NoCodeException {
+        if (value instanceof String text && text.isBlank()) {
+            return Map.of();
+        }
+
         try {
             return readMap(value);
         } catch (JacksonException | ClassCastException | IllegalArgumentException e) {
-            return Map.of();
+            throw new NoCodeException("Der Wert ist kein Objekt.");
         }
     }
 
@@ -681,26 +662,28 @@ public abstract class NoCodeOperator {
 
     /** List functions treat a missing list as empty, including a serialized JSON null. */
     @Nonnull
-    protected List<Object> listOperandOrEmpty(@Nullable Object value) {
+    protected List<Object> listOperandOrEmpty(@Nullable Object value) throws NoCodeException {
         return Objects.requireNonNullElse(castToList(value), List.of());
     }
 
+    /**
+     * Reads a list. A missing value and empty text are an empty list. A serialized JSON null is null, so it does not
+     * equal an empty list.
+     */
     @Nullable
-    public List<Object> castToList(@Nullable Object value) {
-        if (value == null) {
-            return List.of();
-        }
-
+    public List<Object> castToList(@Nullable Object value) throws NoCodeException {
         return switch (value) {
-            case List<?> lValue -> (List<Object>) lValue;
-            case String sValue -> {
+            case null -> List.of();
+            case List<?> list -> (List<Object>) list;
+            case String text when text.isBlank() -> List.of();
+            case String text -> {
                 try {
-                    yield JsonMapperFactory.getInstance().readValue(sValue, List.class);
+                    yield JsonMapperFactory.getInstance().readValue(text, List.class);
                 } catch (JacksonException e) {
-                    yield List.of();
+                    throw new NoCodeException(NOT_A_LIST);
                 }
             }
-            default -> List.of();
+            default -> throw new NoCodeException(NOT_A_LIST);
         };
     }
 }

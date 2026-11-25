@@ -172,6 +172,30 @@ describe('preserveDerivedErrors', () => {
         expect(previousDerivedData.effectiveValues.field).toBe('previous value');
     });
 
+    it('should drop a previous derivation error once a new derivation no longer reports it', () => {
+        const previousDerivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                lastName: {
+                    error: 'Failed to evaluate no-code operator \'not\'',
+                    derivationFailed: true,
+                },
+            },
+        });
+        const nextDerivedData = createDerivedRuntimeElementData({
+            elementStates: {
+                lastName: {
+                    visible: false,
+                    error: null,
+                },
+            },
+        });
+
+        expect(preserveDerivedErrors(previousDerivedData, nextDerivedData).elementStates.lastName).toEqual({
+            visible: false,
+            error: null,
+        });
+    });
+
     it('should preserve replicated-row errors by row id without retaining removed rows or populating new rows', () => {
         const previousDerivedData = createDerivedRuntimeElementData({
             elementStates: {

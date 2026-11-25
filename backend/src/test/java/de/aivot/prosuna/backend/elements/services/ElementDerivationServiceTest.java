@@ -1226,6 +1226,33 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldMarkOnlyDerivationErrorsAsDerivationFailures() {
+        var firstName = new TextInputElement();
+        firstName.setId("firstName");
+        var lastName = new TextInputElement();
+        lastName.setId("lastName");
+        lastName.setRequired(true);
+        lastName.setVisibility(ElementVisibilityFunctions.of(NoCodeExpression.of("not", new NoCodeReference("firstName"))));
+        var root = createRoot(List.of(firstName, lastName));
+
+        var failed = derive(root, new AuthoredElementValues().putLiteral("firstName", "Max"), new ElementDerivationOptions());
+        assertTrue(failed.getElementStates().get("lastName").getError().contains("'not'"));
+        assertTrue(failed.getElementStates().get("lastName").isDerivationFailed());
+        var mapper = JsonMapperTestUtils.createMapper();
+        assertTrue(mapper.valueToTree(failed.getElementStates().get("lastName")).get("derivationFailed").asBoolean());
+        assertFalse(mapper.valueToTree(failed.getElementStates().get("firstName")).has("derivationFailed"));
+
+        var resolved = derive(root, new AuthoredElementValues().putLiteral("firstName", "true"), new ElementDerivationOptions());
+        assertFalse(resolved.getElementStates().get("lastName").getVisible());
+        assertNull(resolved.getElementStates().get("lastName").getError());
+        assertFalse(resolved.getElementStates().get("lastName").isDerivationFailed());
+
+        var required = derive(root, new AuthoredElementValues().putLiteral("firstName", "false"), new ElementDerivationOptions());
+        assertNotNull(required.getElementStates().get("lastName").getError());
+        assertFalse(required.getElementStates().get("lastName").isDerivationFailed());
+    }
+
+    @Test
     void shouldMarkOnlyVisibleInputsWithoutComputedValueAsAdoptingTheirAuthoredValue() {
         var visibleField = new TextInputElement();
         visibleField.setId("visible");

@@ -62,7 +62,7 @@ public class NoCodeCreateNowOperator extends NoCodeOperator {
 
                 # Was ist zu beachten?
 
-                Der Zeitpunkt wird bei jeder Auswertung neu ermittelt. Die Darstellung von Datum und Uhrzeit richtet sich nach der für Prosuna eingestellten Zeitzone.
+                Der Zeitpunkt wird bei jeder Auswertung neu ermittelt. Innerhalb einer Auswertung liefern alle Vorkommen von „Aktueller Zeitpunkt“ denselben Zeitpunkt; zwei Vorkommen in einem Ausdruck sind deshalb immer gleich. Die Darstellung von Datum und Uhrzeit richtet sich nach der für Prosuna eingestellten Zeitzone.
                 """;
     }
 
@@ -79,6 +79,6 @@ public class NoCodeCreateNowOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(businessTime.now());
+        return new NoCodeResult(data.getEvaluationInstant(businessTime.clock()));
     }
 }

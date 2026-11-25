@@ -49,7 +49,7 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                 Der Ausdruck `24 geteilt durch 3 geteilt durch 2` ergibt `4`. Auf jede Person entfallen 4 Euro.
 
                 # Was ist zu beachten?
-                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt. Ein fehlender Teiler führt deshalb zu einer Fehlermeldung.
+                Verwenden Sie Zahlen. Zahlen als Text werden übernommen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt; ein fehlender Teiler führt deshalb zu einer Fehlermeldung. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen ebenfalls zu einer Fehlermeldung.
                 """;
     }
 
@@ -102,7 +102,8 @@ public class NoCodeDivideOperator extends NoCodeOperator {
                 throw new NoCodeException("„Teiler“ darf nicht 0 sein. Geben Sie eine andere Zahl ein.");
             }
 
-            dividend = dividend.divide(divisor, RoundingMode.HALF_UP);
+            // Results keep the eight decimal places that the inputs were rounded to before.
+            dividend = dividend.divide(divisor, 8, RoundingMode.HALF_UP);
         }
 
         return new NoCodeResult(dividend);

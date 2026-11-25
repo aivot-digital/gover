@@ -223,6 +223,11 @@ const amount = {
     label: 'Betrag',
 };
 
+// The text of a condition, which fits the condition socket of not(empty) in the moving tests.
+const truthText: NoCodeOperand = {
+    type: 'NoCodeStaticValue',
+    value: 'wahr',
+};
 // equals(a, not(empty)): a leaf, an operator to swap with and a socket to move into.
 const nested: NoCodeOperand = {
     type: 'NoCodeExpression',
@@ -232,6 +237,12 @@ const nested: NoCodeOperand = {
         operatorIdentifier: 'not',
         operands: [null],
     }],
+};
+
+// equals(wahr, not(empty)): like nested, but its leaf can move into the condition socket.
+const movable: NoCodeOperand = {
+    ...nested,
+    operands: [truthText, (nested as {operands: Array<NoCodeOperand | null>}).operands[1]],
 };
 
 function Harness(props: {
@@ -1135,13 +1146,13 @@ describe('NoCodeEditor', () => {
         it('moves a node with Space, the arrow keys and Space and announces each step', () => {
             const onChange = vi.fn();
             render(<Harness onChange={onChange}
-                            initial={nested}/>);
+                            initial={movable}/>);
             const status = screen.getByRole('status');
-            const leaf = screen.getByRole('treeitem', {name: 'Wert 1: a, Beliebiger Wert'});
+            const leaf = screen.getByRole('treeitem', {name: 'Wert 1: wahr, Beliebiger Wert'});
             leaf.focus();
 
             fireEvent.keyDown(leaf, {key: ' '});
-            expect(status).toHaveTextContent('„a“ aufgenommen. Ziel: Wert 2: Funktion Nicht, Wahrheitswert, die Werte werden getauscht.');
+            expect(status).toHaveTextContent('„wahr“ aufgenommen. Ziel: Wert 2: Funktion Nicht, Wahrheitswert, die Werte werden getauscht.');
             expect(leaf).toHaveFocus();
 
             fireEvent.keyDown(leaf, {key: 'ArrowDown'});
@@ -1152,15 +1163,15 @@ describe('NoCodeEditor', () => {
 
             fireEvent.keyDown(leaf, {key: ' '});
             expect(onChange).toHaveBeenLastCalledWith({
-                ...nested,
+                ...movable,
                 operands: [null, {
                     type: 'NoCodeExpression',
                     operatorIdentifier: 'not',
-                    operands: [a],
+                    operands: [truthText],
                 }],
             });
-            expect(status).toHaveTextContent('„a“ wurde verschoben.');
-            expect(screen.getByRole('treeitem', {name: 'Wert: a, Wahrheitswert'})).toHaveFocus();
+            expect(status).toHaveTextContent('„wahr“ wurde verschoben.');
+            expect(screen.getByRole('treeitem', {name: 'Wert: wahr, Wahrheitswert'})).toHaveFocus();
         });
 
         it('cancels with Escape without changing the expression', () => {
@@ -1243,8 +1254,16 @@ describe('NoCodeEditor', () => {
                     })),
                 }],
             };
+            // The socket in the collapsed function is the only target that accepts the number.
+            const numericNot: NoCodeOperatorDetailsDTO = {
+                ...not,
+                signatures: [{
+                    ...not.signatures[0],
+                    parameters: not.signatures[0].parameters.map((parameter) => ({...parameter, type: NoCodeDataType.Number})),
+                }],
+            };
             render(<Harness initial={{...nested, operands: [{type: 'NoCodeStaticValue', value: '1'}, nested.operands![1]]}}
-                            operators={[typedEquals, not]}
+                            operators={[typedEquals, numericNot]}
                             onChange={vi.fn()}/>);
             fireEvent.click(screen.getByRole('button', {name: 'Nicht: zuklappen'}));
             fireEvent.click(screen.getByRole('button', {name: 'Aktionen für „1“'}));
@@ -1287,21 +1306,21 @@ describe('NoCodeEditor', () => {
         it('moves a node by clicking a target, without dragging', async () => {
             const onChange = vi.fn();
             render(<Harness onChange={onChange}
-                            initial={nested}/>);
+                            initial={movable}/>);
 
-            fireEvent.click(screen.getByRole('button', {name: 'Aktionen für „a“'}));
+            fireEvent.click(screen.getByRole('button', {name: 'Aktionen für „wahr“'}));
             fireEvent.click(await screen.findByRole('menuitem', {name: 'An andere Stelle verschieben'}));
             await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
-            expect(screen.getByText('„a“ wird verschoben. Wählen Sie ein markiertes Ziel aus.')).toBeInTheDocument();
+            expect(screen.getByText('„wahr“ wird verschoben. Wählen Sie ein markiertes Ziel aus.')).toBeInTheDocument();
 
             fireEvent.click(screen.getByRole('button', {name: 'Wert festlegen'}));
 
             expect(onChange).toHaveBeenLastCalledWith({
-                ...nested,
+                ...movable,
                 operands: [null, {
                     type: 'NoCodeExpression',
                     operatorIdentifier: 'not',
-                    operands: [a],
+                    operands: [truthText],
                 }],
             });
             // The click picked the target instead of opening the socket's type selector.
@@ -1311,10 +1330,10 @@ describe('NoCodeEditor', () => {
         it('moves a node by dragging it with a pointer onto a socket', async () => {
             const onChange = vi.fn();
             render(<Harness onChange={onChange}
-                            initial={nested}/>);
+                            initial={movable}/>);
             const row = (name: string) => screen.getByRole('treeitem', {name}).querySelector('[data-tree-row]')!;
             const dataTransfer = new FakeDataTransfer();
-            const source = screen.getByRole('button', {name: 'a, Beliebiger Wert'});
+            const source = screen.getByRole('button', {name: 'wahr, Beliebiger Wert'});
             const target = row('Wert: leer, Wahrheitswert');
 
             fireEvent.dragStart(source, {dataTransfer});
@@ -1325,11 +1344,11 @@ describe('NoCodeEditor', () => {
             fireEvent.dragEnd(source, {dataTransfer});
 
             await waitFor(() => expect(onChange).toHaveBeenLastCalledWith({
-                ...nested,
+                ...movable,
                 operands: [null, {
                     type: 'NoCodeExpression',
                     operatorIdentifier: 'not',
-                    operands: [a],
+                    operands: [truthText],
                 }],
             }));
         });

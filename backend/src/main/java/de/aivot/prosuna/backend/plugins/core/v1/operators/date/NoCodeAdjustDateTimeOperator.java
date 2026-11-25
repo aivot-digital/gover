@@ -110,6 +110,7 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
                 - Die Uhrzeit bleibt nach Möglichkeit gleich. Wird die berechnete Zieluhrzeit bei einer Zeitumstellung übersprungen, wird sie um die übersprungene Zeit nach vorn verschoben. Beispiel für die Zeitzone Berlin: %s
                 - Ein Kalendertag entspricht bei einer Zeitumstellung beispielsweise 23 oder 25 tatsächlich vergangenen Stunden.
                 - Durch solche Anpassungen erhalten Sie beim anschließenden Zurückrechnen nicht immer den Ausgangszeitpunkt.
+                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
                 """.formatted(
                 getLabel(), resultDirection, relativePosition, resultDirection, relativePosition,
                 getLabel(), operation, exampleResult, daylightSavingExample
@@ -171,6 +172,7 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
                 case YEARS_UNIT -> dateTime.plusYears(signedAmount);
                 default -> throw new NoCodeException("Die Einheit ist ungültig. Verwenden Sie Tage, Wochen, Monate oder Jahre.");
             };
+            requireSupportedYear(adjusted.getYear(), "Der berechnete Zeitpunkt liegt außerhalb des unterstützten Bereichs. Prüfen Sie Ausgangszeitpunkt und Anzahl.");
             return new NoCodeResult(adjusted.toInstant());
         } catch (DateTimeException | ArithmeticException exception) {
             throw new NoCodeException("Der berechnete Zeitpunkt liegt außerhalb des unterstützten Bereichs. Prüfen Sie Ausgangszeitpunkt und Anzahl.");

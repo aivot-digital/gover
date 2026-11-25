@@ -11,6 +11,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.YearMonth;
+import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
 import java.util.Set;
@@ -84,6 +85,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                 - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 plus 1 Jahr ergibt 28.02.2025.
                 - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
                 - Enthält das Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden.
+                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
                 """;
     }
 
@@ -147,7 +149,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
         }
 
         try {
-            return switch (date) {
+            var adjusted = switch (date) {
                 case LocalDate localDate -> switch (unit) {
                     case DAYS_UNIT -> localDate.plusDays(amount);
                     case WEEKS_UNIT -> localDate.plusWeeks(amount);
@@ -170,6 +172,8 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                 }
                 default -> throw new NoCodeException("Nicht unterstützter Datumswert.");
             };
+            requireSupportedYear(adjusted.get(ChronoField.YEAR), "Der Datumswert liegt außerhalb des unterstützten Bereichs.");
+            return adjusted;
         } catch (DateTimeException | ArithmeticException exception) {
             throw new NoCodeException("Der Datumswert liegt außerhalb des unterstützten Bereichs.");
         }

@@ -6,6 +6,7 @@ import {findMatchingNoCodeSignature, NoCodeOperatorDetailsDTO, NoCodeParameter, 
 import {getNoCodeNumberValidationError} from './no-code-number-validation';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {isValidProcessDataPath} from '../../../utils/process-data-path';
+import {getFormElementOptions, readsFormElementState} from './no-code-options';
 
 /** Check structure and explicitly declared literal constraints; dynamic values remain the evaluator's responsibility. */
 export function validateNoCode(
@@ -39,6 +40,17 @@ export function validateNoCode(
                 }
                 const parameters = operator == null ? [] : resolveNoCodeSignature(operator, {operandCount: operands.length}).parameters;
                 subErrors = operands.map((child, index) => validateNoCode(child, operators, elements, true, parameters[index]));
+                // An unknown element would always count as visible at runtime.
+                const target = operands[0];
+                const formElements = readsFormElementState(operand.operatorIdentifier) ? getFormElementOptions(elements) : null;
+                if (formElements != null && subErrors[0] != null && target?.type === 'NoCodeStaticValue' && typeof target.value === 'string' &&
+                    target.value.trim() !== '' && !formElements.some(({value}) => value === target.value)) {
+                    subErrors[0] = {
+                        ...subErrors[0],
+                        error: 'Das ausgewählte Formularelement ist nicht verfügbar.',
+                        isValid: false,
+                    };
+                }
                 break;
             }
             case 'NoCodeNodeDataReference':

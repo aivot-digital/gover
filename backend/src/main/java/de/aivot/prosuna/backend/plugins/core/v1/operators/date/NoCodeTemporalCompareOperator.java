@@ -144,7 +144,7 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
 
                     Verglichen werden Stunden, Minuten und Sekunden innerhalb eines Tages. 01:00 Uhr gilt als früher als 23:00 Uhr.
 
-                    Für eine zeitliche Reihenfolge über mehrere Tage verwenden Sie „Zeitpunkte vergleichen“. Benötigen Sie aus einem Zeitpunkt ausschließlich die Uhrzeit, verwenden Sie zunächst „Uhrzeit aus Zeitpunkt“.
+                    Für eine zeitliche Reihenfolge über mehrere Tage verwenden Sie „Zeitpunkte vergleichen“. Liefert eine Wertquelle einen Zeitpunkt, wird dessen Uhrzeit in der für Prosuna eingestellten Zeitzone verglichen. Das gilt auch für gespeicherten Text wie `2026-11-22T12:30:00Z`, der in der Zeitzone Berlin als `13:30:00` Uhr gilt.
                     """;
             case DATETIME -> """
                     # Wofür verwenden Sie diese Funktion?

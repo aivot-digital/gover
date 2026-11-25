@@ -67,6 +67,7 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
                 - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 minus 1 Jahr ergibt 28.02.2023.
                 - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
                 - Enthält das Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden.
+                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
                 """;
     }
 

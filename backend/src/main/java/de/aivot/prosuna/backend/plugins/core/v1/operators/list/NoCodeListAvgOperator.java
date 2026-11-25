@@ -48,7 +48,7 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
                 Zugeklappt und in der Vorschau lesen Sie: `Durchschnitt von „Bewertungen“`. Das Ergebnis ist `4`. Sie können die Funktion beispielsweise als ersten Wert von **„Größer als“** verwenden und mit `3` vergleichen.
 
                 # Was ist zu beachten?
-                Das Ergebnis wird auf acht Nachkommastellen gerundet. Jeder Eintrag geht in die Berechnung ein; nichtnumerische Einträge werden nicht übersprungen. Verwenden Sie deshalb Zahlen oder Texte, die eine Zahl enthalten.
+                Das Ergebnis wird auf acht Nachkommastellen gerundet. Jeder Eintrag geht in die Berechnung ein; Einträge ohne Wert und leerer Text zählen als `0`. Verwenden Sie Zahlen oder Zahlen als Text wie `1.5` oder `1,5`; andere Einträge führen zu einer Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }
 
@@ -90,7 +90,8 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
             sum = sum.add(castToNumber(summand));
         }
 
-        var avg = sum.divide(BigDecimal.valueOf(list.size()), RoundingMode.HALF_UP);
+        // Results keep the eight decimal places that the inputs were rounded to before.
+        var avg = sum.divide(BigDecimal.valueOf(list.size()), 8, RoundingMode.HALF_UP);
 
         return new NoCodeResult(avg);
     }

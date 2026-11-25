@@ -21,6 +21,7 @@ import {resolveNoCodeExpressionPresentation} from '../utils/no-code-parameter-pr
 import {useNoCodePresentationContext} from '../hooks/use-no-code-presentation-context';
 import {NoCodePresentationContext} from '../utils/humanize-no-code';
 import {useNoCodeParameterSuggestions} from '../hooks/use-no-code-parameter-suggestions';
+import {withFormElementSuggestions} from '../utils/no-code-options';
 import {
     type KeyboardEvent,
     type ReactElement,
@@ -1662,7 +1663,9 @@ function NoCodeEditorExpressionView(props: SlotProps & {
                 description: null,
                 options: [],
             }), operands);
-    const suggestions = useNoCodeParameterSuggestions(operands, parameters, ctx.allElements);
+    const parameterSuggestions = useNoCodeParameterSuggestions(operands, parameters, ctx.allElements);
+    const suggestions = useMemo(() => withFormElementSuggestions(node.operatorIdentifier, parameterSuggestions, ctx.allElements),
+        [node.operatorIdentifier, parameterSuggestions, ctx.allElements]);
     const parameterCountError = operator != null && findMatchingNoCodeSignature(operator, node.operands.length) == null
         ? 'Die Anzahl der Parameter passt nicht zur Funktion. Wählen Sie die Funktion erneut aus, um sie anzupassen.'
         : null;

@@ -1,8 +1,11 @@
 package de.aivot.prosuna.backend.elements.models;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Objects;
 
 public class DerivedRuntimeElementData implements Serializable {
@@ -11,6 +14,10 @@ public class DerivedRuntimeElementData implements Serializable {
 
     @Nonnull
     private ComputedElementStates elementStates = new ComputedElementStates();
+
+    // Read once, so "today" and "now" agree across all expressions evaluated with this data.
+    @Nullable
+    private transient Instant evaluationInstant;
 
     // region Constructors
 
@@ -32,6 +39,15 @@ public class DerivedRuntimeElementData implements Serializable {
     // endregion
 
     // region Utilities
+
+    /** The current instant of this evaluation. The clock is read on first use only. */
+    @Nonnull
+    public Instant getEvaluationInstant(@Nonnull Clock clock) {
+        if (evaluationInstant == null) {
+            evaluationInstant = clock.instant();
+        }
+        return evaluationInstant;
+    }
 
     /**
      * Put an error by its field.

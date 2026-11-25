@@ -48,7 +48,7 @@ public class NoCodeMultiplyOperator extends NoCodeOperator {
                 Der Ausdruck `5 mal 3 mal 2` ergibt `30`. Sind die Maße in Metern angegeben, entspricht das einem Volumen von 30 Kubikmetern.
 
                 # Was ist zu beachten?
-                Verwenden Sie Zahlen. Die Berechnung rundet Eingaben auf acht Nachkommastellen. Zahlen als Text werden übernommen; andere Texte können anhand ihrer Länge in Zahlen umgewandelt werden. Fehlende Werte werden wie die Zahl `0` behandelt.
+                Verwenden Sie Zahlen. Zahlen als Text werden übernommen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung.
                 """;
     }
 

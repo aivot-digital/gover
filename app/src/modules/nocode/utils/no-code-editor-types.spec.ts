@@ -61,7 +61,11 @@ describe('getNoCodeEditorTypeConflict', () => {
         expect(conflict({
             type: 'NoCodeReference',
             elementId: 'birthday',
-        }, NoCodeDataType.Number)).toBeNull();
+        }, NoCodeDataType.String)).toBeNull();
+        expect(conflict({
+            type: 'NoCodeReference',
+            elementId: 'appointment',
+        }, NoCodeDataType.Time)).toBeNull();
         expect(conflict({
             type: 'NoCodeExpression',
             operatorIdentifier: 'is-empty',
@@ -92,6 +96,17 @@ describe('getNoCodeEditorTypeConflict', () => {
         }
     });
 
+    it('warns about dates as numbers and other values as conditions', () => {
+        expect(conflict({
+            type: 'NoCodeReference',
+            elementId: 'birthday',
+        }, NoCodeDataType.Number)).toBe('Typkonflikt: Erwartet wird „Zahlenwert“, geliefert wird „Datumswert“.');
+        expect(conflict({
+            type: 'NoCodeReference',
+            elementId: 'birthday',
+        }, NoCodeDataType.Boolean)).not.toBeNull();
+    });
+
     it('checks static text against the formats the backend parses', () => {
         expect(conflict({
             type: 'NoCodeStaticValue',
@@ -99,8 +114,16 @@ describe('getNoCodeEditorTypeConflict', () => {
         }, NoCodeDataType.Number)).toBeNull();
         expect(conflict({
             type: 'NoCodeStaticValue',
-            value: '2024-02-29',
+            value: ' 1,5 ',
         }, NoCodeDataType.Number)).toBeNull();
+        expect(conflict({
+            type: 'NoCodeStaticValue',
+            value: '2024-02-29',
+        }, NoCodeDataType.Number)).not.toBeNull();
+        expect(conflict({
+            type: 'NoCodeStaticValue',
+            value: '2026-11-22T12:30:00Z',
+        }, NoCodeDataType.Time)).toBeNull();
         expect(conflict({
             type: 'NoCodeStaticValue',
             value: 'abc',
@@ -137,6 +160,10 @@ describe('getNoCodeEditorTypeConflict', () => {
         expect(conflict({
             type: 'NoCodeStaticValue',
             value: 'irgendwas',
+        }, NoCodeDataType.Boolean)).toBe('Typkonflikt: Erwartet wird „Wahrheitswert“, „irgendwas“ lässt sich nicht umwandeln.');
+        expect(conflict({
+            type: 'NoCodeStaticValue',
+            value: ' Wahr ',
         }, NoCodeDataType.Boolean)).toBeNull();
     });
 });

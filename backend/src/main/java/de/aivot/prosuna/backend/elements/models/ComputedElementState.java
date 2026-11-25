@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.elements.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import de.aivot.prosuna.backend.elements.enums.EffectiveValueSource;
 import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import jakarta.annotation.Nonnull;
@@ -42,6 +43,13 @@ public class ComputedElementState implements Serializable {
      */
     private boolean authoredValueAdopted = false;
 
+    /**
+     * Indicates that the error comes from deriving the element itself, for example its visibility or value, and not
+     * from validation. Every derivation reports such an error again, even with validation skipped, so clients must not
+     * keep it once a later derivation no longer reports it.
+     */
+    private boolean derivationFailed = false;
+
     @Nullable
     private List<ComputedElementSubState> subStates = null;
 
@@ -66,12 +74,13 @@ public class ComputedElementState implements Serializable {
         return Objects.equals(visible, that.visible) && Objects.equals(disabled, that.disabled) && Objects.equals(error, that.error) &&
                 Objects.equals(errorDetails, that.errorDetails) && Objects.equals(override, that.override) &&
                 valueSource == that.valueSource && inputValueDeferred == that.inputValueDeferred &&
-                authoredValueAdopted == that.authoredValueAdopted && Objects.equals(subStates, that.subStates);
+                authoredValueAdopted == that.authoredValueAdopted && derivationFailed == that.derivationFailed &&
+                Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, inputValueDeferred, authoredValueAdopted, subStates);
+        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, inputValueDeferred, authoredValueAdopted, derivationFailed, subStates);
     }
 
 
@@ -148,6 +157,16 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setAuthoredValueAdopted(boolean authoredValueAdopted) {
         this.authoredValueAdopted = authoredValueAdopted;
+        return this;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    public boolean isDerivationFailed() {
+        return derivationFailed;
+    }
+
+    public ComputedElementState setDerivationFailed(boolean derivationFailed) {
+        this.derivationFailed = derivationFailed;
         return this;
     }
 

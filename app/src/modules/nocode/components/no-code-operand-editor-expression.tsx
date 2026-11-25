@@ -40,6 +40,7 @@ import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
 import {Stack} from '@mui/material';
 import {NoCodeTreeRow} from './no-code-tree-row';
 import {useNoCodeParameterSuggestions} from '../hooks/use-no-code-parameter-suggestions';
+import {withFormElementSuggestions} from '../utils/no-code-options';
 import {resolveNoCodeParameterPresentation} from '../utils/no-code-parameter-presentation';
 
 interface NoCodeOperandEditorExpressionProps {
@@ -102,7 +103,9 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         }).parameters.map(parameter => resolveNoCodeParameterPresentation(parameter, operands));
     }, [operator, operands]);
 
-    const parameterOptions = useNoCodeParameterSuggestions(operands, parameters, allElements);
+    const parameterSuggestions = useNoCodeParameterSuggestions(operands, parameters, allElements);
+    const parameterOptions = useMemo(() => withFormElementSuggestions(operator?.identifier, parameterSuggestions, allElements),
+        [operator?.identifier, parameterSuggestions, allElements]);
 
     const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
         if (parameters.length >= 2) {

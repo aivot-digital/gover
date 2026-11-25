@@ -63,8 +63,8 @@ public class NoCodeNotEqualsOperator extends NoCodeEqualsOperator {
                 # Was ist zu beachten?
 
                 - Beim Vergleich zweier Texte werden Groß- und Kleinschreibung sowie Leerzeichen berücksichtigt. „Berlin“ und „berlin“ sind unterschiedlich.
-                - Zahlen werden nach ihrem Zahlenwert verglichen. Ist einer der Werte eine Zahl, kann auch ein als Zahl geschriebener Text übereinstimmen: Die Zahl `5` und der Text `"5"` ergeben bei dieser Funktion **falsch**. Zwei Textwerte bleiben dagegen Texte: `"5.0"` und `"5"` ergeben **wahr**.
-                - Verwenden Sie möglichst Werte derselben Art. Bei unterschiedlichen Wertarten wird der zweite Wert in der Regel an die Art des ersten Werts angepasst. Dadurch kann die Reihenfolge das Ergebnis beeinflussen.
+                - Zahlen werden nach ihrem Zahlenwert verglichen. Eine Zahl stimmt nur mit einer Zahl oder einem als Zahl geschriebenen Text überein, auch mit Dezimalkomma: Die Zahl `5` und die Texte `"5"` und `"5,0"` ergeben bei dieser Funktion **falsch**. Zwei Textwerte bleiben dagegen Texte: `"5.0"` und `"5"` ergeben **wahr**.
+                - Verwenden Sie möglichst Werte derselben Art. Bei unterschiedlichen Wertarten wird der zweite Wert in der Regel an die Art des ersten Werts angepasst. Dadurch kann die Reihenfolge das Ergebnis beeinflussen. Lässt sich ein Wert nicht anpassen, etwa der Text „abc“ an die Zahl `3` oder der Text „kein Datum“ an ein Datum, ergibt der Vergleich **wahr**.
                 - Liefern beide verwendeten Wertquellen keinen Wert, ergibt der Vergleich **falsch**. Liefert nur eine Quelle keinen Wert, ergibt er **wahr**. Ein fehlender Wert stimmt deshalb beispielsweise nicht mit „Berlin“ überein.
                 """;
     }

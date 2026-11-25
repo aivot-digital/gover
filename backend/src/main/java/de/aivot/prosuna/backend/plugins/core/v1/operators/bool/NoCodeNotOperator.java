@@ -67,7 +67,7 @@ public class NoCodeNotOperator extends NoCodeOperator {
 
                 - „Nicht“ kehrt das Ergebnis der gesamten eingesetzten Bedingung um.
                 - Liefert die verwendete Wertquelle keinen Wert, wird dieser wie **falsch** behandelt. „Nicht“ ergibt dann **wahr**.
-                - Übernommene Werte anderer Art werden automatisch als wahr oder falsch eingeordnet. Beispielsweise wird der Text „Nein“ als wahr behandelt. Verwenden Sie deshalb möglichst eine Wertquelle, die tatsächlich einen Wahrheitswert liefert.
+                - Leerer Text gilt ebenfalls als **falsch**. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung. Verwenden Sie deshalb möglichst eine Wertquelle, die tatsächlich einen Wahrheitswert liefert.
                 - Zweimaliges Umkehren stellt den ursprünglichen Wahrheitswert wieder her. Achten Sie bei verschachtelten Verneinungen darauf, welches Ergebnis Sie benötigen.
                 """;
     }

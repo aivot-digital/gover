@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.duration;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeNumberConstraints;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameterOption;
 import de.aivot.prosuna.backend.utils.DurationValueUtils;
@@ -10,7 +11,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Locale;
 
 final class DurationOperatorSupport {
@@ -24,27 +24,14 @@ final class DurationOperatorSupport {
 
     @Nonnull
     static BigDecimal amount(@Nullable Object value, @Nonnull String label) throws NoCodeException {
-        if (value == null || "".equals(value)) return BigDecimal.ZERO;
+        if (value == null || value instanceof String text && text.isBlank()) return BigDecimal.ZERO;
 
-        try {
-            var number = switch (value) {
-                case BigDecimal decimal -> decimal;
-                // Match the float-to-double conversion used by the original eight-place rounding.
-                case Float floatValue -> BigDecimal.valueOf(floatValue.doubleValue());
-                case Number numericValue -> new BigDecimal(numericValue.toString());
-                case String text -> new BigDecimal(text.trim());
-                default -> null;
-            };
-            if (number != null) {
-                // Scaling up a large exponent or dividing by an enormous power of ten is unnecessary.
-                if (number.scale() <= 8) return number;
-                if (number.abs().compareTo(new BigDecimal("0.000000005")) < 0) return BigDecimal.ZERO;
-                return number.setScale(8, RoundingMode.HALF_UP);
-            }
-        } catch (NumberFormatException ignored) {
-            // Invalid text and non-finite numbers receive the same field-specific error.
+        // Not rounded, so a fraction of a second fails the check for whole seconds.
+        var number = NoCodeOperator.parseNumber(value);
+        if (number == null) {
+            throw new NoCodeException("Geben Sie für „" + label + "“ eine Zahl ein.");
         }
-        throw new NoCodeException("Geben Sie für „" + label + "“ eine Zahl ein.");
+        return number;
     }
 
     @Nonnull

@@ -181,6 +181,53 @@ class NoCodeDateOperatorsTest {
     }
 
     @Test
+    void clockOperatorsShouldShareOneInstantPerEvaluation() throws NoCodeException {
+        // Each clock read advances by one day, so separate reads would differ in both date and time.
+        var ticks = new java.util.concurrent.atomic.AtomicInteger();
+        var steppingClock = new Clock() {
+            @Override
+            public ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public Instant instant() {
+                return FIXED_NOW.plus(java.time.Duration.ofDays(ticks.getAndIncrement()));
+            }
+        };
+        var steppingTime = new BusinessTime(TEST_ZONE, steppingClock);
+        var now = new NoCodeCreateNowOperator(steppingTime);
+        var today = new NoCodeCreateTodayOperator(steppingTime);
+        var data = runtime();
+
+        assertEquals(FIXED_NOW, now.evaluate(data).getValue());
+        assertEquals(FIXED_NOW, now.evaluate(data).getValue());
+        assertEquals(LocalDate.of(2026, 7, 29), today.evaluate(data).getValue());
+        // Another evaluation reads the clock again.
+        assertEquals(FIXED_NOW.plus(java.time.Duration.ofDays(1)), now.evaluate(runtime()).getValue());
+    }
+
+    @Test
+    void dateResultsShouldStayWithinFourDigitYears() throws NoCodeException {
+        var createDate = new NoCodeCreateDateOperator();
+        assertEquals(LocalDate.of(9999, 12, 31), createDate.evaluate(runtime(), 31, 12, 9999).getValue());
+        for (var year : List.of(0, 10000)) {
+            var error = assertThrows(NoCodeException.class, () -> createDate.evaluate(runtime(), 1, 1, year));
+            assertEquals("Das Jahr muss zwischen 1 und 9999 liegen.", error.getMessage());
+        }
+
+        var addToDateTime = new CommonOperatorsV1(null, null, null).getOperators();
+        var add = Arrays.stream(addToDateTime).filter(operator -> operator.getIdentifier().equals("add-to-datetime")).findFirst().orElseThrow();
+        var error = assertThrows(NoCodeException.class, () -> add.evaluate(runtime(), "2026-11-22T13:30:00+01:00", 10000, "jahre"));
+        assertEquals("Der berechnete Zeitpunkt liegt außerhalb des unterstützten Bereichs. Prüfen Sie Ausgangszeitpunkt und Anzahl.", error.getMessage());
+    }
+
+    @Test
     void combineDateAndTimeShouldResolveApplicationTimeZoneAndEnforceDstPolicy() throws NoCodeException {
         var operator = new NoCodeCombineDateAndTimeOperator(businessTime);
         var data = runtime();
