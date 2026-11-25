@@ -6,8 +6,8 @@ import {AnyElementWithChildren, isAnyElementWithChildren} from '../../models/ele
 import {getElementNameForType} from '../../data/element-type/element-names';
 import {Actions} from '../actions/actions';
 import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
-import Expand from '@aivot/mui-material-symbols-400-n25-outlined/Expand';
-import CollapseAll from '@aivot/mui-material-symbols-400-n25-outlined/CollapseAll';
+import UnfoldMore from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
+import UnfoldLess from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
 import AccountTree from '@aivot/mui-material-symbols-400-n25-outlined/AccountTree';
 import {ElementTreeChildList} from './components/element-tree-child-list';
 import {ElementTreeContextProvider, ElementTreeDragItem, ElementTreeExpandCommand} from './element-tree-context';
@@ -433,13 +433,13 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 onClick: handleToggleSearch,
                             },
                             {
-                                icon: <Expand/>,
-                                tooltip: 'Elemente ausklappen',
+                                icon: <UnfoldMore/>,
+                                tooltip: 'Alle Elemente ausklappen',
                                 onClick: handleExpandAll,
                             },
                             {
-                                icon: <CollapseAll/>,
-                                tooltip: 'Elemente einklappen',
+                                icon: <UnfoldLess/>,
+                                tooltip: 'Alle Elemente einklappen',
                                 onClick: handleCollapseAll,
                             },
                         ]}

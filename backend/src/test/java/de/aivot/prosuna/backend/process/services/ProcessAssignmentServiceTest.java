@@ -79,6 +79,10 @@ class ProcessAssignmentServiceTest {
         assertNotNull(result.getUpdated());
         assertEquals("previous", task.getAssignedUserId());
         verify(instances).saveAndFlush(instance);
+        var history = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(events).save(history.capture());
+        assertNull(history.getValue().getProcessInstanceTaskId());
+        assertEquals(true, history.getValue().getDetails().get("manualIntervention"));
         var payload = ArgumentCaptor.forClass(AuditLogPayload.class);
         verify(audit).addAuditEntry(payload.capture());
         assertNotNull(payload.getValue().getDiff());
@@ -97,6 +101,10 @@ class ProcessAssignmentServiceTest {
             grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
         }
         var result = service.reassignTask(actor, 5L, "recipient");
+        var history = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(events).save(history.capture());
+        assertEquals(5L, history.getValue().getProcessInstanceTaskId());
+        assertEquals(true, history.getValue().getDetails().get("manualIntervention"));
         assertEquals("recipient", result.getAssignedUserId());
         assertEquals(ProcessTaskStatus.AwaitingStaff, result.getStatus());
         assertNull(result.getFinished());

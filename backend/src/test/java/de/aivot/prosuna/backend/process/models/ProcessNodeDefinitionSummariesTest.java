@@ -58,6 +58,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Stream;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProcessNodeDefinitionSummariesTest {
@@ -344,7 +345,7 @@ class ProcessNodeDefinitionSummariesTest {
         task.getNodeData().put("responseModel", "test-model");
         task.getNodeData().put("prompt", "Nicht Teil der Antwort");
         var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
-        assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\n" + response));
+        assertTrue(markdown.endsWith(section("Antwort der KI", response)));
         assertFalse(markdown.contains("Nicht Teil der Antwort"));
     }
 
@@ -353,7 +354,7 @@ class ProcessNodeDefinitionSummariesTest {
         // A prompt that includes customer input can make the model repeat a link whose text hides its target.
         task.getNodeData().put("completion", "Bitte **jetzt** [bestätigen](https://evil.example).");
         var markdown = summary(new AiCompletionActionNodeV1(null, null, null), new AiCompletionActionNodeV1.AiCompletionActionNodeConfig());
-        assertTrue(markdown.endsWith("\n\n**Antwort der KI**\n\nBitte **jetzt** bestätigen ([https://evil.example](https://evil.example))."));
+        assertTrue(markdown.endsWith(section("Antwort der KI", "Bitte **jetzt** bestätigen ([https://evil.example](https://evil.example)).")));
     }
 
     @ParameterizedTest

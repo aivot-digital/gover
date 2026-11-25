@@ -1,3 +1,5 @@
+import {getNodeName} from './utils/node-utils';
+import {ProcessNodeExecutionsDialog} from '../../../../dialogs/process-node-executions-dialog';
 import {type ProcessFlow} from '../../process-details-page';
 import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
 import React, {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
@@ -115,6 +117,7 @@ interface ProcessFlowEditorProps {
     runtimeData: {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
+        tasksComplete?: boolean;
         events: ProcessInstanceEventEntity[];
         attachments: ProcessInstanceAttachmentEntity[];
         attachmentSets: ProcessInstanceAttachmentSetEntity[];
@@ -323,7 +326,10 @@ function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvas
     );
 }
 
-function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEditorLayoutError; onRetry: () => void}): ReactNode {
+function ProcessFlowEditorLayoutErrorPanel(props: {
+    layoutError: ProcessFlowEditorLayoutError;
+    onRetry: () => void
+}): ReactNode {
     const visibleDetails = props.layoutError.details.slice(0, 4);
     const hiddenDetailsCount = props.layoutError.details.length - visibleDetails.length;
 
@@ -389,7 +395,8 @@ function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEdito
                     {props.layoutError.recoveryHint}
                 </Box>
                 {props.layoutError.retryable && (
-                    <Button onClick={props.onRetry} sx={{mt: 1}}>
+                    <Button onClick={props.onRetry}
+                            sx={{mt: 1}}>
                         Erneut versuchen
                     </Button>
                 )}
@@ -492,6 +499,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [layoutAttempt, setLayoutAttempt] = useState(0);
     const [providerDetailsNodeId, setProviderDetailsNodeId] = useState<number | null>(null);
     const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
+    const [executionsTarget, setExecutionsTarget] = useState<{
+        node: ProcessNodeEntity;
+        provider: ProcessNodeProvider;
+        instanceId: number
+    } | null>(null);
     const [eventDialogTarget, setEventDialogTarget] = useState<ProcessFlowEditorEventDialogTarget | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
@@ -522,6 +534,17 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
             taskId,
         });
     }, [runtimeData]);
+    const handleShowNodeExecutions = useCallback((node: ProcessNodeEntity, provider: ProcessNodeProvider) => {
+        if (runtimeData == null) return;
+        setExecutionsTarget({
+            node,
+            provider,
+            instanceId: runtimeData.instance.id,
+        });
+    }, [runtimeData?.instance.id]);
+    useEffect(() => {
+        setExecutionsTarget(null);
+    }, [runtimeData?.instance.id]);
     const hasAllNodeProviders = useMemo(() => (
         processFlow.nodes.every((node) => (
             nodeProviders.some((provider) => (
@@ -551,6 +574,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
         onShowNodeProviderDetails: handleShowNodeProviderDetails,
         onShowTaskEvents: handleShowTaskEvents,
+        onShowNodeExecutions: handleShowNodeExecutions,
 
         onReloadRuntimeData: onReloadRuntimeData,
         onDownloadAttachment,
@@ -574,6 +598,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartCloneNode,
         handleShowNodeProviderDetails,
         handleShowTaskEvents,
+        handleShowNodeExecutions,
         runtimeData,
         onDownloadAttachment,
         onReloadRuntimeData,
@@ -959,6 +984,17 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         }}
                     />
                 </ReactFlow>
+
+                {executionsTarget != null && runtimeData != null && executionsTarget.instanceId === runtimeData.instance.id &&
+                    <ProcessNodeExecutionsDialog
+                        key={`${runtimeData.instance.id}-${executionsTarget.node.id}`}
+                        nodeId={executionsTarget.node.id}
+                        nodeName={getNodeName(executionsTarget.node, executionsTarget.provider)}
+                        runtimeData={runtimeData}
+                        onReload={onReloadRuntimeData}
+                        onDownloadAttachment={onDownloadAttachment}
+                        onClose={() => setExecutionsTarget(null)}
+                    />}
 
                 <ProcessNodeProviderDetailsDialog
                     open={providerDetailsDialogProvider != null}

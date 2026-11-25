@@ -147,7 +147,26 @@ describe('createAppTheme', () => {
                 scrollbarColor: 'red blue',
             },
         });
-        expect(resolvedOverrides[1]).toHaveProperty('.MuiTypography-body2 > a, .MuiAccordionDetails-root a');
+        expect(resolvedOverrides[1]).toHaveProperty('.MuiTypography-body2 > a:not(.MuiButtonBase-root), .MuiAccordionDetails-root a:not(.MuiButtonBase-root)');
+    });
+
+    it('applies text-link decorations without overriding button links in accordions', () => {
+        const theme = createDefaultAppTheme(BaseTheme);
+        const baselineOverride = theme.components?.MuiCssBaseline?.styleOverrides as unknown as (
+            theme: typeof BaseTheme,
+        ) => Record<string, unknown>[];
+        const linkStyles = baselineOverride(theme)[1];
+        const container = document.createElement('div');
+        container.className = 'MuiAccordionDetails-root';
+        container.innerHTML = '<p class="MuiTypography-body2"><a href="/help">Hilfe</a><a class="MuiButtonBase-root MuiButton-root" href="/tasks/17/42">Aufgabe aufrufen</a></p>';
+        const [textLink, buttonLink] = container.querySelectorAll('a');
+
+        for (const selector of Object.keys(linkStyles)) {
+            // Pseudo-elements and hover states must exclude button links as well.
+            const elementSelector = selector.replace(/::(?:before|after)|:hover/g, '');
+            expect(textLink.matches(elementSelector)).toBe(true);
+            expect(buttonLink.matches(elementSelector)).toBe(false);
+        }
     });
 
     it('uses the same restrained elevation for drawers and dialogs', () => {

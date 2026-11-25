@@ -1,6 +1,7 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
@@ -42,10 +43,62 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 
 class ProcessInstanceEventLogServiceTest {
+    @ParameterizedTest
+    @ValueSource(ints = {999, 2000})
+    @SuppressWarnings("unchecked")
+    void historyPreservesExplicitInterventionsAndKeepsTheQueryScoped(int requestedSize) throws Exception {
+        var events = mock(ProcessInstanceHistoryEventRepository.class);
+        var instances = mock(ProcessInstanceRepository.class);
+        var users = mock(UserRepository.class);
+        var service = new ProcessInstanceEventLogService(events, instances, mock(ProcessInstanceTaskRepository.class),
+                mock(ProcessNodeRepository.class), mock(ProcessNodeDefinitionService.class), users);
+        when(instances.findById(12L)).thenReturn(Optional.of(new ProcessInstanceEntity()
+                .setId(12L).setCaseNumber("V-12").setStarted(Instant.now())));
+        var event = new ProcessInstanceEventEntity().setId(1L).setProcessInstanceId(12L).setAudit(true)
+                .setLevel(ProcessNodeExecutionLogLevel.Info).setHistoryRelevant(false)
+                .setTitle("Zuweisung des Vorgangs geändert").setMessage("Neu zugewiesen")
+                .setDetails(Map.of("manualIntervention", true)).setTimestamp(Instant.now()).setTriggeringUserId("actor");
+        var unmarked = new ProcessInstanceEventEntity().setId(2L).setProcessInstanceId(12L).setAudit(true)
+                .setLevel(ProcessNodeExecutionLogLevel.Info).setHistoryRelevant(true)
+                .setTitle("Zuweisung der Aufgabe geändert").setMessage("Neu zugewiesen")
+                .setDetails(Map.of()).setTimestamp(Instant.now()).setTriggeringUserId("actor");
+        when(events.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(event, unmarked)));
+        when(users.findAllById(Set.of("actor"))).thenReturn(List.of(new UserEntity().setId("actor").setFullName("Ada Beispiel").setEnabled(true).setDeletedInIdp(false)));
+
+        var result = service.getHistoryEvents(12L, ProcessHistoryEventScope.ManualInterventions, null, PageRequest.of(0, requestedSize, Sort.by("timestamp")));
+        var entry = result.getContent().getFirst();
+        assertEquals("Ada Beispiel", entry.triggeringUserName());
+        assertEquals(true, entry.details().get("manualIntervention"));
+        assertSame(event.getDetails(), entry.details());
+        assertTrue(result.getContent().get(1).details().isEmpty());
+
+        ArgumentCaptor<Specification<ProcessInstanceEventEntity>> query = ArgumentCaptor.forClass(Specification.class);
+        ArgumentCaptor<Pageable> paging = ArgumentCaptor.forClass(Pageable.class);
+        verify(events).findAll(query.capture(), paging.capture());
+        assertEquals(100, paging.getValue().getPageSize());
+        assertEquals(Sort.Direction.ASC, paging.getValue().getSort().getOrderFor("id").getDirection());
+        Root<ProcessInstanceEventEntity> root = mock(Root.class, invocation -> {
+            if (invocation.getMethod().getName().equals("get") && invocation.getArgument(0) instanceof String field) {
+                ProcessInstanceEventEntity.class.getDeclaredField(field);
+            }
+            return RETURNS_DEEP_STUBS.answer(invocation);
+        });
+        var builder = mock(CriteriaBuilder.class, RETURNS_DEEP_STUBS);
+        query.getValue().toPredicate(root, mock(CriteriaQuery.class), builder);
+        verify(builder).equal(root.get("processInstanceId"), 12L);
+        verify(builder).isNotNull(root.get("triggeringUserId"));
+        verify(builder).isTrue(root.get("isAudit"));
+        verify(root, never()).get("title");
+        var marker = builder.function("jsonb_extract_path_text", String.class,
+                root.get("details"), builder.literal("manualIntervention"));
+        verify(builder).equal(builder.coalesce(marker, "false"), "true");
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     void searchAndNewFiltersRemainRestrictedToTheRequestedInstance() throws Exception {

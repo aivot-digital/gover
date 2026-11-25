@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.openApi.OpenApiConfiguration;
 import de.aivot.prosuna.backend.openApi.OpenApiConstants;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.filters.ProcessInstanceEventFilter;
 import de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider;
@@ -95,6 +96,22 @@ public class ProcessInstanceEventController {
 
         return processInstanceHistoryEventService
                 .list(pageable, filter);
+    }
+
+    @GetMapping("history/")
+    @Operation(summary = "Retrieve Process Instance History Events",
+            description = "Retrieve a scoped page of history events enriched with staff names. Task scope requires a task ID and includes only manual interventions from previous restart attempts. ManualInterventions and InstanceErrors are paged independently of tasks. Requires process_instance.read for this instance. Maximum page size: 100.")
+    public Page<ProcessInstanceEventLogDTO.Entry> getHistoryEvents(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam Long processInstanceId,
+            @Nonnull @RequestParam ProcessHistoryEventScope scope,
+            @Nullable @RequestParam(required = false) Long processInstanceTaskId,
+            @Nonnull @ParameterObject @PageableDefault(size = 20, sort = "timestamp", direction = Sort.Direction.ASC) Pageable pageable
+    ) throws ResponseException {
+        var user = userService.fromJWT(jwt).orElseThrow(ResponseException::unauthorized);
+        permissionService.requireProcessInstancePermission(user.getId(), processInstanceId,
+                ProcessInstancePermissionProvider.PROCESS_INSTANCE_READ);
+        return processInstanceEventLogService.getHistoryEvents(processInstanceId, scope, processInstanceTaskId, pageable);
     }
 
     @GetMapping("log/")

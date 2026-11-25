@@ -38,56 +38,129 @@ beforeEach(() => {
     mocks.canRestartFailed = true;
 });
 
-function renderNode(task: Partial<ProcessInstanceTaskEntity>) {
-    const node = {...ProcessNodeApiService.initialize(), id: 1, name: 'Unterlagen prüfen'};
+function renderNode(task: Partial<ProcessInstanceTaskEntity>, overrides: Partial<ProcessFlowEditorContextType> = {}) {
+    const node = {
+        ...ProcessNodeApiService.initialize(),
+        id: 1,
+        name: 'Unterlagen prüfen',
+    };
     const provider: ProcessNodeProvider = {
-        key: 'test', componentKey: 'test', componentType: 'ProcessNodeDefinition', componentVersion: '1.0.0',
-        deprecationNotice: null, majorVersion: 1, type: ProcessNodeType.Action, executionTypes: [],
-        name: 'Prüfung', abstractDescription: '', description: '', documentationUrl: null,
-        parentPluginKey: 'test', outputs: [],
+        key: 'test',
+        componentKey: 'test',
+        componentType: 'ProcessNodeDefinition',
+        componentVersion: '1.0.0',
+        deprecationNotice: null,
+        majorVersion: 1,
+        type: ProcessNodeType.Action,
+        executionTypes: [],
+        name: 'Prüfung',
+        abstractDescription: '',
+        description: '',
+        documentationUrl: null,
+        parentPluginKey: 'test',
+        outputs: [],
     };
     const instance = new ProcessInstanceApiService().initialize();
     instance.identities = {
         applicant: {
-            identityId: 'applicant', title: 'Antragstellende', type: 'Email',
-            emailAddress: 'person@example.org', attributes: {}, providerKey: null, metadataIdentifier: null,
-            uniqueIdFromIdentityProvider: null, communicationProviderBindingId: null, communicationProviderData: {},
+            identityId: 'applicant',
+            title: 'Antragstellende',
+            type: 'Email',
+            emailAddress: 'person@example.org',
+            attributes: {},
+            providerKey: null,
+            metadataIdentifier: null,
+            uniqueIdFromIdentityProvider: null,
+            communicationProviderBindingId: null,
+            communicationProviderData: {},
         },
     };
     const onReloadRuntimeData = vi.fn();
     const context: ProcessFlowEditorContextType = {
-        editable: false, showTargetHandles: false, selectedNode: null,
-        onSelectNode: vi.fn(), onAddEdge: vi.fn(), onDeleteEdge: vi.fn(), onDeleteNode: vi.fn(),
-        onConnectNodeToExisting: vi.fn(), onStartReplaceNode: vi.fn(), onStartCloneNode: vi.fn(),
-        onShowNodeProviderDetails: vi.fn(), onShowTaskEvents: vi.fn(), onReloadRuntimeData,
-        onAddFollowUpNode: vi.fn(), onAddInbetweenNode: vi.fn(), nodeProblems: [], showNodeProblemsForNodes: {},
+        editable: false,
+        showTargetHandles: false,
+        selectedNode: null,
+        onSelectNode: vi.fn(),
+        onAddEdge: vi.fn(),
+        onDeleteEdge: vi.fn(),
+        onDeleteNode: vi.fn(),
+        onConnectNodeToExisting: vi.fn(),
+        onStartReplaceNode: vi.fn(),
+        onStartCloneNode: vi.fn(),
+        onShowNodeProviderDetails: vi.fn(),
+        onShowTaskEvents: vi.fn(),
+        onReloadRuntimeData,
+        onAddFollowUpNode: vi.fn(),
+        onAddInbetweenNode: vi.fn(),
+        nodeProblems: [],
+        showNodeProblemsForNodes: {},
         runtimeData: {
-            instance, events: [], attachments: [], attachmentSets: [],
-            tasks: [{...new ProcessInstanceTaskApiService().initialize(), id: 12, processNodeId: node.id, ...task}],
+            instance,
+            events: [],
+            attachments: [],
+            attachmentSets: [],
+            tasks: [{
+                ...new ProcessInstanceTaskApiService().initialize(),
+                id: 12,
+                processNodeId: node.id, ...task,
+            }],
         },
     };
     const props: NodeProps<FlowNode> = {
-        id: '1', type: 'process', dragging: false, zIndex: 0, selectable: true,
-        deletable: false, selected: false, draggable: false, isConnectable: false,
-        positionAbsoluteX: 0, positionAbsoluteY: 0,
-        data: {graphNode: {node, provider, displayPorts: [], outgoingEdges: [], incomingEdges: []}},
+        id: '1',
+        type: 'process',
+        dragging: false,
+        zIndex: 0,
+        selectable: true,
+        deletable: false,
+        selected: false,
+        draggable: false,
+        isConnectable: false,
+        positionAbsoluteX: 0,
+        positionAbsoluteY: 0,
+        data: {
+            graphNode: {
+                node,
+                provider,
+                displayPorts: [],
+                outgoingEdges: [],
+                incomingEdges: [],
+            },
+        },
     };
-    render(
+    const content = (value: ProcessFlowEditorContextType) => (
         <MemoryRouter>
-            <ProcessFlowEditorProvider value={context}>
+            <ProcessFlowEditorProvider value={value}>
                 <ProcessFlowEditorNode {...props} />
             </ProcessFlowEditorProvider>
-        </MemoryRouter>,
+        </MemoryRouter>
     );
-    return {onReloadRuntimeData};
+    const value = {...context, ...overrides};
+    const view = render(content(value));
+    return {
+        onReloadRuntimeData,
+        rerenderRuntimeData: (runtimeData: ProcessFlowEditorContextType['runtimeData']) => view.rerender(content({
+            ...value,
+            runtimeData,
+        })),
+    };
 }
 
 function dispatchedSnackbar(message: string, severity: SnackbarSeverity) {
-    return expect.objectContaining({payload: expect.objectContaining({message, severity})});
+    return expect.objectContaining({
+        payload: expect.objectContaining({
+            message,
+            severity,
+        }),
+    });
 }
 
 it.each([null, 'Unterlagen angefordert'])('shows the runtime identity in the diagram status tooltip (%s)', async statusOverride => {
-    renderNode({status: ProcessTaskStatus.AwaitingCustomer, statusOverride, assignedCustomerIdentityId: 'applicant'});
+    renderNode({
+        status: ProcessTaskStatus.AwaitingCustomer,
+        statusOverride,
+        assignedCustomerIdentityId: 'applicant',
+    });
 
     const tooltip = statusOverride
         ? 'Unterlagen angefordert (Systemstatus: Wartet auf Antragstellende)'
@@ -110,6 +183,55 @@ it('reruns a failed task and reloads the runtime data', async () => {
     expect(mocks.dispatch).toHaveBeenCalledWith(dispatchedSnackbar('Die erneute Ausführung der Aufgabe wurde angefordert.', SnackbarSeverity.Success));
 });
 
+it.each([false, true])('keeps the restart status and event target until the new attempt arrives (older loop: %s)', async hasOlderLoop => {
+    const restarted = {
+        ...new ProcessInstanceTaskApiService().initialize(),
+        id: 2,
+        processNodeId: 1,
+        started: '2026-11-20T10:02:00Z',
+        status: ProcessTaskStatus.Restarted,
+    };
+    const olderLoop = {
+        ...restarted,
+        id: 1,
+        started: '2026-11-20T10:01:00Z',
+        status: ProcessTaskStatus.Completed,
+    };
+    const runtimeData = {
+        instance: new ProcessInstanceApiService().initialize(),
+        tasks: [restarted, ...(hasOlderLoop ? [olderLoop] : [])],
+        events: [],
+        attachments: [],
+        attachmentSets: [],
+    };
+    const onShowTaskEvents = vi.fn();
+    const {rerenderRuntimeData} = renderNode({}, {
+        runtimeData,
+        onShowTaskEvents,
+    });
+
+    expect(screen.getByLabelText('Neu gestartet')).toBeVisible();
+    expect(screen.queryByLabelText('Abgeschlossen')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', {name: 'Ereignisse'}));
+    expect(onShowTaskEvents).toHaveBeenLastCalledWith(restarted.id);
+
+    const replacement = {
+        ...restarted,
+        id: 3,
+        started: '2026-11-20T10:03:00Z',
+        status: ProcessTaskStatus.Running,
+        restartForTaskId: restarted.id,
+    };
+    rerenderRuntimeData({
+        ...runtimeData,
+        tasks: [replacement, ...runtimeData.tasks],
+    });
+    expect(screen.getByLabelText('Gestartet')).toBeVisible();
+    expect(screen.queryByLabelText('Neu gestartet')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', {name: 'Ereignisse'}));
+    expect(onShowTaskEvents).toHaveBeenLastCalledWith(replacement.id);
+});
+
 it('reports a rerun the server rejects instead of failing silently', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.spyOn(ProcessInstanceTaskApiService.prototype, 'rerunFailedTask').mockRejectedValue(new Error('Serverfehler'));
@@ -130,4 +252,54 @@ it('offers no rerun without the permission to restart failed tasks of the instan
     renderNode({status: ProcessTaskStatus.Failed});
 
     expect(screen.getByRole('button', {name: 'Aktionen zur Aufgabe'})).toBeDisabled();
+});
+
+
+it('opens node execution history without selecting the graph node', async () => {
+    const onShowNodeExecutions = vi.fn();
+    const onSelectNode = vi.fn();
+    const tasks = [1, 2, 3].map(id => ({
+        ...new ProcessInstanceTaskApiService().initialize(),
+        id,
+        processNodeId: 1,
+        status: id === 3 ? ProcessTaskStatus.Restarted : ProcessTaskStatus.Completed,
+    }));
+    renderNode({}, {
+        onShowNodeExecutions,
+        onSelectNode,
+        runtimeData: {
+            instance: {
+                ...new ProcessInstanceApiService().initialize(),
+                id: 17,
+            },
+            tasks,
+            events: [],
+            attachments: [],
+            attachmentSets: [],
+            tasksComplete: true,
+        },
+    });
+    await userEvent.click(screen.getByRole('button', {name: '2 Ausführungen anzeigen'}));
+    expect(onShowNodeExecutions).toHaveBeenCalledTimes(1);
+    expect(onSelectNode).not.toHaveBeenCalled();
+});
+
+it('labels an incomplete execution count as a lower bound', () => {
+    const task = {
+        ...new ProcessInstanceTaskApiService().initialize(),
+        id: 1,
+        processNodeId: 1,
+    };
+    renderNode({}, {
+        onShowNodeExecutions: vi.fn(),
+        runtimeData: {
+            instance: new ProcessInstanceApiService().initialize(),
+            tasks: [task],
+            events: [],
+            attachments: [],
+            attachmentSets: [],
+            tasksComplete: false,
+        },
+    });
+    expect(screen.getByRole('button', {name: 'Mindestens 1 Ausführung anzeigen'})).toHaveTextContent('≥1×');
 });

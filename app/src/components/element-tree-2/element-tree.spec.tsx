@@ -173,7 +173,7 @@ describe('ElementTree section expansion', () => {
         expect(screen.getAllByRole('button', {name: 'Neues Element hinzufügen'})).toHaveLength(1);
     });
 
-    it.each(['Elemente einklappen', 'Elemente ausklappen'])(
+    it.each(['Alle Elemente einklappen', 'Alle Elemente ausklappen'])(
         'keeps the new section open and its groups collapsed after a previous "%s" command',
         async (command) => {
             const user = userEvent.setup();
@@ -182,7 +182,7 @@ describe('ElementTree section expansion', () => {
             ]);
             const {rerender} = render(<TestTree value={initial}/>, {wrapper: TreeTestWrapper});
             await user.click(screen.getByRole('button', {name: command}));
-            if (command === 'Elemente ausklappen') {
+            if (command === 'Alle Elemente ausklappen') {
                 expect(screen.getByText('Bestehende Gruppendaten')).toBeInTheDocument();
             }
 
@@ -193,13 +193,13 @@ describe('ElementTree section expansion', () => {
 
             expect(screen.getByText('newGroup')).toBeInTheDocument();
             expect(screen.queryByText('Neue Gruppendaten')).not.toBeInTheDocument();
-            const existingOpen = command === 'Elemente ausklappen';
+            const existingOpen = command === 'Alle Elemente ausklappen';
             expect(screen.getAllByRole('button', {name: 'Einklappen'})).toHaveLength(existingOpen ? 3 : 1);
             expect(screen.getAllByRole('button', {name: 'Ausklappen'})).toHaveLength(existingOpen ? 1 : 2);
 
-            await user.click(screen.getByRole('button', {name: 'Elemente ausklappen'}));
+            await user.click(screen.getByRole('button', {name: 'Alle Elemente ausklappen'}));
             expect(screen.getByText('Neue Gruppendaten')).toBeInTheDocument();
-            await user.click(screen.getByRole('button', {name: 'Elemente einklappen'}));
+            await user.click(screen.getByRole('button', {name: 'Alle Elemente einklappen'}));
             expect(screen.queryByRole('button', {name: 'Neues Element hinzufügen'})).not.toBeInTheDocument();
         },
     );

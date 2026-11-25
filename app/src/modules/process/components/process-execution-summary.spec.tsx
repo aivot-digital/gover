@@ -1,4 +1,6 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import fs from 'fs';
+import path from 'path';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {BaseApiService} from '../../../services/base-api-service';
 import {ProcessExecutionSummary} from './process-execution-summary';
@@ -6,7 +8,16 @@ import {ProcessExecutionSummary} from './process-execution-summary';
 const {dispatch} = vi.hoisted(() => ({dispatch: vi.fn()}));
 vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => dispatch}));
 
-const attachmentMarkdown = '[Bescheid.pdf](/api/process-instance-attachments/original-attachment/file/?download=false)';
+const attachmentMarkdown = 'Dokument\n:   [Bescheid.pdf](/api/process-instance-attachments/original-attachment/file/?download=false)';
+
+interface SharedSummaryCase {
+    name: string;
+    expectedMarkdown: string;
+    terms: string[];
+    contains: string[];
+}
+const sharedCases: SharedSummaryCase[] = JSON.parse(fs.readFileSync(path.resolve(__dirname,
+    '../../../../../backend/src/test/resources/markdown/process-execution-summary-cases.json'), 'utf-8')).cases;
 
 describe('ProcessExecutionSummary', () => {
     beforeEach(() => {
@@ -16,6 +27,67 @@ describe('ProcessExecutionSummary', () => {
     afterEach(() => {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
+    });
+
+    it.each(sharedCases)('renders the shared backend format: $name', example => {
+        render(<ProcessExecutionSummary markdown={example.expectedMarkdown}/>);
+        expect(screen.queryAllByRole('term').map(term => term.textContent)).toEqual(example.terms);
+        const valueText = screen.queryAllByRole('definition').map(value => value.textContent).join(' ');
+        for (const text of example.contains) expect(valueText).toContain(text);
+    });
+
+    it('renders generated details as terms and definitions while preserving rich values', () => {
+        render(<ProcessExecutionSummary markdown={
+            'Die Aufgabe wurde abgeschlossen.\n\nVermerk\n:   Erster Absatz.\n    \n    - **Freigegeben**\n    - [Details](https://example.org)\n    \n    ```json\n    {"ok": true}\n    ```\n\nBetreff\n:   Wichtig\n\nAbschließender Hinweis.'
+        }/>);
+        expect(screen.getAllByRole('term').map(term => term.textContent)).toEqual(['Vermerk', 'Betreff']);
+        const values = screen.getAllByRole('definition');
+        const remark = within(values[0]);
+        expect(remark.getByText('Erster Absatz.')).toBeVisible();
+        expect(remark.getAllByRole('listitem')).toHaveLength(2);
+        expect(remark.getByText('Freigegeben').tagName).toBe('STRONG');
+        expect(remark.getByRole('link', {name: 'Details'})).toHaveAttribute('rel', 'noopener noreferrer');
+        expect(remark.getByText('{"ok": true}').tagName).toBe('CODE');
+        expect(values[1]).toHaveTextContent('Wichtig');
+        expect(screen.getByText('Abschließender Hinweis.').closest('dd')).toBeNull();
+        expect(screen.getByText('Die Aufgabe wurde abgeschlossen.').closest('dl')).toBeNull();
+    });
+
+    it('keeps existing summaries and authored bold paragraphs unchanged', () => {
+        render(<ProcessExecutionSummary markdown={'Die Aufgabe wurde abgeschlossen.\n\n**Vermerk**\n\nDas war wichtig!'}/>);
+        expect(screen.queryByRole('term')).not.toBeInTheDocument();
+        expect(screen.getByText('Vermerk').tagName).toBe('STRONG');
+        expect(screen.getByText('Das war wichtig!')).toBeVisible();
+    });
+
+    it.each([
+        '```markdown\nVermerk\n:   Beispiel\n```',
+        '~~~markdown\nVermerk\n:   Beispiel\n~~~',
+        '    Vermerk\n    :   Beispiel',
+        '> Vermerk\n> :   Beispiel',
+        '- Vermerk\n  :   Beispiel',
+    ])('does not interpret definition-list examples inside code, quotes or lists: %s', markdown => {
+        render(<ProcessExecutionSummary markdown={markdown}/>);
+        expect(screen.queryByRole('term')).not.toBeInTheDocument();
+        expect(screen.getByText(/Beispiel/)).toBeVisible();
+    });
+
+    it('preserves indented code in a definition value', () => {
+        render(<ProcessExecutionSummary markdown={'Beispiel\n:       code\n    \n        more code'}/>);
+        const value = screen.getByRole('definition');
+        expect(within(value).getByText(/more code/).tagName).toBe('CODE');
+    });
+
+    it('keeps HTML literal and unsafe links inactive inside definitions', () => {
+        const {container} = render(<ProcessExecutionSummary markdown={
+            'Vermerk\n:   <script>alert(1)</script>\n    \n    [Unsicher](javascript:alert(1))\n    \n    ![Bild](https://example.org/private.png)'
+        }/>);
+        const value = screen.getByRole('definition');
+        expect(value).toHaveTextContent('<script>alert(1)</script>');
+        expect(container.querySelector('script')).toBeNull();
+        expect(container.querySelector('img')).toBeNull();
+        expect(within(value).getByText('Unsicher')).not.toHaveAttribute('href', expect.stringContaining('javascript:'));
+        expect(value).toHaveTextContent('Bild');
     });
 
     it('loads a document through the authenticated API and opens a temporary blob preview', async () => {
@@ -72,6 +144,19 @@ describe('ProcessExecutionSummary', () => {
         render(<ProcessExecutionSummary markdown={attachmentMarkdown}/>);
         fireEvent.click(screen.getByRole('link', {name: 'Bescheid.pdf'}));
         await waitFor(() => expect(close).toHaveBeenCalled());
+        expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+            payload: expect.objectContaining({message: 'Die Anlage konnte nicht angezeigt werden.'}),
+        }));
+    });
+
+    it('reports malformed attachment keys without throwing or requesting an invalid URL', async () => {
+        const getBlob = vi.spyOn(BaseApiService.prototype, 'getBlob');
+        const close = vi.fn();
+        vi.spyOn(window, 'open').mockReturnValue({document: {body: {}}, close} as unknown as Window);
+        render(<ProcessExecutionSummary markdown={'[Anlage](/api/process-instance-attachments/%FF/file/?download=false)'}/>);
+        fireEvent.click(screen.getByRole('link', {name: 'Anlage'}));
+        await waitFor(() => expect(close).toHaveBeenCalled());
+        expect(getBlob).not.toHaveBeenCalled();
         expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
             payload: expect.objectContaining({message: 'Die Anlage konnte nicht angezeigt werden.'}),
         }));

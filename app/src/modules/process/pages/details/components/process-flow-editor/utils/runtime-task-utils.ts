@@ -1,43 +1,5 @@
+import {compareTaskExecutionOrder} from '../../../../../utils/process-task-executions';
 import {type ProcessInstanceTaskEntity} from '../../../../../entities/process-instance-task-entity';
-
-function parseTimestamp(value: string | null): number {
-    if (value == null) {
-        return Number.NEGATIVE_INFINITY;
-    }
-
-    const parsed = Date.parse(value);
-    return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
-}
-
-function parseTaskEndTimestamp(task: ProcessInstanceTaskEntity): number {
-    const finished = parseTimestamp(task.finished);
-    if (finished !== Number.NEGATIVE_INFINITY) {
-        return finished;
-    }
-
-    const updated = parseTimestamp(task.updated);
-    if (updated !== Number.NEGATIVE_INFINITY) {
-        return updated;
-    }
-
-    return parseTimestamp(task.started);
-}
-
-function isNewerTask(candidate: ProcessInstanceTaskEntity, current: ProcessInstanceTaskEntity): boolean {
-    const candidateUpdated = parseTimestamp(candidate.updated);
-    const currentUpdated = parseTimestamp(current.updated);
-    if (candidateUpdated !== currentUpdated) {
-        return candidateUpdated > currentUpdated;
-    }
-
-    const candidateStarted = parseTimestamp(candidate.started);
-    const currentStarted = parseTimestamp(current.started);
-    if (candidateStarted !== currentStarted) {
-        return candidateStarted > currentStarted;
-    }
-
-    return candidate.id > current.id;
-}
 
 function pickLatestTask(
     tasks: ProcessInstanceTaskEntity[],
@@ -50,7 +12,7 @@ function pickLatestTask(
             continue;
         }
 
-        if (latestTask == null || isNewerTask(task, latestTask)) {
+        if (latestTask == null || compareTaskExecutionOrder(task, latestTask) > 0) {
             latestTask = task;
         }
     }
@@ -62,6 +24,7 @@ export function getLatestTaskForNode(
     tasks: ProcessInstanceTaskEntity[],
     processNodeId: number,
 ): ProcessInstanceTaskEntity | null {
+    // Keep the restart state until the worker creates its replacement; older loop runs must not become current again.
     return pickLatestTask(tasks, (task) => task.processNodeId === processNodeId);
 }
 
@@ -94,11 +57,7 @@ export function getTransferredProcessDataComparisonForEdge(
         return null;
     }
 
-    const targetStarted = parseTimestamp(targetTask.started);
-    const sourceTask = pickLatestTask(tasks, (task) => (
-        task.processNodeId === fromNodeId &&
-        parseTaskEndTimestamp(task) <= targetStarted
-    ));
+    const sourceTask = tasks.find(task => task.id === targetTask.previousProcessInstanceTaskId && task.processNodeId === fromNodeId);
 
     if (sourceTask == null) {
         return null;

@@ -1,4 +1,4 @@
-import {DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography} from '@mui/material';
+import {Box, DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography} from '@mui/material';
 import React from 'react';
 import CloseOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {Action} from '../actions/actions-props';
@@ -10,6 +10,7 @@ interface DialogTitleWithCloseProps extends DialogTitleProps {
     closeTooltip?: string;
     bordered?: boolean;
     actions?: Action[];
+    endAdornment?: React.ReactNode;
 }
 
 export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
@@ -19,6 +20,7 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
         closeTooltip,
         bordered,
         actions,
+        endAdornment,
         ...other
     } = props;
 
@@ -41,9 +43,19 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
             <Typography
                 variant="h4"
                 component="div"
+                sx={endAdornment != null ? {
+                    flex: 1,
+                    minWidth: 0,
+                    overflowWrap: 'anywhere',
+                } : undefined}
             >
                 {children}
             </Typography>
+
+            {endAdornment != null && <Box sx={{
+                ml: 2,
+                flexShrink: 0,
+            }}>{endAdornment}</Box>}
 
             {
                 actions &&
@@ -58,7 +70,8 @@ export const DialogTitleWithClose = (props: DialogTitleWithCloseProps) => {
 
             {
                 onClose &&
-                <Tooltip title={closeTooltip ?? 'Schließen'} arrow>
+                <Tooltip title={closeTooltip ?? 'Schließen'}
+                         arrow>
                     <IconButton
                         aria-label="Schließen"
                         onClick={onClose}
