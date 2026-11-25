@@ -5,6 +5,12 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.json.JsonMapper;
+import java.util.List;
+import java.util.stream.Stream;
+import java.io.IOException;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -14,6 +20,23 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExecutionSummaryMarkdownTest {
+    record FormatCases(List<FormatCase> cases) {}
+    record FormatCase(String name, String mode, String title, String value, String expectedMarkdown,
+                      List<String> terms, List<String> contains) {}
+
+    static Stream<FormatCase> sharedSummaryCases() throws IOException {
+        try (var input = new ClassPathResource("markdown/process-execution-summary-cases.json").getInputStream()) {
+            return JsonMapper.builder().build().readValue(input, FormatCases.class).cases().stream();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("sharedSummaryCases")
+    void generatesTheSharedFrontendFormat(FormatCase example) {
+        assertEquals(example.expectedMarkdown(), "detail".equals(example.mode())
+                ? detail(example.title(), example.value()) : section(example.title(), example.value()), example.name());
+    }
+
     @ParameterizedTest
     @CsvSource({"' Ada Beispiel ', Ada Beispiel", "'Name *A*', Name *A*", ", staff-id", "'', staff-id", "'   ', staff-id"})
     void resolvesTheSameNameForPlainTextEventsAndMarkdown(String name, String expected) {
@@ -27,10 +50,20 @@ class ExecutionSummaryMarkdownTest {
     void escapesInsertedMarkdownHtmlNewlinesAndTableCells() {
         assertEquals("\\[x\\]\\(javascript:alert\\(1\\)\\) \\<b\\>\\& \\| \\*bold\\*",
                 text("[x](javascript:alert(1))\n<b>& | *bold*"));
-        assertEquals("\n\n**Vermerk**\n\n**Freigegeben**", section("Vermerk", "**Freigegeben**"));
+        assertEquals("\n\nVermerk\n:   **Freigegeben**", section("Vermerk", "**Freigegeben**"));
         assertEquals("", detail("Optional", null));
         assertEquals("„Name\\]“", user("a/b c", "Name]"));
         assertEquals("[Dokument ansehen](/api/process-instance-attachments/a%2Fb/file/?download=false)", document("a/b", null));
+    }
+
+    @Test
+    void keepsRichMarkdownInsideDefinitionValues() {
+        assertEquals("\n\nVermerk\n:   Erster Absatz.\n    \n    - **Freigegeben**\n    - [Details](https://example.org)",
+                section("Vermerk", "Erster Absatz.\r\n\r\n- **Freigegeben**\r\n- [Details](https://example.org)"));
+        assertEquals("\n\nBetreff\n:   \\*Wichtig\\*", detail("Betreff", "*Wichtig*"));
+        assertEquals("\n\n\\*Titel\\*\n:   Inhalt", section("*Titel*", "Inhalt"));
+        assertEquals("", section("Vermerk", "  \n\t"));
+        assertEquals("\n\nBeispiel\n:       eingerückter Code", section("Beispiel", "    eingerückter Code"));
     }
 
     @Test

@@ -51,7 +51,7 @@ describe('SnackbarProvider', () => {
 
             fireEvent.click(await screen.findByRole('button', {name: 'Neu laden'}));
 
-            expect(reload).toHaveBeenCalledOnce();
+            await waitFor(() => expect(reload).toHaveBeenCalledOnce());
         } finally {
             Object.defineProperty(window, 'location', {configurable: true, value: originalLocation});
             state.shell.snackbars = [{key: 'notice', message: 'Einmalige Meldung', severity: 'info', type: 'dismissable'}];

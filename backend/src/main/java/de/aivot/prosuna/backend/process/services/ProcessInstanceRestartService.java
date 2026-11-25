@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
@@ -100,6 +101,7 @@ public class ProcessInstanceRestartService {
                     true,
                     true,
                     "Fortsetzung des Vorgangs angefordert",
+                    ProcessHistoryInterventions.details(),
                     message
             );
             return restarted;
@@ -153,6 +155,7 @@ public class ProcessInstanceRestartService {
                     true,
                     true,
                     "Erneute Ausführung der Aufgabe angefordert",
+                    ProcessHistoryInterventions.details(),
                     instanceFailed
                             ? "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert. Der fehlgeschlagene Vorgang wird fortgesetzt."
                             : "Die erneute Ausführung der fehlgeschlagenen Aufgabe wurde manuell angefordert."

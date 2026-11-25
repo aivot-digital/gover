@@ -24,6 +24,7 @@ export interface ProcessFlowEditorContextType {
     onStartCloneNode: (node: ProcessNodeEntity) => void;
     onShowNodeProviderDetails: (provider: ProcessNodeProvider, node: ProcessNodeEntity) => void;
     onShowTaskEvents: (taskId: number) => void;
+    onShowNodeExecutions?: (node: ProcessNodeEntity, provider: ProcessNodeProvider) => void;
 
     onReloadRuntimeData: () => void;
     onDownloadAttachment?: (attachment: ProcessInstanceAttachmentEntity) => void | Promise<void>;
@@ -34,6 +35,7 @@ export interface ProcessFlowEditorContextType {
     runtimeData: {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
+        tasksComplete?: boolean;
         events: ProcessInstanceEventEntity[];
         attachments: ProcessInstanceAttachmentEntity[];
         attachmentSets: ProcessInstanceAttachmentSetEntity[];

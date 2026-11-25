@@ -12,6 +12,8 @@ import {generateElementWithDefaultValues} from '../../../utils/generate-element-
 import {ElementsApiService} from '../../../modules/elements/elements-api-service';
 import {type AnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {DefaultTabs} from '../../element-editor/default-tabs';
+import {type ElementPanelDraft} from '../element-panel-draft';
+import {type EditorProps} from '@monaco-editor/react';
 
 const api = vi.hoisted(() => ({get: vi.fn()}));
 vi.mock('../../../hooks/use-api', () => ({useApi: () => api}));
@@ -19,42 +21,27 @@ const confirm = vi.hoisted(() => vi.fn().mockResolvedValue(true));
 vi.mock('../../../providers/confirm-provider', () => ({useConfirm: () => confirm}));
 vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 vi.mock('../../../editors', () => ({editors: {}}));
+const monaco = vi.hoisted(() => ({props: {} as EditorProps}));
+vi.mock('../../code-editor/monaco-editor', () => ({MonacoEditor: (props: EditorProps) => {
+    monaco.props = props;
+    return null;
+}}));
 
-function renderEditor({
-                          isNew = false,
-                          destinationKey,
-                          siblingKey,
-                          noCode,
-                      }: {
-    isNew?: boolean;
-    destinationKey?: string;
-    siblingKey?: string;
-    noCode?: NoCodeOperand | null
+function renderEditor({isNew = false, destinationKey, siblingKey, trackDraft = false, initialDraft, noCode}: {
+    isNew?: boolean; destinationKey?: string; siblingKey?: string; trackDraft?: boolean; initialDraft?: ElementPanelDraft; noCode?: NoCodeOperand | null;
 } = {}) {
-    const initial = {
-        ...generateElementWithDefaultValues(ElementType.Text),
-        id: 'field',
-        label: 'Vorname',
-        destinationKey,
-    };
+    const initial = {...generateElementWithDefaultValues(ElementType.Text), id: 'field', label: 'Vorname', destinationKey};
     if (noCode !== undefined) initial.visibility = {
-        type: 'NoCode',
-        noCode,
-        requirements: null,
-        conditionSet: null,
-        javascriptCode: null,
-        referencedIds: [],
+        type: 'NoCode', noCode, requirements: null, conditionSet: null, javascriptCode: null, referencedIds: [],
     };
-    const form = {
-        ...(generateElementWithDefaultValues(ElementType.FormLayout) as unknown as FormLayoutElement),
-        id: 'form',
-    };
+    const form = {...(generateElementWithDefaultValues(ElementType.FormLayout) as unknown as FormLayoutElement), id: 'form'};
     const onApply = vi.fn();
-
+    const onDraft = vi.fn<(draft: ElementPanelDraft | null) => void>();
     function Harness() {
         const [element, setElement] = useState(initial);
         const [newIds, setNewIds] = useState(new Set(isNew ? ['field'] : []));
         const [open, setOpen] = useState(true);
+        const [panelDraft, setPanelDraft] = useState<ElementPanelDraft | null>(initialDraft ?? null);
         return <ElementTreeContextProvider value={{
             root: form,
             editable: true,
@@ -74,18 +61,13 @@ function renderEditor({
                     parents: [form],
                 }] : []),
             ],
-            newElementIds: newIds,
-            markElementApplied: () => setNewIds(new Set()),
-            scrollToElement: () => {
-            },
-            canDropElement: () => false,
-            moveElement: () => {
-            },
-            expandCommand: {
-                type: null,
-                version: 0,
-            },
-            initiallyExpandedSectionIds: new Set(),
+            newElementIds: newIds, markElementApplied: () => setNewIds(new Set()),
+            panelDraft, onPanelDraftChange: trackDraft ? (draft) => {
+                onDraft(draft);
+                setPanelDraft(draft);
+            } : undefined,
+            scrollToElement: () => {}, canDropElement: () => false, moveElement: () => {},
+            expandCommand: {type: null, version: 0}, initiallyExpandedSectionIds: new Set(),
         }}>
             <button onClick={() => setOpen(true)}>Erneut öffnen</button>
             <ElementTreeEditor value={element}
@@ -103,9 +85,8 @@ function renderEditor({
                                }}/>
         </ElementTreeContextProvider>;
     }
-
-    render(<Harness/>);
-    return {onApply};
+    const {unmount} = render(<Harness/>);
+    return {onApply, onDraft, unmount};
 }
 
 describe('form data key editing session', () => {
@@ -212,5 +193,75 @@ describe('form data key editing session', () => {
         expect(input).toHaveAttribute('aria-invalid', 'true');
         expect(onApply).not.toHaveBeenCalled();
         expect(ElementsApiService.prototype.recalculateReferencedIds).not.toHaveBeenCalled();
+    });
+
+    it('restores a manually edited invalid key without re-enabling title tracking', async () => {
+        const first = renderEditor({isNew: true, trackDraft: true});
+        expect(first.onDraft).not.toHaveBeenCalled();
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(screen.getByRole('textbox', {name: /^Datenschlüssel/}), {target: {value: 'person.'}});
+        const saved = first.onDraft.mock.lastCall![0]!;
+        first.unmount();
+
+        const restored = renderEditor({trackDraft: true, initialDraft: saved});
+        const key = screen.getByRole('textbox', {name: /^Datenschlüssel/});
+        expect(key).not.toHaveAttribute('readonly');
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Nachname'}});
+        expect(key).toHaveValue('person.');
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(key).toHaveAttribute('aria-invalid', 'true');
+        expect(restored.onApply).not.toHaveBeenCalled();
+        expect(restored.onDraft.mock.lastCall![0]).toMatchObject({mine: {destinationKey: 'person.'}, automaticDataKey: false});
+    });
+
+    it('keeps the restored key control unlocked after reverting all authored changes', async () => {
+        const first = renderEditor({destinationKey: 'person', trackDraft: true});
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Datenschlüssel entsperren'}));
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Rufname'}});
+        const saved = first.onDraft.mock.lastCall![0]!;
+        first.unmount();
+        const restored = renderEditor({destinationKey: 'person', trackDraft: true, initialDraft: saved});
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Vorname'}});
+        expect(restored.onDraft).toHaveBeenLastCalledWith(null);
+        expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).not.toHaveAttribute('readonly');
+    });
+
+    it('preserves an external removal when reverting a title and discards it on Cancel', async () => {
+        const field = {...generateElementWithDefaultValues(ElementType.Text), id: 'field', label: 'Vorname'};
+        const pending = [{element: {...field, id: 'moved'}, parentId: 'other-group'}];
+        const initialDraft = {
+            base: field, mine: field, tab: DefaultTabs.properties, parents: [],
+            automaticDataKey: false, dataKeyUnlocked: false, pendingMovedRemovals: pending,
+        };
+        const {onApply, onDraft} = renderEditor({trackDraft: true, initialDraft});
+        const title = screen.getByRole('textbox', {name: /^Titel/});
+        fireEvent.change(title, {target: {value: 'Rufname'}});
+        fireEvent.change(title, {target: {value: 'Vorname'}});
+        expect(onDraft.mock.lastCall![0]).toMatchObject({mine: field, pendingMovedRemovals: pending});
+        await userEvent.setup().click(screen.getByRole('button', {name: 'Abbrechen'}));
+        expect(confirm).toHaveBeenCalledOnce();
+        expect(onDraft).toHaveBeenLastCalledWith(null);
+        expect(onApply).not.toHaveBeenCalled();
+    });
+
+    it('records only an applied structure and retains it while reference recalculation is pending', async () => {
+        const user = userEvent.setup();
+        const {onDraft, onApply, unmount} = renderEditor({trackDraft: true});
+        await user.click(screen.getByRole('tab', {name: 'Elementstruktur'}));
+        const changed = {...JSON.parse(monaco.props.value!), label: 'Entwurf aus Struktur'};
+        act(() => monaco.props.onMount?.({getValue: () => JSON.stringify(changed)} as never, {} as never));
+        await user.click(screen.getByRole('switch', {name: 'Struktur manuell überschreiben'}));
+        expect(onDraft).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'Struktur anwenden'}));
+        expect(onDraft.mock.lastCall![0]).toMatchObject({mine: changed, tab: DefaultTabs.structure});
+        const calculation = Promise.withResolvers<typeof changed>();
+        vi.mocked(ElementsApiService.prototype.recalculateReferencedIds).mockReturnValue(calculation.promise);
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        const snapshot = onDraft.mock.lastCall![0];
+        expect(snapshot).toMatchObject({mine: changed});
+        unmount();
+        await act(async () => { calculation.resolve(changed); });
+        expect(onDraft.mock.lastCall![0]).toBe(snapshot);
+        expect(onApply).not.toHaveBeenCalled();
     });
 });

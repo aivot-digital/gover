@@ -155,7 +155,7 @@ export function createAppTheme(
 
     // Links sit on Paper rather than on a solid primary fill, so they use the contrast-adjusted foreground role.
     const linkStyles = {
-        '.MuiTypography-body2 > a, .MuiAccordionDetails-root a': {
+        '.MuiTypography-body2 > a:not(.MuiButtonBase-root), .MuiAccordionDetails-root a:not(.MuiButtonBase-root)': {
             color: resolvedColors.primaryForeground,
             textDecoration: 'none',
             position: 'relative',
@@ -164,7 +164,7 @@ export function createAppTheme(
             padding: '2px 0',
             display: 'inline-block',
         },
-        '.MuiTypography-body2 > a::before, .MuiAccordionDetails-root a::before': {
+        '.MuiTypography-body2 > a:not(.MuiButtonBase-root)::before, .MuiAccordionDetails-root a:not(.MuiButtonBase-root)::before': {
             content: '""',
             display: 'block',
             position: 'absolute',
@@ -176,7 +176,7 @@ export function createAppTheme(
             transition: 'all 150ms ease-in-out',
             zIndex: 0,
         },
-        '.MuiTypography-body2 > a::after, .MuiAccordionDetails-root a::after': {
+        '.MuiTypography-body2 > a:not(.MuiButtonBase-root)::after, .MuiAccordionDetails-root a:not(.MuiButtonBase-root)::after': {
             content: '""',
             display: 'block',
             position: 'absolute',
@@ -188,10 +188,10 @@ export function createAppTheme(
             transition: 'all 150ms ease-in-out',
             zIndex: -1,
         },
-        '.MuiTypography-body2 > a:hover::after, .MuiAccordionDetails-root a:hover::after': {
+        '.MuiTypography-body2 > a:not(.MuiButtonBase-root):hover::after, .MuiAccordionDetails-root a:not(.MuiButtonBase-root):hover::after': {
             height: '100%',
         },
-        '.MuiTypography-body2 > a:hover::before, .MuiAccordionDetails-root a:hover::before': {
+        '.MuiTypography-body2 > a:not(.MuiButtonBase-root):hover::before, .MuiAccordionDetails-root a:not(.MuiButtonBase-root):hover::before': {
             backgroundColor: resolvedColors.primaryForeground,
         },
     };

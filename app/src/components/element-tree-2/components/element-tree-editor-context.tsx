@@ -9,7 +9,7 @@ export interface ElementTreeEditorContextType<T extends AnyElement> {
     startLegacyMigration?: (section: LegacyNoCodeSection) => void;
     cancelLegacyMigration?: (section: LegacyNoCodeSection) => void;
     currentElement: T;
-    onChangeCurrentElement: (element: T) => void;
+    onChangeCurrentElement: (element: T, reason?: 'normalize') => void;
     parents: AnyElement[];
     originalElement?: T;
     dataKeyUnlocked?: boolean;

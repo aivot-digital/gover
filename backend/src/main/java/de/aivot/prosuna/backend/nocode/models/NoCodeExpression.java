@@ -26,10 +26,11 @@ public class NoCodeExpression extends NoCodeOperand {
         super(TYPE_ID);
     }
 
-    public NoCodeExpression(@Nonnull String operatorIdentifier, @Nonnull NoCodeOperand... operands) {
+    // Jackson also deserializes through this constructor and passes null when the stored JSON omits "operands".
+    public NoCodeExpression(@Nonnull String operatorIdentifier, @Nullable NoCodeOperand... operands) {
         super(TYPE_ID);
         this.operatorIdentifier = operatorIdentifier;
-        this.operands = Arrays.stream(operands).toList();
+        this.operands = operands == null ? null : Arrays.stream(operands).toList();
     }
 
     public static NoCodeExpression of(@Nonnull String operatorIdentifier, @Nonnull NoCodeOperand... operands) {

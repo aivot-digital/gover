@@ -34,6 +34,7 @@ import {
 } from '../view-dispatcher/view-dispatcher.context';
 import {generateUUIDv7} from '../../utils/id-utils';
 import {FormFieldGroup, type FormFieldGroupContext} from '../form-field';
+import {useDragAutoScroll} from './use-drag-auto-scroll';
 
 export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -86,6 +87,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     const isSortable = element.sortable === true && !isDisabled && (value?.length ?? 0) > 1;
     // Scoping the drag type to this container instance keeps rows from moving between containers.
     const rowDragType = `replicating-container-row:${useId()}`;
+    const listRef = useRef<HTMLDivElement | null>(null);
 
     const handleAdd = useCallback(() => {
         const updatedValue: ReplicatingContainerElementValues = [
@@ -148,6 +150,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             >
                 {(fieldContext: FormFieldGroupContext) => (
                     <Box
+                        ref={listRef}
                         data-replicating-container-list
                         sx={{
                             overflow: 'hidden',
@@ -309,6 +312,13 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             ) : renderRow();
                         })}
 
+                        {isSortable && (
+                            <SortableRowsAutoScroll
+                                listRef={listRef}
+                                dragType={rowDragType}
+                            />
+                        )}
+
                         {shouldShowEmptyState && (
                             <Box
                                 sx={{
@@ -393,6 +403,20 @@ function ReplicatingContainerRowScope(props: ReplicatingContainerRowScopeProps) 
             {children}
         </ViewDispatcherContextProvider>
     );
+}
+
+interface SortableRowsAutoScrollProps {
+    listRef: RefObject<HTMLDivElement | null>;
+    dragType: string;
+}
+
+/**
+ * Scrolls the surrounding page or panel while a row is dragged. It renders only for sortable containers, which
+ * keeps unsortable containers usable without a drag-and-drop provider.
+ */
+function SortableRowsAutoScroll(props: SortableRowsAutoScrollProps) {
+    useDragAutoScroll(props.listRef, props.dragType);
+    return null;
 }
 
 interface SortableRowSlots {

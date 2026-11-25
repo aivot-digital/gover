@@ -12,6 +12,7 @@ import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {ConditionSetOperator} from '../../../data/condition-set-operator';
 import {ConditionOperator} from '../../../data/condition-operator';
 import {LegacyNoCodeSection} from '../../../modules/nocode/hooks/use-legacy-no-code-migration';
+import {type ElementPanelDraft} from '../element-panel-draft';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 
 const api = vi.hoisted(() => ({get: vi.fn()}));
@@ -72,7 +73,7 @@ function tab(section: string) {
     });
 }
 
-function setup(section: LegacyNoCodeSection = 'visibility', editable = true, overrides: Partial<TextFieldElement> = {}) {
+function setup(section: LegacyNoCodeSection = 'visibility', editable = true, overrides: Partial<TextFieldElement> = {}, initialDraft: ElementPanelDraft | null = null) {
     const initial: TextFieldElement = {
         ...generateElementWithDefaultValues(ElementType.Text),
         id: 'field',
@@ -86,11 +87,15 @@ function setup(section: LegacyNoCodeSection = 'visibility', editable = true, ove
     } as unknown as FormLayoutElement;
     const onApply = vi.fn();
     const onCancel = vi.fn();
+    const onDraft = vi.fn<(draft: ElementPanelDraft | null) => void>();
 
     function Harness() {
         const [element, setElement] = useState(initial);
+        const [panelDraft, setPanelDraft] = useState(initialDraft);
         return <ElementTreeContextProvider value={{
             root: form,
+            panelDraft,
+            onPanelDraftChange: (draft) => { onDraft(draft); setPanelDraft(draft); },
             editable,
             displayContext: ElementDisplayContext.CustomerFacing,
             allowElementIdEditing: false,
@@ -126,10 +131,12 @@ function setup(section: LegacyNoCodeSection = 'visibility', editable = true, ove
     }
 
     window.history.replaceState({}, '', `/#field/${section}`);
-    render(<Harness/>);
+    const {unmount} = render(<Harness/>);
     return {
         onApply,
         onCancel,
+        onDraft,
+        unmount,
     };
 }
 
@@ -307,4 +314,60 @@ it('focuses adding a validation when the selected No-Code mode has no expression
     fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
     await waitFor(() => expect(screen.getByRole('button', {name: 'Validierung hinzufügen'})).toHaveFocus());
     expect(onApply).not.toHaveBeenCalled();
+});
+
+
+it('restores a pending migration with its old rule and applies only its completed replacement', async () => {
+    const first = setup();
+    fireEvent.click(screen.getByRole('button', {name: 'Umstellung beginnen'}));
+    await fillDraft();
+    tab('properties');
+    fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Neuer Titel'}});
+    const saved = JSON.parse(JSON.stringify(first.onDraft.mock.lastCall![0])) as ElementPanelDraft;
+    expect(saved.mine.visibility?.type).toBe('NoCode');
+    expect(saved.base.visibility).toEqual(legacy);
+    expect(first.onApply).not.toHaveBeenCalled();
+    first.unmount();
+
+    const restored = setup('visibility', true, {}, saved);
+    expect(await screen.findByRole('button', {name: 'Umstellung abbrechen'})).toBeInTheDocument();
+    expect(within(screen.getByRole('region', {name: 'Bisherige Regel Nur lesbar'})).getByText('alt')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+    await waitFor(() => expect(restored.onApply).toHaveBeenCalledOnce());
+    expect(restored.onApply.mock.calls[0][0]).toMatchObject({
+        label: 'Neuer Titel', visibility: {type: 'NoCode', conditionSet: null, noCode: {operatorIdentifier: 'always-true'}},
+    });
+});
+
+it('still blocks an incomplete migration after recovery and restores the old rule on cancellation', async () => {
+    const first = setup();
+    fireEvent.click(screen.getByRole('button', {name: 'Umstellung beginnen'}));
+    const saved = JSON.parse(JSON.stringify(first.onDraft.mock.lastCall![0])) as ElementPanelDraft;
+    first.unmount();
+    const restored = setup('visibility', true, {}, saved);
+    fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+    expect(await screen.findByText('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.')).toBeInTheDocument();
+    expect(restored.onApply).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: 'Umstellung abbrechen'}));
+    await screen.findByRole('button', {name: 'Umstellung beginnen'});
+    expect(restored.onDraft).toHaveBeenLastCalledWith(null);
+});
+
+
+it('does not apply a migration after an edit supersedes its pending validation', async () => {
+    const {onApply} = setup();
+    fireEvent.click(screen.getByRole('button', {name: 'Umstellung beginnen'}));
+    await fillDraft();
+    let resolve!: (operators: typeof operator[]) => void;
+    api.get.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+    await waitFor(() => expect(resolve).toBeTypeOf('function'));
+    tab('properties');
+    fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Noch bearbeitet'}});
+    await act(async () => resolve([operator]));
+    expect(onApply).not.toHaveBeenCalled();
+    expect(ElementsApiService.prototype.recalculateReferencedIds).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+    await waitFor(() => expect(onApply).toHaveBeenCalledOnce());
+    expect(onApply.mock.calls[0][0]).toMatchObject({label: 'Noch bearbeitet', visibility: {type: 'NoCode'}});
 });

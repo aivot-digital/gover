@@ -4,7 +4,7 @@ import {NoCodeApiService} from '../../../services/no-code-api-service';
 import {elementNoCodeFunctions, validateNoCode} from '../../../modules/nocode/utils/validate-no-code';
 import {noCodeEditorElements} from '../../../modules/nocode/utils/no-code-editor-elements';
 import {Alert, Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeContext} from '../element-tree-context';
@@ -28,6 +28,9 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {validateDataKeyPath} from '../../../utils/data-key-input';
 import {suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
+import {getPanelDraftParents} from '../element-panel-draft';
+import {editorValuesEqual} from '../../../utils/variable-reference-merge';
+import {mergeRecalculatedReferencedIds} from '../../../utils/ui-definition-utils';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -50,10 +53,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const {
         currentEditorTab,
         navigateToEditorTab,
+        navigateToElementEditor,
     } = useElementEditorNavigation();
 
     const {
-        root,
         editable,
         parentModalZIndex,
         displayContext,
@@ -61,6 +64,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         newElementIds,
         markElementApplied,
         allElements,
+        panelDraft,
+        onPanelDraftChange,
+        applyPanelDraft,
     } = useElementTreeContext();
 
     const {
@@ -73,12 +79,24 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         onClone,
     } = props;
 
-    const [updatedElement, setUpdatedElement] = useState<T>();
-    const migration = useLegacyNoCodeMigration(updatedElement ?? value, setUpdatedElement);
+    const panel = open && panelDraft?.base.id === value.id ? panelDraft : null;
+    const [localElement, setLocalElement] = useState<T>();
+    const updatedElement = panel == null ? localElement : panel.mine as T;
+    const migration = useLegacyNoCodeMigration<T>(updatedElement ?? value, (element) => storeCurrentElement(element),
+        onPanelDraftChange == null ? undefined : {
+            migrations: panel?.legacyMigrations ?? {},
+            original: (panel?.base ?? value) as T,
+            onChange: (element, migrations) => storeCurrentElement(element, undefined, migrations),
+        });
     const [isBusy, setIsBusy] = useState<boolean>(false);
-    const [dataKeyUnlocked, setDataKeyUnlocked] = useState(false);
-    const [automaticDataKey, setAutomaticDataKey] = useState(false);
+    const [localKeyUnlocked, setDataKeyUnlocked] = useState(false);
+    const [localAutomaticKey, setAutomaticDataKey] = useState(false);
+    const dataKeyUnlocked = panel?.dataKeyUnlocked ?? localKeyUnlocked;
+    const automaticDataKey = panel?.automaticDataKey ?? localAutomaticKey;
     const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
+    const editGeneration = useRef(0);
+    const currentTree = useRef({panel, applyPanelDraft});
+    useLayoutEffect(() => { currentTree.current = {panel, applyPanelDraft}; }, [panel, applyPanelDraft]);
 
     const hasSummaryAsParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
@@ -86,52 +104,81 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     // Only a newly added field follows its title. A loaded empty key deliberately keeps values in element data.
     // Snapshot this policy per editor session; ordinary parent updates must not reset an in-progress edit.
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (open) {
-            const automatic = displayContext !== ElementDisplayContext.DataObjectSchema &&
-                newElementIds?.has(value.id) === true && isAnyInputElement(value) && !value.destinationKey;
+            const automatic = panel?.automaticDataKey ?? (displayContext !== ElementDisplayContext.DataObjectSchema &&
+                newElementIds?.has(value.id) === true && isAnyInputElement(value) && !value.destinationKey);
             setAutomaticDataKey(automatic);
-            setDataKeyUnlocked(false);
+            setDataKeyUnlocked(panel?.dataKeyUnlocked ?? false);
             setDataKeyValidationRequested(false);
             const generatedKey = automatic && isAnyInputElement(value)
-                ? suggestDestinationKey(value.label, {
-                    element: value,
-                    parents,
-                }, allElements)
+                ? suggestDestinationKey(value.label, {element: value, parents}, allElements)
                 : null;
-            setUpdatedElement(generatedKey == null ? undefined : {
-                ...value,
-                destinationKey: generatedKey,
-            });
+            setLocalElement(generatedKey == null ? undefined : {...value, destinationKey: generatedKey});
             setIsBusy(false);
             setNoCodeSaveError(null);
             setNoCodeValidationRequest(0);
             setNoCodeValidationIndex(0);
             migration.reset();
         }
+        return () => { editGeneration.current++; };
     }, [open, value.id]);
 
-    const changeCurrentElement = (updated: T) => {
-        if (isBusy) return;
+    const storeCurrentElement = (updated: T, reason?: 'normalize' | 'structure', migrations = migration.migrations) => {
+        if (onPanelDraftChange != null && (!open || !editable)) return;
         setNoCodeSaveError(null);
         const previous = migration.current;
-        if (automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
+        let trackTitle = automaticDataKey;
+        if (reason !== 'structure' && automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
             if (updated.destinationKey !== previous.destinationKey) {
-                setAutomaticDataKey(false);
+                trackTitle = false;
             } else if (updated.label !== previous.label) {
-                updated = {
-                    ...updated,
-                    destinationKey: suggestDestinationKey(updated.label, {
-                        element: updated,
-                        parents,
-                    }, allElements),
-                };
+                updated = {...updated, destinationKey: suggestDestinationKey(updated.label, {element: updated, parents}, allElements)};
             }
         }
-        migration.update(updated);
+        // A later keystroke supersedes an in-flight reference calculation for the previous value.
+        editGeneration.current++;
+        setIsBusy(false);
+        setAutomaticDataKey(trackTitle);
+        if (onPanelDraftChange == null || (reason === 'normalize' && panel == null)) {
+            setLocalElement(updated);
+            return;
+        }
+        const base = panel?.base ?? value;
+        const hasPendingStructure = panel?.detached || !!panel?.pendingMovedRemovals?.length;
+        if (!hasPendingStructure && editorValuesEqual(updated, base)) {
+            setLocalElement(undefined);
+            onPanelDraftChange(null);
+            return;
+        }
+        if (!hasPendingStructure && localElement != null && editorValuesEqual(updated, localElement)) {
+            onPanelDraftChange(null);
+            return;
+        }
+        onPanelDraftChange({
+            ...panel,
+            base,
+            mine: updated,
+            parents: panel?.parents ?? getPanelDraftParents(parents, value.id),
+            tab: currentEditorTab ?? DefaultTabs.properties,
+            automaticDataKey: trackTitle,
+            dataKeyUnlocked,
+            legacyMigrations: Object.keys(migrations).length > 0 ? migrations : undefined,
+        }, reason);
+    };
+
+    const changeCurrentElement = (updated: T, reason?: 'normalize' | 'structure') => {
+        if (onPanelDraftChange == null) {
+            if (!editable) return;
+            setNoCodeSaveError(null);
+            migration.update(updated);
+        } else {
+            storeCurrentElement(updated, reason);
+        }
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
+        if (panel != null) onPanelDraftChange?.({...panel, tab: newTab});
         navigateToEditorTab(newTab);
     };
 
@@ -141,7 +188,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         setDataKeyValidationRequested(true);
         if (displayContext !== ElementDisplayContext.DataObjectSchema && isAnyInputElement(current) &&
             validateDataKeyPath(current.destinationKey) != null) {
-            navigateToEditorTab(DefaultTabs.properties);
+            handleSetCurrentTab(DefaultTabs.properties);
             return;
         }
         if (updatedElement == null && Object.keys(migration.migrations).length === 0) {
@@ -151,50 +198,68 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         }
 
         setIsBusy(true);
+        const generation = editGeneration.current;
         setNoCodeSaveError(null);
-        // Incomplete expressions are applied and reported as configuration errors of the element. Only the new version
-        // of a legacy rule must be complete, because applying it replaces the legacy rule.
-        const functions = elementNoCodeFunctions(current)
-            .filter(({section}) => section !== 'value' && migration.migrations[section] != null);
-        if (functions.length > 0) {
-            try {
-                const operators = await new NoCodeApiService(api).getNoCodeOperators();
-                const elements = noCodeEditorElements(parents);
-                const invalid = functions.find(({operand}) => !validateNoCode(operand, operators, elements).isValid);
-                if (invalid != null) {
-                    setNoCodeValidationIndex(functions.filter((fn) => fn.section === invalid.section).indexOf(invalid));
-                    setNoCodeValidationRequest((current) => current + 1);
-                    setNoCodeSaveError('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.');
-                    navigateToEditorTab(invalid.section);
+        const elementApi = new ElementsApiService();
+        let candidate = current;
+        for (;;) {
+            const candidateMigrations = panel == null ? migration.migrations : currentTree.current.panel?.legacyMigrations ?? {};
+            // Incomplete expressions are applied and reported as configuration errors of the element. Only the new version
+            // of a legacy rule must be complete, because applying it replaces the legacy rule.
+            const functions = elementNoCodeFunctions(candidate)
+                .filter(({section}) => section !== 'value' && candidateMigrations[section] != null);
+            if (functions.length > 0) {
+                try {
+                    const operators = await new NoCodeApiService(api).getNoCodeOperators();
+                    if (generation !== editGeneration.current) return;
+                    const elements = noCodeEditorElements(parents);
+                    const invalid = functions.find(({operand}) => !validateNoCode(operand, operators, elements).isValid);
+                    if (invalid != null) {
+                        setNoCodeValidationIndex(functions.filter((fn) => fn.section === invalid.section).indexOf(invalid));
+                        setNoCodeValidationRequest((current) => current + 1);
+                        setNoCodeSaveError('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.');
+                        navigateToEditorTab(invalid.section);
+                        setIsBusy(false);
+                        return;
+                    }
+                } catch {
+                    if (generation !== editGeneration.current) return;
+                    setNoCodeSaveError('Die No-Code-Ausdrücke konnten nicht geprüft werden. Versuchen Sie es erneut.');
                     setIsBusy(false);
                     return;
                 }
-            } catch {
-                setNoCodeSaveError('Die No-Code-Ausdrücke konnten nicht geprüft werden. Versuchen Sie es erneut.');
-                setIsBusy(false);
-                return;
             }
+            // If the calculation fails, keep the references already present on this element.
+            const recalculated = await elementApi.recalculateReferencedIds(candidate).catch(() => candidate);
+            if (generation !== editGeneration.current) return;
+            const latest = currentTree.current;
+            if (panel != null && latest.panel != null && !editorValuesEqual(candidate, latest.panel.mine)) {
+                // A form save rebased the open edit while its references were being calculated.
+                candidate = latest.panel.mine as T;
+                continue;
+            }
+            setIsBusy(false);
+            if (panel != null && latest.panel == null) {
+                // The confirmed layout already contains this edit.
+                onCancel();
+            } else if (panel != null && latest.panel != null && latest.applyPanelDraft != null) {
+                // The backend may serialize additional default/null properties. Only reference IDs come from it.
+                const applied = mergeRecalculatedReferencedIds(candidate, recalculated);
+                if (!latest.applyPanelDraft(latest.panel, applied)) return;
+                onPanelDraftChange?.(null);
+                onCancel();
+            } else {
+                onChange(recalculated);
+                if (panel != null) onPanelDraftChange?.(null);
+            }
+            setDataKeyUnlocked(false);
+            markElementApplied?.(value.id);
+            return;
         }
-        new ElementsApiService()
-            .recalculateReferencedIds(current)
-            .then((recalculatedElement) => {
-                setDataKeyUnlocked(false);
-                markElementApplied?.(value.id);
-                onChange(recalculatedElement);
-            })
-            .catch(() => {
-                // If the recalculation fails, we can still try to save the element with the risk of broken references.
-                setDataKeyUnlocked(false);
-                markElementApplied?.(value.id);
-                onChange(current);
-            })
-            .finally(() => {
-                setIsBusy(false);
-            });
     };
 
-    const handleClose = async (): Promise<void> => {
-        if (isBusy) return;
+    const confirmDiscard = async (): Promise<boolean> => {
+        const generation = editGeneration.current;
         if (updatedElement != null || Object.keys(migration.migrations).length > 0) {
             const confirmed = await showConfirm({
                 theme: drawerTheme,
@@ -204,22 +269,28 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                 children: (
                     <div>
                         Möchten Sie die Änderungen an diesem{' '}
-                        {value.type === ElementType.FormLayout ? 'Formular' : 'Element'} wirklich verwerfen? Diese
-                        Aktion kann nicht
+                        {value.type === ElementType.FormLayout ? 'Formular' : 'Element'} wirklich verwerfen? Diese Aktion kann nicht
                         rückgängig gemacht werden.
                     </div>
                 ),
             });
 
-            if (confirmed) {
-                onCancel();
-            }
-        } else {
-            onCancel();
+            if (!confirmed || generation !== editGeneration.current) return false;
         }
+        return true;
     };
 
-    const handleClone = () => {
+    const handleClose = async (): Promise<boolean> => {
+        if (!await confirmDiscard()) return false;
+        editGeneration.current++;
+        migration.reset();
+        if (panel != null) onPanelDraftChange?.(null);
+        onCancel();
+        return true;
+    };
+
+    const handleClone = async () => {
+        if (panel != null && !await confirmDiscard()) return;
         setIsBusy(true);
         try {
             onClone();
@@ -228,9 +299,31 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         }
     };
 
-    const isRoot = root === value;
-    const componentTitle = useMemo(() => generateComponentTitle(value), [value]);
-    const typeName = useMemo(() => getElementNameForType(value.type), [value.type]);
+    const handleElementLink = (event: React.MouseEvent) => {
+        if (panel == null || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+        if (link == null || link.target === '_blank') return;
+        const [elementId, tab] = link.hash.slice(1).split('/');
+        if (!elementId || elementId === value.id) return;
+        event.preventDefault();
+        void handleClose().then((closed) => {
+            if (closed) navigateToElementEditor(elementId, tab ?? null);
+        });
+    };
+
+    const changeKeyLock = (unlocked: boolean) => {
+        setDataKeyUnlocked(unlocked);
+        // Manual control ends title tracking, even if the user later locks the key again.
+        if (unlocked) setAutomaticDataKey(false);
+        if (panel != null) {
+            onPanelDraftChange?.({...panel, dataKeyUnlocked: unlocked, automaticDataKey: unlocked ? false : automaticDataKey});
+        }
+    };
+
+    const isRoot = parents.length === 0;
+    const shownElement = panel != null && panel.mine.type !== value.type ? panel.mine : value;
+    const componentTitle = useMemo(() => generateComponentTitle(shownElement), [shownElement]);
+    const typeName = useMemo(() => getElementNameForType(shownElement.type), [shownElement.type]);
     const showTypeSuffix = useMemo(() => componentTitle.trim() !== typeName.trim(), [componentTitle, typeName]);
 
     const drawerTheme = useMemo(() => {
@@ -275,6 +368,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                     },
                 }}
                 onClose={handleClose}
+                onClick={handleElementLink}
             >
                 <Box
                     sx={{
@@ -310,7 +404,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                         sx={{
                                             color: 'text.secondary',
                                             fontSize: 'inherit',
-                                            px: 0.5,
+                                            px: 0.5
                                         }}>
                                         –
                                     </Typography>
@@ -318,7 +412,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                         component="span"
                                         sx={{
                                             color: 'text.secondary',
-                                            fontSize: 'inherit',
+                                            fontSize: 'inherit'
                                         }}>
                                         {typeName}
                                     </Typography>
@@ -369,7 +463,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         />
 
                         {
-                            ElementIsInput[value.type] &&
+                            ElementIsInput[shownElement.type] &&
                             identityMappingInformation != null &&
                             identityMappingInformation.length > 0 &&
                             <Tab
@@ -399,7 +493,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         }
 
                         {
-                            ElementIsInput[value.type] &&
+                            ElementIsInput[shownElement.type] &&
                             !hasSummaryAsParent &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
@@ -409,9 +503,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         }
 
                         {
-                            ElementIsInput[value.type] &&
+                            ElementIsInput[shownElement.type] &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
-                            value.type != ElementType.FileUpload &&
+                            shownElement.type != ElementType.FileUpload &&
                             <Tab
                                 label="Dynamischer Wert"
                                 value={DefaultTabs.value}
@@ -480,14 +574,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     migration.cancel(section);
                                     setNoCodeSaveError(null);
                                 },
-                                originalElement: value,
+                                originalElement: panel?.base ?? value,
                                 dataKeyUnlocked,
-                                onUnlockDataKey: () => {
-                                    setDataKeyUnlocked(true);
-                                    // Manual control ends title tracking, even if the user later locks the key again.
-                                    setAutomaticDataKey(false);
-                                },
-                                onLockDataKey: () => setDataKeyUnlocked(false),
+                                onUnlockDataKey: () => changeKeyLock(true),
+                                onLockDataKey: () => changeKeyLock(false),
                                 dataKeyValidationRequested,
                                 onChangeCurrentElement: changeCurrentElement,
                                 parents: parents,
@@ -497,12 +587,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 element={migration.current}
                                 currentTab={currentEditorTab}
                                 onChange={(changedElement) => {
-                                    if (isBusy) return;
-                                    setNoCodeSaveError(null);
-                                    migration.update({
+                                    changeCurrentElement({
                                         ...migration.current,
                                         ...changedElement,
-                                    });
+                                    }, 'structure');
                                 }}
                                 editable={editable}
                             />
@@ -553,14 +641,14 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     iconPosition: 'start',
                                     label: 'Duplizieren',
                                     onClick: handleClone,
-                                    visible: editable && !isRoot,
+                                    visible: editable && !isRoot && !panel?.detached,
                                     disabled: isBusy,
                                 },
                                 {
                                     icon: <Delete/>,
                                     iconPosition: 'start',
                                     label: 'Löschen',
-                                    visible: !isRoot,
+                                    visible: !isRoot && !panel?.detached,
                                     onClick: onDelete,
                                     disabled: isBusy || !editable,
                                     variant: 'outlined',

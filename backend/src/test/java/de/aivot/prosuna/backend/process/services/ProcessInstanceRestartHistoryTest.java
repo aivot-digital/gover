@@ -1,7 +1,10 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
+import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -38,15 +41,17 @@ import static org.mockito.Mockito.*;
         "spring.datasource.username=sa", "spring.datasource.password=",
         "spring.datasource.driver-class-name=org.h2.Driver"})
 @ContextConfiguration(classes = ProcessInstanceRestartHistoryTest.Config.class)
-class ProcessInstanceRestartHistoryTest {
+public class ProcessInstanceRestartHistoryTest {
     @Autowired
     private EntityManager em;
     @Autowired
     private JsonMapper jsonMapper;
     private ProcessInstanceEventLogService service;
+    private ProcessInstanceHistoryService history;
 
     @BeforeEach
     void setup() {
+        sql("create alias if not exists jsonb_extract_path_text for \"de.aivot.prosuna.backend.process.services.ProcessInstanceRestartHistoryTest.jsonbExtractPathText\"");
         sql("drop table if exists process_instance_events");
         sql("drop table if exists process_instance_tasks");
         sql("drop table if exists process_instances");
@@ -98,8 +103,10 @@ class ProcessInstanceRestartHistoryTest {
                     (17, 12, 7, 2, 'Fehler', 'Späterer Versuch', '2026-08-14 08:00:00+00'),
                     (18, 12, null, 1, 'Gestartet', 'Vorgangsereignis', '2026-08-14 08:00:00+00')
                 """);
+        sql("update process_instance_tasks set status = 2, process_version = 1, started = '2026-08-14 08:00:00+00'");
         var factory = new JpaRepositoryFactory(em);
         var tasks = factory.getRepository(ProcessInstanceTaskRepository.class);
+        history = new ProcessInstanceHistoryService(tasks, mock(PermissionService.class));
         var events = factory.getRepository(ProcessInstanceHistoryEventRepository.class);
         var instances = mock(ProcessInstanceRepository.class);
         when(instances.findById(12L)).thenReturn(Optional.of(new ProcessInstanceEntity()
@@ -170,6 +177,107 @@ class ProcessInstanceRestartHistoryTest {
     void invalidCrossScopeLinksDoNotIncludeOtherInstancesOrNodes(long outsideTaskId) throws Exception {
         sql("update process_instance_tasks set restart_for_task_id = " + outsideTaskId + " where id = 1");
         assertEquals(3, log(3L, true, null, false, null, PageRequest.of(0, 50)).events().getTotalElements());
+    }
+
+    public static String jsonbExtractPathText(String json, String key) {
+        return json == null ? null : new org.json.JSONObject(json).optString(key, null);
+    }
+
+    @Test
+    void taskHistoryKeepsOnlyManualRestartEventsAndPagesEachScopeIndependently() throws Exception {
+        sql("update process_instance_events set is_audit = true, triggering_user_id = 'actor', details = '{\"manualIntervention\":true}', is_history_relevant = false where id in (11,12,14)");
+        sql("update process_instance_events set level = 3 where id = 18");
+        var page = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "timestamp"));
+        var taskEvents = service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, 3L, page);
+        assertEquals(3, taskEvents.getTotalElements());
+        assertEquals(List.of(13L, 12L), taskEvents.map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+        assertEquals(List.of(11L), service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, 3L, page.next())
+                .map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+        // An unmarked execution error from a replaced attempt must disappear from the task overview only.
+        sql("update process_instance_events set details = '{}', is_history_relevant = true, level = 3 where id = 11");
+        assertEquals(List.of(13L, 12L), service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, 3L, page)
+                .map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+        assertEquals(List.of(14L, 12L), service.getHistoryEvents(12L, ProcessHistoryEventScope.ManualInterventions, null, page)
+                .map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+        assertEquals(List.of(18L), service.getHistoryEvents(12L, ProcessHistoryEventScope.InstanceErrors, null, page)
+                .map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+        assertThrows(ResponseException.class, () -> service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, 5L, page));
+        assertThrows(ResponseException.class, () -> service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, null, page));
+    }
+
+    @Test
+    void keepsRecentEventsAccessibleBeyondTheFormer999Limit() throws Exception {
+        sql("delete from process_instance_events");
+        sql("""
+                insert into process_instance_events (id, process_instance_id, process_instance_task_id,
+                    level, title, message, timestamp)
+                select x, 12, 3, 1, 'Event', 'History entry', '2026-08-14 08:00:00+00'
+                from system_range(100, 1299)
+                """);
+        sql("update process_instance_events set process_instance_task_id = null, level = 3 where id = 1298");
+        sql("""
+                update process_instance_events set process_instance_task_id = null, is_audit = true,
+                    triggering_user_id = 'actor', details = '{"manualIntervention":true}' where id = 1299
+                """);
+
+        var newest = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "timestamp"));
+        var taskEvents = service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, 3L, newest);
+        assertEquals(1198, taskEvents.getTotalElements());
+        assertEquals(20, taskEvents.getNumberOfElements());
+        assertEquals(1297L, taskEvents.getContent().getFirst().id());
+        var oldest = service.getHistoryEvents(12L, ProcessHistoryEventScope.Task, 3L, newest.withPage(59));
+        assertEquals(18, oldest.getNumberOfElements());
+        assertEquals(100L, oldest.getContent().getLast().id());
+
+        var chronological = PageRequest.of(0, 20, Sort.by("timestamp"));
+        assertEquals(List.of(1299L), service.getHistoryEvents(12L, ProcessHistoryEventScope.ManualInterventions, null, chronological)
+                .map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+        assertEquals(List.of(1298L), service.getHistoryEvents(12L, ProcessHistoryEventScope.InstanceErrors, null, chronological)
+                .map(ProcessInstanceEventLogDTO.Entry::id).getContent());
+    }
+
+    @Test
+    void taskPagesExcludeReplacedAttemptsAndKeepOffPageContext() throws Exception {
+        sql("update process_instance_tasks set status = 5 where id in (1,2)");
+        sql("update process_instance_tasks set status = 0, previous_process_instance_task_id = 3 where id = 7");
+        var first = history.getTasks("actor", 12L, PageRequest.of(0, 2), null);
+        var second = history.getTasks("actor", 12L, PageRequest.of(1, 2), null);
+        assertEquals(List.of(3L, 4L), first.tasks().map(ProcessInstanceTaskEntity::getId).getContent());
+        assertEquals(List.of(6L, 7L), second.tasks().map(ProcessInstanceTaskEntity::getId).getContent());
+        assertEquals(4, first.tasks().getTotalElements());
+        assertEquals(List.of(3L), second.predecessors().stream().map(ProcessInstanceTaskEntity::getId).toList());
+        assertEquals(1, first.activeTasks().size());
+        assertEquals(56, first.activeTasks().getFirst().processNodeId());
+        assertEquals(first.activeTasks(), second.activeTasks());
+        assertEquals(1, history.getTasks("actor", 12L, PageRequest.of(99, 2), null).tasks().getNumber());
+        assertEquals(100, history.getTasks("actor", 12L, PageRequest.of(0, 999), null).tasks().getSize());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"7", "active", "current", "failed", "latest"})
+    void locatesTargetsBeforeLoadingTheirPage(String target) throws Exception {
+        sql("update process_instance_tasks set status = 5 where id in (1,2)");
+        sql("update process_instance_tasks set status = " + (target.equals("failed") ? 4 : 0) + " where id = 7");
+        var result = history.getTasks("actor", 12L, PageRequest.of(0, 2), target);
+        assertEquals(1, result.tasks().getNumber());
+        assertEquals(List.of(6L, 7L), result.tasks().map(ProcessInstanceTaskEntity::getId).getContent());
+    }
+
+    @Test
+    void currentFallsBackToLatestAndInvalidTargetsDoNotEscapeTheirInstance() throws Exception {
+        assertEquals(2, history.getTasks("actor", 12L, PageRequest.of(0, 2), "current").tasks().getNumber());
+        for (var target : List.of("5", "missing", "9007199254740993", "0")) {
+            assertEquals(0, history.getTasks("actor", 12L, PageRequest.of(0, 2), target).tasks().getNumber());
+        }
+    }
+
+    @Test
+    void reachesTasksBeyondTheFormer999Limit() throws Exception {
+        sql("insert into process_instance_tasks (id, process_instance_id, process_node_id, process_version, status) select x, 12, 56, 1, 2 from system_range(100, 1104)");
+        var result = history.getTasks("actor", 12L, PageRequest.of(0, 20), "latest");
+        assertEquals(1011, result.tasks().getTotalElements());
+        assertEquals(50, result.tasks().getNumber());
+        assertEquals(1104L, result.tasks().getContent().getLast().getId());
     }
 
     private ProcessInstanceEventLogDTO log(Long taskId, boolean include, String search, boolean notable,

@@ -1,3 +1,4 @@
+import {type ProcessInstanceHistoryTasks} from '../models/process-instance-history-tasks';
 import {type ProcessAssignmentOption} from '../entities/process-assignment-option';
 import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {ProcessInstanceTaskEntity} from '../entities/process-instance-task-entity';
@@ -57,6 +58,10 @@ export class ProcessInstanceTaskApiService extends BaseReadApiService<
 > {
     constructor() {
         super('/api/process-instance-tasks/');
+    }
+
+    public getHistory(instanceId: number, page: number, size: number, taskId?: string): Promise<ProcessInstanceHistoryTasks> {
+        return this.get(`/api/process-instances/${instanceId}/history/`, {query: {page, size, taskId}});
     }
 
     public assignmentOptions(id: number): Promise<ProcessAssignmentOption[]> {

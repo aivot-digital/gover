@@ -275,6 +275,50 @@ describe('authored input value validation', () => {
     });
 });
 
+describe('select field validation', () => {
+    function selectSchema(required: boolean) {
+        return prosunaSchemaToYup({
+            id: 'environment',
+            type: ElementType.Select,
+            label: 'FIT-Connect-Umgebung',
+            required,
+            options: [
+                {value: 'TEST', label: 'Test-Umgebung (TEST)'},
+                {value: 'STAGE', label: 'Stage-Umgebung (STAGE)'},
+                {value: 'PROD', label: 'Produktiv-Umgebung (PROD)'},
+            ],
+        } as any, {}).environment;
+    }
+
+    it.each([
+        undefined,
+        literalAuthoredValue(null),
+        literalAuthoredValue(''),
+        literalAuthoredValue('   '),
+    ])('names the required field for an empty selection %j', async (value) => {
+        await expect(selectSchema(true).validate(value))
+            .rejects.toThrow('FIT-Connect-Umgebung ist ein Pflichtfeld.');
+    });
+
+    it.each(['TEST', 'STAGE', 'PROD'])('accepts the configured option %s', async (value) => {
+        await expect(selectSchema(true).validate(literalAuthoredValue(value)))
+            .resolves.toEqual(literalAuthoredValue(value));
+    });
+
+    it.each([true, false])('rejects an unknown option when required is %s', async (required) => {
+        await expect(selectSchema(required).validate(literalAuthoredValue('UNKNOWN')))
+            .rejects.toThrow('Ungültiger Wert ausgewählt.');
+    });
+
+    it('preserves optional selection validation', async () => {
+        const schema = selectSchema(false);
+
+        await expect(schema.validate(undefined)).resolves.toBeUndefined();
+        await expect(schema.validate(literalAuthoredValue(null))).resolves.toEqual(literalAuthoredValue(null));
+        await expect(schema.validate(literalAuthoredValue(''))).rejects.toThrow('Ungültiger Wert ausgewählt.');
+    });
+});
+
 describe('rich text input validation', () => {
     it('should limit the untrimmed Markdown to the maximum number of characters', async () => {
         const schema = prosunaSchemaToYup({

@@ -68,5 +68,6 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
     const tooltip = props.status === ProcessTaskStatus.DeadlineExceeded && !props.statusOverride?.trim()
         ? 'Aufgabe wegen Fristüberschreitung beendet'
         : display.tooltip ?? display.label;
-    return <Tooltip title={tooltip}>{icon}</Tooltip>;
+    return <Tooltip title={tooltip}
+                    arrow>{icon}</Tooltip>;
 }

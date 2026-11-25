@@ -119,7 +119,12 @@ public final class ExecutionSummaryMarkdown {
 
     @Nonnull
     public static String section(@Nonnull String title, @Nullable Object markdown) {
-        return markdown == null || markdown.toString().isBlank() ? "" : "\n\n**" + title + "**\n\n" + markdown;
+        if (markdown == null || markdown.toString().isBlank()) {
+            return "";
+        }
+        // Indent continuation lines so rich Markdown remains part of this definition's value.
+        var value = markdown.toString().replace("\r\n", "\n").replace('\r', '\n');
+        return "\n\n" + text(title) + "\n:   " + value.replace("\n", "\n    ");
     }
 
     @Nonnull

@@ -5,6 +5,7 @@ import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.department.services.DepartmentService;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
@@ -40,7 +41,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -201,5 +205,60 @@ class ProcessControllerTest {
         assertEquals(42, createdPresets.get(1).getTargetProcessId());
         assertEquals(3, createdPresets.get(1).getTargetProcessVersion());
         assertEquals(List.of("task:edit"), createdPresets.get(1).getPermissions());
+    }
+
+    @Test
+    void moveRequiresUpdateOnTheManagingDepartment() throws Exception {
+        var move = new MoveFixture();
+
+        move.controller.move(null, 42, 20);
+
+        verify(move.permissionService).requireDepartmentPermission("user-1", 10, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
+        verify(move.permissionService).requireDepartmentPermission("user-1", 20, ProcessPermissionProvider.PROCESS_DEFINITION_CREATE);
+        verify(move.processService).update(42, move.process);
+        assertEquals(20, move.process.getDepartmentId());
+    }
+
+    @Test
+    void moveRejectsDelegatesWithoutUpdateOnTheManagingDepartment() throws Exception {
+        var move = new MoveFixture();
+        doThrow(ResponseException.forbidden()).when(move.permissionService)
+                .requireDepartmentPermission("user-1", 10, ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE);
+
+        assertThrows(ResponseException.class, () -> move.controller.move(null, 42, 20));
+
+        verify(move.processService, never()).update(any(), any());
+        assertEquals(10, move.process.getDepartmentId());
+    }
+
+    private static class MoveFixture {
+        private final ProcessService processService = mock(ProcessService.class);
+        private final PermissionService permissionService = mock(PermissionService.class);
+        private final ProcessEntity process = new ProcessEntity(42, "Hundesteuer Antrag", 10, UUID.randomUUID(),
+                "hundesteuer-antrag", 2, null, 2, Instant.now(), Instant.now());
+        private final ProcessController controller;
+
+        private MoveFixture() throws Exception {
+            var userService = mock(UserService.class);
+            when(userService.fromJWT(null)).thenReturn(Optional.of(new UserEntity().setId("user-1")));
+            when(processService.retrieve(42)).thenReturn(Optional.of(process));
+            when(processService.update(42, process)).thenReturn(process);
+            controller = new ProcessController(
+                    mock(AuditService.class, RETURNS_DEEP_STUBS),
+                    userService,
+                    processService,
+                    mock(DepartmentService.class),
+                    permissionService,
+                    mock(ProcessExportService.class),
+                    mock(ProcessVersionRepository.class),
+                    mock(ProcessVersionService.class),
+                    mock(ProcessNodeService.class),
+                    mock(ProcessEdgeService.class),
+                    mock(ProcessInstanceAccessControlPresetService.class),
+                    mock(ProcessNodeDefinitionService.class),
+                    new JsonMapper(),
+                    mock(ProcessDefinitionCountService.class)
+            );
+        }
     }
 }

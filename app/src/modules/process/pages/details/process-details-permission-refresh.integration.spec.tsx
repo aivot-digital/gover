@@ -17,6 +17,7 @@ import {ProcessNodeApiService} from '../../services/process-node-api-service';
 import {ProcessNodeProviderApiService} from '../../services/process-node-provider-api-service';
 import {ProcessInstanceDetailsPage} from './process-instance-details-page';
 import {ProcessTaskViewPage, type ProcessTaskDetailsPageItem} from './process-task-view-page';
+import {ProcessTaskViewPageIndex} from './process-task-view-page-index';
 import {type ProcessInstanceDetails} from '../../entities/process-instance-details';
 
 vi.mock('../../../../components/page-wrapper/page-wrapper', () => ({
@@ -75,7 +76,7 @@ function RouteError() {
     return <p role="alert">Fehler {error.status}</p>;
 }
 
-function renderPage(kind: 'instance' | 'task', initialPermissions = permissions(), initialPath?: string) {
+function renderPage(kind: 'instance' | 'task', initialPermissions = permissions(), initialPath?: string, showTaskOverview = false) {
     const store = configureStore({reducer: {user: userReducer}});
     store.dispatch(
         setUser({
@@ -100,7 +101,7 @@ function renderPage(kind: 'instance' | 'task', initialPermissions = permissions(
                 children: [
                     {
                         index: true,
-                        element: <DetailsContent />,
+                        element: showTaskOverview ? <ProcessTaskViewPageIndex /> : <DetailsContent />,
                     },
                     {
                         path: kind === 'instance' ? 'permissions' : 'edit',
@@ -222,6 +223,29 @@ describe('Permissions on process detail navigation', () => {
         vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(readOnly);
         renderPage('task', permissions(17));
         expect(await screen.findByRole('button', {name: 'Bearbeiten'})).toBeDisabled();
+    });
+
+    it.each([
+        {scope: 'matching instance', grants: permissions(17), disabled: false},
+        {scope: 'system override', grants: permissions(undefined, true), disabled: false},
+        {scope: 'instance update only', grants: permissions(17, false, false), disabled: true},
+        {
+            scope: 'different instance',
+            grants: {
+                ...permissions(17, false, false),
+                processInstancePermissions: [
+                    ...permissions(17, false, false).processInstancePermissions,
+                    ...permissions(18).processInstancePermissions,
+                ],
+            },
+            disabled: true,
+        },
+    ])('applies refreshed $scope permissions to the task editing button', async ({grants, disabled}) => {
+        vi.spyOn(PermissionApiService.prototype, 'getOwnPermissionSet').mockResolvedValue(grants);
+        renderPage('task', permissions(), undefined, true);
+
+        const edit = await screen.findByRole('link', {name: 'Aufgabe bearbeiten'});
+        expect(edit.getAttribute('aria-disabled') === 'true').toBe(disabled);
     });
 
     it.each(['read', 'instance-update', 'other-instance'])(

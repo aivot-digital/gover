@@ -1,8 +1,10 @@
 package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
+import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
@@ -18,6 +20,7 @@ import de.aivot.prosuna.backend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,6 +70,34 @@ public class ProcessInstanceEventLogService {
                                                    @Nullable String concernedIdentityId,
                                                    @Nullable String concernedIdentityTitle,
                                                    @Nonnull Pageable pageable) throws ResponseException {
+        return loadEventLog(processInstanceId, processInstanceTaskId, includeRestartHistory, search, notableOnly,
+                historyRelevant, concernedUserId, concernedIdentityId, concernedIdentityTitle, pageable, null);
+    }
+
+    @Nonnull
+    public Page<ProcessInstanceEventLogDTO.Entry> getHistoryEvents(
+            long processInstanceId, @Nonnull ProcessHistoryEventScope scope,
+            @Nullable Long taskId, @Nonnull Pageable pageable) throws ResponseException {
+        if (scope == ProcessHistoryEventScope.Task && taskId == null) {
+            throw ResponseException.badRequest("Für Aufgabenereignisse muss eine Aufgabe angegeben werden.");
+        }
+        if (scope != ProcessHistoryEventScope.Task && taskId != null) {
+            throw ResponseException.badRequest("Eine Aufgabe kann nur für Aufgabenereignisse angegeben werden.");
+        }
+        return loadEventLog(processInstanceId, taskId, true, null, false, null, null, null, null, pageable, scope).events();
+    }
+
+    @Nonnull
+    private ProcessInstanceEventLogDTO loadEventLog(long processInstanceId,
+                                                   @Nullable Long processInstanceTaskId,
+                                                   boolean includeRestartHistory,
+                                                   @Nullable String search,
+                                                   boolean notableOnly,
+                                                   @Nullable Boolean historyRelevant,
+                                                   @Nullable String concernedUserId,
+                                                   @Nullable String concernedIdentityId,
+                                                   @Nullable String concernedIdentityTitle,
+                                                   @Nonnull Pageable pageable, @Nullable ProcessHistoryEventScope historyScope) throws ResponseException {
         if (search != null && search.length() > 200) {
             throw ResponseException.badRequest("Der Suchbegriff darf höchstens 200 Zeichen lang sein.");
         }
@@ -82,16 +113,30 @@ public class ProcessInstanceEventLogService {
             throw ResponseException.badRequest("Die Aufgabe gehört nicht zum angegebenen Vorgang.");
         }
 
-        var eventPage = eventRepository.findAll(
-                createSpecification(processInstanceId, task == null ? null : resolveTaskIds(task, includeRestartHistory), search, notableOnly)
-                        .and(ProcessInstanceEventFilter.create()
-                                .setHistoryRelevant(historyRelevant)
-                                .setConcernedUserId(concernedUserId)
-                                .setConcernedIdentityId(concernedIdentityId)
-                                .setConcernedIdentityTitle(concernedIdentityTitle)
-                                .build()),
-                normalizePageable(pageable)
-        );
+        var specification = createSpecification(processInstanceId, task == null ? null : resolveTaskIds(task, includeRestartHistory), search, notableOnly)
+                .and(ProcessInstanceEventFilter.create()
+                        .setHistoryRelevant(historyRelevant)
+                        .setConcernedUserId(concernedUserId)
+                        .setConcernedIdentityId(concernedIdentityId)
+                        .setConcernedIdentityTitle(concernedIdentityTitle)
+                        .build());
+        if (historyScope != null) {
+            specification = specification.and((root, query, builder) -> {
+                var manual = builder.and(builder.isNotNull(root.get("triggeringUserId")), builder.isTrue(root.get("isAudit")),
+                        builder.equal(builder.coalesce(builder.function("jsonb_extract_path_text", String.class,
+                                root.get("details"), builder.literal(ProcessHistoryInterventions.DETAILS_KEY)), "false"), "true"));
+                return switch (historyScope) {
+                    // Restart ancestors contribute only manual interventions, never their old results or errors.
+                    case Task -> builder.or(manual, builder.and(
+                            builder.equal(root.get("processInstanceTaskId"), processInstanceTaskId),
+                            builder.isTrue(root.get("isHistoryRelevant"))));
+                    case ManualInterventions -> manual;
+                    case InstanceErrors -> builder.and(builder.isNull(root.get("processInstanceTaskId")),
+                            builder.equal(root.get("level"), ProcessNodeExecutionLogLevel.Error), builder.not(manual));
+                };
+            });
+        }
+        var eventPage = eventRepository.findAll(specification, normalizePageable(pageable, 100));
 
         // Resolve only references used by the current page. This avoids exposing or loading complete user and process lists.
         var tasksById = findTasksById(eventPage.getContent().stream()
@@ -312,12 +357,12 @@ public class ProcessInstanceEventLogService {
     }
 
     @Nonnull
-    private Pageable normalizePageable(@Nonnull Pageable pageable) {
+    private Pageable normalizePageable(@Nonnull Pageable pageable, int maximumPageSize) {
         var timestampOrder = pageable.getSort().getOrderFor("timestamp");
         var direction = timestampOrder == null ? Sort.Direction.DESC : timestampOrder.getDirection();
         return PageRequest.of(
                 Math.max(pageable.getPageNumber(), 0),
-                Math.min(Math.max(pageable.getPageSize(), 1), 100),
+                Math.min(Math.max(pageable.getPageSize(), 1), maximumPageSize),
                 Sort.by(direction, "timestamp", "id")
         );
     }
