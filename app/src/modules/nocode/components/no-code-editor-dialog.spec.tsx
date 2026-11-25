@@ -109,7 +109,7 @@ describe('NoCodeEditorDialog', () => {
         expect(content).not.toContainElement(screen.getByRole('button', {name: 'Übernehmen'}));
     });
 
-    it.each([true, false])('allows removing an optional expression, but requires a configured expression when required=%s', async (required) => {
+    it.each([true, false])('applies a removed expression, which is only invalid when required=%s', async (required) => {
         const onApply = vi.fn();
         render(<NoCodeEditorDialog {...props} value={{
             type: 'NoCodeStaticValue',
@@ -124,11 +124,43 @@ describe('NoCodeEditorDialog', () => {
         expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled();
         expect(screen.queryByRole('button', {name: 'Leerer Wert, Textwert'})).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
-        if (required) expect(onApply).not.toHaveBeenCalled();
-        else {
-            expect(onApply).toHaveBeenCalledWith(null);
-            expect(screen.getByRole('treeitem')).not.toHaveAttribute('aria-invalid', 'true');
-        }
+        expect(onApply).toHaveBeenCalledWith(null);
+        if (required) expect(screen.getByRole('treeitem')).toHaveAttribute('aria-invalid', 'true');
+        else expect(screen.getByRole('treeitem')).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('applies an incomplete expression unless complete expressions are required', async () => {
+        api.get.mockResolvedValue([{
+            identifier: 'choice',
+            packageName: 'core',
+            label: 'Auswahl',
+            abstractDescription: '',
+            description: '',
+            tags: [],
+            humanReadableTemplate: '#0',
+            signatures: [{
+                returnType: NoCodeDataType.String,
+                parameters: [{
+                    type: NoCodeDataType.String,
+                    label: 'Wert',
+                    description: null,
+                    options: [],
+                }],
+            }],
+        }]);
+        const incomplete = {type: 'NoCodeExpression' as const, operatorIdentifier: 'choice', operands: []};
+        const onApply = vi.fn();
+        const {unmount} = render(<NoCodeEditorDialog {...props} value={incomplete} required onApply={onApply} onClose={vi.fn()}/>);
+        await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(onApply).toHaveBeenCalledWith(incomplete);
+        unmount();
+
+        onApply.mockReset();
+        render(<NoCodeEditorDialog {...props} value={incomplete} required requireComplete onApply={onApply} onClose={vi.fn()}/>);
+        await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(onApply).not.toHaveBeenCalled();
     });
 
     it('allows an intentional empty value and preserves a draft across parent echoes', async () => {
@@ -197,7 +229,7 @@ describe('NoCodeEditorDialog', () => {
         errorLog.mockRestore();
     });
 
-    it('blocks unknown operators after loading metadata', async () => {
+    it('reports unknown operators after loading metadata', async () => {
         render(<NoCodeEditorDialog {...props} value={{
             type: 'NoCodeExpression',
             operatorIdentifier: 'missing',
@@ -212,33 +244,34 @@ describe('NoCodeEditorDialog', () => {
     });
 });
 
-it('keeps the parameters of an unavailable extension visible and does not emit an edited replacement on close', async () => {
+it('keeps the parameters of an unavailable extension, does not emit a replacement on close and applies them unchanged', async () => {
     const onApply = vi.fn();
     const onClose = vi.fn();
-    render(<NoCodeEditorDialog {...props} value={{
-        type: 'NoCodeExpression',
+    const stored = {
+        type: 'NoCodeExpression' as const,
         operatorIdentifier: 'extension:missing',
         operands: [
             {
-                type: 'NoCodeStaticValue',
+                type: 'NoCodeStaticValue' as const,
                 value: 'stored value',
             },
             {
-                type: 'NoCodeProcessDataReference',
+                type: 'NoCodeProcessDataReference' as const,
                 path: 'items[*].amount',
             },
         ],
-    }}
+    };
+    render(<NoCodeEditorDialog {...props} value={stored}
                                onApply={onApply}
                                onClose={onClose}/>);
     expect(await screen.findAllByText('Die ausgewählte Funktion ist nicht verfügbar.')).not.toHaveLength(0);
     expect(screen.getAllByRole('treeitem')).toHaveLength(3);
-    expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
-    expect(onApply).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name: 'Abbrechen'}));
     expect(onClose).toHaveBeenCalledOnce();
     expect(onApply).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+    expect(onApply).toHaveBeenCalledWith(stored);
 });
 
 it('uses a large dialog without maximization, retains history and validates only on apply', async () => {
@@ -261,7 +294,7 @@ it('uses a large dialog without maximization, retains history and validates only
     expect(screen.getByRole('dialog')).not.toHaveClass('MuiDialog-paperFullScreen');
     expect(screen.getByRole('button', {name: 'Ausdruck hinzufügen'})).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
-    expect(onApply).not.toHaveBeenCalled();
+    expect(onApply).toHaveBeenCalledWith(null);
     expect(screen.getByRole('treeitem')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByRole('treeitem')).toHaveFocus();
 });

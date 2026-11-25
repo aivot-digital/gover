@@ -166,6 +166,8 @@ describe('NoCodeEditor suggestions', () => {
                                ...field,
                                optionsSource: OptionsSourceType.CodeList,
                                codeListKey: 'states',
+                               codeListValueColumnKey: 'code',
+                               codeListLabelColumnKey: 'label',
                            },
                            parents: [],
                        }]}/>);

@@ -115,16 +115,19 @@ describe('form data key editing session', () => {
         vi.spyOn(ElementsApiService.prototype, 'recalculateReferencedIds').mockImplementation(async (element) => element);
     });
 
-    it('blocks applying an incomplete No-Code function from the properties tab', async () => {
+    it('applies an incomplete No-Code function, which the configuration check reports instead', async () => {
         const {onApply} = renderEditor({noCode: null});
         fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Neuer Titel'}});
         fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
-        expect(await screen.findByText('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.')).toBeInTheDocument();
-        expect(onApply).not.toHaveBeenCalled();
-        expect(ElementsApiService.prototype.recalculateReferencedIds).not.toHaveBeenCalled();
-        expect(window.location.hash).toContain('visibility');
-        await waitFor(() => expect(screen.getByRole('treeitem')).toHaveFocus());
-        expect(screen.getByRole('treeitem')).toHaveAttribute('aria-invalid', 'true');
+        await waitFor(() => expect(onApply).toHaveBeenCalledOnce());
+        expect(onApply.mock.calls[0][0]).toMatchObject({
+            label: 'Neuer Titel',
+            visibility: {
+                type: 'NoCode',
+                noCode: null,
+            },
+        });
+        expect(screen.queryByText('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.')).not.toBeInTheDocument();
     });
 
     it('applies an intentional empty No-Code value', async () => {

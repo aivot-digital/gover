@@ -445,6 +445,22 @@ describe('InputModeField', () => {
         expect(dialogActions?.children[1]).toHaveTextContent('Referenz entfernen');
     });
 
+    it('returns a required field to an empty fixed value when its applied expression is removed', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness required
+                        initialValue={{type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: 'text'}}}
+                        onChange={onChange}/>);
+
+        await user.click(screen.getByRole('button', {name: /^Inkrement: Ausdruck definiert\. Ausdruck bearbeiten/}));
+        const dialog = await screen.findByRole('dialog', {name: 'Ausdruck für „Inkrement“'});
+        await user.click(await within(dialog).findByRole('button', {name: 'Wert „text“ löschen'}));
+        await user.click(within(dialog).getByRole('button', {name: 'Übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith({type: InputMode.Literal, value: null});
+        expect(screen.queryByRole('dialog', {name: 'Ausdruck für „Inkrement“'})).not.toBeInTheDocument();
+    });
+
     it('keeps the literal value when starting and cancelling a new No-Code expression', async () => {
         const user = userEvent.setup();
         render(<Harness/>);

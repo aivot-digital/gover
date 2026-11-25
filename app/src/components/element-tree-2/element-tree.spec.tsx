@@ -262,6 +262,25 @@ describe('ElementTree configuration errors', () => {
         expect(validate).not.toHaveBeenCalled();
     });
 
+    it.each([
+        [{visibility: ['Sichtbarkeit fehlt']}, '#section/visibility'],
+        [{visibility: ['Sichtbarkeit fehlt'], title: ['Titel fehlt']}, '#section/properties'],
+    ])('opens the tab of the erroneous function or else the properties for %j', async (properties, hash) => {
+        window.location.hash = '';
+        render(<ElementTree
+            value={createForm([createSection('section')])}
+            onChange={vi.fn()}
+            editable={true}
+            displayContext={ElementDisplayContext.CustomerFacing}
+            allowElementIdEditing={false}
+            configurationErrors={{properties: {}, children: {section: {properties, children: {}}}}}
+        />, {wrapper: TreeTestWrapper});
+
+        fireEvent.click(screen.getByRole('button', {name: /^Fehlerhafte Konfiguration/}));
+
+        expect(window.location.hash).toBe(hash);
+    });
+
     it.each(['constructor', 'toString', '__proto__'])('ignores inherited properties for the element ID %s', (id) => {
         render(<ElementTree
             value={createGroup('group', [createField(id, 'Feld')])}
