@@ -1,4 +1,15 @@
-import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
+import {
+    Box,
+    Dialog,
+    DialogContent,
+    Divider,
+    Grid,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Typography,
+} from '@mui/material';
 import React, {PropsWithChildren, useState} from 'react';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {FunctionSelector} from './components/function-selector/function-selector';
@@ -31,9 +42,11 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
 
                 <ElementEditorSectionHeader
                     title="Fachliche Anforderungen"
-                    variant={"h5"}
+                    variant={'h5'}
                 >
-                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code-Funktion.
+                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese
+                    Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden
+                    No-/Low-Code-Funktion.
                 </ElementEditorSectionHeader>
 
                 <Grid
@@ -43,7 +56,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 6
+                            lg: 6,
                         }}>
                         <RichTextInputComponent
                             value={props.requirements ?? ''}
@@ -81,32 +94,46 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 {
                     props.hasFunction &&
                     <Box
+                        role="group"
+                        aria-label="Funktion"
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            mt: 4,
+                            mb: 2,
                         }}
                     >
                         <ElementEditorSectionHeader
-                            title={"Funktion"}
-                            variant={"h5"}
+                            title={'Funktion'}
+                            variant={'h5'}
+                            disableMarginTop
+                            disableMarginBottom
+                            maxWidth="none"
                             sx={{
                                 flexGrow: 1,
                             }}
-                        >
-                            Konfigurieren Sie die Logik, die zur Umsetzung der fachlichen Anforderungen erforderlich ist.
-                        </ElementEditorSectionHeader>
+                        />
+
+                        {props.functionToolbarRef != null && <Box ref={props.functionToolbarRef}
+                                                                  sx={{minWidth: 0}}/>}
 
                         {
-                            props.editable &&
+                            props.editable && !props.functionActionsDisabled &&
                             <Actions
                                 sx={{
-                                    ml: 'auto',
                                     flexShrink: 0,
+                                    ...(props.functionToolbarRef != null ? {
+                                        borderLeft: 1,
+                                        borderColor: 'divider',
+                                        pl: 1,
+                                    } : {}),
                                 }}
                                 actions={[
                                     {
                                         tooltip: 'Mehr',
-                                        icon: <MoreVertOutlinedIcon />,
+                                        icon: <MoreVertOutlinedIcon/>,
                                         onClick: (event) => {
                                             setAnchorEl(event.currentTarget);
                                         },
@@ -114,6 +141,10 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                                 ]}
                             />
                         }
+                        <Typography sx={{flexBasis: '100%'}}>
+                            Konfigurieren Sie die Logik, die zur Umsetzung der fachlichen Anforderungen erforderlich
+                            ist.
+                        </Typography>
                     </Box>
                 }
 
@@ -138,6 +169,20 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 <MenuItem
                     onClick={() => {
                         setAnchorEl(undefined);
+                        setShowFunctionSelector(true);
+                    }}
+                >
+                    <ListItemIcon>
+                        <SwapHorizOutlinedIcon/>
+                    </ListItemIcon>
+                    <ListItemText>
+                        Anderen Funktionstyp auswählen
+                    </ListItemText>
+                </MenuItem>
+                <Divider/>
+                <MenuItem
+                    onClick={() => {
+                        setAnchorEl(undefined);
                         setConfirmDelete(() => () => {
                             props.onDeleteFunction();
                             setConfirmDelete(undefined);
@@ -145,24 +190,10 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     }}
                 >
                     <ListItemIcon>
-                        <Delete color="error" />
+                        <Delete color="error"/>
                     </ListItemIcon>
                     <ListItemText sx={{color: 'error.main'}}>
                         Funktion löschen
-                    </ListItemText>
-                </MenuItem>
-
-                <MenuItem
-                    onClick={() => {
-                        setAnchorEl(undefined);
-                        setShowFunctionSelector(true);
-                    }}
-                >
-                    <ListItemIcon>
-                        <SwapHorizOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Anderen Funktionstyp auswählen
                     </ListItemText>
                 </MenuItem>
             </Menu>
@@ -181,6 +212,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                 </DialogTitleWithClose>
                 <DialogContent>
                     <FunctionSelector
+                        mode="change"
                         fullWidth={true}
                         allowNoCode={props.allowsNoCode}
                         allowExpression={props.allowsExpression}

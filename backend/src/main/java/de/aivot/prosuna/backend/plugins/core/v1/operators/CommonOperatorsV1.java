@@ -71,23 +71,34 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     @Nonnull
     @Override
     public String getName() {
-        return "Allgemeine No-Code-Operatoren";
+        return "Allgemeine No-Code-Funktionen";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Diese Sammlung enthält allgemeine No-Code-Operatoren.";
+        return "Diese Sammlung enthält allgemeine No-Code-Funktionen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Diese Sammlung stellt die grundlegenden Operatoren für den No-Code-Ausdruckseditor von Prosuna bereit.
+                Diese Sammlung stellt die grundlegenden Funktionen für den No-Code-Ausdruckseditor von Prosuna bereit.
 
-                Enthalten sind Operatoren für boolesche Logik, Vergleiche, Datums- und Zeitwerte, Listen, Mathematik, Objekte, Telefonnummern, Geheimnisse, Texte und Daten zu Mitarbeiter:innen. Sie können miteinander kombiniert werden, um Werte ohne eigenen Programmcode zu prüfen, umzuwandeln und zu berechnen.
+                Enthalten sind Funktionen für boolesche Logik, Vergleiche, Datums- und Zeitwerte, Listen, Mathematik, Objekte, Telefonnummern, Geheimnisse, Texte und Daten zu Mitarbeiter:innen. Sie können miteinander kombiniert werden, um Werte ohne eigenen Programmcode zu prüfen, umzuwandeln und zu berechnen.
                 """;
+    }
+
+    /**
+     * All core operators are pure except those reading secrets or user accounts. New operators that use a service
+     * or repository must be excluded here as well.
+     */
+    @Override
+    public boolean supportsDryRun(@Nonnull NoCodeOperator operator) {
+        return !(operator instanceof NoCodeSecretsGetOperator
+                || operator instanceof NoCodeUserEmailOperator
+                || operator instanceof NoCodeUserFullNameOperator);
     }
 
     @Override

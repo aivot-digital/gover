@@ -31,6 +31,12 @@ describe('temporal-utils', () => {
         expect(isInstantIso('2026-07-29T09:00:00+02:00')).toBe(true);
         expect(isInstantIso('2026-07-29T07:00:00Z')).toBe(true);
         expect(isInstantIso('2026-07-29T09:00:00')).toBe(false);
+        for (const offset of ['+18:00', '-18:00', '+17:59', '-00:59']) {
+            expect(isInstantIso(`2026-07-29T09:00:00.123456789${offset}`)).toBe(true);
+        }
+        for (const offset of ['+19:00', '-18:01', '+00:60', '-00:99']) {
+            expect(isInstantIso(`2026-07-29T09:00:00${offset}`)).toBe(false);
+        }
         expect(isInstantIso('2026-07-29T24:00:00Z')).toBe(false);
 
         expect(isLocalDateIso('2026-07-29')).toBe(true);

@@ -22,39 +22,36 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Vergleicht zwei Werte miteinander, um festzustellen, ob der erste Wert größer oder gleich dem zweiten Wert ist.";
+        return "Prüft, ob eine Zahl die Vergleichszahl erreicht oder überschreitet.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Größer als oder gleich“** vergleicht zwei Werte und prüft, ob der erste Wert größer oder gleich dem zweiten Wert ist. \s
-                Das Ergebnis ist **wahr** (true), wenn der erste Wert größer oder gleich dem zweiten Wert ist. \s
-                Andernfalls ist das Ergebnis **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl größer oder gleich einer anderen Zahl ist.
-                
-                Mit dem Operator **„Größer als oder gleich“** wird diese Logik so formuliert: \s
-                `Wert1 GRÖßER ALS ODER GLEICH Wert2`
-                
-                **Ergebnis:**
-                - **Bedingung wahr:** Wenn Wert1 größer oder gleich Wert2 ist, ist das Ergebnis **wahr**. \s
-                - **Bedingung falsch:** Wenn Wert1 kleiner ist als Wert2, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte für den „Größer als oder gleich“-Operator
-                - **10 GRÖßER ALS ODER GLEICH 5** → **wahr** \s
-                - **5 GRÖßER ALS ODER GLEICH 10** → **falsch** \s
-                - **10 GRÖßER ALS ODER GLEICH 10** → **wahr** \s
-                - **"abcd" GRÖßER ALS ODER GLEICH "abc"** → **wahr** (Länge des Textes) \s
-                - **"abc" GRÖßER ALS ODER GLEICH "abcd"** → **falsch** (Länge des Textes) \s
-                - **"abcd" GRÖßER ALS ODER GLEICH "abcd"** → **wahr** (Länge des Textes)
-                
-                # Wann verwenden Sie den Operator „Größer als oder gleich“?
-                Verwenden Sie **„Größer als oder gleich“**, wenn Sie prüfen möchten, ob ein Wert größer oder gleich einem anderen Wert ist. \s
-                Dieser Operator ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob eine Zahl die Vergleichszahl erreicht oder überschreitet, etwa beim Vergleich einer Menge mit einem Grenzwert.
+
+                # Welche Werte werden benötigt?
+                „Zahl“ und „Vergleichszahl“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn die erste Zahl die Vergleichszahl erreicht oder überschreitet, andernfalls „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Größer als oder gleich“ als Funktion für eine Bedingung.
+                2. Tragen Sie bei „Zahl“ `10` und bei „Vergleichszahl“ `10` ein.
+                3. Verwenden Sie die Bedingung beispielsweise für die Sichtbarkeit eines Formularelements.
+
+                Der Ausdruck `10 ist größer als oder gleich 10` ergibt „Wahr“. Statt der ersten festen Zahl können Sie eine passende Wertquelle wählen.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Zahlen als Text werden numerisch verglichen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung. Für fachliche Datums-, Uhrzeit- oder Zeitpunktvergleiche verwenden Sie die dafür vorgesehenen Funktionen.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 
     @Override
@@ -64,14 +61,14 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
                         NoCodeDataType.Boolean,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Wert 1",
-                                "Der erste zu vergleichende Wert."
-                        ),
+                                "Zahl",
+                                "Die Zahl, die mit der Vergleichszahl geprüft wird."
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Wert 2",
-                                "Der zweite zu vergleichende Wert."
-                        )
+                                "Vergleichszahl",
+                                "Die Zahl, mit der verglichen wird."
+                        ).withSentence("größer als oder gleich", "ist")
                 )
         );
     }
@@ -87,6 +84,6 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ ist größer als „#1“ oder gleich „#1“";
+        return "#0 ist größer als oder gleich #1";
     }
 }

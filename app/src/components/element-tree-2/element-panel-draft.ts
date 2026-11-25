@@ -1,3 +1,4 @@
+import {type LegacyNoCodeMigrations} from '../../modules/nocode/hooks/use-legacy-no-code-migration';
 import {type AnyElement} from '../../models/elements/any-element';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {ElementChildOptions, type ElementDisplayContext} from '../../data/element-type/element-child-options';
@@ -13,6 +14,8 @@ export interface ElementPanelDraft {
     tab: string;
     automaticDataKey: boolean;
     dataKeyUnlocked: boolean;
+    /** Retain the old rule for cancellation while the replacement is still an unapplied draft. */
+    legacyMigrations?: LegacyNoCodeMigrations;
     /** The choice to reinsert an element removed from the stored layout is pending until Apply. */
     detached?: boolean;
     /** Current bases for edits to descendants which have since moved to another branch of the form. */

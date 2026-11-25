@@ -12,6 +12,8 @@ import java.util.stream.Stream;
  * @param packageName The plugin component key providing the operator.
  * @param label       The label of the operator.
  * @param description The description of the operator.
+ * @param sentenceLead The text after the operator that starts the sentence of its parameters.
+ * @param variableArgumentCount whether the operator accepts additional operands beyond a declared signature
  * @param signatures  The signatures of the operator.
  */
 public record NoCodeOperatorDetailsDTO(
@@ -21,7 +23,9 @@ public record NoCodeOperatorDetailsDTO(
         String description,
         String abstractDescription,
         String humanReadableTemplate,
+        String sentenceLead,
         String[] tags,
+        boolean variableArgumentCount,
         NoCodeSignatur[] signatures
 ) {
     /**
@@ -40,7 +44,9 @@ public record NoCodeOperatorDetailsDTO(
                         op.getDescription(),
                         op.getAbstract(),
                         op.getHumanReadableTemplate(),
+                        op.getSentenceLead(),
                         op.getTags(),
+                        op.hasVariableArgumentCount(),
                         op.getSignatures()
                 ));
     }

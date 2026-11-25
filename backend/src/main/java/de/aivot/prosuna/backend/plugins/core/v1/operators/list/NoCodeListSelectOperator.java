@@ -9,6 +9,8 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
 import jakarta.annotation.Nullable;
 
+import java.util.ArrayList;
+
 public class NoCodeListSelectOperator extends NoCodeOperator {
     @Override
     public String getIdentifier() {
@@ -17,62 +19,58 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Werte aus Liste";
+        return "Feldwerte aus Liste";
     }
 
     @Override
     public String getAbstract() {
-        return "Extrahiert die Werte einer bestimmten Spalte (Feld) aus einer Tabelle oder einer Liste von Objekten.";
+        return "Liest dasselbe Feld aus jedem Eintrag einer Liste aus.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Werte aus Liste“** dient dazu, die Werte einer bestimmten **Spalte** (Feld) aus einer Tabelle oder einer Liste von Objekten zu extrahieren. \s
-                Das Ergebnis ist eine neue Liste, die nur die Werte des angegebenen Feldes enthält. \s
-                Dieser Operator ist ideal, wenn Sie gezielt Daten aus einer bestimmten Spalte einer Tabelle benötigen, um diese weiterzuverarbeiten oder anzuzeigen.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben eine Tabelle mit Personendaten, die Felder wie **„Name“**, **„Alter“** und **„Stadt“** enthält. \s
-                Mit dem Operator **„Werte aus Liste“** können Sie beispielsweise die Spalte **„Name“** extrahieren, um nur die Namen der Personen zu erhalten:
-                
-                ```text
-                Werte aus Liste Personen -> Spalte: "Name"
-                ```
-                
-                **Ergebnis:** \s
-                Die zurückgegebene Liste enthält die Namen der Personen: `["Anna", "Ben", "Clara"]`.
-                
-                **Weitere Beispiele:**
-                - Extraktion der Spalte **„Alter“** ergibt: `[25, 30, 22]` \s
-                - Extraktion der Spalte **„Stadt“** ergibt: `["Berlin", "Hamburg", "München"]`
-                
-                # Wann verwenden Sie den Operator „Werte aus Liste“?
-                Verwenden Sie **„Werte aus Liste“**, wenn Sie gezielt die Werte einer Spalte aus einer Tabelle oder Liste extrahieren möchten. \s
-                Dieser Operator ist besonders nützlich in den folgenden Szenarien:
-                
-                - Sie möchten alle Werte aus einem bestimmten Feld (z. B. „Name“ oder „ID“) extrahieren, um sie weiterzuverarbeiten. \s
-                - Sie benötigen die Daten einer Spalte, z. B. für Filter, Analysen oder Berichte. \s
-                - Sie möchten eine Liste von Werten aus einer Tabelle erzeugen, z. B. um diese in Auswahlmenüs oder als Optionsfelder anzuzeigen.
+                # Wofür verwenden Sie diese Funktion?
+                Lesen Sie eine Spalte einer Tabelle oder ein bestimmtes Feld aus allen Einträgen einer Liste aus, beispielsweise die Beträge aller Positionen.
+
+                # Welche Werte werden benötigt?
+                **Liste:** Eine Tabelle oder Liste mit Einträgen, die Felder enthalten. Sie können eine andere Wertquelle oder Funktion verwenden oder die Liste selbst als JSON eingeben, beispielsweise `[{"betrag": 100}, {"betrag": 50}]`.
+
+                **Feldname:** Der technische Name des Feldes, beispielsweise `betrag`. Diesen Namen geben Sie frei ein oder übernehmen ihn aus einer anderen Wertquelle beziehungsweise Funktion. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine neue Liste mit einem Feldwert je ursprünglichem Eintrag. Fehlt das Feld in einem Eintrag, steht an dieser Stelle ein fehlender Wert.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Feldwerte aus Liste“**. Verwenden Sie für **Liste** die Variable „Positionen“ mit `[{"betrag": 100}, {"betrag": 50}]` und geben Sie als **Feldname** `betrag` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Werte des Feldes „betrag“ aus „Positionen“`. Das Ergebnis ist `[100, 50]`. Setzen Sie diese Funktion als **Liste** in **„Summe einer Liste“** ein, um die Gesamtsumme `150` zu berechnen.
+
+                # Was ist zu beachten?
+                Verwenden Sie den technischen Feldnamen mit passender Groß- und Kleinschreibung. Es wird nur ein direktes Feld gelesen; ein Name wie `person.name` ist kein Zugriff auf ein verschachteltes Feld. Die Reihenfolge und Anzahl der Einträge bleiben erhalten; ein fehlender Eintrag ergibt an seiner Stelle einen fehlenden Wert. Jeder andere Eintrag muss ein Objekt sein, sonst erhalten Sie eine Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt die Feldwerte";
     }
 
     @Override
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.Runtime,
+                        NoCodeDataType.List,
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste oder Tabelle, aus der die Werte extrahiert werden sollen."
-                        ),
+                        ).withSentence("aus"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Feld",
-                                "Das Feld (Spalte), dessen Werte extrahiert werden sollen."
-                        )
+                                "Feldname",
+                                "Technischer Name des direkten Feldes, beispielsweise betrag; beachten Sie Groß- und Kleinschreibung."
+                        ).withSentence("für das Feld")
                 )
         );
     }
@@ -80,19 +78,20 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "wähle aus „#0“ das Feld „#1“";
+        return "Werte des Feldes #1 aus #0";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
+        var list = listOperandOrEmpty(args[0]);
         var field = castToString(args[1]);
 
-        var result = list
-                .stream()
-                .map(this::castToMap)
-                .map(map -> map.getOrDefault(field, null))
-                .toList();
+        var result = new ArrayList<>(list.size());
+        for (var row : list) {
+            // A missing row keeps its position; any other row must be an object.
+            var map = row == null ? null : castToMap(row);
+            result.add(map == null ? null : map.get(field));
+        }
 
         return new NoCodeResult(result);
     }

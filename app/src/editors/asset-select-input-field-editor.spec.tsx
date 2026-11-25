@@ -42,7 +42,9 @@ describe('AssetSelectInputFieldEditor', () => {
             editable: true, onPatch, hasSummaryLayoutParent: false, scope: 'application',
         }}/>);
         await waitFor(() => expect(listProviders).toHaveBeenCalledOnce());
-        expect(screen.getByRole('combobox', {name: /^Speicheranbieter/})).toHaveTextContent('Auswahl derzeit nicht verfügbar');
+        const select = screen.getByRole('combobox', {name: /^Speicheranbieter/});
+        await waitFor(() => expect(select).not.toHaveAttribute('aria-readonly', 'true'));
+        expect(select).toHaveTextContent('Auswahl derzeit nicht verfügbar');
         expect(onPatch).not.toHaveBeenCalled();
     });
 

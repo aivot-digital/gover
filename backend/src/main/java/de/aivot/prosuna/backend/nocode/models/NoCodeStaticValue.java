@@ -2,7 +2,6 @@ package de.aivot.prosuna.backend.nocode.models;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import de.aivot.prosuna.backend.utils.StringUtils;
 
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -72,9 +71,6 @@ public class NoCodeStaticValue extends NoCodeOperand {
 
     @Nullable
     public Object getValue() {
-        if (value instanceof String sValue && StringUtils.isNullOrEmpty(sValue)) {
-            return null;
-        }
         return value;
     }
 

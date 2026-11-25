@@ -17,44 +17,41 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Weniger als oder gleich";
+        return "Kleiner als oder gleich";
     }
 
     @Override
     public String getAbstract() {
-        return "Vergleicht zwei Werte miteinander, um festzustellen, ob der erste Wert kleiner oder gleich dem zweiten Wert ist.";
+        return "Prüft, ob eine Zahl die Vergleichszahl erreicht oder unterschreitet.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Weniger als oder gleich“** vergleicht zwei Werte und prüft, ob der erste Wert kleiner oder gleich dem zweiten Wert ist. \s
-                Das Ergebnis ist **wahr** (true), wenn der erste Wert kleiner oder gleich dem zweiten Wert ist. \s
-                Andernfalls ist das Ergebnis **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Zahl kleiner oder gleich einer anderen Zahl ist.
-                
-                Mit dem Operator **„Weniger als oder gleich“** wird diese Logik so formuliert: \s
-                `Wert1 WENIGER ALS ODER GLEICH Wert2`
-                
-                **Ergebnis:**
-                - **Bedingung wahr:** Wenn Wert1 kleiner oder gleich Wert2 ist, ist das Ergebnis **wahr**. \s
-                - **Bedingung falsch:** Wenn Wert1 größer ist als Wert2, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte für den „Weniger als oder gleich“-Operator
-                - **5 WENIGER ALS ODER GLEICH 10** → **wahr** \s
-                - **10 WENIGER ALS ODER GLEICH 5** → **falsch** \s
-                - **10 WENIGER ALS ODER GLEICH 10** → **wahr** \s
-                - **"abc" WENIGER ALS ODER GLEICH "abcd"** → **wahr** (Länge des Textes) \s
-                - **"abcd" WENIGER ALS ODER GLEICH "abc"** → **falsch** (Länge des Textes) \s
-                - **"abcd" WENIGER ALS ODER GLEICH "abcd"** → **wahr** (Länge des Textes)
-                
-                # Wann verwenden Sie den Operator „Weniger als oder gleich“?
-                Verwenden Sie **„Weniger als oder gleich“**, wenn Sie prüfen möchten, ob ein Wert kleiner oder gleich einem anderen Wert ist. \s
-                Dieser Operator ist besonders hilfreich bei Vergleichen von Zahlen, Datumswerten oder Zeichenfolgen.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob eine Zahl die Vergleichszahl erreicht oder unterschreitet, etwa beim Vergleich einer Menge mit einem Grenzwert.
+
+                # Welche Werte werden benötigt?
+                „Zahl“ und „Vergleichszahl“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn die erste Zahl die Vergleichszahl erreicht oder unterschreitet, andernfalls „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Kleiner als oder gleich“ als Funktion für eine Bedingung.
+                2. Tragen Sie bei „Zahl“ `10` und bei „Vergleichszahl“ `10` ein.
+                3. Verwenden Sie die Bedingung beispielsweise für die Sichtbarkeit eines Formularelements.
+
+                Der Ausdruck `10 ist kleiner als oder gleich 10` ergibt „Wahr“. Statt der ersten festen Zahl können Sie eine passende Wertquelle wählen.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Zahlen als Text werden numerisch verglichen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung. Für fachliche Datums-, Uhrzeit- oder Zeitpunktvergleiche verwenden Sie die dafür vorgesehenen Funktionen.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 
     @Override
@@ -64,14 +61,14 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
                         NoCodeDataType.Boolean,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Wert 1",
-                                "Der erste zu vergleichende Wert."
-                        ),
+                                "Zahl",
+                                "Die Zahl, die mit der Vergleichszahl geprüft wird."
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Wert 2",
-                                "Der zweite zu vergleichende Wert."
-                        )
+                                "Vergleichszahl",
+                                "Die Zahl, mit der verglichen wird."
+                        ).withSentence("kleiner als oder gleich", "ist")
                 )
         );
     }
@@ -87,6 +84,6 @@ public class NoCodeLessThanOrEqualOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ ist weniger als „#1“ oder gleich „#1“";
+        return "#0 ist kleiner als oder gleich #1";
     }
 }

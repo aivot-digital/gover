@@ -1,4 +1,9 @@
-import {Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
+import {useLegacyNoCodeMigration} from '../../../modules/nocode/hooks/use-legacy-no-code-migration';
+import {useApi} from '../../../hooks/use-api';
+import {NoCodeApiService} from '../../../services/no-code-api-service';
+import {elementNoCodeFunctions, validateNoCode} from '../../../modules/nocode/utils/validate-no-code';
+import {noCodeEditorElements} from '../../../modules/nocode/utils/no-code-editor-elements';
+import {Alert, Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
 import React, {useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
@@ -39,6 +44,10 @@ interface ElementTreeEditorProps<T extends AnyElement> {
 
 export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditorProps<T>): React.ReactNode | null {
     const showConfirm = useConfirm();
+    const api = useApi();
+    const [noCodeValidationIndex, setNoCodeValidationIndex] = useState(0);
+    const [noCodeValidationRequest, setNoCodeValidationRequest] = useState(0);
+    const [noCodeSaveError, setNoCodeSaveError] = useState<string | null>(null);
     const theme = useTheme();
 
     const {
@@ -73,6 +82,12 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const panel = open && panelDraft?.base.id === value.id ? panelDraft : null;
     const [localElement, setLocalElement] = useState<T>();
     const updatedElement = panel == null ? localElement : panel.mine as T;
+    const migration = useLegacyNoCodeMigration<T>(updatedElement ?? value, (element) => storeCurrentElement(element),
+        onPanelDraftChange == null ? undefined : {
+            migrations: panel?.legacyMigrations ?? {},
+            original: (panel?.base ?? value) as T,
+            onChange: (element, migrations) => storeCurrentElement(element, undefined, migrations),
+        });
     const [isBusy, setIsBusy] = useState<boolean>(false);
     const [localKeyUnlocked, setDataKeyUnlocked] = useState(false);
     const [localAutomaticKey, setAutomaticDataKey] = useState(false);
@@ -101,13 +116,18 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                 : null;
             setLocalElement(generatedKey == null ? undefined : {...value, destinationKey: generatedKey});
             setIsBusy(false);
+            setNoCodeSaveError(null);
+            setNoCodeValidationRequest(0);
+            setNoCodeValidationIndex(0);
+            migration.reset();
         }
         return () => { editGeneration.current++; };
     }, [open, value.id]);
 
-    const changeCurrentElement = (updated: T, reason?: 'normalize' | 'structure') => {
+    const storeCurrentElement = (updated: T, reason?: 'normalize' | 'structure', migrations = migration.migrations) => {
         if (onPanelDraftChange != null && (!open || !editable)) return;
-        const previous = updatedElement ?? value;
+        setNoCodeSaveError(null);
+        const previous = migration.current;
         let trackTitle = automaticDataKey;
         if (reason !== 'structure' && automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
             if (updated.destinationKey !== previous.destinationKey) {
@@ -143,7 +163,18 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
             tab: currentEditorTab ?? DefaultTabs.properties,
             automaticDataKey: trackTitle,
             dataKeyUnlocked,
+            legacyMigrations: Object.keys(migrations).length > 0 ? migrations : undefined,
         }, reason);
+    };
+
+    const changeCurrentElement = (updated: T, reason?: 'normalize' | 'structure') => {
+        if (onPanelDraftChange == null) {
+            if (!editable) return;
+            setNoCodeSaveError(null);
+            migration.update(updated);
+        } else {
+            storeCurrentElement(updated, reason);
+        }
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
@@ -152,14 +183,15 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     };
 
     const handleSave = async (): Promise<void> => {
-        const current = updatedElement ?? value;
+        if (isBusy || !editable) return;
+        const current = migration.current;
         setDataKeyValidationRequested(true);
         if (displayContext !== ElementDisplayContext.DataObjectSchema && isAnyInputElement(current) &&
             validateDataKeyPath(current.destinationKey) != null) {
             handleSetCurrentTab(DefaultTabs.properties);
             return;
         }
-        if (updatedElement == null) {
+        if (updatedElement == null && Object.keys(migration.migrations).length === 0) {
             markElementApplied?.(value.id);
             handleClose();
             return;
@@ -167,11 +199,38 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
         setIsBusy(true);
         const generation = editGeneration.current;
-        const api = new ElementsApiService();
-        let candidate = updatedElement;
+        setNoCodeSaveError(null);
+        const elementApi = new ElementsApiService();
+        let candidate = current;
         for (;;) {
+            const candidateMigrations = panel == null ? migration.migrations : currentTree.current.panel?.legacyMigrations ?? {};
+            // Incomplete expressions are applied and reported as configuration errors of the element. Only the new version
+            // of a legacy rule must be complete, because applying it replaces the legacy rule.
+            const functions = elementNoCodeFunctions(candidate)
+                .filter(({section}) => section !== 'value' && candidateMigrations[section] != null);
+            if (functions.length > 0) {
+                try {
+                    const operators = await new NoCodeApiService(api).getNoCodeOperators();
+                    if (generation !== editGeneration.current) return;
+                    const elements = noCodeEditorElements(parents);
+                    const invalid = functions.find(({operand}) => !validateNoCode(operand, operators, elements).isValid);
+                    if (invalid != null) {
+                        setNoCodeValidationIndex(functions.filter((fn) => fn.section === invalid.section).indexOf(invalid));
+                        setNoCodeValidationRequest((current) => current + 1);
+                        setNoCodeSaveError('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.');
+                        navigateToEditorTab(invalid.section);
+                        setIsBusy(false);
+                        return;
+                    }
+                } catch {
+                    if (generation !== editGeneration.current) return;
+                    setNoCodeSaveError('Die No-Code-Ausdrücke konnten nicht geprüft werden. Versuchen Sie es erneut.');
+                    setIsBusy(false);
+                    return;
+                }
+            }
             // If the calculation fails, keep the references already present on this element.
-            const recalculated = await api.recalculateReferencedIds(candidate).catch(() => candidate);
+            const recalculated = await elementApi.recalculateReferencedIds(candidate).catch(() => candidate);
             if (generation !== editGeneration.current) return;
             const latest = currentTree.current;
             if (panel != null && latest.panel != null && !editorValuesEqual(candidate, latest.panel.mine)) {
@@ -201,7 +260,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const confirmDiscard = async (): Promise<boolean> => {
         const generation = editGeneration.current;
-        if (updatedElement != null) {
+        if (updatedElement != null || Object.keys(migration.migrations).length > 0) {
             const confirmed = await showConfirm({
                 theme: drawerTheme,
                 confirmButtonColor: 'error',
@@ -210,7 +269,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                 children: (
                     <div>
                         Möchten Sie die Änderungen an diesem{' '}
-                        {updatedElement != null ? 'Element' : 'Formular'} wirklich verwerfen? Diese Aktion kann nicht
+                        {value.type === ElementType.FormLayout ? 'Formular' : 'Element'} wirklich verwerfen? Diese Aktion kann nicht
                         rückgängig gemacht werden.
                     </div>
                 ),
@@ -224,6 +283,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const handleClose = async (): Promise<boolean> => {
         if (!await confirmDiscard()) return false;
         editGeneration.current++;
+        migration.reset();
         if (panel != null) onPanelDraftChange?.(null);
         onCancel();
         return true;
@@ -493,7 +553,27 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                     >
                         <ElementTreeEditorContextProvider
                             value={{
-                                currentElement: updatedElement ?? value,
+                                currentElement: migration.current,
+                                noCodeValidationRequest,
+                                noCodeValidationIndex,
+                                legacyMigrations: migration.migrations,
+                                startLegacyMigration: (section) => {
+                                    if (editable && !isBusy) migration.start(section);
+                                },
+                                cancelLegacyMigration: async (section) => {
+                                    if (!editable || isBusy) return;
+                                    const draft = migration.migrations[section];
+                                    if (draft == null) return;
+                                    if (JSON.stringify(draft.draft) !== JSON.stringify(draft.initial) && !await showConfirm({
+                                        theme: drawerTheme,
+                                        isDestructive: true,
+                                        title: 'Umstellung abbrechen?',
+                                        confirmButtonText: 'Neue Fassung verwerfen',
+                                        children: 'Die neue Fassung wird verworfen. Die bisherige Regel und andere Änderungen am Element bleiben erhalten.',
+                                    })) return;
+                                    migration.cancel(section);
+                                    setNoCodeSaveError(null);
+                                },
                                 originalElement: panel?.base ?? value,
                                 dataKeyUnlocked,
                                 onUnlockDataKey: () => changeKeyLock(true),
@@ -504,11 +584,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             }}
                         >
                             <ElementTreeEditorContentDispatcher
-                                element={updatedElement ?? value}
+                                element={migration.current}
                                 currentTab={currentEditorTab}
                                 onChange={(changedElement) => {
                                     changeCurrentElement({
-                                        ...(updatedElement ?? value),
+                                        ...migration.current,
                                         ...changedElement,
                                     }, 'structure');
                                 }}
@@ -517,6 +597,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         </ElementTreeEditorContextProvider>
                     </Box>
 
+                    {noCodeSaveError != null && <Alert severity="error"
+                                                       sx={{
+                                                           mx: 2,
+                                                           mb: 1,
+                                                       }}>{noCodeSaveError}</Alert>}
                     <Box
                         sx={{
                             pt: 2,
@@ -533,7 +618,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 {
                                     label: 'Übernehmen',
                                     onClick: handleSave,
-                                    disabled: isBusy || updatedElement == null,
+                                    disabled: isBusy || (updatedElement == null && Object.keys(migration.migrations).length === 0),
                                     visible: editable,
                                     variant: 'contained',
                                 },

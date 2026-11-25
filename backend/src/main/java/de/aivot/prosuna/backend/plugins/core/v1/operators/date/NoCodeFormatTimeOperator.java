@@ -30,12 +30,39 @@ public class NoCodeFormatTimeOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Formatiert eine lokale Uhrzeit.";
+        return "Gibt eine Uhrzeit wahlweise mit oder ohne Sekunden als Text aus.";
     }
 
     @Override
     public String getDescription() {
-        return "Formatiert eine lokale Uhrzeit wahlweise mit oder ohne Sekunden.";
+        return """
+                # Wofür verwenden Sie diese Funktion?
+                Geben Sie eine Uhrzeit als Text aus, zum Beispiel eine Öffnungszeit mit oder ohne Sekunden.
+
+                # Welche Werte werden benötigt?
+                - **Uhrzeit:** Die Uhrzeit, die Sie ausgeben möchten.
+                - **Ausgabeformat:** Wählen Sie **„Stunde und Minute“** oder **„Stunde, Minute und Sekunde“**.
+
+                Die Uhrzeit können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Das selbst festgelegte Ausgabeformat ist eine feste Auswahl; zusätzliche eigene Einträge sind nicht möglich. Auch das Format kann aus einer anderen Wertquelle oder einer Funktion stammen. Dabei werden die Formatwerte **HH:mm** oder **HH:mm:ss** erwartet.
+
+                # Welches Ergebnis erhalten Sie?
+                Einen Text im gewählten Format. Die ursprüngliche Uhrzeit bleibt unverändert.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie für einen Textwert **„Uhrzeit formatieren“**.
+                2. Legen Sie als **„Uhrzeit“** **09:30:45 Uhr** fest oder wählen Sie ein entsprechendes Uhrzeitfeld als Wertquelle.
+                3. Wählen Sie als **„Ausgabeformat“** **„Stunde und Minute“**.
+
+                Das Ergebnis ist der Text **„09:30“**. Zugeklappt lesen Sie: **„09:30:45 Uhr als Text im Format „Stunde und Minute““**.
+
+                # Was ist zu beachten?
+                Bei der Darstellung ohne Sekunden werden die Sekunden weggelassen; es wird nicht auf die nächste Minute gerundet. Die Funktion ergänzt weder ein Datum noch eine Zeitzone. Das Ergebnis ist Text und keine neue Uhrzeit.
+                """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt den Text für";
     }
 
     @Override
@@ -47,14 +74,14 @@ public class NoCodeFormatTimeOperator extends NoCodeOperator {
                                 NoCodeDataType.Time,
                                 "Uhrzeit",
                                 "Die zu formatierende lokale Uhrzeit."
-                        ),
+                        ).withSentence("die Uhrzeit"),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
-                                "Format",
-                                "Das Ausgabeformat.",
+                                "Ausgabeformat",
+                                "Wählen Sie, ob die Sekunden im Text erscheinen sollen.",
                                 new NoCodeParameterOption("Stunde und Minute", MINUTE_PATTERN),
-                                new NoCodeParameterOption("Mit Sekunden", SECOND_PATTERN)
-                        )
+                                new NoCodeParameterOption("Stunde, Minute und Sekunde", SECOND_PATTERN)
+                        ).withSentence("im Format")
                 )
         );
     }
@@ -62,7 +89,7 @@ public class NoCodeFormatTimeOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "formatiere Uhrzeit „#0“ als „#1“";
+        return "#0 als Text im Format #1";
     }
 
     @Override

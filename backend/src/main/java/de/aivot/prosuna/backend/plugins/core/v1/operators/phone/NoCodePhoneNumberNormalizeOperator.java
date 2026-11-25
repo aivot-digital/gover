@@ -19,34 +19,48 @@ public class NoCodePhoneNumberNormalizeOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Telefonnummer normalisieren";
+        return "Telefonnummer vereinheitlichen";
     }
 
     @Override
     public String getAbstract() {
-        return "Normalisiert eine plausible Telefonnummer mit Ländervorwahl in das E.164-Format.";
+        return "Gibt eine plausible Telefonnummer mit Ländervorwahl ohne Trennzeichen aus.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Telefonnummer normalisieren“** wandelt eine Telefonnummer mit internationaler Ländervorwahl in das E.164-Format um.
+                # Wofür verwenden Sie diese Funktion?
+                Bringen Sie eine Telefonnummer in eine einheitliche Schreibweise, zum Beispiel bevor Sie Kontaktdaten weitergeben oder Telefonnummern miteinander vergleichen.
 
-                Die Normalisierung erfolgt, wenn die Telefonnummer grundsätzlich plausibel ist. Der Operator prüft nicht streng, ob die Nummer zu einem gültigen Nummernbereich gehört. Wenn Sie das vor der Normalisierung sicherstellen möchten, kombinieren Sie diesen Operator mit **„Telefonnummer ist gültig“**.
+                # Welche Werte werden benötigt?
+                **Telefonnummer:** Eine Telefonnummer mit internationaler Ländervorwahl, zum Beispiel **+49 30 123456**. Sie können sie frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
 
-                Bei einer nicht plausiblen Telefonnummer gibt der Operator **null** zurück.
+                # Welches Ergebnis erhalten Sie?
+                Einen Text mit **+**, Ländervorwahl und Ziffern ohne Trennzeichen, zum Beispiel **„+4930123456“**. Diese Schreibweise heißt **E.164**. Bei einer fehlenden, leeren oder nicht plausiblen Nummer erhalten Sie keinen Wert (**null**).
 
-                # Beispiele:
-                - **+49 30 123456** → **+4930123456**
-                - **+49 1234** → **+491234**
-                - **030 123456** → **null**
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie für einen Textwert **„Telefonnummer vereinheitlichen“**.
+                2. Wählen Sie als **„Telefonnummer“** ein Telefonnummer-Feld als andere Wertquelle oder legen Sie **+49 30 123456** selbst fest.
+                3. Verwenden Sie das Ergebnis beispielsweise als einen der beiden Textwerte in einem Vergleich mit **„Ist gleich“**.
+
+                Das Ergebnis ist **„+4930123456“**. Zugeklappt lesen Sie: **„vereinheitlichte Telefonnummer von „+49 30 123456““**.
+
+                # Was ist zu beachten?
+                Die Funktion verwendet die weniger strenge Plausibilitätsprüfung. Daher wird beispielsweise auch **+49 1234** in **„+491234“** umgewandelt. Wenn die Nummer zusätzlich zum bekannten Nummernplan passen muss, prüfen Sie sie vorher mit **„Telefonnummer ist gültig“**.
+
+                Separate Nebenstellenzusätze werden abgelehnt. Die Funktion prüft nicht, ob eine Nummer vergeben oder erreichbar ist, und verändert den ursprünglichen Eingabewert nicht.
                 """;
     }
 
     @Override
     public String[] getTags() {
         return new String[]{"Telefonnummer", "Normalisierung", "Text", "E.164"};
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt die vereinheitlichte Telefonnummer";
     }
 
     @Override
@@ -57,8 +71,8 @@ public class NoCodePhoneNumberNormalizeOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Telefonnummer",
-                                "Die zu normalisierende Telefonnummer mit Ländervorwahl."
-                        )
+                                "Die Telefonnummer mit + und internationaler Ländervorwahl, zum Beispiel +49 30 123456."
+                        ).withSentence("von")
                 )
         );
     }
@@ -66,7 +80,7 @@ public class NoCodePhoneNumberNormalizeOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "normalisierte Telefonnummer von „#0“";
+        return "vereinheitlichte Telefonnummer von #0";
     }
 
     @Override

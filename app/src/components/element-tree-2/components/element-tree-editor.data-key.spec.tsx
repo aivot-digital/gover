@@ -1,3 +1,4 @@
+import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {useState} from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
@@ -14,6 +15,8 @@ import {DefaultTabs} from '../../element-editor/default-tabs';
 import {type ElementPanelDraft} from '../element-panel-draft';
 import {type EditorProps} from '@monaco-editor/react';
 
+const api = vi.hoisted(() => ({get: vi.fn()}));
+vi.mock('../../../hooks/use-api', () => ({useApi: () => api}));
 const confirm = vi.hoisted(() => vi.fn().mockResolvedValue(true));
 vi.mock('../../../providers/confirm-provider', () => ({useConfirm: () => confirm}));
 vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
@@ -24,10 +27,13 @@ vi.mock('../../code-editor/monaco-editor', () => ({MonacoEditor: (props: EditorP
     return null;
 }}));
 
-function renderEditor({isNew = false, destinationKey, siblingKey, trackDraft = false, initialDraft}: {
-    isNew?: boolean; destinationKey?: string; siblingKey?: string; trackDraft?: boolean; initialDraft?: ElementPanelDraft;
+function renderEditor({isNew = false, destinationKey, siblingKey, trackDraft = false, initialDraft, noCode}: {
+    isNew?: boolean; destinationKey?: string; siblingKey?: string; trackDraft?: boolean; initialDraft?: ElementPanelDraft; noCode?: NoCodeOperand | null;
 } = {}) {
     const initial = {...generateElementWithDefaultValues(ElementType.Text), id: 'field', label: 'Vorname', destinationKey};
+    if (noCode !== undefined) initial.visibility = {
+        type: 'NoCode', noCode, requirements: null, conditionSet: null, javascriptCode: null, referencedIds: [],
+    };
     const form = {...(generateElementWithDefaultValues(ElementType.FormLayout) as unknown as FormLayoutElement), id: 'form'};
     const onApply = vi.fn();
     const onDraft = vi.fn<(draft: ElementPanelDraft | null) => void>();
@@ -37,10 +43,23 @@ function renderEditor({isNew = false, destinationKey, siblingKey, trackDraft = f
         const [open, setOpen] = useState(true);
         const [panelDraft, setPanelDraft] = useState<ElementPanelDraft | null>(initialDraft ?? null);
         return <ElementTreeContextProvider value={{
-            root: form, editable: true, displayContext: ElementDisplayContext.CustomerFacing,
-            allowElementIdEditing: false, allElements: [
-                {element, parents: [form]},
-                ...(siblingKey ? [{element: {...initial, id: 'sibling', destinationKey: siblingKey}, parents: [form]}] : []),
+            root: form,
+            editable: true,
+            displayContext: ElementDisplayContext.CustomerFacing,
+            allowElementIdEditing: false,
+            allElements: [
+                {
+                    element,
+                    parents: [form],
+                },
+                ...(siblingKey ? [{
+                    element: {
+                        ...initial,
+                        id: 'sibling',
+                        destinationKey: siblingKey,
+                    },
+                    parents: [form],
+                }] : []),
             ],
             newElementIds: newIds, markElementApplied: () => setNewIds(new Set()),
             panelDraft, onPanelDraftChange: trackDraft ? (draft) => {
@@ -51,12 +70,19 @@ function renderEditor({isNew = false, destinationKey, siblingKey, trackDraft = f
             expandCommand: {type: null, version: 0}, initiallyExpandedSectionIds: new Set(),
         }}>
             <button onClick={() => setOpen(true)}>Erneut öffnen</button>
-            <ElementTreeEditor value={element} parents={[form]} open={open} onClone={() => {}} onDelete={() => {}}
-                onCancel={() => setOpen(false)} onChange={(updated) => {
-                    onApply(updated);
-                    setElement(updated);
-                    setOpen(false);
-                }}/>
+            <ElementTreeEditor value={element}
+                               parents={[form]}
+                               open={open}
+                               onClone={() => {
+                               }}
+                               onDelete={() => {
+                               }}
+                               onCancel={() => setOpen(false)}
+                               onChange={(updated) => {
+                                   onApply(updated);
+                                   setElement(updated);
+                                   setOpen(false);
+                               }}/>
         </ElementTreeContextProvider>;
     }
     const {unmount} = render(<Harness/>);
@@ -65,13 +91,44 @@ function renderEditor({isNew = false, destinationKey, siblingKey, trackDraft = f
 
 describe('form data key editing session', () => {
     beforeEach(() => {
+        api.get.mockReset().mockResolvedValue([]);
         window.history.replaceState({}, '', `/#field/${DefaultTabs.properties}`);
         vi.spyOn(ElementsApiService.prototype, 'recalculateReferencedIds').mockImplementation(async (element) => element);
     });
 
+    it('applies an incomplete No-Code function, which the configuration check reports instead', async () => {
+        const {onApply} = renderEditor({noCode: null});
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Neuer Titel'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        await waitFor(() => expect(onApply).toHaveBeenCalledOnce());
+        expect(onApply.mock.calls[0][0]).toMatchObject({
+            label: 'Neuer Titel',
+            visibility: {
+                type: 'NoCode',
+                noCode: null,
+            },
+        });
+        expect(screen.queryByText('Vervollständigen Sie den No-Code-Ausdruck, bevor Sie das Element übernehmen.')).not.toBeInTheDocument();
+    });
+
+    it('applies an intentional empty No-Code value', async () => {
+        const {onApply} = renderEditor({
+            noCode: {
+                type: 'NoCodeStaticValue',
+                value: null,
+            },
+        });
+        fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Neuer Titel'}});
+        fireEvent.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        await waitFor(() => expect(onApply).toHaveBeenCalledOnce());
+    });
+
     it('generates a free key for a new field, follows its title, then freezes it after applying', async () => {
         const user = userEvent.setup();
-        const {onApply} = renderEditor({isNew: true, siblingKey: 'vorname'});
+        const {onApply} = renderEditor({
+            isNew: true,
+            siblingKey: 'vorname',
+        });
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveValue('vorname_2');
         fireEvent.change(screen.getByRole('textbox', {name: /^Titel/}), {target: {value: 'Größe des Haushalts'}});
         expect(screen.getByRole('textbox', {name: /^Datenschlüssel/})).toHaveValue('groesse_des_haushalts');

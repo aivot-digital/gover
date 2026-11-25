@@ -43,6 +43,13 @@ class NoCodeSelectionIncludesOperatorTest {
         assertFalse(evaluate(List.of(), "orgUnit:12"));
         assertFalse(evaluate(SELECTION, null));
         assertFalse(evaluate(SELECTION, "not-a-token"));
+        assertFalse(evaluate(SELECTION, Map.of("type", "team")));
+        assertFalse(evaluate(Map.of("id", "12"), "orgUnit:12"));
+        assertFalse(evaluate(SELECTION, Map.of("domainAndUserSelection", Map.of())));
+        var unknown = Map.of("type", "unknown", "id", "12");
+        assertFalse(evaluate(unknown, unknown));
+        assertFalse(evaluate(unknown, "unknown:12"));
+        assertTrue(evaluate(SELECTION, List.of(unknown, "user:abc")));
     }
 
     @Test

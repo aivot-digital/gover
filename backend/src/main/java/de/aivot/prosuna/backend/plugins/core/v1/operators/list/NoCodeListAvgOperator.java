@@ -25,46 +25,36 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Berechnet den Durchschnitt aller numerischen Werte innerhalb einer Liste.";
+        return "Berechnet den arithmetischen Mittelwert der Werte einer Liste.";
     }
 
     @Override
     public String getDescription() {
         return """
-                ### **Operator: "Durchschnitt einer Liste"**
-                
-                # Beschreibung:
-                Der Operator **„Durchschnitt einer Liste“** berechnet den Durchschnitt (Mittelwert) aller numerischen Werte innerhalb einer Liste. \s
-                Er wird verwendet, um den Durchschnittswert einer Sammlung von Zahlen zu ermitteln.
-                
-                Die Berechnung erfolgt durch: \s
-                **Summe der Werte in der Liste / Anzahl der Werte in der Liste**
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben eine Liste mit Bewertungen: `[4, 5, 3, 4]`. \s
-                Mit dem Operator **„Durchschnitt einer Liste“** können Sie den Durchschnitt berechnen:
-                
-                ```text
-                Durchschnitt einer Liste Bewertungen
-                ```
-                
-                **Ergebnis:** \s
-                Die Summe der Werte beträgt: `4 + 5 + 3 + 4 = 16` \s
-                Anzahl der Werte: `4` \s
-                **Durchschnitt:** `16 / 4 = 4`
-                
-                **Weitere Beispiele:**
-                - Liste der Werte: `[10, 20, 30]` → **Ergebnis:** `20` \s
-                - Leere Liste: `[]` → **Ergebnis:** `0` (Standardwert, falls Liste leer ist)
-                
-                # Wann verwenden Sie den Operator „Durchschnitt einer Liste“?
-                Verwenden Sie **„Durchschnitt einer Liste“**, wenn Sie:
-                - Den Mittelwert von numerischen Werten berechnen möchten (z. B. Durchschnittsnote, Durchschnittsumsatz). \s
-                - Analysen oder Statistiken benötigen, die Durchschnittswerte erfordern. \s
-                - Daten aus einer Tabelle oder Liste zusammenfassen, um Trends oder Muster zu erkennen.
-                
-                Dieser Operator ist ideal für Berichte, Bewertungen oder analytische Auswertungen.
+                # Wofür verwenden Sie diese Funktion?
+                Berechnen Sie den Durchschnitt mehrerer Zahlen, beispielsweise die durchschnittliche Bewertung aus einer Liste.
+
+                # Welche Werte werden benötigt?
+                **Liste:** Die Zahlen, deren Durchschnitt Sie benötigen.
+
+                Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine Zahl: die Summe der Werte geteilt durch die Anzahl der Listeneinträge. Eine leere Liste ergibt `0`.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Durchschnitt einer Liste“**. Verwenden Sie für **Liste** die Variable „Bewertungen“, die `[4, 5, 3, 4]` liefert.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Durchschnitt von „Bewertungen“`. Das Ergebnis ist `4`. Sie können die Funktion beispielsweise als ersten Wert von **„Größer als“** verwenden und mit `3` vergleichen.
+
+                # Was ist zu beachten?
+                Das Ergebnis wird auf acht Nachkommastellen gerundet. Jeder Eintrag geht in die Berechnung ein; Einträge ohne Wert und leerer Text zählen als `0`. Verwenden Sie Zahlen oder Zahlen als Text wie `1.5` oder `1,5`; andere Einträge führen zu einer Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt den Durchschnitt";
     }
 
     @Override
@@ -76,7 +66,7 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste der numerischen Werte, deren Durchschnitt berechnet werden soll."
-                        )
+                        ).withSentence("von")
                 )
         );
     }
@@ -84,12 +74,12 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "berechne den Durchschnitt von „#0“";
+        return "Durchschnitt von #0";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
+        var list = listOperandOrEmpty(args[0]);
 
         if (list.isEmpty()) {
             return new NoCodeResult(BigDecimal.ZERO);
@@ -100,7 +90,8 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
             sum = sum.add(castToNumber(summand));
         }
 
-        var avg = sum.divide(BigDecimal.valueOf(list.size()), RoundingMode.HALF_UP);
+        // Results keep the eight decimal places that the inputs were rounded to before.
+        var avg = sum.divide(BigDecimal.valueOf(list.size()), 8, RoundingMode.HALF_UP);
 
         return new NoCodeResult(avg);
     }

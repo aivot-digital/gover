@@ -171,7 +171,12 @@ function preserveComputedElementStateErrors(
                     );
                 });
 
-            if (nextElementState.error != null || previousElementState?.error == null) {
+            // A derivation error was evaluated again, so its absence means that it is resolved.
+            if (
+                nextElementState.error != null ||
+                previousElementState?.error == null ||
+                previousElementState.derivationFailed === true
+            ) {
                 return [
                     elementId,
                     {

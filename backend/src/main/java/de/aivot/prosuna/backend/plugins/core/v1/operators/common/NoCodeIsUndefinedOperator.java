@@ -18,36 +18,30 @@ public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob ein gegebener Wert leer ist.";
+        return "Prüft, ob ein Wert leer ist.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Ist leer“** prüft, ob ein gegebener Wert **leer** ist. \s
-                Das Ergebnis ist **wahr** (true), wenn der Wert leer, null oder undefiniert ist. \s
-                Ist der Wert vorhanden (also nicht leer), ergibt der Operator den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person keine E-Mail-Adresse angegeben hat.
-                
-                Mit dem Operator **„Ist leer“** wird diese Logik so formuliert: \s
-                `IST LEER E-Mail-Adresse`
-                
-                **Ergebnis:**
-                - **Bedingung wahr:** Wenn das Feld für die E-Mail-Adresse leer ist, ist das Ergebnis **wahr**. \s
-                - **Bedingung falsch:** Wenn eine E-Mail-Adresse angegeben wurde, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte für den „Ist leer“-Operator
-                - **IST LEER ""** (leerer Text) → **wahr** \s
-                - **IST LEER null** → **wahr** \s
-                - **IST LEER "Hallo"** → **falsch** \s
-                - **IST LEER 123** → **falsch**
-                
-                # Wann verwenden Sie den Operator „Ist leer“?
-                Verwenden Sie **„Ist leer“**, um zu prüfen, ob ein Wert fehlt oder leer ist. \s
-                Dieser Operator ist besonders hilfreich bei Formularen, um zu validieren, ob eine Person erforderliche Felder leer gelassen hat, oder um sicherzustellen, dass bestimmte Daten eingegeben wurden.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob ein Wert leer ist, etwa ob eine E-Mail-Adresse fehlt.
+
+                # Welche Werte werden benötigt?
+                Einen „Wert“. Einen festen Text können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie auch Werte anderer Typen aus Wertquellen oder Funktionen prüfen.
+
+                # Welches Ergebnis erhalten Sie?
+                Ein Wahrheitswert: „Wahr“, wenn der Wert leer ist, andernfalls „Falsch“. Als leer gelten ein fehlender Wert, ein leerer Text, ein Text nur aus Leerraum sowie eine Liste oder ein Objekt ohne Einträge.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Ist leer“ als Funktion für eine Bedingung.
+                2. Wählen Sie für „Wert“ über „Andere Wertquelle verwenden …“ die Wertquelle „E-Mail-Adresse“.
+                3. Verwenden Sie das Ergebnis beispielsweise als Bedingung für einen Hinweis.
+
+                Ohne E-Mail-Adresse ergibt der Ausdruck „Wahr“. Bei „person@example.org“ ergibt er „Falsch“.
+
+                # Was ist zu beachten?
+                Die Zahl `0` und der Wahrheitswert „Falsch“ zählen als vorhandene, nicht leere Werte. Bei Listen und Objekten wird nur geprüft, ob Einträge vorhanden sind; leere Inhalte innerhalb eines Eintrags werden nicht einzeln geprüft. Ein als Text eingegebenes `[]` ist ein vorhandener Text und keine leere Liste.
                 """;
     }
 
@@ -60,6 +54,11 @@ public class NoCodeIsUndefinedOperator extends NoCodeIsDefinedOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ ist leer";
+        return "#0 ist leer";
+    }
+
+    @Override
+    protected String getEmptinessSuffix() {
+        return "leer ist";
     }
 }

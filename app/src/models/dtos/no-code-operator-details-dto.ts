@@ -7,7 +7,10 @@ export interface NoCodeOperatorDetailsDTO {
     description: string;
     abstractDescription: string;
     humanReadableTemplate: string | null;
+    /** Text after the operator that starts the sentence its parameters continue, such as „ergibt wahr“. */
+    sentenceLead?: string | null;
     tags: string[];
+    variableArgumentCount?: boolean;
     signatures: NoCodeSignature[];
 }
 
@@ -20,12 +23,53 @@ export interface NoCodeParameter {
     type: NoCodeDataType;
     label: string;
     description: string | null | undefined;
+    /** Text before the operand. Null falls back to the label, an empty text shows nothing. */
+    sentencePhrase?: string | null;
+    /** Text after the operand. */
+    sentenceSuffix?: string | null;
+    numberConstraints?: NoCodeNumberConstraints | null;
+    dateInput?: NoCodeDateInput | null;
+    /** A freely entered text value uses its leading and trailing whitespace literally. */
+    preserveWhitespace?: boolean | null;
+    /** Marks fixed options as units and points to the sibling operand providing their quantity. */
+    quantityParameterIndex?: number | null;
+    /** A fixed choice supplies a sentence part; unknown choices require a named-input presentation. */
+    optionsAsSentencePart?: boolean | null;
     options: NoCodeParameterOption[];
+}
+
+export enum NoCodeDateInput {
+    Calendar = 'Calendar',
+    CalendarOrDateTime = 'CalendarOrDateTime',
+}
+
+export interface NoCodeNumberConstraints {
+    integerOnly: boolean;
+    minimum?: number | null;
+    maximum?: number | null;
+    allowEmpty?: boolean;
 }
 
 export interface NoCodeParameterOption {
     label: string;
     value: string;
+    singularLabel?: string | null;
+}
+
+/** These core functions repeat their second input and allow adding further inputs in the editor. */
+export function getNoCodeVariadicInputKind(operator: NoCodeOperatorDetailsDTO): 'text' | 'number' | undefined {
+    if (!operator.variableArgumentCount || operator.signatures.length !== 1 || operator.signatures[0].parameters.length !== 2) return undefined;
+    switch (operator.identifier) {
+        case 'concat':
+            return 'text';
+        case 'add':
+        case 'subtract':
+        case 'multiply':
+        case 'divide':
+            return 'number';
+        default:
+            return undefined;
+    }
 }
 
 export function matchesDesiredNoCodeReturnType(
@@ -40,6 +84,15 @@ export function matchesDesiredNoCodeReturnType(
         signature.returnType === desiredReturnType ||
         signature.returnType === NoCodeDataType.Runtime
     ));
+}
+
+/** Matches arity accepted by the evaluator, independently of fallback signatures used to display invalid data. */
+export function findMatchingNoCodeSignature(operator: NoCodeOperatorDetailsDTO, operandCount: number): NoCodeSignature | undefined {
+    const exact = operator.signatures.find(candidate => candidate.parameters.length === operandCount);
+    if (exact != null || !operator.variableArgumentCount) return exact;
+    return operator.signatures
+        .filter(candidate => candidate.parameters.length < operandCount)
+        .sort((a, b) => b.parameters.length - a.parameters.length)[0];
 }
 
 export function resolveNoCodeSignature(
@@ -61,7 +114,7 @@ export function resolveNoCodeSignature(
     let signature: NoCodeSignature | undefined;
 
     if (operandCount != null) {
-        signature = signatures.find((candidate) => candidate.parameters.length === operandCount);
+        signature = findMatchingNoCodeSignature(operator, operandCount);
 
         if (signature == null) {
             signature = signatures
@@ -85,10 +138,14 @@ export function resolveNoCodeSignature(
 
     const parameters = [...signature.parameters];
     const repeatedTemplate = signature.parameters[signature.parameters.length - 1];
-    for (let i = signature.parameters.length; i < operandCount; i++) {
+    // A second parameter such as „Teiler 1“ numbers only the divisors, excluding the initial number.
+    const numberedFrom = getNoCodeVariadicInputKind(operator) == null ? undefined : repeatedTemplate.label.match(/\d+$/)?.[0];
+    let labelIndex = Number(numberedFrom ?? signature.parameters.length);
+    while (parameters.length < operandCount) {
+        labelIndex++;
         parameters.push({
             ...repeatedTemplate,
-            label: createRepeatedParameterLabel(repeatedTemplate.label, i + 1),
+            label: createRepeatedParameterLabel(repeatedTemplate.label, labelIndex),
             options: [...repeatedTemplate.options],
         });
     }

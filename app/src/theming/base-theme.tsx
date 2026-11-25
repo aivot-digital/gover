@@ -1,4 +1,4 @@
-import {createTheme} from '@mui/material';
+import {createTheme, inputAdornmentClasses, selectClasses} from '@mui/material';
 import {gridClasses} from '@mui/x-data-grid';
 import {deDE} from '@mui/x-data-grid/locales';
 import {deDE as coreDeDE} from '@mui/material/locale';
@@ -224,6 +224,27 @@ export const BaseTheme = createTheme({
                     '&.Mui-disabled': {
                         backgroundColor: getDisabledFieldBackground(theme),
                         cursor: 'not-allowed',
+                    },
+                    // MUI reserves a fixed width for absolutely positioned Select adornments.
+                    // Keep actions in the flex layout and reserve only the caret's trailing space.
+                    [`&.${selectClasses.root}:has(> .${selectClasses.select} ~ .${inputAdornmentClasses.positionEnd})`]: {
+                        paddingRight: 32,
+                        [`& > .${selectClasses.select}`]: {
+                            flex: '1 1 0%',
+                            width: 0,
+                            minWidth: 0,
+                            paddingRight: 0,
+                        },
+                        [`& > .${inputAdornmentClasses.root}`]: {
+                            flexShrink: 0,
+                        },
+                        [`& > .${selectClasses.select} ~ .${inputAdornmentClasses.positionEnd}`]: {
+                            position: 'static',
+                            top: 'auto',
+                            right: 'auto',
+                            transform: 'none',
+                            marginRight: 0,
+                        },
                     },
                 }),
                 input: ({theme}) => ({

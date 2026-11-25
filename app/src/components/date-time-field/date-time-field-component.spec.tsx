@@ -2,6 +2,7 @@ import {act, render} from '@testing-library/react';
 import {DateTime} from 'luxon';
 import {describe, expect, it, vi} from 'vitest';
 import {DateTimeFieldComponent} from './date-time-field-component';
+import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 
 const pickerState = vi.hoisted(() => ({
     props: null as any,
@@ -27,6 +28,29 @@ describe('DateTimeFieldComponent', () => {
 
         expect(pickerState.props.timezone).toBe('Europe/Berlin');
         expect(pickerState.props.value.toISO()).toBe('2026-07-29T09:00:00.000+02:00');
+    });
+
+    it('preserves an unedited legacy literal including its fraction when accepting the displayed time', () => {
+        const onChange = vi.fn();
+        render(<DateTimeFieldComponent
+            label="Termin"
+            allowLegacyLocalValue
+            mode={TimeFieldComponentModelMode.Second}
+            value="2026-10-25T02:30:07.123456789"
+            onChange={onChange}
+        />);
+
+        const displayed = pickerState.props.value;
+        expect(displayed.toISO()).toBe('2026-10-25T02:30:07.123+02:00');
+        act(() => {
+            pickerState.props.onOpen();
+            pickerState.props.onAccept(displayed);
+        });
+        expect(onChange).not.toHaveBeenCalled();
+        act(() => {
+            pickerState.props.onAccept(displayed.plus({days: 1}));
+        });
+        expect(onChange).toHaveBeenCalledWith('2026-10-26T02:30:07+01:00');
     });
 
     it('should commit picker wall-clock values with the application timezone offset', () => {

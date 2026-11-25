@@ -21,44 +21,39 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Schnittmenge zweier Listen";
+        return "Gemeinsame Werte zweier Listen";
     }
 
     @Override
     public String getAbstract() {
-        return "Ermittelt die gemeinsamen Werte zweier Listen.";
+        return "Ermittelt die Werte, die in beiden Listen vorkommen, jeweils einmal.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Schnittmenge zweier Listen“** ermittelt alle Werte, die in beiden Listen vorkommen. \s
-                Das Ergebnis ist eine neue Liste mit den gemeinsamen Werten in der Reihenfolge ihres ersten Auftretens in der ersten Liste. \s
-                Jeder gemeinsame Wert wird dabei nur einmal zurückgegeben.
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben zwei Listen mit Interessen: `["Sport", "Musik", "Reisen"]` und `["Lesen", "Musik", "Reisen"]`. \s
-                Mit dem Operator **„Schnittmenge zweier Listen“** können Sie die gemeinsamen Einträge ermitteln:
-                
-                ```text
-                Schnittmenge zweier Listen (["Sport", "Musik", "Reisen"], ["Lesen", "Musik", "Reisen"])
-                ```
-                
-                **Ergebnis:** \s
-                Die zurückgegebene Liste enthält: `["Musik", "Reisen"]`.
-                
-                **Weitere Beispiele:**
-                - `[1, 2, 3]` und `[2, 3, 4]` → **Ergebnis:** `[2, 3]` \s
-                - `["A", "A", "B"]` und `["A"]` → **Ergebnis:** `["A"]` \s
-                - `[]` und `["A"]` → **Ergebnis:** `[]`
-                
-                # Wann verwenden Sie den Operator „Schnittmenge zweier Listen“?
-                Verwenden Sie **„Schnittmenge zweier Listen“**, wenn Sie:
-                - Gemeinsamkeiten zwischen zwei Listen identifizieren möchten. \s
-                - Prüfen möchten, welche Werte in zwei Datenquellen gleichzeitig vorkommen. \s
-                - Listen auf überlappende Werte reduzieren möchten, um sie weiterzuverarbeiten.
+                # Wofür verwenden Sie diese Funktion?
+                Ermitteln Sie die gemeinsamen Werte zweier Listen, beispielsweise zulässige Kategorien aus einer Auswahl.
+
+                # Welche Werte werden benötigt?
+                **Erste Liste** und **Zweite Liste:** Die beiden Listen, die zusammen betrachtet werden. Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Eine neue Liste mit den Werten, die in beiden Listen vorkommen. Jeder gemeinsame Wert steht nur einmal im Ergebnis.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie **„Gemeinsame Werte zweier Listen“**. Verwenden Sie für **Erste Liste** die Variable „Ausgewählte Kategorien“ mit `["B", "A", "B"]` und für **Zweite Liste** die Variable „Zulässige Kategorien“ mit `["A", "B", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `gemeinsame Werte von „Ausgewählte Kategorien“ und „Zulässige Kategorien“`. Das Ergebnis ist `["B", "A"]`. Mit **„Anzahl der Listeneinträge“** können Sie anschließend die gemeinsamen Werte zählen.
+
+                # Was ist zu beachten?
+                Die Reihenfolge und die Darstellung der Werte folgen der ersten Liste. Ist eine der Listen leer, ist auch das Ergebnis leer. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt die gemeinsamen Werte";
     }
 
     @Override
@@ -68,14 +63,14 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
                         NoCodeDataType.List,
                         new NoCodeParameter(
                                 NoCodeDataType.List,
-                                "Liste 1",
+                                "Erste Liste",
                                 "Die erste Liste, deren gemeinsame Werte ermittelt werden sollen."
-                        ),
+                        ).withSentence("von"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
-                                "Liste 2",
+                                "Zweite Liste",
                                 "Die zweite Liste, mit der die Schnittmenge gebildet werden soll."
-                        )
+                        ).withSentence("und")
                 )
         );
     }
@@ -83,13 +78,13 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "bestimme die Schnittmenge von „#0“ und „#1“";
+        return "gemeinsame Werte von #0 und #1";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var left = castToList(args[0]);
-        var right = castToList(args[1]);
+        var left = listOperandOrEmpty(args[0]);
+        var right = listOperandOrEmpty(args[1]);
 
         var result = new ArrayList<>();
 

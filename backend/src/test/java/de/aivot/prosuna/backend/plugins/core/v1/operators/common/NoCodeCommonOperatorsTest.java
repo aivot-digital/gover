@@ -80,6 +80,27 @@ class NoCodeCommonOperatorsTest {
     }
 
     @Test
+    void notEqualsShouldCompareTextIncludingCaseAndWhitespace() throws NoCodeException {
+        var data = runtime();
+        var operator = new NoCodeNotEqualsOperator();
+
+        assertFalse(operator.evaluate(data, "Berlin", "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "Hamburg", "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "berlin", "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "Berlin ", "Berlin").getValueAsBoolean());
+    }
+
+    @Test
+    void notEqualsShouldDistinguishOneMissingValueFromTwoMissingValues() throws NoCodeException {
+        var data = runtime();
+        var operator = new NoCodeNotEqualsOperator();
+
+        assertFalse(operator.evaluate(data, null, null).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, null, "Berlin").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, "Berlin", null).getValueAsBoolean());
+    }
+
+    @Test
     void equalsAndNotEqualsShouldCompareNumberFieldValuesByValue() throws NoCodeException {
         var data = runtime();
         var equals = new NoCodeEqualsOperator();
@@ -124,13 +145,13 @@ class NoCodeCommonOperatorsTest {
     }
 
     @Test
-    void ifShouldReturnThenOrElseBranchBasedOnTruthyValue() throws NoCodeException {
+    void ifShouldReturnThenOrElseBranchBasedOnTheCondition() throws NoCodeException {
         var data = runtime();
         var operator = new NoCodeIfOperator();
 
         assertEquals("then", operator.evaluate(data, true, "then", "else").getValue());
         assertEquals("else", operator.evaluate(data, "false", "then", "else").getValue());
-        assertEquals("then", operator.evaluate(data, 1, "then", "else").getValue());
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, 1, "then", "else"));
     }
 
     @Test

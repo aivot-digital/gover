@@ -47,20 +47,28 @@ import {
 } from '../../models/input-mode';
 import {type DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
 import {RadioFieldComponent} from '../radio-field/radio-field-component';
-import {isNoCodeStaticValue, type NoCodeOperand} from '../../models/functions/no-code-expression';
-import {NoCodeEditorWrapper} from '../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
+import {type NoCodeOperand} from '../../models/functions/no-code-expression';
+import {NoCodeEditorDialog} from '../../modules/nocode/components/no-code-editor-dialog';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {type AnyElement} from '../../models/elements/any-element';
 import {CodeEditor} from '../code-editor/code-editor';
 import {useNoCodePreview} from '../../modules/nocode/hooks/use-no-code-preview';
 
 export type {InputMode} from '../../models/input-mode';
+
 export interface InputModeVariable extends Omit<InputVariableSuggestion, 'source' | 'origin'> {
     source: InputVariableSource;
     origin?: InputVariableSuggestion['origin'] | string;
     id?: string;
 }
+
 export type InputModeValue<T> = AuthoredInputValue<T>;
+
+/** Presentation-only state for an unconfigured field whose default mode is NoCode; never emitted by onChange. */
+export interface EmptyNoCodeInputDraft {
+    type: InputMode.NoCode;
+    operand: null;
+}
 
 export interface InputModeLiteralFieldProps extends Omit<FormFieldLayoutProps, 'labelAction'> {
     label: string;
@@ -93,7 +101,7 @@ export interface InputModeFieldProps<T> extends Omit<FormFieldLayoutProps, 'labe
     dynamicTextVariableSources?: InputVariableSource[];
     dynamicTextOutputFormat?: TemplateOutputFormat;
     variables: InputModeVariable[];
-    value: InputModeValue<T> | T | null;
+    value: InputModeValue<T> | EmptyNoCodeInputDraft | T | null;
     onChange: (value: InputModeValue<T>, triggeringElementIds?: string[]) => void;
     onInsertVariable?: (variable: InputModeVariable, insertion: DynamicTextInsertion) => void;
     renderLiteral: (context: InputModeLiteralRenderContext<T>) => React.ReactNode;
@@ -101,7 +109,7 @@ export interface InputModeFieldProps<T> extends Omit<FormFieldLayoutProps, 'labe
     noCodeReturnType?: NoCodeDataType;
 }
 
-const VARIABLE_SOURCE_DEFINITIONS: Record<InputVariableSource, {label: string; prefix: string; pathHint: string}> = {
+const VARIABLE_SOURCE_DEFINITIONS: Record<InputVariableSource, { label: string; prefix: string; pathHint: string }> = {
     ProcessData: {
         label: 'Vorgangsdaten',
         prefix: '$.',
@@ -137,21 +145,22 @@ export function getInputModeVariableCategoryLabel(source: InputVariableSource): 
 interface ModeDrafts<T> {
     [InputMode.Literal]: T | null;
     [InputMode.Variable]: InputVariableReference;
-    [InputMode.NoCode]: NoCodeOperand;
+    [InputMode.NoCode]: NoCodeOperand | null;
     [InputMode.LowCode]: string;
 }
 
-const EMPTY_NO_CODE: NoCodeOperand = {type: 'NoCodeStaticValue', value: null};
-
 function emptyVariableReference(allowedSources: InputVariableSource[]): InputVariableReference {
-    return {source: allowedSources[0] ?? InputVariableSource.ProcessData, path: ''};
+    return {
+        source: allowedSources[0] ?? InputVariableSource.ProcessData,
+        path: '',
+    };
 }
 
-function createModeDrafts<T>(value: AuthoredInputValue<T>, allowedSources: InputVariableSource[]): ModeDrafts<T> {
+function createModeDrafts<T>(value: AuthoredInputValue<T> | EmptyNoCodeInputDraft, allowedSources: InputVariableSource[]): ModeDrafts<T> {
     return {
         Literal: value.type === InputMode.Literal ? value.value : null,
         Variable: value.type === InputMode.Variable ? value.reference : emptyVariableReference(allowedSources),
-        NoCode: value.type === InputMode.NoCode ? value.operand : EMPTY_NO_CODE,
+        NoCode: value.type === InputMode.NoCode ? value.operand : null,
         LowCode: value.type === InputMode.LowCode ? value.code : '',
     };
 }
@@ -159,18 +168,43 @@ function createModeDrafts<T>(value: AuthoredInputValue<T>, allowedSources: Input
 function valueForMode<T>(mode: InputMode, drafts: ModeDrafts<T>): AuthoredInputValue<T> {
     switch (mode) {
         case InputMode.Variable:
-            return {type: InputMode.Variable, reference: drafts.Variable};
+            return {
+                type: InputMode.Variable,
+                reference: drafts.Variable,
+            };
         case InputMode.NoCode:
-            return {type: InputMode.NoCode, operand: drafts.NoCode};
+            if (drafts.NoCode == null) throw new Error('An empty NoCode draft must not be persisted.');
+            return {
+                type: InputMode.NoCode,
+                operand: drafts.NoCode,
+            };
         case InputMode.LowCode:
-            return {type: InputMode.LowCode, code: drafts.LowCode};
+            return {
+                type: InputMode.LowCode,
+                code: drafts.LowCode,
+            };
         case InputMode.Literal:
-            return {type: InputMode.Literal, value: drafts.Literal};
+            return {
+                type: InputMode.Literal,
+                value: drafts.Literal,
+            };
     }
 }
 
 export function InputModeField<T>(props: InputModeFieldProps<T>) {
-    const {label, hint, error, required, disabled, readOnly, busy, variables, onChange, onInsertVariable, renderLiteral} = props;
+    const {
+        label,
+        hint,
+        error,
+        required,
+        disabled,
+        readOnly,
+        busy,
+        variables,
+        onChange,
+        onInsertVariable,
+        renderLiteral,
+    } = props;
     const generatedId = useNormalizedReactId();
     const controlId = props.id ?? `input-mode-${generatedId}`;
     const value = normalizeInputModeValue<T>(props.value);
@@ -210,13 +244,21 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         draft: ModeDrafts<T>[M],
         triggeringElementIds?: string[],
     ) => {
-        const nextDrafts = {...drafts, [mode]: draft};
+        if (editingDisabled) return;
+        const nextDrafts = {
+            ...drafts,
+            [mode]: draft,
+        };
         setDrafts(nextDrafts);
         onChange(valueForMode(mode, nextDrafts), triggeringElementIds);
     };
 
     const changeMode = (mode: InputMode) => {
-        if (mode === value.type) return;
+        if (editingDisabled || mode === value.type) return;
+        if (mode === InputMode.NoCode && drafts.NoCode == null) {
+            setNoCodeEditorOpen(true);
+            return;
+        }
 
         if (mode === InputMode.Variable && !allowedVariableSources.includes(drafts.Variable.source)) {
             const nextDrafts = {
@@ -259,7 +301,7 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         }
 
         if (value.type === InputMode.NoCode) {
-            const hasExpression = !isNoCodeStaticValue(value.operand) || value.operand.value != null;
+            const hasExpression = value.operand != null;
             const primary = hasExpression ? 'Ausdruck definiert' : 'Kein Ausdruck definiert';
             return <NoCodeSummaryField
                 id={control.controlId}
@@ -300,7 +342,9 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
 
     const showsModeSelector = (props.allowedModes?.length ?? 4) > 1;
     const labelAction = (onInsertVariable != null && value.type === InputMode.Literal) || showsModeSelector
-        ? <Stack direction="row" spacing={0.5} sx={{alignItems: 'center'}}>
+        ? <Stack direction="row"
+                 spacing={0.5}
+                 sx={{alignItems: 'center'}}>
             {onInsertVariable != null && value.type === InputMode.Literal && <DynamicTextIndicator/>}
             {showsModeSelector && <InputModeSelector
                 fieldLabel={label}
@@ -329,6 +373,8 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
         showOptionalIndicator: props.showOptionalIndicator,
         sx: props.sx,
     };
+    // Removing an applied expression returns to an empty fixed value, so it needs a fixed value to be allowed.
+    const canRemoveNoCode = value.type === InputMode.NoCode && (props.allowedModes == null || props.allowedModes.includes(InputMode.Literal));
     const variablePickerSources = variablePickerPurpose === 'placeholder'
         ? dynamicTextVariableSources
         : allowedVariableSources;
@@ -357,7 +403,10 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             }}
             onSelect={(reference, suggestion, insertion) => {
                 if (variablePickerPurpose === 'placeholder') {
-                    onInsertVariable?.(suggestion ?? {...reference, label: getInputVariableReference(reference)}, insertion);
+                    onInsertVariable?.(suggestion ?? {
+                        ...reference,
+                        label: getInputVariableReference(reference),
+                    }, insertion);
                 } else {
                     updateDraft(InputMode.Variable, reference);
                 }
@@ -365,19 +414,34 @@ export function InputModeField<T>(props: InputModeFieldProps<T>) {
             }}
         />
 
-        <NoCodeEditorDialog
-            open={noCodeEditorOpen}
-            label={label}
+        {noCodeEditorOpen && <NoCodeEditorDialog
+            title={`Ausdruck für „${label}“`}
             rootElement={props.rootElement}
             returnType={props.noCodeReturnType ?? NoCodeDataType.Runtime}
             value={drafts.NoCode}
-            readOnly={editingDisabled}
+            required={Boolean(required) || !canRemoveNoCode}
+            contextType="PROCESS"
+            readOnly={Boolean(disabled || readOnly)}
+            busy={busy}
             onClose={() => setNoCodeEditorOpen(false)}
             onApply={(noCode) => {
-                updateDraft(InputMode.NoCode, noCode);
+                if (editingDisabled) return;
+                // Without a removable expression, the dialog stays open and shows that an expression is required.
+                if (noCode == null && !canRemoveNoCode) return;
+                if (noCode == null) {
+                    setDrafts((current) => ({
+                        ...current,
+                        NoCode: null,
+                        Literal: null,
+                    }));
+                    onChange({
+                        type: InputMode.Literal,
+                        value: null,
+                    });
+                } else updateDraft(InputMode.NoCode, noCode);
                 setNoCodeEditorOpen(false);
             }}
-        />
+        />}
 
         <LowCodeEditorDialog
             open={lowCodeEditorOpen}
@@ -407,8 +471,12 @@ interface SourceSummaryFieldProps {
     onClick: () => void;
 }
 
-function NoCodeSummaryField({operand, rootElement, ...props}: SourceSummaryFieldProps & {
-    operand: NoCodeOperand;
+function NoCodeSummaryField({
+                                operand,
+                                rootElement,
+                                ...props
+                            }: SourceSummaryFieldProps & {
+    operand: NoCodeOperand | null;
     rootElement?: AnyElement;
 }) {
     const preview = useNoCodePreview(props.empty ? null : operand, rootElement);
@@ -442,14 +510,34 @@ function SourceSummaryField(props: SourceSummaryFieldProps) {
             gap: 1.25,
             textAlign: 'left',
             opacity: props.disabled ? 0.6 : 1,
-            '&:hover': {borderColor: props.invalid ? 'error.main' : 'text.secondary', bgcolor: 'action.hover'},
-            '&.Mui-focusVisible': {outline: '2px solid', outlineColor: props.invalid ? 'error.main' : 'primary.main', outlineOffset: 2},
+            '&:hover': {
+                borderColor: props.invalid ? 'error.main' : 'text.secondary',
+                bgcolor: 'action.hover',
+            },
+            '&.Mui-focusVisible': {
+                outline: '2px solid',
+                outlineColor: props.invalid ? 'error.main' : 'primary.main',
+                outlineOffset: 2,
+            },
         }}
     >
-        <Box component="span" aria-hidden="true" sx={{display: 'inline-flex', flexShrink: 0, color: 'text.secondary'}}>
+        <Box component="span"
+             aria-hidden="true"
+             sx={{
+                 display: 'inline-flex',
+                 flexShrink: 0,
+                 color: 'text.secondary',
+             }}>
             {props.icon}
         </Box>
-        <Box component="span" sx={{minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: hasSecondary ? 0.25 : 0}}>
+        <Box component="span"
+             sx={{
+                 minWidth: 0,
+                 flex: 1,
+                 display: 'flex',
+                 flexDirection: 'column',
+                 gap: hasSecondary ? 0.25 : 0,
+             }}>
             <Typography
                 component="span"
                 variant="body2"
@@ -482,7 +570,12 @@ function SourceSummaryField(props: SourceSummaryFieldProps) {
                 {props.secondary}
             </Typography>}
         </Box>
-        <ChevronRight aria-hidden="true" fontSize="small" sx={{flexShrink: 0, color: 'action.active'}}/>
+        <ChevronRight aria-hidden="true"
+                      fontSize="small"
+                      sx={{
+                          flexShrink: 0,
+                          color: 'action.active',
+                      }}/>
     </ButtonBase>;
 }
 
@@ -511,6 +604,7 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
     const [insertion, setInsertion] = useState<DynamicTextInsertion | null>(null);
     const tabsId = useNormalizedReactId();
     const panelId = `${tabsId}-panel`;
+    const singleSource = props.allowedSources.length === 1;
 
     useEffect(() => {
         if (props.open) {
@@ -539,7 +633,10 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
     }, [props.allowedSources, props.variables, search, selectedSource]);
 
     const groups = props.allowedSources
-        .map((source) => ({source, variables: filteredVariables.filter((variable) => resolveVariableSource(variable) === source)}))
+        .map((source) => ({
+            source,
+            variables: filteredVariables.filter((variable) => resolveVariableSource(variable) === source),
+        }))
         .filter((group) => group.variables.length > 0);
     const selectedSuggestion = props.variables.find((variable) => getInputVariableKey(toVariableReference(variable)) === draftSelectedKey);
     const customReference = parseCustomVariableReference(customSource, customPath);
@@ -553,13 +650,28 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
         fullWidth
         maxWidth="sm"
         sx={{'& .MuiDialog-container': {alignItems: 'flex-start'}}}
-        slotProps={{paper: {sx: {mt: {xs: 2, sm: 6}}}}}
+        slotProps={{
+            paper: {
+                sx: {
+                    mt: {
+                        xs: 2,
+                        sm: 6,
+                    },
+                },
+            },
+        }}
     >
         <DialogTitleWithClose onClose={props.onClose}>{props.title}</DialogTitleWithClose>
         <DialogContent sx={{p: 0}}>
-            <Box sx={{p: 2, px: 2.8}}>
-                <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
-                    Die Vorschläge zeigen Variablen, die im Prozess erzeugt werden können. Ob zur Laufzeit ein Wert vorliegt, hängt vom ausgeführten Prozesspfad ab.
+            <Box sx={{
+                p: 2,
+                px: 2.8,
+            }}>
+                <Typography variant="body2"
+                            color="text.secondary"
+                            sx={{mb: 2}}>
+                    Die Vorschläge zeigen Variablen, die im Prozess erzeugt werden können. Ob zur Laufzeit ein Wert
+                    vorliegt, hängt vom ausgeführten Prozesspfad ab.
                 </Typography>
                 <TextFieldComponent
                     label="Variablenvorschläge durchsuchen"
@@ -572,16 +684,28 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                 />
             </Box>
 
-            <Tabs
+            {!singleSource && <Tabs
                 value={selectedSource}
                 onChange={(_, source: InputVariableSource | 'all') => setSelectedSource(source)}
                 variant="scrollable"
                 scrollButtons="auto"
                 allowScrollButtonsMobile
                 aria-label="Kategorie der Variablenvorschläge"
-                sx={{minHeight: 42, borderBottom: '1px solid', borderColor: 'divider', '& .MuiTab-root': {minHeight: 42, py: 1}}}
+                sx={{
+                    minHeight: 42,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    '& .MuiTab-root': {
+                        minHeight: 42,
+                        py: 1,
+                    },
+                }}
             >
-                <Tab id={`${tabsId}-tab-all`} aria-controls={panelId} value="all" label="Alle" data-testid="variable-category-all"/>
+                <Tab id={`${tabsId}-tab-all`}
+                     aria-controls={panelId}
+                     value="all"
+                     label="Alle"
+                     data-testid="variable-category-all"/>
                 {props.allowedSources.map((source) => <Tab
                     key={source}
                     id={`${tabsId}-tab-${source}`}
@@ -590,37 +714,70 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                     label={VARIABLE_SOURCE_DEFINITIONS[source].label}
                     data-testid={`variable-category-${source}`}
                 />)}
-            </Tabs>
+            </Tabs>}
 
-            <Box id={panelId} role="tabpanel" aria-labelledby={`${tabsId}-tab-${selectedSource}`}>
-                {groups.length > 0 ? <RadioGroup aria-label="Variablenvorschläge" value={draftSelectedKey ?? ''} onChange={(event) => setDraftSelectedKey(event.target.value)}>
-                    <List disablePadding sx={{maxHeight: 'min(38vh, 380px)', overflowY: 'auto'}}>
+            <Box id={panelId}
+                 role={singleSource ? undefined : 'tabpanel'}
+                 aria-labelledby={singleSource ? undefined : `${tabsId}-tab-${selectedSource}`}>
+                {groups.length > 0 ? <RadioGroup aria-label="Variablenvorschläge"
+                                                 value={draftSelectedKey ?? ''}
+                                                 onChange={(event) => setDraftSelectedKey(event.target.value)}>
+                    <List disablePadding
+                          sx={{
+                              maxHeight: 'min(38vh, 380px)',
+                              overflowY: 'auto',
+                          }}>
                         {groups.map((group, groupIndex) => <React.Fragment key={group.source}>
                             {groupIndex > 0 && <Divider/>}
-                            <ListSubheader component="div" sx={{lineHeight: '36px', bgcolor: 'background.paper', color: 'text.secondary'}}>
+                            <ListSubheader component="div"
+                                           sx={{
+                                               lineHeight: '36px',
+                                               bgcolor: 'background.paper',
+                                               color: 'text.secondary',
+                                           }}>
                                 {VARIABLE_SOURCE_DEFINITIONS[group.source].label}
                             </ListSubheader>
                             {group.variables.map((variable) => {
                                 const key = getInputVariableKey(toVariableReference(variable));
-                                return <ListItem key={key} component="label" sx={{cursor: 'pointer', bgcolor: key === draftSelectedKey ? 'action.selected' : 'transparent', '&:hover': {bgcolor: 'action.hover'}}}>
+                                return <ListItem key={key}
+                                                 component="label"
+                                                 sx={{
+                                                     cursor: 'pointer',
+                                                     bgcolor: key === draftSelectedKey ? 'action.selected' : 'transparent',
+                                                     '&:hover': {bgcolor: 'action.hover'},
+                                                 }}>
                                     <ListItemIcon><DataObject sx={{color: 'text.secondary'}}/></ListItemIcon>
-                                    <ListItemText primary={variable.label} secondary={`${resolveOriginLabel(variable)}${getInputModeVariableReference(variable)}${variable.description ? ` - ${variable.description}` : ''}`}/>
-                                    <Radio value={key} size="small" disabled={props.readOnly}/>
+                                    <ListItemText primary={variable.label}
+                                                  secondary={`${resolveOriginLabel(variable)}${getInputModeVariableReference(variable)}${variable.description ? ` - ${variable.description}` : ''}`}/>
+                                    <Radio value={key}
+                                           size="small"
+                                           disabled={props.readOnly}/>
                                 </ListItem>;
                             })}
                         </React.Fragment>)}
                     </List>
-                </RadioGroup> : <Box sx={{px: 3, py: 4, textAlign: 'center'}}><Typography color="text.secondary">Keine passenden Vorschläge gefunden</Typography></Box>}
+                </RadioGroup> : <Box sx={{
+                    px: 3,
+                    py: 4,
+                    textAlign: 'center',
+                }}><Typography color="text.secondary">Keine passenden Vorschläge gefunden</Typography></Box>}
             </Box>
 
             <Divider/>
-            <Box sx={{p: 2, px: 2.8}}>
-                <Typography variant="subtitle2" sx={{mb: 1.5}}>Eigene Referenz</Typography>
+            <Box sx={{
+                p: 2,
+                px: 2.8,
+            }}>
+                <Typography variant="subtitle2"
+                            sx={{mb: 1.5}}>Eigene Referenz</Typography>
                 <Stack spacing={1.5}>
                     <SelectFieldComponent
                         label="Variablenquelle"
                         value={customSource}
-                        options={props.allowedSources.map((source) => ({value: source, label: VARIABLE_SOURCE_DEFINITIONS[source].label}))}
+                        options={props.allowedSources.map((source) => ({
+                            value: source,
+                            label: VARIABLE_SOURCE_DEFINITIONS[source].label,
+                        }))}
                         includeEmptyOption={false}
                         disabled={props.readOnly}
                         margin="none"
@@ -655,14 +812,23 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
 
             {props.offerFormattedInsertion && <>
                 <Divider/>
-                <Box sx={{p: 2, px: 2.8}}>
+                <Box sx={{
+                    p: 2,
+                    px: 2.8,
+                }}>
                     <RadioFieldComponent
                         label="Einfügen"
                         hint="„Als Text“ ({{ }}) fügt den Wert als einfachen Text ohne Formatierung ein. „Mit Formatierung“ ({! !}) übernimmt Formatierungen wie Fettdruck und Listen und zeigt Links mit ihrer Adresse."
                         value={effectiveInsertion}
                         options={[
-                            {value: 'text', label: 'Als Text'},
-                            {value: 'markdown', label: 'Mit Formatierung'},
+                            {
+                                value: 'text',
+                                label: 'Als Text',
+                            },
+                            {
+                                value: 'markdown',
+                                label: 'Mit Formatierung',
+                            },
                         ]}
                         onChange={(nextInsertion) => setInsertion(nextInsertion === 'markdown' ? 'markdown' : 'text')}
                         required
@@ -674,7 +840,9 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
             </>}
         </DialogContent>
         <DialogActions>
-            <Stack direction="row" spacing={1} data-testid="variable-dialog-primary-actions">
+            <Stack direction="row"
+                   spacing={1}
+                   data-testid="variable-dialog-primary-actions">
                 {!props.readOnly && <Button
                     data-testid="use-variable-reference"
                     variant="contained"
@@ -689,45 +857,8 @@ export function VariablePickerDialog(props: VariablePickerDialogProps) {
                 </Button>}
                 <Button onClick={props.onClose}>{props.readOnly ? 'Schließen' : 'Abbrechen'}</Button>
             </Stack>
-            {props.allowClear && !props.readOnly && <Button color="inherit" onClick={props.onClear}>Referenz entfernen</Button>}
-        </DialogActions>
-    </Dialog>;
-}
-
-interface NoCodeEditorDialogProps {
-    open: boolean;
-    label: string;
-    rootElement?: AnyElement;
-    returnType: NoCodeDataType;
-    value: NoCodeOperand;
-    readOnly: boolean;
-    onApply: (value: NoCodeOperand) => void;
-    onClose: () => void;
-}
-
-function NoCodeEditorDialog(props: NoCodeEditorDialogProps) {
-    const [draft, setDraft] = useState<NoCodeOperand>(props.value);
-
-    useEffect(() => {
-        if (props.open) setDraft(props.value);
-    }, [props.open, props.value]);
-
-    return <Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="md">
-        <DialogTitleWithClose onClose={props.onClose}>Ausdruck für „{props.label}“</DialogTitleWithClose>
-        <DialogContent sx={{pt: 2}}>
-            {props.rootElement == null ? <Typography color="text.secondary">Der Ausdruckseditor ist in diesem Kontext nicht verfügbar.</Typography> : <NoCodeEditorWrapper
-                parents={[props.rootElement]}
-                noCode={draft}
-                onChange={(operand) => setDraft(operand ?? EMPTY_NO_CODE)}
-                editable={!props.readOnly}
-                desiredReturnType={props.returnType}
-                contextType="PROCESS"
-                label="Ausdruck"
-            />}
-        </DialogContent>
-        <DialogActions>
-            {!props.readOnly && <Button variant="contained" onClick={() => props.onApply(draft)} disabled={props.rootElement == null}>Übernehmen</Button>}
-            <Button onClick={props.onClose}>{props.readOnly ? 'Schließen' : 'Abbrechen'}</Button>
+            {props.allowClear && !props.readOnly && <Button color="inherit"
+                                                            onClick={props.onClear}>Referenz entfernen</Button>}
         </DialogActions>
     </Dialog>;
 }
@@ -748,7 +879,10 @@ function LowCodeEditorDialog(props: LowCodeEditorDialogProps) {
         if (props.open) setDraft(props.value);
     }, [props.open, props.value]);
 
-    return <Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="lg">
+    return <Dialog open={props.open}
+                   onClose={props.onClose}
+                   fullWidth
+                   maxWidth="lg">
         <DialogTitleWithClose onClose={props.onClose}>Skript für „{props.label}“</DialogTitleWithClose>
         <DialogContent sx={{pt: 2}}>
             <CodeEditor
@@ -762,7 +896,8 @@ function LowCodeEditorDialog(props: LowCodeEditorDialogProps) {
             />
         </DialogContent>
         <DialogActions>
-            {!props.readOnly && <Button variant="contained" onClick={() => props.onApply(draft)}>Übernehmen</Button>}
+            {!props.readOnly && <Button variant="contained"
+                                        onClick={() => props.onApply(draft)}>Übernehmen</Button>}
             <Button onClick={props.onClose}>{props.readOnly ? 'Schließen' : 'Abbrechen'}</Button>
         </DialogActions>
     </Dialog>;
@@ -782,11 +917,24 @@ function resolveVariableSource(variable: InputModeVariable): InputVariableSource
 }
 
 function toVariableReference(variable: InputModeVariable): InputVariableReference {
-    const reference: InputVariableReference = {source: resolveVariableSource(variable), path: variable.path, nodeDataKey: variable.nodeDataKey};
-    return variable.markdown === true ? {...reference, markdown: true} : reference;
+    const reference: InputVariableReference = {
+        source: resolveVariableSource(variable),
+        path: variable.path,
+        nodeDataKey: variable.nodeDataKey,
+    };
+    return variable.markdown === true ? {
+        ...reference,
+        markdown: true,
+    } : reference;
 }
 
-function normalizeInputModeValue<T>(value: InputModeValue<T> | T | null): AuthoredInputValue<T> {
+function normalizeInputModeValue<T>(value: InputModeValue<T> | EmptyNoCodeInputDraft | T | null): AuthoredInputValue<T> | EmptyNoCodeInputDraft {
+    if (value != null && typeof value === 'object' && 'type' in value && value.type === InputMode.NoCode && 'operand' in value && value.operand === null) {
+        return {
+            type: InputMode.NoCode,
+            operand: null,
+        };
+    }
     return normalizeAuthoredInputValue<T>(value);
 }
 
@@ -810,7 +958,10 @@ function parseCustomVariableReference(source: InputVariableSource, path: string)
         return null;
     }
     if (!sourceRequiresNodeDataKey(source)) {
-        return {source, path: formatProcessDataPath(segments)};
+        return {
+            source,
+            path: formatProcessDataPath(segments),
+        };
     }
     if (segments.length < 2) {
         return null;

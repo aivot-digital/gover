@@ -22,4 +22,16 @@ public interface NoCodeOperatorsProvider extends PluginComponent {
      * @return the operators
      */
     NoCodeOperator[] getOperators();
+
+    /**
+     * Returns whether the operator may run in a dry run of the no-code editor.
+     * A dry run returns every intermediate result to the client, so operators that read protected server-side data or
+     * cause side effects must not run. Operators are excluded by default and providers opt in for pure operators.
+     *
+     * @param operator one of the operators of this provider
+     * @return whether the operator may run in a dry run
+     */
+    default boolean supportsDryRun(@Nonnull NoCodeOperator operator) {
+        return false;
+    }
 }

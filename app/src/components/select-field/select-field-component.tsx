@@ -1,5 +1,5 @@
 import {createOptionFilter} from './option-search';
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
     Autocomplete,
     type AutocompleteRenderInputParams,
@@ -9,6 +9,7 @@ import {
     ListItemText,
     MenuItem,
     TextField,
+    Tooltip,
 } from '@mui/material';
 import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import {type SelectFieldComponentProps} from './select-field-component-props';
@@ -82,7 +83,7 @@ function renderStartAdornment(startIcon: React.ReactNode): React.ReactNode {
 }
 
 function renderEndAdornment(endAction: SelectFieldComponentProps['endAction']): React.ReactNode {
-    if (endAction == null) {
+    if (endAction == null || (Array.isArray(endAction) && endAction.length === 0)) {
         return undefined;
     }
 
@@ -131,6 +132,18 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
     const passThroughSlotProps = muiPassTroughProps?.slotProps;
     const selectedOption = findOption(options, value);
     const emptyDisplay = getEmptyDisplay(props);
+    const selectedLabelRef = useRef<HTMLSpanElement>(null);
+    const [valueTooltipOpen, setValueTooltipOpen] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    useEffect(() => {
+        setValueTooltipOpen(false);
+    }, [value, selectedOption?.label]);
+
+    const openValueTooltip = () => {
+        const label = selectedLabelRef.current;
+        setValueTooltipOpen(label != null && label.scrollWidth > label.clientWidth);
+    };
 
     return (
         <TextField
@@ -172,6 +185,8 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
                 },
                 select: (ownerState: TextFieldOwnerState) => {
                     const selectSlotProps = resolveSlotProps(passThroughSlotProps?.select, ownerState);
+                    const inputSlotProps = resolveSlotProps(passThroughSlotProps?.input, ownerState);
+                    const isMenuOpen = selectSlotProps?.open ?? menuOpen;
                     const ariaProps = getCompositeControlAriaProps(fieldContext, selectSlotProps);
                     const labelId = mergeAriaIds(
                         fieldContext.labelId,
@@ -188,9 +203,52 @@ function DropdownControl<T extends SelectFieldValue>({props, fieldContext}: Sele
                         'aria-labelledby': undefined,
                         labelId,
                         readOnly: readOnly || busy || selectSlotProps?.readOnly,
+                        onFocus: (event) => {
+                            if (!isMenuOpen && event.target.getAttribute('role') === 'combobox') {
+                                openValueTooltip();
+                            }
+                            (selectSlotProps?.onFocus ?? inputSlotProps?.onFocus ?? muiPassTroughProps?.onFocus)?.(event);
+                        },
+                        onBlur: (event) => {
+                            setValueTooltipOpen(false);
+                            (selectSlotProps?.onBlur ?? inputSlotProps?.onBlur ?? muiPassTroughProps?.onBlur)?.(event);
+                        },
+                        onOpen: (event) => {
+                            setMenuOpen(true);
+                            setValueTooltipOpen(false);
+                            selectSlotProps?.onOpen?.(event);
+                        },
+                        onClose: (event) => {
+                            setMenuOpen(false);
+                            setValueTooltipOpen(false);
+                            selectSlotProps?.onClose?.(event);
+                        },
                         // Select has no native placeholder; keep the display separate from the stored value.
                         displayEmpty: true,
-                        renderValue: () => selectedOption?.label ?? (
+                        renderValue: () => selectedOption != null ? (
+                            <Tooltip
+                                title={selectedOption.label}
+                                describeChild
+                                disableFocusListener
+                                open={valueTooltipOpen && !isMenuOpen}
+                                onOpen={() => {
+                                    if (!isMenuOpen) {
+                                        openValueTooltip();
+                                    }
+                                }}
+                                onClose={() => setValueTooltipOpen(false)}
+                            >
+                                <Box
+                                    component="span"
+                                    ref={selectedLabelRef}
+                                    // Suppress Tooltip's native title fallback for values that fit.
+                                    title={undefined}
+                                    sx={{display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+                                >
+                                    {selectedOption.label}
+                                </Box>
+                            </Tooltip>
+                        ) : (
                             <Box component="span" sx={{color: disabled || !emptyDisplay.isPlaceholder ? 'inherit' : 'text.secondary'}}>
                                 {emptyDisplay.text}
                             </Box>

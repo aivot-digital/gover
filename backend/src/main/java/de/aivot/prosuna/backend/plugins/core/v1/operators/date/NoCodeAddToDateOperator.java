@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.operators.date;
 
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDateInput;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.models.*;
 import jakarta.annotation.Nullable;
@@ -10,6 +11,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.YearMonth;
+import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Locale;
 import java.util.Set;
@@ -33,46 +35,63 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Zu Datum hinzufügen";
+        return "Zum Datum hinzufügen";
     }
 
     @Override
     public String getAbstract() {
-        return "Fügt einem gegebenen Datum eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren hinzu.";
+        return "Fügt einem Datum Tage, Wochen, Monate oder Jahre hinzu.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Zu Datum hinzufügen“** fügt einem gegebenen Datum eine bestimmte Anzahl von Tagen, Wochen, Monaten oder Jahren hinzu. \s
-                Er wird verwendet, um Datumsarithmetik durchzuführen.
-                
-                Verfügbare Einheiten:
-                - Tage \s
-                - Wochen \s
-                - Monate \s
-                - Jahre
-                
-                # Anwendungsbeispiel:
-                Angenommen, Sie haben ein Datum `2023-08-15` und möchten 5 Tage hinzufügen. \s
-                Mit dem Operator **„Zu Datum hinzufügen“** können Sie diese Operation durchführen:
-                
-                ```text
-                Zu Datum hinzufügen ("2023-08-15", 5, "Tage")
-                ```
-                
-                **Ergebnis:** \s
-                Das resultierende Datum ist: `2023-08-20`.
-                
-                # Wann verwenden Sie den Operator „Zu Datum hinzufügen“?
-                Verwenden Sie **„Zu Datum hinzufügen“**, wenn Sie:
-                - Datumsarithmetik durchführen müssen. \s
-                - Zukünftige oder vergangene Daten basierend auf einem gegebenen Datum berechnen möchten.
+                # Wofür verwenden Sie diese Funktion?
 
-                Teil-Datumswerte behalten ihre Präzision. Monate können nur um Monate oder Jahre,
-                reine Jahreswerte nur um Jahre verschoben werden.
+                Mit „Zum Datum hinzufügen“ berechnen Sie ein späteres Datum, beispielsweise das Ende einer Frist.
+
+                # Welche Werte werden benötigt?
+
+                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können das Datum selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Für die eigene Eingabe wählen Sie unter „Datumsgenauigkeit“ Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Es gibt keine festen Auswahlwerte.
+                - **Anzahl:** Geben Sie eine ganze Zahl ein, beispielsweise `5`. Es gibt keine festen Auswahlwerte. Sie können die Anzahl auch aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
+                - **Einheit:** Wählen Sie Tage, Wochen, Monate oder Jahre. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
+
+                # Welches Ergebnis erhalten Sie?
+
+                Sie erhalten das berechnete Datum. Eine positive Anzahl führt zu einem späteren Datum.
+
+                Enthält das Ausgangsdatum nur Monat und Jahr oder nur ein Jahr, enthält auch das Ergebnis nur diese Angaben.
+
+                # Beispiel im No-Code-Editor
+
+                Sie möchten das Datum ermitteln, das fünf Tage nach dem 15.08.2026 liegt.
+
+                1. Wählen Sie die Funktion „Zum Datum hinzufügen“.
+                2. Wählen Sie für „Ausgangsdatum“ die Option „Wert selbst festlegen“ und geben Sie `15.08.2026` ein.
+                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `5` ein.
+                4. Wählen Sie für „Einheit“ die Option „Tage“.
+
+                Der fertige Ausdruck liest sich so:
+
+                **15.08.2026 plus 5 Tage**
+
+                Das Ergebnis ist **20.08.2026**.
+
+                # Was ist zu beachten?
+
+                - Tage sind Kalendertage. Wochenenden und Feiertage werden mitgezählt. Eine Woche entspricht sieben Tagen.
+                - Bei der Anzahl `0` bleibt das Datum gleich. Eine negative Anzahl kehrt die Rechenrichtung um: Mit `-5` erhalten Sie ein früheres Datum.
+                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: 31.01.2026 plus 1 Monat ergibt 28.02.2026.
+                - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 plus 1 Jahr ergibt 28.02.2025.
+                - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
+                - Enthält das Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden.
+                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt";
     }
 
     @Override
@@ -82,23 +101,25 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                         NoCodeDataType.Date,
                         new NoCodeParameter(
                                 NoCodeDataType.Date,
-                                "Datum",
-                                "Das Ausgangsdatum, zu dem Tage, Wochen, Monate oder Jahre hinzugefügt werden sollen."
-                        ),
+                                "Ausgangsdatum",
+                                "Das Datum, von dem aus Sie rechnen möchten."
+                        ).withSentence("das Datum").withDateInput(NoCodeDateInput.Calendar),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Anzahl",
-                                "Die Anzahl der Tage, Wochen, Monate oder Jahre, die zum Datum hinzugefügt werden sollen."
-                        ),
+                                "Die Anzahl der gewählten Einheiten. Geben Sie eine ganze Zahl ein."
+                        ).withSentence("plus").withNumberConstraints(new NoCodeNumberConstraints(
+                                true, (double) Integer.MIN_VALUE, (double) Integer.MAX_VALUE
+                        )),
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Einheit",
-                                "Die Einheit der hinzuzufügenden Zeitspanne (Tage, Wochen, Monate, Jahre).",
-                                new NoCodeParameterOption("Tage", DAYS_UNIT),
-                                new NoCodeParameterOption("Wochen", WEEKS_UNIT),
-                                new NoCodeParameterOption("Monate", MONTHS_UNIT),
-                                new NoCodeParameterOption("Jahre", YEARS_UNIT)
-                        )
+                                "Wählen Sie Tage, Wochen, Monate oder Jahre.",
+                                new NoCodeParameterOption("Tage", DAYS_UNIT, "Tag"),
+                                new NoCodeParameterOption("Wochen", WEEKS_UNIT, "Woche"),
+                                new NoCodeParameterOption("Monate", MONTHS_UNIT, "Monat"),
+                                new NoCodeParameterOption("Jahre", YEARS_UNIT, "Jahr")
+                        ).withSentence("").withQuantityParameterIndex(1)
                 )
         );
     }
@@ -106,12 +127,12 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "füge „#1“ „#2“ zu „#0“ hinzu";
+        return "#0 plus #1 #2";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var date = requireCalendarValue(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
+        var date = requireCalendarValue(args[0], "Prüfen Sie die Datumsangabe für „Ausgangsdatum“.");
         var amount = requireInteger(args[1], "Die Anzahl muss eine ganze Zahl sein.");
         var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 
@@ -128,7 +149,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
         }
 
         try {
-            return switch (date) {
+            var adjusted = switch (date) {
                 case LocalDate localDate -> switch (unit) {
                     case DAYS_UNIT -> localDate.plusDays(amount);
                     case WEEKS_UNIT -> localDate.plusWeeks(amount);
@@ -141,25 +162,20 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
                 case YearMonth yearMonth -> switch (unit) {
                     case MONTHS_UNIT -> yearMonth.plusMonths(amount);
                     case YEARS_UNIT -> yearMonth.plusYears(amount);
-                    default -> throw incompatiblePrecision(unit, "Monat");
+                    default -> throw new NoCodeException("Bei einem Datum mit Monat und Jahr können Sie nur Monate oder Jahre verwenden.");
                 };
                 case Year year -> {
                     if (!YEARS_UNIT.equals(unit)) {
-                        throw incompatiblePrecision(unit, "Jahr");
+                        throw new NoCodeException("Bei einer Jahresangabe können Sie nur Jahre verwenden.");
                     }
                     yield year.plusYears(amount);
                 }
                 default -> throw new NoCodeException("Nicht unterstützter Datumswert.");
             };
+            requireSupportedYear(adjusted.get(ChronoField.YEAR), "Der Datumswert liegt außerhalb des unterstützten Bereichs.");
+            return adjusted;
         } catch (DateTimeException | ArithmeticException exception) {
             throw new NoCodeException("Der Datumswert liegt außerhalb des unterstützten Bereichs.");
         }
-    }
-
-    private static NoCodeException incompatiblePrecision(String unit, String precision) {
-        return new NoCodeException(
-                "Die Einheit %s kann nicht auf einen Datumswert mit der Präzision %s angewendet werden."
-                        .formatted(unit, precision)
-        );
     }
 }

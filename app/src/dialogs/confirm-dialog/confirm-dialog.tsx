@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
     title: string;
     onCancel: () => void;
     onConfirm?: () => void;
+    onExited?: () => void;
+    disableRestoreFocus?: boolean;
     confirmDisabled?: boolean;
     busy?: boolean;
     confirmationText?: string;
@@ -45,6 +47,8 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
             onClose={onClose}
             fullWidth={true}
             maxWidth={props.width || 'sm'}
+            disableRestoreFocus={props.disableRestoreFocus}
+            slotProps={{transition: {onExited: props.onExited}}}
         >
             <DialogTitleWithClose onClose={onClose}>
                 {props.title}

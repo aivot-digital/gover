@@ -14,43 +14,38 @@ public class NoCodeIfOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Wenn Dann Sonst";
+        return "Wenn, dann, sonst";
     }
 
     @Override
     public String getAbstract() {
-        return "Überprüft einen Wahrheitswert und gibt basierend auf diesem entweder den zweiten Parameter (wenn die Bedingung wahr ist) oder den dritten Parameter (wenn die Bedingung falsch ist) zurück.";
+        return "Wählt abhängig von einer Bedingung einen von zwei Werten aus.";
     }
 
     @Override
     public String getDescription() {
-        return """                
-                # Beschreibung:
-                Der Operator **„Wenn Dann Sonst“** überprüft einen Wahrheitswert (true oder false) und gibt basierend auf diesem entweder den **zweiten Parameter** (wenn die Bedingung wahr ist) oder den **dritten Parameter** (wenn die Bedingung falsch ist) zurück.
-                
-                - Ist die Bedingung **wahr**, wird der **zweite Parameter** zurückgegeben. \s
-                - Ist die Bedingung **falsch**, wird der **dritte Parameter** zurückgegeben.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten eine Nachricht generieren, die vom Status einer Bewerbung abhängt:
-                
-                - Wenn die Bewerbung **angenommen** ist, soll die Nachricht „Herzlichen Glückwunsch“ lauten. \s
-                - Andernfalls soll die Nachricht „Leider abgelehnt“ sein.
-                
-                Mit dem Operator **„Wenn Dann Sonst“** wird diese Logik so formuliert: \s
-                `WENN Bewerbung Angenommen DANN "Herzlichen Glückwunsch" SONST "Leider abgelehnt"`
-                
-                **Ergebnis:**
-                - **Bedingung wahr:** Wenn die Bewerbung **angenommen** ist, gibt der Operator den Text **„Herzlichen Glückwunsch“** zurück.
-                - **Bedingung falsch:** Wenn die Bewerbung **abgelehnt** ist, gibt der Operator den Text **„Leider abgelehnt“** zurück.
-                
-                # Beispiele und Ergebnisse
-                - **WENN wahr DANN Wert1 SONST Wert2** → **Wert1** \s
-                - **WENN falsch DANN Wert1 SONST Wert2** → **Wert2**
-                
-                # Wann verwenden Sie den Operator „Wenn Dann Sonst“?
-                Verwenden Sie **„Wenn Dann Sonst“**, wenn Sie zwischen zwei Ergebnissen basierend auf einer Bedingung auswählen möchten. \s
-                Dieser Operator ist besonders hilfreich für bedingte Logik, z. B. um personalisierte Nachrichten, Optionen oder Werte abhängig von einer Entscheidung oder einem Zustand zu erzeugen.
+        return """
+                # Wofür verwenden Sie diese Funktion?
+                Berechnen Sie beispielsweise den Betrag pro Eintrag, wenn Einträge vorliegen. Bei einer Anzahl von null können Sie stattdessen einen Hinweis ausgeben.
+
+                # Welche Werte werden benötigt?
+                - Als **Bedingung** wählen Sie „Wahr“ oder „Falsch“ aus der festen Auswahl. Über „Andere Wertquelle verwenden …“ können Sie eine Wertquelle oder Funktion nutzen.
+                - Für **Ergebnis bei Wahr** und **Ergebnis bei Falsch** können Sie einen Text frei eingeben, einen Wert aus einer Wertquelle übernehmen oder eine Funktion verwenden.
+
+                # Welches Ergebnis erhalten Sie?
+                Ist die Bedingung wahr, erhalten Sie den Wert aus „Ergebnis bei Wahr“. Ist sie falsch, erhalten Sie den Wert aus „Ergebnis bei Falsch“. Die Funktion übernimmt den ausgewählten Wert mit seinem Datentyp unverändert.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie **„Wenn, dann, sonst“**. Verwenden Sie für die **„Bedingung“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Variable „Anzahl“ und geben Sie bei „Vergleichszahl“ `0` ein.
+                2. Wählen Sie für **„Ergebnis bei Wahr“** die Funktion **„Dividieren“**. Übernehmen Sie bei „Ausgangszahl“ die Variable „Gesamtbetrag“ und bei „Teiler 1“ die Variable „Anzahl“.
+                3. Wählen Sie für **„Ergebnis bei Falsch“** die freie Texteingabe und geben Sie `Keine Einträge` ein.
+
+                Aufgeklappt sehen Sie bei „wenn“ die Funktion „Größer als“, bei „dann“ die Funktion „Dividieren“ und bei „sonst“ den Text „Keine Einträge“. Zugeklappt und in der Vorschau lesen Sie `wenn („Anzahl“ ist größer als 0), dann („Gesamtbetrag“ geteilt durch „Anzahl“), sonst „Keine Einträge“`.
+
+                Bei einem Gesamtbetrag von `24` und einer Anzahl von `3` erhalten Sie die Zahl `8`. Bei einer Anzahl von `0` erhalten Sie den Text „Keine Einträge“. Die Division wird nur bei einer Anzahl größer als null ausgeführt.
+
+                # Was ist zu beachten?
+                Die Funktion wertet zuerst die Bedingung aus. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung. Anschließend wertet die Funktion nur den gewählten Ergebniszweig aus. Im Testlauf steht am übersprungenen Zweig „Nicht ausgewertet“ mit der Begründung.
                 """;
     }
 
@@ -61,37 +56,37 @@ public class NoCodeIfOperator extends NoCodeOperator {
                         NoCodeDataType.Runtime,
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
-                                "Wahrheitswert",
-                                "Der zu überprüfende Wahrheitswert.",
+                                "Bedingung",
+                                "Die Bedingung, die das Ergebnis bestimmt.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        ),
+                        ).withSentence("wenn"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Ergebnis bei Wahr",
-                                "Der zurückzugebende Wert, wenn der Wahrheitswert wahr ist."
-                        ),
+                                "Der Wert, der bei einer wahren Bedingung übernommen wird."
+                        ).withSentence("dann"),
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Ergebnis bei Falsch",
-                                "Der zurückzugebende Wert, wenn der Wahrheitswert falsch ist."
-                        )
+                                "Der Wert, der bei einer falschen Bedingung übernommen wird."
+                        ).withSentence("sonst")
                 )
         );
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var arg0 = castToBoolean(args[0]);
-        var arg1 = args[1];
-        var arg2 = args[2];
+        return new NoCodeResult(args[selectedResultIndex(args[0])]);
+    }
 
-        return new NoCodeResult(arg0 ? arg1 : arg2);
+    public int selectedResultIndex(@Nullable Object condition) throws NoCodeException {
+        return castToBoolean(condition) ? 1 : 2;
     }
 
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "wenn „#0“ wahr ist, dann „#1“ andernfalls „#2“";
+        return "wenn #0, dann #1, sonst #2";
     }
 }

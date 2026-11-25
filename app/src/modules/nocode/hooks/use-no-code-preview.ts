@@ -1,3 +1,5 @@
+import {NoCodeDataType} from '../../../data/no-code-data-type';
+import {useNoCodePresentationContext} from './use-no-code-presentation-context';
 import {useEffect, useMemo, useState} from 'react';
 import {useApi} from '../../../hooks/use-api';
 import {NoCodeApiService} from '../../../services/no-code-api-service';
@@ -6,9 +8,9 @@ import {isNoCodeExpression, type NoCodeOperand} from '../../../models/functions/
 import {type AnyElement} from '../../../models/elements/any-element';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {flattenElementsWithParents} from '../../../utils/flatten-elements';
-import {humanizeNoCode} from '../utils/humanize-no-code';
+import {summarizeNoCode} from '../utils/no-code-summary';
 
-export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: AnyElement): string | undefined {
+export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: AnyElement, type?: NoCodeDataType): string | undefined {
     const api = useApi();
     const needsOperators = isNoCodeExpression(operand);
     const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[] | null>(null);
@@ -37,16 +39,20 @@ export function useNoCodePreview(operand: NoCodeOperand | null, rootElement?: An
     const allElements = useMemo(() => rootElement == null ? [] : flattenElementsWithParents(rootElement, [], true)
         .filter((entry) => isAnyInputElement(entry.element)), [rootElement]);
 
+    const presentation = useNoCodePresentationContext(operand, allElements);
+
     return useMemo(() => {
         if (operand == null) return undefined;
         if (needsOperators && failed) return 'Vorschau nicht verfügbar';
         if (needsOperators && operators == null) return 'Vorschau wird geladen …';
 
         try {
-            // Humanization describes the definition; it does not evaluate the expression or predict its result.
-            return humanizeNoCode(operand, allElements, operators ?? []);
+            return summarizeNoCode(operand, allElements, operators ?? [], {
+                ...presentation,
+                type,
+            }).text;
         } catch {
             return 'Vorschau nicht verfügbar';
         }
-    }, [operand, allElements, needsOperators, operators, failed]);
+    }, [operand, allElements, needsOperators, operators, failed, presentation, type]);
 }

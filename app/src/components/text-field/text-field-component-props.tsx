@@ -36,6 +36,8 @@ export interface TextFieldComponentProps extends FormFieldLayoutProps {
     validationRequested?: boolean;
     /** Normalizes typed/pasted text before updating the visible input. */
     normalizeInput?: (value: string) => string;
+    /** Keep outer whitespace when committing and validating text whose spacing is significant. */
+    preserveWhitespace?: boolean;
     controlSx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;

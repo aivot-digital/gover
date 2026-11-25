@@ -19,40 +19,40 @@ public class NoCodeAndOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Verknüpft zwei Wahrheitswerte über das logische Und miteinander.";
+        return "Prüft, ob beide Bedingungen erfüllt sind.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Und“** (auch bekannt als logisches UND) verknüpft zwei Wahrheitswerte miteinander. \s
-                Das Ergebnis ist **wahr** (true), wenn beide der verknüpften Bedingungen **wahr** sind. \s
-                Falls eine der Bedingungen oder beide **falsch** (false) sind, ergibt der Operator **„Und“** den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person die folgenden Bedingungen gleichzeitig erfüllt:
-                
-                - Sie ist über 18 Jahre alt.
-                - Sie hat einen gültigen Ausweis.
-                
-                Mit dem Operator „Und“ wird diese Logik so formuliert: \s
-                `Alter > 18 UND Hat gültigen Ausweis`.
-                
-                **Ergebnis:**
-                - Wenn die Person **über 18 ist** und einen **gültigen Ausweis besitzt**, ist das Ergebnis **wahr**.
-                - Wenn eine oder beide Bedingungen nicht erfüllt sind, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte für den „Und“-Operator
-                - **wahr** UND **wahr** → **wahr**
-                - **wahr** UND **falsch** → **falsch**
-                - **falsch** UND **wahr** → **falsch**
-                - **falsch** UND **falsch** → **falsch**
-                
-                # Wann verwenden Sie den Operator „Und“?
-                Verwenden Sie **„Und“**, wenn alle Bedingungen erfüllt sein müssen, um die gewünschte Aktion oder Entscheidung zu treffen. \s
-                Dies ist hilfreich, wenn Sie z. B. Formulare oder Entscheidungen erstellen, bei denen mehrere Kriterien gleichzeitig erfüllt sein müssen.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie beispielsweise, ob Einträge vorliegen und der Betrag pro Eintrag über einem Grenzwert liegt.
+
+                # Welche Werte werden benötigt?
+                Sie benötigen „Bedingung 1“ und „Bedingung 2“. Für jede Bedingung können Sie „Wahr“ oder „Falsch“ aus der festen Auswahl wählen. Über „Andere Wertquelle verwenden …“ können Sie eine Wertquelle oder eine Funktion verwenden.
+
+                # Welches Ergebnis erhalten Sie?
+                Sie erhalten „Wahr“, wenn beide Bedingungen wahr sind. Ist mindestens eine Bedingung falsch, erhalten Sie „Falsch“.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie **„Und“**. Verwenden Sie für **„Bedingung 1“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Variable „Anzahl“ und geben Sie bei „Vergleichszahl“ `0` ein.
+                2. Verwenden Sie auch für **„Bedingung 2“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Funktion **„Dividieren“**. Übernehmen Sie als „Ausgangszahl“ die Variable „Gesamtbetrag“ und als „Teiler 1“ die Variable „Anzahl“.
+                3. Geben Sie als „Vergleichszahl“ der zweiten Bedingung `10` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie `(„Anzahl“ ist größer als 0) und ((„Gesamtbetrag“ geteilt durch „Anzahl“) ist größer als 10)`.
+
+                Bei einer Anzahl von `0` erhalten Sie „Falsch“. Die Division wird übersprungen. Bei einer Anzahl von `3` und einem Gesamtbetrag von `36` liegt der Betrag pro Eintrag bei `12`. Beide Bedingungen sind wahr und Sie erhalten „Wahr“.
+
+                # Was ist zu beachten?
+                Die Funktion prüft die Bedingungen von oben nach unten. Ist „Bedingung 1“ falsch, steht das Ergebnis fest und „Bedingung 2“ wird übersprungen. Im Testlauf sehen Sie dort „Nicht ausgewertet“ mit der Begründung. Ist „Bedingung 1“ wahr, wird auch „Bedingung 2“ ausgewertet.
+
+                Für weitere Bedingungen können Sie „Und“ verschachteln. Verwenden Sie möglichst Wertquellen, die Wahrheitswerte liefern. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 
     @Override
@@ -63,17 +63,17 @@ public class NoCodeAndOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
                                 "Bedingung 1",
-                                "Die erste Bedingung, die überprüft werden soll.",
+                                "Eine Bedingung, die einen Wahrheitswert liefert.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        ),
+                        ).withSentence("wenn", "wahr ist"),
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
                                 "Bedingung 2",
-                                "Die zweite Bedingung, die überprüft werden soll.",
+                                "Eine weitere Bedingung, die einen Wahrheitswert liefert.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        )
+                        ).withSentence("und", "wahr ist")
                 )
         );
     }
@@ -92,6 +92,6 @@ public class NoCodeAndOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ und „#1“";
+        return "#0 und #1";
     }
 }

@@ -8,11 +8,53 @@ import {createDefaultAppTheme} from '../../theming/themes';
 import {MarkdownContent} from './markdown-content';
 
 describe('MarkdownContent', () => {
+    it('places opt-in headings below an enclosing title and caps their semantic level', () => {
+        render(<MarkdownContent headingBaseLevel={3}
+                                markdown={'# Beschreibung\n\n## Beispiel\n\n### Details\n\n#### Hinweis\n\n###### Fußnote'}/>);
+
+        expect(screen.getByRole('heading', {
+            name: 'Beschreibung',
+            level: 3,
+        })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: 'Beispiel',
+            level: 4,
+        })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: 'Details',
+            level: 5,
+        })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: 'Hinweis',
+            level: 6,
+        })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: 'Fußnote',
+            level: 6,
+        })).toBeInTheDocument();
+    });
+
+    it('preserves original heading levels without an enclosing heading configuration', () => {
+        render(<MarkdownContent markdown={'# Titel\n\n## Abschnitt'}/>);
+
+        expect(screen.getByRole('heading', {
+            name: 'Titel',
+            level: 1,
+        })).toBeInTheDocument();
+        expect(screen.getByRole('heading', {
+            name: 'Abschnitt',
+            level: 2,
+        })).toBeInTheDocument();
+    });
+
     it.each(['light', 'dark'] as const)('keeps inline and block code readable in %s mode', (mode) => {
         const theme = createDefaultAppTheme(BaseTheme, mode);
         const {container} = render(
             <ThemeProvider theme={theme}>
-                <Box sx={{color: 'text.secondary', bgcolor: 'background.paper'}}>
+                <Box sx={{
+                    color: 'text.secondary',
+                    bgcolor: 'background.paper',
+                }}>
                     <MarkdownContent markdown={'Use `GET`.\n\n```sh\ncurl --request GET\n```'}/>
                 </Box>
             </ThemeProvider>,
@@ -45,14 +87,17 @@ describe('MarkdownContent', () => {
         const code = screen.getByText(key);
         expect(code.tagName).toBe('CODE');
         expect(code.textContent).toBe(key);
-        expect(code).toHaveStyle({overflowWrap: 'anywhere', wordBreak: 'normal'});
+        expect(code).toHaveStyle({
+            overflowWrap: 'anywhere',
+            wordBreak: 'normal',
+        });
     });
 
     it('preserves code block whitespace and special characters while allowing horizontal scrolling', () => {
         const command = [
             'curl \\',
             '  --url "https://example.org/hook/?first=1&second=2" \\',
-            "  --data '<root>value</root>'",
+            '  --data \'<root>value</root>\'',
         ].join('\n');
         const {container} = render(<MarkdownContent markdown={`\`\`\`sh\n${command}\n\`\`\``}/>);
 

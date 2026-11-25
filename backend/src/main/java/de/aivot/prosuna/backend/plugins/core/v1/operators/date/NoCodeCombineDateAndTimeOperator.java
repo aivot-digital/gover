@@ -33,16 +33,41 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Verbindet ein vollständiges Datum und eine lokale Uhrzeit zu einem absoluten Zeitpunkt.";
+        return "Verbindet ein Datum und eine Uhrzeit zu einem Zeitpunkt in der Zeitzone der Anwendung.";
     }
 
     @Override
     public String getDescription() {
         return """
-                Der Operator verbindet ein vollständiges Kalenderdatum und eine lokale Uhrzeit.
-                Die lokale Datums- und Uhrzeitangabe wird in der Zeitzone der Anwendung aufgelöst und als absoluter Zeitpunkt zurückgegeben.
-                Nicht existierende lokale Uhrzeiten während einer DST-Umstellung werden abgelehnt.
+                # Wofür verwenden Sie diese Funktion?
+                Verbinden Sie ein Datum und eine Uhrzeit zu einem Zeitpunkt, zum Beispiel für den Beginn einer Veranstaltung.
+
+                # Welche Werte werden benötigt?
+                - **Datum:** Ein vollständiges Datum mit Tag, Monat und Jahr.
+                - **Uhrzeit:** Die Uhrzeit an diesem Datum.
+
+                Beide Werte können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für selbst festgelegte Werte stehen ein Datumsfeld und ein Uhrzeitfeld bereit; eine feste Auswahlliste gibt es nicht.
+
+                # Welches Ergebnis erhalten Sie?
+                Einen Zeitpunkt. Datum und Uhrzeit werden in der Zeitzone der Anwendung zusammengeführt.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie für den gewünschten Zeitpunkt **„Datum und Uhrzeit verbinden“**.
+                2. Legen Sie unter **„Datum“** den **22.11.2026** und unter **„Uhrzeit“** **09:30:00 Uhr** fest.
+                3. Verwenden Sie das Ergebnis zum Beispiel als Ausgangszeitpunkt in **„Zum Zeitpunkt hinzufügen“**.
+
+                In der Zeitzone **Europe/Berlin** entsteht der Zeitpunkt **22.11.2026, 09:30:00 Uhr**. Zugeklappt lesen Sie: **„22.11.2026 um 09:30:00 Uhr“**.
+
+                # Was ist zu beachten?
+                Die Zeitzone der Anwendung bestimmt, welcher Zeitpunkt gemeint ist. Ein Monat ohne Tag oder ein Jahr allein reicht dafür nicht aus.
+
+                Bei einer Zeitumstellung kann eine Uhrzeit ausfallen oder zweimal vorkommen. Ausfallende Uhrzeiten werden abgelehnt; bei einer doppelt vorkommenden Uhrzeit wird das erste Vorkommen verwendet.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt den Zeitpunkt";
     }
 
     @Override
@@ -53,13 +78,13 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Date,
                                 "Datum",
-                                "Das vollständige Kalenderdatum."
-                        ),
+                                "Das Datum mit Tag, Monat und Jahr, an dem die Uhrzeit gelten soll."
+                        ).withSentence("aus dem Datum"),
                         new NoCodeParameter(
                                 NoCodeDataType.Time,
                                 "Uhrzeit",
-                                "Die lokale Uhrzeit ohne Zeitzone."
-                        )
+                                "Die Uhrzeit am angegebenen Datum in der Zeitzone der Anwendung."
+                        ).withSentence("und der Uhrzeit")
                 )
         );
     }
@@ -67,7 +92,7 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "verbinde Datum „#0“ und Uhrzeit „#1“";
+        return "#0 um #1";
     }
 
     @Override

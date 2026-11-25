@@ -1,4 +1,4 @@
-import React, {useMemo, useReducer, useRef} from 'react';
+import React, {useMemo, useReducer, useRef, useState} from 'react';
 import {BaseCodeTab} from '../../element-editor-code-tab/base-code-tab';
 import {CodeEditor} from '../../code-editor/code-editor';
 import LocationSearchingIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationSearching';
@@ -54,6 +54,7 @@ export function ElementTreeEditorContentTabOverride<T extends AnyElement>() {
         return override.type != null;
     }, [override]);
 
+    const [toolbarContainer, setToolbarContainer] = useState<HTMLDivElement | null>(null);
     const editorRef = useRef<editor.IStandaloneCodeEditor>(undefined);
     const [showElementSelectDialog, toggleShowElementSelectDialog] = useReducer((state) => !state, false);
 
@@ -70,6 +71,7 @@ export function ElementTreeEditorContentTabOverride<T extends AnyElement>() {
     return (
         <>
             <BaseCodeTab
+                functionToolbarRef={override.type === 'Javascript' && editable ? setToolbarContainer : undefined}
                 label="Dynamische Struktur"
                 description="Hier können Sie die Struktur des Elements dynamisch anpassen bzw. überschreiben. Dies ist besonders nützlich, wenn die Struktur des Elements von den Nutzereingaben abhängt oder wenn Sie eine komplexe Logik implementieren möchten."
                 editable={editable}
@@ -114,6 +116,7 @@ export function ElementTreeEditorContentTabOverride<T extends AnyElement>() {
                 {
                     override.type === 'Javascript' && (
                         <CodeEditor
+                            toolbarContainer={toolbarContainer}
                             value={override.javascriptCode?.code ?? undefined}
                             onChange={(code) => {
                                 handleChange({
@@ -160,6 +163,7 @@ export function ElementTreeEditorContentTabOverride<T extends AnyElement>() {
             </BaseCodeTab>
 
             <SelectElementDialog
+                primaryActionLabel="Element-ID verwenden"
                 allElements={allElements}
                 open={showElementSelectDialog}
                 onSelect={(element) => {

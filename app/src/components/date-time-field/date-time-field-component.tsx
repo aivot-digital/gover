@@ -21,8 +21,11 @@ import {FormFieldTokens} from '../../theming/form-field-tokens';
 export interface DateTimeFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     value?: string | null;
+    /** Read older timestamp literals in the application timezone when supported by the caller. */
+    allowLegacyLocalValue?: boolean;
     onChange: (value: InstantIso | null) => void;
     onBlur?: (value: InstantIso | null) => void;
+    autoFocus?: boolean;
     hint?: string;
     hideHelperText?: boolean;
     required?: boolean;
@@ -47,7 +50,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
     const mode = props.mode ?? TimeFieldComponentModelMode.Minute;
     const precision = getPrecision(mode);
     const applicationTimeZone = useMemo(() => getApplicationTimeZone(), []);
-    const dateValue = props.value ? instantToDateTime(props.value, applicationTimeZone) : null;
+    const dateValue = props.value ? instantToDateTime(props.value, applicationTimeZone, props.allowLegacyLocalValue) : null;
     const [localValue, setLocalValue] = useState<DateTime | null>(dateValue);
     const [temporalError, setTemporalError] = useState<string | null>(null);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,10 +60,10 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
     const lastInputWasTypingRef = useRef(false);
 
     useEffect(() => {
-        const parsed = props.value ? instantToDateTime(props.value, applicationTimeZone) : null;
+        const parsed = props.value ? instantToDateTime(props.value, applicationTimeZone, props.allowLegacyLocalValue) : null;
         setLocalValue(parsed);
         setTemporalError(null);
-    }, [applicationTimeZone, props.value]);
+    }, [applicationTimeZone, props.value, props.allowLegacyLocalValue]);
 
     useEffect(() => {
         return () => {
@@ -145,7 +148,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
             ? acceptedDate
             : null;
         const currentIso = props.value
-            ? canonicalizeInstant(props.value, applicationTimeZone, precision)
+            ? canonicalizeInstant(props.value, applicationTimeZone, precision, props.allowLegacyLocalValue)
             : null;
         const pickedResolution = pickedDate
             ? resolvePickerDateTime(pickedDate, applicationTimeZone, precision)
@@ -203,6 +206,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
                 >
                     <DateTimePicker
                         ampm={false}
+                        autoFocus={props.autoFocus}
                         timezone={applicationTimeZone}
                         format={mode === TimeFieldComponentModelMode.Second ? "dd.MM.yyyy HH:mm:ss 'Uhr'" : "dd.MM.yyyy HH:mm 'Uhr'"}
                         views={mode === TimeFieldComponentModelMode.Second ? ['year', 'month', 'day', 'hours', 'minutes', 'seconds'] : ['year', 'month', 'day', 'hours', 'minutes']}

@@ -10,6 +10,7 @@ export interface DateFieldComponentProps extends FormFieldLayoutProps {
     label: string;
     error?: string;
     autocomplete?: string;
+    autoFocus?: boolean;
     hint?: string;
     hideHelperText?: boolean;
     required?: boolean;

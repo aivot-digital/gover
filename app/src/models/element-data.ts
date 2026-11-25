@@ -83,6 +83,8 @@ export interface ComputedElementState {
     disabled?: boolean | null;
     error?: string | null;
     errorDetails?: Record<string, any> | null;
+    /** The error comes from deriving the element, not from validation, and every derivation reports it again. */
+    derivationFailed?: boolean | null;
     override?: AnyElement | null;
     valueSource?: ComputedElementValueSource | null;
     subStates?: ComputedElementSubState[] | null;

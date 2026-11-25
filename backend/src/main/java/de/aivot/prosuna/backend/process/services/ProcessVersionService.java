@@ -36,18 +36,21 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     private final ProcessNodeService processNodeService;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final CaseNumberGeneratorService caseNumberGeneratorService;
+    private final LegacyNoCodePublicationPolicy legacyNoCodePublicationPolicy;
 
     @Autowired
     public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository,
                                  ProcessRepository processDefinitionRepository,
                                  ProcessNodeService processNodeService,
                                  ProcessNodeDefinitionService processNodeDefinitionService,
-                                 CaseNumberGeneratorService caseNumberGeneratorService) {
+                                 CaseNumberGeneratorService caseNumberGeneratorService,
+                                 LegacyNoCodePublicationPolicy legacyNoCodePublicationPolicy) {
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processDefinitionRepository = processDefinitionRepository;
         this.processNodeService = processNodeService;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.caseNumberGeneratorService = caseNumberGeneratorService;
+        this.legacyNoCodePublicationPolicy = legacyNoCodePublicationPolicy;
     }
 
     @Nonnull
@@ -131,12 +134,15 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     }
 
     /**
-     * Changes the status of a process version without changing its definition. This is the only change permitted after
-     * a version stopped being a draft. Callers must check the publish permission and the permitted status transition.
+     * Changes the status of a process version without changing its definition. This is the only change permitted after a version stopped being a draft. Callers must check the
+     * publish permission and the permitted status transition.
      */
     @Nonnull
     public ProcessVersionEntity updateStatus(@Nonnull ProcessVersionEntity version,
                                              @Nonnull ProcessVersionStatus status) throws ResponseException {
+        if (status == ProcessVersionStatus.Published && legacyNoCodePublicationPolicy.isEnforced()) {
+            legacyNoCodePublicationPolicy.requirePublishable(version, processNodeService.findAllByProcessIdAndProcessVersion(version.getProcessId(), version.getProcessVersion()));
+        }
         version.setStatus(status);
         validateRetentionConfiguration(version);
         return processDefinitionVersionRepository.save(version);
@@ -171,7 +177,11 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                     .ifPresent(nodeProblems::add);
         }
 
-        return new ProcessVersionProblems(validateProcessVersionFields(entity), nodeProblems);
+        var versionProblems = validateProcessVersionFields(entity);
+        if (legacyNoCodePublicationPolicy.isEnforced()) {
+            nodes.forEach(node -> versionProblems.addAll(legacyNoCodePublicationPolicy.findProblems(node)));
+        }
+        return new ProcessVersionProblems(versionProblems, nodeProblems);
     }
 
     @Nonnull

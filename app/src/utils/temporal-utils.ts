@@ -10,7 +10,9 @@ import {
     YearMonthIso,
 } from './temporal-types';
 
-const instantPattern = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,9}))?(?:Z|[+-]\d{2}:\d{2})$/;
+// Match the offset range supported by java.time.ZoneOffset before Luxon can normalize it.
+const instantPattern = /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.(\d{1,9}))?(?:Z|[+-](?:(?:0\d|1[0-7]):[0-5]\d|18:00))$/;
+const legacyTimestampPattern = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?$/;
 const localDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const yearMonthPattern = /^\d{4}-\d{2}$/;
 const yearPattern = /^\d{4}$/;
@@ -181,9 +183,16 @@ export function dateTimeToLocalTimeIso(
 export function instantToDateTime(
     value: InstantIso | string,
     timeZone: IanaTimeZone,
+    allowLegacyLocalValue = false,
 ): DateTime<true> | null {
     if (!isInstantIso(value)) {
-        return null;
+        if (!allowLegacyLocalValue) return null;
+        const match = legacyTimestampPattern.exec(value);
+        if (match == null || !isLocalDateTimeIso(match[1])) return null;
+        const resolution = resolveLocalDateTime(match[1], timeZone);
+        if (!resolution.resolved) return null;
+        const millisecond = Number((match[2] ?? '').padEnd(3, '0').slice(0, 3));
+        return resolution.dateTime.set({millisecond});
     }
 
     const parsed = DateTime.fromISO(value, {setZone: true}).setZone(timeZone);
@@ -389,8 +398,9 @@ export function canonicalizeInstant(
     value: InstantIso | string,
     timeZone: IanaTimeZone,
     precision: TemporalPrecision,
+    allowLegacyLocalValue = false,
 ): InstantIso | null {
-    const dateTime = instantToDateTime(value, timeZone);
+    const dateTime = instantToDateTime(value, timeZone, allowLegacyLocalValue);
 
     if (dateTime === null) {
         return null;

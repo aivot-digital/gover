@@ -44,25 +44,32 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Geheimnis abrufen“** gibt den entschlüsselten Wert eines gespeicherten Geheimnisses anhand seines Schlüssels zurück. \s
-                Wenn kein Geheimnis mit diesem Schlüssel gefunden wird oder der Schlüssel leer ist, wird **null** zurückgegeben.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten einen API-Schlüssel aus den gespeicherten Geheimnissen in einer No-Code-Regel verwenden.
-                
-                Mit dem Operator **„Geheimnis abrufen“** wird diese Logik so formuliert: \s
-                `Geheimnis abrufen Geheimnis-Schlüssel`
-                
-                Beispielwerte: \s
-                - **Geheimnis-Schlüssel:** "8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1"
-                
-                **Ergebnis:**
-                - **Rückgabewert:** "mein-geheimer-wert"
-                
-                # Wann verwenden Sie den Operator „Geheimnis abrufen“?
-                Verwenden Sie **„Geheimnis abrufen“**, wenn eine No-Code-Regel einen sensiblen Wert benötigt, der in der Geheimnisverwaltung gespeichert ist.
+                # Wofür verwenden Sie diese Funktion?
+                Verwenden Sie den gespeicherten Wert eines Geheimnisses in einem Ausdruck, beispielsweise einen API-Schlüssel für eine Anbindung.
+
+                # Welche Werte werden benötigt?
+                **Geheimnis-Schlüssel:** Die ID des gespeicherten Geheimnisses. Sie können den Schlüssel im Bereich **„Geheimnisse“** kopieren und hier frei eintragen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Eine Auswahl von Geheimnissen wird hier nicht angeboten.
+
+                # Welches Ergebnis erhalten Sie?
+                Den entschlüsselten Wert des Geheimnisses als Text. Ist der Schlüssel leer oder kein Geheimnis dazu vorhanden, erhalten Sie keinen Wert (`null`).
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie **„Geheimnis abrufen“**.
+                2. Kopieren Sie den Schlüssel eines vorhandenen Geheimnisses aus **„Geheimnisse“**.
+                3. Legen Sie diesen Schlüssel bei **„Geheimnis-Schlüssel“** selbst fest.
+
+                Für ein Geheimnis mit dem Schlüssel `8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1` und dem beispielhaften Inhalt `test-token` erhalten Sie bei der Ausführung den Text `test-token`.
+
+                Zugeklappt und in der Vorschau lesen Sie: **Wert des Geheimnisses mit Schlüssel „8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1“**.
+
+                # Was ist zu beachten?
+                Geben Sie den Schlüssel ein, nicht den Namen oder den Inhalt des Geheimnisses. Ein ungültiger Schlüssel oder ein Fehler beim Entschlüsseln führt zu einer Fehlermeldung. Die Vorschau zeigt den zusammengestellten Ausdruck und ruft den geheimen Wert nicht ab.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt den gespeicherten Wert";
     }
 
     @Override
@@ -73,8 +80,8 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.String,
                                 "Geheimnis-Schlüssel",
-                                "Der Schlüssel des Geheimnisses, dessen entschlüsselter Wert abgerufen werden soll."
-                        )
+                                "Die ID des Geheimnisses aus dem Bereich „Geheimnisse“. Sie können den Schlüssel dort kopieren."
+                        ).withSentence("mit dem Schlüssel")
                 )
         );
     }
@@ -82,13 +89,13 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "rufe das Geheimnis „#0“ ab";
+        return "Wert des Geheimnisses mit Schlüssel #0";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (secretService == null) {
-            throw new NoCodeException("Der Operator „Geheimnis abrufen“ wurde ohne SecretService initialisiert.");
+            throw new NoCodeException("Die Funktion „Geheimnis abrufen“ ist hier nicht verfügbar.");
         }
 
         if (args.length != 1) {
@@ -104,7 +111,7 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
         try {
             secretKey = UUID.fromString(key);
         } catch (IllegalArgumentException e) {
-            throw new NoCodeException("Ungültiger Geheimnis-Schlüssel: " + key);
+            throw new NoCodeException("Der Geheimnis-Schlüssel ist ungültig. Prüfen Sie den kopierten Schlüssel aus „Geheimnisse“.");
         }
 
         var secret = secretService
@@ -118,7 +125,7 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
         try {
             return new NoCodeResult(secretService.decrypt(secret));
         } catch (Exception e) {
-            throw new NoCodeException("Das Geheimnis konnte nicht entschlüsselt werden: " + key);
+            throw new NoCodeException("Das Geheimnis mit dem Schlüssel „" + key + "“ konnte nicht entschlüsselt werden.");
         }
     }
 }

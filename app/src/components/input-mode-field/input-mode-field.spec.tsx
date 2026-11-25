@@ -1,15 +1,35 @@
+import {ElementType} from '../../data/element-type/element-type';
+import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {useState} from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import {ThemeProvider} from '@mui/material';
 import userEvent from '@testing-library/user-event';
-import {describe, expect, it, vi} from 'vitest';
-import {InputModeField, type InputModeValue, type InputModeVariable} from './input-mode-field';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+    InputModeField,
+    type InputModeValue,
+    type InputModeVariable,
+    type EmptyNoCodeInputDraft,
+} from './input-mode-field';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {InputMode, InputVariableSource, TemplateOutputFormat} from '../../models/input-mode';
 import {type DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
 import {BaseTheme} from '../../theming/base-theme';
 import {createDefaultAppTheme} from '../../theming/themes';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {NoCodeDataType} from '../../data/no-code-data-type';
+import {type NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-details-dto';
+import {type NoCodeOperand} from '../../models/functions/no-code-expression';
+import {createDerivedRuntimeElementData} from '../../models/element-data';
+import {ViewDispatcherContextProvider, ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
+
+const noCodeApi = vi.hoisted(() => ({getNoCodeOperators: vi.fn()}));
+
+vi.mock('../../services/no-code-api-service', () => ({
+    NoCodeApiService: class {
+        getNoCodeOperators = noCodeApi.getNoCodeOperators;
+    },
+}));
 
 vi.mock('../../hooks/use-api', () => {
     const api = {};
@@ -19,12 +39,20 @@ vi.mock('../../hooks/use-api', () => {
 vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
 
 vi.mock('../code-editor/code-editor', () => ({
-    CodeEditor: ({ariaLabel, value, readOnly, onChange}: {
+    CodeEditor: ({
+                     ariaLabel,
+                     value,
+                     readOnly,
+                     onChange,
+                 }: {
         ariaLabel: string;
         value: string;
         readOnly: boolean;
         onChange: (value: string) => void;
-    }) => <textarea aria-label={ariaLabel} value={value} readOnly={readOnly} onChange={(event) => onChange(event.target.value)}/>,
+    }) => <textarea aria-label={ariaLabel}
+                    value={value}
+                    readOnly={readOnly}
+                    onChange={(event) => onChange(event.target.value)}/>,
 }));
 
 const variables: InputModeVariable[] = [
@@ -60,11 +88,14 @@ const variables: InputModeVariable[] = [
 ];
 
 function createInitialValue(): InputModeValue<string> {
-    return {type: InputMode.Literal, value: '42'};
+    return {
+        type: InputMode.Literal,
+        value: '42',
+    };
 }
 
 function Harness(props: {
-    initialValue?: InputModeValue<string>;
+    initialValue?: InputModeValue<string> | EmptyNoCodeInputDraft;
     onChange?: (value: InputModeValue<string>) => void;
     onInsertVariable?: (variable: InputModeVariable, insertion: DynamicTextInsertion) => void;
     dynamicTextOutputFormat?: TemplateOutputFormat;
@@ -82,6 +113,7 @@ function Harness(props: {
     return (
         <InputModeField
             label="Inkrement"
+            rootElement={generateElementWithDefaultValues(ElementType.FormLayout)}
             variables={variables}
             value={value}
             onChange={(next) => {
@@ -98,7 +130,12 @@ function Harness(props: {
             allowedVariableSources={props.allowedVariableSources}
             dynamicTextVariableSources={props.dynamicTextVariableSources}
             dynamicTextOutputFormat={props.dynamicTextOutputFormat}
-            renderLiteral={({value: literal, onChange, variableInsertAction, fieldProps}) => (
+            renderLiteral={({
+                                value: literal,
+                                onChange,
+                                variableInsertAction,
+                                fieldProps,
+                            }) => (
                 <>
                     <TextFieldComponent
                         {...fieldProps}
@@ -129,13 +166,17 @@ async function selectMode(user: ReturnType<typeof userEvent.setup>, mode: string
 }
 
 describe('InputModeField', () => {
+    beforeEach(() => {
+        noCodeApi.getNoCodeOperators.mockReset().mockResolvedValue([]);
+    });
+
     it.each([
         ['Variable', 'Keine Variable referenziert'],
-        ['Ausdruck (No-Code)', 'Kein Ausdruck definiert'],
         ['Skript (Low-Code)', 'Kein Skript definiert'],
     ])('shows a compact, unambiguous empty state for %s', async (mode, emptyText) => {
         const user = userEvent.setup();
-        render(<Harness required error="Bitte ergänzen Sie die Eingabe."/>);
+        render(<Harness required
+                        error="Bitte ergänzen Sie die Eingabe."/>);
 
         await selectMode(user, mode);
 
@@ -150,10 +191,52 @@ describe('InputModeField', () => {
         summary.querySelectorAll('svg').forEach((icon) => expect(icon).toHaveAttribute('aria-hidden', 'true'));
     });
 
+    it('keeps an unconfigured default No-Code mode empty without emitting a fixed value', () => {
+        const onChange = vi.fn();
+        render(<Harness initialValue={{
+            type: InputMode.NoCode,
+            operand: null,
+        }}
+                        onChange={onChange}/>);
+        expect(screen.getByRole('button', {name: /Inkrement: Kein Ausdruck definiert/})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('switches to No-Code only after applying a configured expression', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}/>);
+        await selectMode(user, 'Ausdruck (No-Code)');
+        const dialog = await screen.findByRole('dialog', {name: 'Ausdruck für „Inkrement“'});
+        expect(onChange).not.toHaveBeenCalled();
+        await waitFor(() => expect(within(dialog).getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
+        await user.click(within(dialog).getByRole('button', {name: 'Übernehmen'}));
+        expect(onChange).not.toHaveBeenCalled();
+        expect(within(dialog).getByRole('treeitem')).toHaveFocus();
+        await user.click(await screen.findByRole('button', {name: 'Ausdruck hinzufügen'}));
+        await user.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
+        const input = await screen.findByRole('textbox', {name: /^Ausdruck/});
+        await user.click(input);
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('textbox', {name: /^Ausdruck/})).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(onChange).toHaveBeenCalledExactlyOnceWith({
+            type: InputMode.NoCode,
+            operand: {
+                type: 'NoCodeStaticValue',
+                value: '',
+            },
+        });
+    });
+
     it.each(['light', 'dark'] as const)('distinguishes the script preview from its label in %s mode', (mode) => {
         const theme = createDefaultAppTheme(BaseTheme, mode);
         render(<ThemeProvider theme={theme}>
-            <Harness initialValue={{type: InputMode.LowCode, code: '\n  4 + 9\n'}}/>
+            <Harness initialValue={{
+                type: InputMode.LowCode,
+                code: '\n  4 + 9\n',
+            }}/>
         </ThemeProvider>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: Skript definiert/});
@@ -168,7 +251,13 @@ describe('InputModeField', () => {
     it.each(['light', 'dark'] as const)('shows a humanized no-code preview on a secondary line in %s mode', (mode) => {
         const theme = createDefaultAppTheme(BaseTheme, mode);
         render(<ThemeProvider theme={theme}>
-            <Harness initialValue={{type: InputMode.NoCode, operand: {type: 'NoCodeProcessDataReference', path: 'warenkorb.anzahl'}}}/>
+            <Harness initialValue={{
+                type: InputMode.NoCode,
+                operand: {
+                    type: 'NoCodeProcessDataReference',
+                    path: 'warenkorb.anzahl',
+                },
+            }}/>
         </ThemeProvider>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: Ausdruck definiert/});
@@ -179,8 +268,78 @@ describe('InputModeField', () => {
         expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
     });
 
+    it('uses the readable nested sentence and context labels in its preview and accessible description', async () => {
+        const equals: NoCodeOperatorDetailsDTO = {
+            identifier: 'equals',
+            packageName: 'core',
+            label: 'Ist gleich',
+            abstractDescription: '',
+            description: '',
+            tags: [],
+            sentenceLead: 'ergibt wahr',
+            humanReadableTemplate: '„#0“ ist gleich „#1“',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [
+                    {label: 'Wert 1', type: NoCodeDataType.Runtime, description: null, options: []},
+                    {label: 'Wert 2', type: NoCodeDataType.Runtime, description: null, options: [{label: 'Ja', value: 'ja'}]},
+                ],
+            }],
+        };
+        noCodeApi.getNoCodeOperators.mockResolvedValue([equals, {
+            ...equals,
+            identifier: 'not',
+            label: 'Nicht',
+            humanReadableTemplate: 'nicht „#0“',
+            signatures: [{returnType: NoCodeDataType.Boolean, parameters: equals.signatures[0].parameters.slice(0, 1)}],
+        }]);
+        const operand: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'not',
+            operands: [{
+                type: 'NoCodeExpression',
+                operatorIdentifier: 'equals',
+                operands: [
+                    {type: 'NoCodeProcessDataReference', path: 'befreiung.beantragt'},
+                    {type: 'NoCodeStaticValue', value: 'ja'},
+                ],
+            }],
+        };
+        const rootElement = generateElementWithDefaultValues(ElementType.FormLayout);
+        const onChange = vi.fn();
+        render(<ViewDispatcherContextProvider value={{
+            mode: ViewDispatcherMode.Viewer,
+            rootElement,
+            allElements: [rootElement],
+            rootAuthoredElementValues: {},
+            rootDerivedData: createDerivedRuntimeElementData(),
+            inputModeVariables: [{source: InputVariableSource.ProcessData, path: 'befreiung.beantragt', label: 'Befreiung beantragt'}],
+        }}>
+            <Harness initialValue={{type: InputMode.NoCode, operand}} onChange={onChange}/>
+        </ViewDispatcherContextProvider>);
+
+        const text = 'nicht („Befreiung beantragt“ ist gleich „Ja“)';
+        const preview = await screen.findByText(text);
+        const summary = screen.getByRole('button', {name: /Inkrement: Ausdruck definiert/});
+        expect(summary).toContainElement(preview);
+        expect(preview).toHaveAttribute('title', text);
+        expect(summary).toHaveAccessibleDescription(text);
+        expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
+        expect(summary).not.toHaveTextContent('$.befreiung.beantragt');
+        expect(summary).not.toHaveTextContent('„ja“');
+        expect(summary).not.toHaveTextContent('ergibt wahr');
+        expect(screen.queryByRole('button', {name: 'Technische Details'})).not.toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('does not repeat a custom reference when no suggestion supplies a label', () => {
-        render(<Harness initialValue={{type: InputMode.Variable, reference: {source: InputVariableSource.ProcessData, path: 'neuerWert'}}}/>);
+        render(<Harness initialValue={{
+            type: InputMode.Variable,
+            reference: {
+                source: InputVariableSource.ProcessData,
+                path: 'neuerWert',
+            },
+        }}/>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: \$\.neuerWert/});
         expect(within(summary).getAllByText('$.neuerWert')).toHaveLength(1);
@@ -189,7 +348,10 @@ describe('InputModeField', () => {
 
     it.each(['disabled', 'readOnly'] as const)('keeps %s scripts available for inspection', async (state) => {
         const user = userEvent.setup();
-        render(<Harness {...{[state]: true}} initialValue={{type: InputMode.LowCode, code: '4 + 9'}}/>);
+        render(<Harness {...{[state]: true}} initialValue={{
+            type: InputMode.LowCode,
+            code: '4 + 9',
+        }}/>);
 
         const summary = screen.getByRole('button', {name: /Inkrement: Skript definiert. Skript ansehen/});
         expect(summary).toBeEnabled();
@@ -204,7 +366,11 @@ describe('InputModeField', () => {
     });
 
     it('prevents opening a script while the field is busy', () => {
-        render(<Harness busy initialValue={{type: InputMode.LowCode, code: '4 + 9'}}/>);
+        render(<Harness busy
+                        initialValue={{
+                            type: InputMode.LowCode,
+                            code: '4 + 9',
+                        }}/>);
 
         expect(screen.getByRole('button', {name: /Inkrement: Skript definiert/})).toBeDisabled();
     });
@@ -250,7 +416,11 @@ describe('InputModeField', () => {
 
         expect(handleChange.mock.lastCall?.[0]).toEqual({
             type: InputMode.Variable,
-            reference: {source: InputVariableSource.ProcessData, path: 'nachricht', markdown: true},
+            reference: {
+                source: InputVariableSource.ProcessData,
+                path: 'nachricht',
+                markdown: true,
+            },
         });
     });
 
@@ -275,7 +445,23 @@ describe('InputModeField', () => {
         expect(dialogActions?.children[1]).toHaveTextContent('Referenz entfernen');
     });
 
-    it('preserves the literal draft while other modes are active', async () => {
+    it('returns a required field to an empty fixed value when its applied expression is removed', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness required
+                        initialValue={{type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: 'text'}}}
+                        onChange={onChange}/>);
+
+        await user.click(screen.getByRole('button', {name: /^Inkrement: Ausdruck definiert\. Ausdruck bearbeiten/}));
+        const dialog = await screen.findByRole('dialog', {name: 'Ausdruck für „Inkrement“'});
+        await user.click(await within(dialog).findByRole('button', {name: 'Wert „text“ löschen'}));
+        await user.click(within(dialog).getByRole('button', {name: 'Übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith({type: InputMode.Literal, value: null});
+        expect(screen.queryByRole('dialog', {name: 'Ausdruck für „Inkrement“'})).not.toBeInTheDocument();
+    });
+
+    it('keeps the literal value when starting and cancelling a new No-Code expression', async () => {
         const user = userEvent.setup();
         render(<Harness/>);
 
@@ -286,7 +472,7 @@ describe('InputModeField', () => {
         await selectMode(user, 'Ausdruck (No-Code)');
         expect(screen.queryByRole('textbox', {name: /^Inkrement/})).not.toBeInTheDocument();
 
-        await selectMode(user, 'Wert');
+        await user.click(screen.getByRole('button', {name: 'Abbrechen'}));
         expect(screen.getByRole('textbox', {name: /^Inkrement/})).toHaveValue('7');
     });
 
@@ -307,7 +493,8 @@ describe('InputModeField', () => {
     it('offers formatted insertion only for Markdown fields', async () => {
         const user = userEvent.setup();
         const handleInsertVariable = vi.fn();
-        render(<Harness onInsertVariable={handleInsertVariable} dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+        render(<Harness onInsertVariable={handleInsertVariable}
+                        dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
 
         await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
         await user.click(await screen.findByText('Aktenzeichen des Vorgangs'));
@@ -320,7 +507,8 @@ describe('InputModeField', () => {
     it('inserts suggested Markdown inputs with formatting by default', async () => {
         const user = userEvent.setup();
         const handleInsertVariable = vi.fn();
-        render(<Harness onInsertVariable={handleInsertVariable} dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+        render(<Harness onInsertVariable={handleInsertVariable}
+                        dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
 
         await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
         await user.click(await screen.findByText('Nachricht'));
@@ -333,7 +521,8 @@ describe('InputModeField', () => {
     it.each([TemplateOutputFormat.Html, TemplateOutputFormat.SingleLineText, undefined])
     ('inserts text without asking for %s fields', async (outputFormat) => {
         const user = userEvent.setup();
-        render(<Harness onInsertVariable={vi.fn()} dynamicTextOutputFormat={outputFormat}/>);
+        render(<Harness onInsertVariable={vi.fn()}
+                        dynamicTextOutputFormat={outputFormat}/>);
 
         await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
 
@@ -388,7 +577,9 @@ describe('InputModeField', () => {
     });
 
     it('propagates required, invalid and read-only state to the literal control', () => {
-        render(<Harness required error="Ungültiger Wert" readOnly/>);
+        render(<Harness required
+                        error="Ungültiger Wert"
+                        readOnly/>);
 
         const input = screen.getByRole('textbox', {name: /^Inkrement/});
         expect(input).toHaveAttribute('aria-required', 'true');
@@ -411,7 +602,10 @@ describe('InputModeField', () => {
         render(<InputModeField
             label="Inkrement"
             variables={[]}
-            value={{type: InputMode.Literal, value: '1'}}
+            value={{
+                type: InputMode.Literal,
+                value: '1',
+            }}
             onChange={onChange}
             renderLiteral={({onChange: changeLiteral}) => (
                 <button onClick={() => changeLiteral('2', ['dependency'])}>Ändern</button>
@@ -420,7 +614,10 @@ describe('InputModeField', () => {
 
         await user.click(screen.getByRole('button', {name: 'Ändern'}));
 
-        expect(onChange).toHaveBeenCalledWith({type: InputMode.Literal, value: '2'}, ['dependency']);
+        expect(onChange).toHaveBeenCalledWith({
+            type: InputMode.Literal,
+            value: '2',
+        }, ['dependency']);
     });
 
     it('uses the first policy-approved source when entering variable mode', async () => {
@@ -431,9 +628,15 @@ describe('InputModeField', () => {
             variables={variables}
             allowedModes={[InputMode.Literal, InputMode.Variable]}
             allowedVariableSources={[InputVariableSource.ProtectedProcessData]}
-            value={{type: InputMode.Literal, value: '1'}}
+            value={{
+                type: InputMode.Literal,
+                value: '1',
+            }}
             onChange={onChange}
-            renderLiteral={({value, fieldProps}) => <TextFieldComponent
+            renderLiteral={({
+                                value,
+                                fieldProps,
+                            }) => <TextFieldComponent
                 {...fieldProps}
                 value={value}
                 onChange={() => undefined}
@@ -444,7 +647,10 @@ describe('InputModeField', () => {
 
         expect(onChange).toHaveBeenCalledWith({
             type: InputMode.Variable,
-            reference: {source: InputVariableSource.ProtectedProcessData, path: ''},
+            reference: {
+                source: InputVariableSource.ProtectedProcessData,
+                path: '',
+            },
         });
     });
 });

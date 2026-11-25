@@ -150,6 +150,7 @@ export function ExpressionEditor(props: ExpressionEditorProps) {
 
             <SelectOperatorDialog
                 open={operatorSelectDialogOpen || operator == null}
+                mode={operator == null ? 'add' : 'replace'}
                 desiredReturnType={props.desiredReturnType}
                 operators={props.allOperators}
                 onSelect={(operator) => {

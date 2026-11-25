@@ -646,6 +646,12 @@ function getIcons<T extends AnyElement>(root: AnyElement,
 
     if (configurationErrors != null) {
         const messages = [...new Set(Object.values(configurationErrors.properties).flat())];
+        // Errors of functions are keyed by their tab; open the properties tab whenever it has errors itself.
+        const erroneousProperties = Object.keys(configurationErrors.properties);
+        const functionTabs: string[] = [DefaultTabs.visibility, DefaultTabs.validation, DefaultTabs.value];
+        const tab = erroneousProperties.every((property) => functionTabs.includes(property)) ?
+            erroneousProperties[0] :
+            DefaultTabs.properties;
         actions.push({
             icon: <ReportOutlinedIcon color="error"/>,
             tooltip: messages.length > 0 ?
@@ -653,7 +659,7 @@ function getIcons<T extends AnyElement>(root: AnyElement,
                 'Enthält Elemente mit fehlerhafter Konfiguration',
             // Without own errors, only descendants need fixing, so reveal them instead of opening this element.
             onClick: messages.length > 0 ?
-                createNavigateToTabHandler(DefaultTabs.properties) :
+                createNavigateToTabHandler(tab) :
                 (event: React.MouseEvent) => {
                     event.stopPropagation();
                     event.preventDefault();

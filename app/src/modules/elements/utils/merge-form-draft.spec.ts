@@ -1,6 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {applyPanelDraftToTree, getPanelDraftParents, type ElementPanelDraft} from '../../../components/element-tree-2/element-panel-draft';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
+import {ConditionSetOperator} from '../../../data/condition-set-operator';
+import {type ElementVisibilityFunction} from '../../../models/elements/element-visibility-function';
 import {ElementType} from '../../../data/element-type/element-type';
 import {type AnyFormElement} from '../../../models/elements/form/any-form-element';
 import {type FormLayoutElement} from '../../../models/elements/form-layout-element';
@@ -395,4 +397,28 @@ describe('mergeFormDraft', () => {
             value: {layout: null, panel: {base, mine: draft.mine, detached: true}},
         });
     });
+});
+
+
+it('rebases a pending legacy conversion without adopting it into the saved form', () => {
+    const oldRule: ElementVisibilityFunction = {
+        type: 'ConditionSet', requirements: 'Alte Regel', conditionSet: {operator: ConditionSetOperator.All, conditions: []},
+        noCode: null, javascriptCode: null, referencedIds: [],
+    };
+    const newRule: ElementVisibilityFunction = {...oldRule, type: 'NoCode', conditionSet: null, noCode: {type: 'NoCodeStaticValue', value: 'true'}};
+    const original = {...text, visibility: oldRule};
+    const mine = {...original, visibility: newRule};
+    const saved = {...original, label: 'Gespeicherter Titel'};
+    const layoutWith = (field: typeof text) => ({...base, children: [{...step, children: [field]}]});
+    const prior = layoutWith(original);
+    const current = layoutWith(saved);
+    const metadata = {visibility: {original: oldRule, initial: {...newRule, noCode: null}, draft: newRule}};
+    const result = rebaseOpenElementDraft({...panel, base: original, mine, legacyMigrations: metadata}, prior, current);
+    expect(result.needsDecision).toBe(false);
+    expect(result.draft).toMatchObject({base: saved, mine: {...saved, visibility: newRule}, legacyMigrations: metadata});
+    expect(current.children?.[0].children?.[0].visibility).toEqual(oldRule);
+
+    const changedRule = {...oldRule, conditionSet: {...oldRule.conditionSet!, operator: ConditionSetOperator.Any}};
+    const conflicting = rebaseOpenElementDraft({...panel, base: original, mine, legacyMigrations: metadata}, prior, layoutWith({...saved, visibility: changedRule}));
+    expect(conflicting.needsDecision).toBe(true);
 });

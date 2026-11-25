@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import de.aivot.prosuna.backend.elements.compatibility.LegacyRadioDeserializerModifier;
+import de.aivot.prosuna.backend.elements.enums.VisibilityFunctionType;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.*;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.*;
@@ -12,12 +13,14 @@ import de.aivot.prosuna.backend.elements.models.elements.steps.IntroductionStepE
 import de.aivot.prosuna.backend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.prosuna.backend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperand;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -139,7 +142,29 @@ public abstract class BaseElement implements Serializable {
      */
     @Nonnull
     public Map<String, List<String>> validateConfiguration() {
-        return new LinkedHashMap<>();
+        var errors = new LinkedHashMap<String, List<String>>();
+        if (visibility != null && visibility.getType() == VisibilityFunctionType.NoCode) {
+            addNoCodeConfigurationError(errors, "visibility", "die Sichtbarkeit", Collections.singletonList(visibility.getNoCode()));
+        }
+        return errors;
+    }
+
+    /**
+     * Reports missing or incomplete no-code expressions of a function. The editors save them, so they are reported
+     * here instead. Only their structure is checked; they are not evaluated.
+     *
+     * @param property The property holding the function, which is also the key of its editor tab.
+     * @param target   The function in the accusative case, e.g. "die Sichtbarkeit".
+     */
+    protected static void addNoCodeConfigurationError(@Nonnull Map<String, List<String>> errors,
+                                                      @Nonnull String property,
+                                                      @Nonnull String target,
+                                                      @Nonnull List<NoCodeOperand> expressions) {
+        if (expressions.isEmpty() || expressions.stream().anyMatch(Objects::isNull)) {
+            addConfigurationError(errors, property, "Legen Sie einen No-Code-Ausdruck für %s fest.".formatted(target));
+        } else if (expressions.stream().anyMatch(expression -> !expression.validate().isValid())) {
+            addConfigurationError(errors, property, "Vervollständigen Sie den No-Code-Ausdruck für %s.".formatted(target));
+        }
     }
 
     protected static void addConfigurationError(@Nonnull Map<String, List<String>> errors,

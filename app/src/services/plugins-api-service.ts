@@ -23,7 +23,7 @@ export const PluginComponentTypeDisplayNames: Record<PluginComponentType, string
     [PluginComponentType.StorageProviderDefinition]: 'Speicheranbieter-Definition',
     [PluginComponentType.ProcessNodeDefinition]: 'Prozesselement-Definition',
     [PluginComponentType.PaymentProviderDefinition]: 'Zahlungsanbieter-Definition',
-    [PluginComponentType.OperatorProvider]: 'Sammlung von No-Code-Operatoren',
+    [PluginComponentType.OperatorProvider]: 'Sammlung von No-Code-Funktionen',
     [PluginComponentType.CommunicationProviderDefinition]: 'Kommunikationsanbieter-Definition',
 };
 

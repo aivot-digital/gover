@@ -98,7 +98,7 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
                 .filter(Objects::nonNull)
                 .toList();
 
-        if (normalizedValues.stream().anyMatch(v -> !isAllowedType(v.getType()) || v.getId() == null || v.getId().isBlank())) {
+        if (normalizedValues.stream().anyMatch(v -> !isSupportedType(v.getType()) || v.getId() == null || v.getId().isBlank())) {
             throw new ValidationException(this, "Ungültiger Eintrag in der Auswahl.");
         }
 
@@ -169,13 +169,6 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
     @Nullable
     public static List<DomainAndUserSelectInputElementValue> _formatValue(@Nullable Object value) {
         var values = switch (value) {
-            case null -> null;
-            case DomainAndUserSelectInputElementValue val -> List.of(val);
-            case Map<?, ?> map -> List.of(_formatSingleValue(map));
-            case String sValue -> {
-                var parsed = _parseLegacyToken(sValue);
-                yield parsed == null ? null : List.of(parsed);
-            }
             case Collection<?> cValue -> {
                 var result = new ArrayList<DomainAndUserSelectInputElementValue>();
                 for (var item : cValue) {
@@ -186,7 +179,10 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
                 }
                 yield result;
             }
-            default -> null;
+            case null, default -> {
+                var parsed = _formatSingleValue(value);
+                yield parsed == null ? null : List.of(parsed);
+            }
         };
 
         if (values == null || values.isEmpty()) {
@@ -240,7 +236,7 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
         var type = normalized.substring(0, separatorIndex).trim();
         var id = normalized.substring(separatorIndex + 1).trim();
 
-        if (!isAllowedType(type) || id.isBlank()) {
+        if (!isSupportedType(type) || id.isBlank()) {
             return null;
         }
 
@@ -260,12 +256,12 @@ public class DomainAndUserSelectInputElement extends BaseInputElement<List<Domai
                 .collect(Collectors.toSet());
     }
 
-    private static boolean isAllowedType(@Nullable String type) {
+    public static boolean isSupportedType(@Nullable String type) {
         return "orgUnit".equals(type) || "team".equals(type) || "user".equals(type);
     }
 
     private boolean isTypeEnabled(@Nullable String type) {
-        if (!isAllowedType(type)) {
+        if (!isSupportedType(type)) {
             return false;
         }
 

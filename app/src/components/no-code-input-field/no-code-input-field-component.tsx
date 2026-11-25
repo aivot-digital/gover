@@ -1,11 +1,9 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import {useNoCodePreview} from '../../modules/nocode/hooks/use-no-code-preview';
+import React, {useState} from 'react';
 import {
     Box,
     Button,
     CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
     Stack,
     Typography,
     type SxProps,
@@ -15,22 +13,13 @@ import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {NoCodeIcon} from '../../modules/nocode/data/no-code-icon';
 import {alpha} from '@mui/material/styles';
-import {NoCodeEditorWrapper} from '../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
+import {NoCodeEditorDialog} from '../../modules/nocode/components/no-code-editor-dialog';
 import {type NoCodeInputFieldElementItem} from '../../models/elements/form/input/no-code-input-field-element';
 import {type NoCodeDataType} from '../../data/no-code-data-type';
 import {type AnyElement} from '../../models/elements/any-element';
 import {ElementType} from '../../data/element-type/element-type';
 import {type NoCodeOperandEditorContextType} from '../../modules/nocode/components/no-code-operand-editor';
-import {type NoCodeOperand, type NoCodeOperandError} from '../../models/functions/no-code-expression';
-import {useApi} from '../../hooks/use-api';
-import {NoCodeApiService} from '../../services/no-code-api-service';
-import {type NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-details-dto';
-import {flattenElementsWithParents} from '../../utils/flatten-elements';
-import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
-import {humanizeNoCode} from '../../modules/nocode/utils/humanize-no-code';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
+import {type NoCodeOperand} from '../../models/functions/no-code-expression';
 import {FormField, type FormFieldLayoutProps} from '../form-field';
 import {getDisabledFieldBackground} from '../../theming/field-state-colors';
 import {FormFieldTokens} from '../../theming/form-field-tokens';
@@ -50,12 +39,9 @@ export interface NoCodeInputFieldComponentProps extends FormFieldLayoutProps {
     desiredReturnType: NoCodeDataType;
     onChange: (value: NoCodeInputFieldElementItem | null) => void;
     controlSx?: SxProps<Theme>;
-    disablePopoutModeWhenFormLayoutChild?: boolean;
 }
 
 export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps) {
-    const api = useApi();
-    const dispatch = useAppDispatch();
     const {
         rootElement,
         label,
@@ -69,10 +55,8 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         value,
         desiredReturnType,
         onChange,
-        disablePopoutModeWhenFormLayoutChild = false,
     } = props;
-    const isFormLayout = (rootElement as {type: ElementType}).type === ElementType.FormLayout;
-    const usesPopoutEditor = isFormLayout && !disablePopoutModeWhenFormLayoutChild;
+    const isFormLayout = (rootElement as { type: ElementType }).type === ElementType.FormLayout;
     const contextType: NoCodeOperandEditorContextType = isFormLayout ? 'FORM' : 'PROCESS';
     const generatedId = useNormalizedReactId();
     const dialogId = `${props.id ?? `no-code-input-${generatedId}`}-dialog`;
@@ -81,56 +65,8 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [draftNoCode, setDraftNoCode] = useState<NoCodeOperand | null | undefined>(value?.noCode ?? undefined);
-    const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[]>([]);
-    const [isLoadingOperators, setIsLoadingOperators] = useState(false);
-
-    useEffect(() => {
-        if (!usesPopoutEditor) {
-            return;
-        }
-
-        let active = true;
-        setIsLoadingOperators(true);
-        new NoCodeApiService(api)
-            .getNoCodeOperators()
-            .then((loadedOperators) => {
-                if (active) {
-                    setOperators(loadedOperators);
-                }
-            })
-            .catch(() => {
-                if (active) {
-                    dispatch(showErrorSnackbar('Operatoren für No-Code-Ausdrücke konnten nicht geladen werden.'));
-                }
-            })
-            .finally(() => {
-                if (active) {
-                    setIsLoadingOperators(false);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [api, dispatch, usesPopoutEditor]);
-
-    const allElements = useMemo(() => {
-        return flattenElementsWithParents(rootElement, [], true)
-            .filter((entry) => isAnyInputElement(entry.element));
-    }, [rootElement]);
-
-    const snippet = useMemo(() => {
-        const noCode = value?.noCode;
-        if (noCode == null) {
-            return 'Kein Ausdruck definiert';
-        }
-
-        try {
-            return humanizeNoCode(noCode, allElements, operators);
-        } catch {
-            return 'Ausdruck konfiguriert';
-        }
-    }, [value?.noCode, allElements, operators]);
+    const snippet = useNoCodePreview(value?.noCode ?? null, rootElement, desiredReturnType) ?? 'Kein Ausdruck definiert';
+    const isLoadingOperators = snippet === 'Vorschau wird geladen …';
 
     const openDialog = () => {
         if (busy) {
@@ -140,30 +76,6 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         setDraftNoCode(value?.noCode ?? undefined);
         setIsDialogOpen(true);
     };
-
-    if (!usesPopoutEditor) {
-        return (
-            <NoCodeEditorWrapper
-                parents={[rootElement]}
-                noCode={value?.noCode ?? undefined}
-                onChange={(noCode) => {
-                    if (noCode == null) {
-                        onChange(null);
-                        return;
-                    }
-
-                    onChange({noCode});
-                }}
-                editable={!isReadOnly && !busy}
-                desiredReturnType={desiredReturnType}
-                label={label}
-                hint={hint ?? undefined}
-                error={error ?? undefined}
-                contextType={contextType}
-                operandError={errorDetails as NoCodeOperandError ?? undefined}
-            />
-        );
-    }
 
     return (
         <>
@@ -178,7 +90,9 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                         ? props.labelAction(field)
                         : props.labelAction;
                     return (
-                        <Stack direction="row" spacing={1} sx={{alignItems: 'center'}}>
+                        <Stack direction="row"
+                               spacing={1}
+                               sx={{alignItems: 'center'}}>
                             {suppliedLabelAction}
                             <Button
                                 size="small"
@@ -246,7 +160,8 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                         )}
 
                         {isLoadingOperators && value?.noCode != null && (
-                            <CircularProgress size={14} aria-hidden="true" />
+                            <CircularProgress size={14}
+                                              aria-hidden="true"/>
                         )}
 
                         <Typography
@@ -267,50 +182,23 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                 )}
             </FormField>
 
-            <Dialog
-                open={isDialogOpen}
+            {isDialogOpen && <NoCodeEditorDialog
+                id={dialogId}
+                title={label}
+                rootElement={rootElement}
+                returnType={desiredReturnType}
+                value={draftNoCode}
+                required={Boolean(required)}
+                readOnly={isReadOnly}
+                busy={busy}
+                contextType={contextType}
                 onClose={() => setIsDialogOpen(false)}
-                fullWidth
-                maxWidth="lg"
-                slotProps={{paper: {id: dialogId}}}
-            >
-                <DialogTitleWithClose onClose={() => setIsDialogOpen(false)}>
-                    {label}
-                </DialogTitleWithClose>
-
-                <DialogContent>
-                    <Box sx={{pt: 2, pb: 3}}>
-                        <NoCodeEditorWrapper
-                            parents={[rootElement]}
-                            noCode={draftNoCode}
-                            onChange={setDraftNoCode}
-                            editable={!isReadOnly && !busy}
-                            desiredReturnType={desiredReturnType}
-                            label={label}
-                            hint={hint ?? undefined}
-                            contextType={contextType}
-                            operandError={errorDetails as NoCodeOperandError ?? undefined}
-                        />
-                    </Box>
-                </DialogContent>
-
-                <DialogActions sx={{justifyContent: 'flex-start'}}>
-                    {!isReadOnly && !busy && (
-                        <Button
-                            variant="contained"
-                            onClick={() => {
-                                onChange(draftNoCode == null ? null : {noCode: draftNoCode});
-                                setIsDialogOpen(false);
-                            }}
-                        >
-                            Übernehmen
-                        </Button>
-                    )}
-                    <Button onClick={() => setIsDialogOpen(false)}>
-                        {isReadOnly ? 'Schließen' : 'Abbrechen'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onApply={(noCode) => {
+                    if (isReadOnly || busy) return;
+                    onChange(noCode == null ? null : {noCode});
+                    setIsDialogOpen(false);
+                }}
+            />}
         </>
     );
 }

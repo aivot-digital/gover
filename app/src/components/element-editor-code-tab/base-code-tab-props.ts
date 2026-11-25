@@ -1,3 +1,5 @@
+import {Ref} from 'react';
+
 export type FunctionType = 'legacy-code' | 'legacy-condition' | 'code' | 'expression';
 
 export interface BaseCodeTabProps {
@@ -9,6 +11,8 @@ export interface BaseCodeTabProps {
     onDeleteFunction: () => void;
 
     hasFunction: boolean;
+    functionActionsDisabled?: boolean;
+    functionToolbarRef?: Ref<HTMLDivElement>;
     allowsNoCode: boolean;
     allowsExpression: boolean;
     editable: boolean;

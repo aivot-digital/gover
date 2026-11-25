@@ -21,35 +21,60 @@ public class NoCodeNotOperator extends NoCodeOperator {
 
     @Override
     public String getAbstract() {
-        return "Kehrt einen Wahrheitswert um.";
+        return "Kehrt das Ergebnis einer Bedingung um.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Nicht“** (auch bekannt als logische Negation) kehrt den Wahrheitswert einer Bedingung um. \s
-                Das Ergebnis ist **wahr** (true), wenn die ursprüngliche Bedingung **falsch** ist. \s
-                Ist die ursprüngliche Bedingung **wahr**, ergibt der Operator **„Nicht“** den Wert **falsch**.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten überprüfen, ob eine Person **keinen gültigen Ausweis** hat.
-                
-                Mit dem Operator **„Nicht“** wird diese Logik so formuliert: \s
-                `NICHT Hat gültigen Ausweis`
-                
-                **Ergebnis:**
-                - Wenn die Person **keinen gültigen Ausweis** hat, ist das Ergebnis **wahr**.
-                - Wenn die Person **einen gültigen Ausweis** hat, ist das Ergebnis **falsch**.
-                
-                # Wahrheitswerte für den „Nicht“-Operator
-                - **NICHT wahr** → **falsch**
-                - **NICHT falsch** → **wahr**
-                
-                # Wann verwenden Sie den Operator „Nicht“?
-                Verwenden Sie **„Nicht“**, wenn Sie prüfen möchten, ob eine Bedingung **nicht erfüllt** ist. \s
-                Dies ist besonders hilfreich, wenn Sie Ausschlusskriterien festlegen möchten, z. B. um Bedingungen umzukehren oder auszudrücken, dass etwas „nicht wahr“ ist.
+                # Wofür verwenden Sie diese Funktion?
+
+                Mit „Nicht“ kehren Sie das Ergebnis einer Bedingung um: Aus **wahr** wird **falsch**, aus **falsch** wird **wahr**. Nutzen Sie die Funktion, wenn Sie prüfen möchten, ob eine Bedingung nicht erfüllt ist.
+
+                # Welche Werte werden benötigt?
+
+                - **Bedingung:** Die Bedingung, deren Ergebnis Sie umkehren möchten.
+
+                Für einen festgelegten Wert wählen Sie **Wahr** oder **Falsch**. Zusätzliche eigene Eingaben sind in dieser Auswahl nicht möglich.
+
+                Über „Andere Wertquelle verwenden …“ können Sie stattdessen einen verfügbaren Wert übernehmen oder mit einer Funktion ermitteln. Die verwendete Wertquelle sollte einen Wahrheitswert liefern.
+
+                # Welches Ergebnis erhalten Sie?
+
+                Sie erhalten einen Wahrheitswert:
+
+                - **Wahr**, wenn die eingesetzte Bedingung **falsch** ergibt.
+                - **Falsch**, wenn die eingesetzte Bedingung **wahr** ergibt.
+
+                # Beispiel im No-Code-Editor
+
+                Sie möchten die Bedingung „Geburtsort ist gleich Berlin“ umkehren.
+
+                1. Wählen Sie die Funktion „Nicht“.
+                2. Wählen Sie für „Bedingung“ zunächst „Andere Wertquelle verwenden …“, dann „Mit Funktion ermitteln“ und die Funktion „Ist gleich“.
+                3. Wählen Sie innerhalb von „Ist gleich“ für „Wert 1“ die Option „Aus Formularelement übernehmen“ und anschließend „Geburtsort“.
+                4. Wählen Sie für „Wert 2“ die Option „Wert selbst festlegen“ und geben Sie `Berlin` ein.
+
+                Der fertige Ausdruck liest sich so:
+
+                **nicht (Wert von „Geburtsort“ ist gleich „Berlin“)**
+
+                Bei „Berlin“ ergibt der innere Vergleich **wahr**. „Nicht“ kehrt das Ergebnis zu **falsch** um. Bei „Hamburg“ ergibt der innere Vergleich **falsch** und der gesamte Ausdruck **wahr**.
+
+                Für diesen einzelnen Vergleich können Sie auch direkt „Ist nicht gleich“ verwenden. „Nicht“ ist besonders hilfreich, wenn Sie das Ergebnis einer zusammengesetzten Bedingung umkehren möchten.
+
+                # Was ist zu beachten?
+
+                - „Nicht“ kehrt das Ergebnis der gesamten eingesetzten Bedingung um.
+                - Liefert die verwendete Wertquelle keinen Wert, wird dieser wie **falsch** behandelt. „Nicht“ ergibt dann **wahr**.
+                - Leerer Text gilt ebenfalls als **falsch**. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung. Verwenden Sie deshalb möglichst eine Wertquelle, die tatsächlich einen Wahrheitswert liefert.
+                - Zweimaliges Umkehren stellt den ursprünglichen Wahrheitswert wieder her. Achten Sie bei verschachtelten Verneinungen darauf, welches Ergebnis Sie benötigen.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 
     @Override
@@ -60,10 +85,10 @@ public class NoCodeNotOperator extends NoCodeOperator {
                         new NoCodeParameter(
                                 NoCodeDataType.Boolean,
                                 "Bedingung",
-                                "Die zu überprüfende Bedingung.",
+                                "Die Bedingung, deren Ergebnis Sie umkehren möchten.",
                                 new NoCodeParameterOption("Wahr", "true"),
                                 new NoCodeParameterOption("Falsch", "false")
-                        )
+                        ).withSentence("wenn", "falsch ist")
                 )
         );
     }

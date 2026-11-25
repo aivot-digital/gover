@@ -1,13 +1,14 @@
+import {NO_CODE_BOOLEAN_OPTIONS} from '../utils/no-code-options';
 import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {Autocomplete, Box, createFilterOptions, FormHelperText} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
-import {NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {NoCodeDateInput, NoCodeNumberConstraints, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
-import {useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {DateFieldComponent} from '../../../components/date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
@@ -17,22 +18,26 @@ import {DateTimeFieldComponent} from '../../../components/date-time-field/date-t
 import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
 import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 import {formFieldHelperTextSx} from '../../../theming/form-field-tokens';
+import {getNoCodeNumberValidationError} from '../utils/no-code-number-validation';
+import {isLocalDateIso, isYearIso, isYearMonthIso} from '../../../utils/temporal-utils';
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
+    autoFocus?: boolean;
     hint?: string;
     value: NoCodeStaticValue;
     onChange: (value: NoCodeStaticValue | undefined) => void;
     options?: NoCodeParameterOption[];
+    optionsAreSuggestions?: boolean;
     desiredType: NoCodeDataType;
     onAddEnclosingExpression: () => void;
     operandError?: NoCodeOperandError;
+    numberConstraints?: NoCodeNumberConstraints | null;
+    dateInput?: NoCodeDateInput | null;
+    preserveWhitespace?: boolean;
 }
 
-export const BOOL_DEFAULT_OPTIONS: NoCodeParameterOption[] = [
-    {label: 'Wahr', value: 'true'},
-    {label: 'Falsch', value: 'false'},
-];
+export const BOOL_DEFAULT_OPTIONS = NO_CODE_BOOLEAN_OPTIONS;
 
 const staticValueOptionFilter = createFilterOptions<SelectFieldComponentOption>({
     stringify: (option) => `${option.label} ${option.value}`,
@@ -61,47 +66,13 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
     }, [originalOptions]);
 
     if (suggestionOptions != null) {
-        return (
-            <>
-                <SuggestedStaticValue {...props} options={suggestionOptions}/>
-
-                {
-                    operandError != null &&
-                    operandError.error != null &&
-                    <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{
-                            mt: 1,
-                        }}
-                    >
-                        {operandError.error}
-                    </Typography>
-                }
-            </>
-        );
+        return props.optionsAreSuggestions === false
+            ? <SelectStaticValue {...props} options={suggestionOptions}/>
+            : <SuggestedStaticValue {...props} options={suggestionOptions}/>;
     }
 
     if (desiredType === NoCodeDataType.Boolean) {
-        return (
-            <>
-                <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS}/>
-
-                {
-                    operandError != null &&
-                    operandError.error != null &&
-                    <Typography
-                        color="error"
-                        variant="caption"
-                        sx={{
-                            mt: 1,
-                        }}
-                    >
-                        {operandError.error}
-                    </Typography>
-                }
-            </>
-        );
+        return <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS}/>;
     }
 
     if (desiredType === NoCodeDataType.Date) {
@@ -170,29 +141,11 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
         );
     }
 
-    return (
-        <>
-            <TextStaticValue {...props} />
-
-            {
-                operandError != null &&
-                operandError.error != null &&
-                <Typography
-                    color="error"
-                    variant="caption"
-                    sx={{
-                        mt: 1,
-                    }}
-                >
-                    {operandError.error}
-                </Typography>
-            }
-        </>
-    );
+    return <TextStaticValue {...props}/>;
 }
 
-function getStaticValueLabel(label: string): string {
-    return `${label ?? ''} — (Fester Wert)`;
+function getStaticValueError(props: NoCodeOperandEditorStaticValueProps): string | undefined {
+    return props.operandError?.error ?? getNoCodeNumberValidationError(props.value.value, props.label, props.numberConstraints);
 }
 
 function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: string | null | undefined) {
@@ -207,13 +160,13 @@ function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
         {
             color: 'error' as const,
             icon: <Delete/>,
-            tooltip: 'Diesen festen Wert löschen',
+            tooltip: 'Diesen Wert löschen',
             onClick: () => {
                 props.onChange(undefined);
             },
         },
         {
-            tooltip: 'Diesen festen Wert mit einem Ausdruck verknüpfen',
+            tooltip: 'Diesen Wert mit einer Funktion verknüpfen',
             icon: <Functions/>,
             onClick: props.onAddEnclosingExpression,
         },
@@ -223,8 +176,11 @@ function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
 function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TextFieldComponent
-            label={getStaticValueLabel(props.label)}
+            preserveWhitespace={props.preserveWhitespace}
+            showOptionalIndicator={false}
+            label={props.label}
             hint={props.hint}
+            error={getStaticValueError(props)}
             value={props.value.value}
             onChange={(val) => {
                 updateStaticValue(props, val);
@@ -232,6 +188,7 @@ function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
+                autoFocus: props.autoFocus,
                 margin: 'none',
             }}
         />
@@ -280,7 +237,10 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                         typeof value === 'string' ? value : value?.value,
                     );
                 }}
-                renderOption={({key, ...renderProps}, option) => (
+                renderOption={({
+                                   key,
+                                   ...renderProps
+                               }, option) => (
                     <Box
                         key={key}
                         component="li"
@@ -309,9 +269,12 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                 )}
                 renderInput={(params) => (
                     <TextFieldComponent
-                        muiPassTroughProps={params}
-                        label={getStaticValueLabel(props.label)}
+                        preserveWhitespace={props.preserveWhitespace}
+                        showOptionalIndicator={false}
+                        muiPassTroughProps={{...params, autoFocus: props.autoFocus}}
+                        label={props.label}
                         hint={props.hint}
+                        error={getStaticValueError(props)}
                         value={props.value.value}
                         onChange={(value) => updateStaticValue(props, value)}
                         margin="none"
@@ -358,8 +321,10 @@ function getSuggestedValueNote(options: SelectFieldComponentOption[], value: str
 function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { options: SelectFieldComponentOption[] }) {
     return (
         <SelectFieldComponent
-            label={getStaticValueLabel(props.label)}
+            showOptionalIndicator={false}
+            label={props.label}
             hint={props.hint}
+            error={getStaticValueError(props)}
             value={props.value.value ?? undefined}
             onChange={(val) => {
                 updateStaticValue(props, val);
@@ -367,6 +332,7 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
             startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
+                autoFocus: props.autoFocus,
                 margin: 'none',
             }}
             options={props.options}
@@ -375,13 +341,62 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
 }
 
 
+const dateModeOptions = [
+    {value: DateFieldComponentModelMode.Day, label: 'Tag, Monat und Jahr'},
+    {value: DateFieldComponentModelMode.Month, label: 'Monat und Jahr'},
+    {value: DateFieldComponentModelMode.Year, label: 'Jahr'},
+];
+
+function getCalendarDateMode(value: unknown): DateFieldComponentModelMode | null {
+    if (isYearIso(value)) return DateFieldComponentModelMode.Year;
+    if (isYearMonthIso(value)) return DateFieldComponentModelMode.Month;
+    if (isLocalDateIso(value)) return DateFieldComponentModelMode.Day;
+    return null;
+}
+
 function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
-    return (
+    const [draft, setDraft] = useState<{source: NoCodeStaticValue['value']; mode: DateFieldComponentModelMode}>();
+    const value = props.value.value;
+    const savedMode = getCalendarDateMode(value);
+    const draftMode = draft != null && draft.source === value ? draft.mode : null;
+    const mode = props.dateInput == null ? DateFieldComponentModelMode.Day
+        : draftMode ?? savedMode ?? DateFieldComponentModelMode.Day;
+
+    useEffect(() => {
+        setDraft(current => current?.source === value ? current : undefined);
+    }, [value]);
+
+    return <>
+        {props.dateInput != null && <SelectFieldComponent
+            label={`Datumsgenauigkeit für „${props.label}“`}
+            showOptionalIndicator={false}
+            includeEmptyOption={false}
+            margin="none"
+            options={dateModeOptions}
+            value={mode}
+            onChange={(nextMode) => {
+                if (nextMode == null) return;
+                setDraft({source: value, mode: nextMode});
+                if (value == null || savedMode == null || nextMode === savedMode) return;
+                // Coarser ISO dates are prefixes. A finer date stays a draft until its missing parts are entered.
+                if (nextMode === DateFieldComponentModelMode.Year) {
+                    updateStaticValue(props, value.slice(0, 4));
+                } else if (nextMode === DateFieldComponentModelMode.Month && savedMode === DateFieldComponentModelMode.Day) {
+                    updateStaticValue(props, value.slice(0, 7));
+                }
+            }}
+        />}
         <DateFieldComponent
-            label={getStaticValueLabel(props.label)}
+            autoFocus={props.autoFocus}
+            showOptionalIndicator={false}
+            label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(val) => {
+                if (val == null) {
+                    if (props.dateInput != null && savedMode != null && savedMode !== mode) return;
+                    setDraft({source: undefined, mode});
+                }
                 updateStaticValue(props, val);
             }}
             startIcon={<Article/>}
@@ -389,17 +404,20 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             muiPassTroughProps={{
                 margin: 'none',
             }}
-            mode={DateFieldComponentModelMode.Day}
+            mode={mode}
         />
-    );
+    </>;
 }
 
 function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <DateTimeFieldComponent
-            label={getStaticValueLabel(props.label)}
+            autoFocus={props.autoFocus}
+            showOptionalIndicator={false}
+            label={props.label}
             hint={props.hint}
-            value={props.value.value ?? undefined}
+            allowLegacyLocalValue
+            value={props.value.value}
             onChange={(value) => {
                 updateStaticValue(props, value);
             }}
@@ -413,7 +431,9 @@ function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
 function TimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
     return (
         <TimeFieldComponent
-            label={getStaticValueLabel(props.label)}
+            autoFocus={props.autoFocus}
+            showOptionalIndicator={false}
+            label={props.label}
             hint={props.hint}
             value={props.value.value ?? undefined}
             onChange={(value) => {

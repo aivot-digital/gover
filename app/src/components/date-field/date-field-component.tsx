@@ -45,6 +45,7 @@ export function DateFieldComponent({
                                        onChange,
                                        onBlur,
                                        autocomplete,
+                                       autoFocus,
                                        controlSx,
                                        bufferInputUntilBlur,
                                        debounce,
@@ -189,6 +190,7 @@ export function DateFieldComponent({
                 >
                     <DatePicker
                         label={undefined}
+                        autoFocus={autoFocus}
                         // Calendar dates are zone-free. UTC is only a stable MUI carrier that
                         // prevents the browser timezone from moving the selected calendar day.
                         timezone="UTC"

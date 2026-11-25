@@ -9,9 +9,19 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()
 
 describe('NoCodeOperandEditorProcessDataReference', () => {
     it.each([
-        {type: 'NoCodeProcessDataReference', path: 'warenkorb.anzahl'},
-        {type: 'NoCodeInstanceDataReference', path: 'caseNumber'},
-        {type: 'NoCodeNodeDataReference', nodeDataKey: 'warenkorbLaden', path: 'anzahl'},
+        {
+            type: 'NoCodeProcessDataReference',
+            path: 'warenkorb.anzahl',
+        },
+        {
+            type: 'NoCodeInstanceDataReference',
+            path: 'caseNumber',
+        },
+        {
+            type: 'NoCodeNodeDataReference',
+            nodeDataKey: 'warenkorbLaden',
+            path: 'anzahl',
+        },
     ] satisfies NoCodeOperand[])('keeps $type actions inside the control rather than beside the field', async (value) => {
         const user = userEvent.setup();
         const onChange = vi.fn();
@@ -26,15 +36,18 @@ describe('NoCodeOperandEditorProcessDataReference', () => {
 
         const input = screen.getByRole('textbox', {name: /^Summand 1/});
         const control = input.closest('.MuiInputBase-root')! as HTMLElement;
-        expect(within(control).getByRole('button', {name: 'Diesen Vorgangsdaten-Verweis löschen'})).toBeInTheDocument();
-        await user.click(within(control).getByRole('button', {name: 'Diesen Verweis mit einem Ausdruck verknüpfen'}));
+        expect(within(control).getByRole('button', {name: 'Diesen Verweis löschen'})).toBeInTheDocument();
+        await user.click(within(control).getByRole('button', {name: 'Diesen Verweis mit einer Funktion verknüpfen'}));
         expect(onAddEnclosingExpression).toHaveBeenCalledOnce();
-        await user.click(within(control).getByRole('button', {name: 'Diesen Vorgangsdaten-Verweis löschen'}));
+        await user.click(within(control).getByRole('button', {name: 'Diesen Verweis löschen'}));
         expect(onChange).toHaveBeenCalledWith(undefined);
 
         if (value.type === 'NoCodeProcessDataReference') {
             await user.click(within(control).getByRole('button', {name: 'Vorgangsdatenpfad leeren'}));
-            expect(onChange).toHaveBeenLastCalledWith({...value, path: undefined});
+            expect(onChange).toHaveBeenLastCalledWith({
+                ...value,
+                path: undefined,
+            });
         }
     });
 });

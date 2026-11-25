@@ -38,6 +38,7 @@ import {
     getInputModeVariableReference,
     InputModeField,
     type InputModeVariable,
+    type EmptyNoCodeInputDraft,
 } from '../input-mode-field/input-mode-field';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {type BaseInputElement} from '../../models/elements/form/base-input-element';
@@ -224,12 +225,12 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
     }
 
     const inputModePolicy = inputModesEnabled && isAnyInputElement(initialElement) &&
-        InputModeCompatibleElementTypes.has(element.type)
+    InputModeCompatibleElementTypes.has(element.type)
         ? initialElement.inputModePolicy
         : null;
     const dynamicTextPolicy = inputModesEnabled &&
-        (initialElement.type === ElementType.Text || initialElement.type === ElementType.RichTextInput) &&
-        DynamicTextCompatibleElementTypes.has(element.type)
+    (initialElement.type === ElementType.Text || initialElement.type === ElementType.RichTextInput) &&
+    DynamicTextCompatibleElementTypes.has(element.type)
         ? initialElement.dynamicTextPolicy
         : null;
     const rendersInputMode = inputModePolicy != null || dynamicTextPolicy != null;
@@ -285,7 +286,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                 element={element}
             />
 
-            <ElementErrorBoundary element={element} >
+            <ElementErrorBoundary element={element}>
                 {rendersInputMode ? <InputModeField
                     label={resolvedInputElement.label ?? ''}
                     hint={resolvedInputElement.hint ?? undefined}
@@ -303,7 +304,12 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     onInsertVariable={dynamicTextPolicy == null ? undefined : insertDynamicTextVariable}
                     rootElement={rootElement}
                     noCodeReturnType={resolveNoCodeReturnType(element.type)}
-                    renderLiteral={({value: literalValue, onChange, variableInsertAction, fieldProps}) => view(
+                    renderLiteral={({
+                                        value: literalValue,
+                                        onChange,
+                                        variableInsertAction,
+                                        fieldProps,
+                                    }) => view(
                         literalValue,
                         (nextValue, triggeringElementIds) => onChange(nextValue, triggeringElementIds),
                         (nextValue, triggeringElementIds) => handleAuthoredValueBlur(
@@ -351,15 +357,21 @@ function resolveInitialInputModeValue(
         case InputMode.Variable:
             return {
                 type: InputMode.Variable,
-                reference: {source: policy.allowedVariableSources?.[0] ?? InputVariableSource.ProcessData, path: ''},
+                reference: {
+                    source: policy.allowedVariableSources?.[0] ?? InputVariableSource.ProcessData,
+                    path: '',
+                },
             } satisfies AuthoredInputValue<unknown>;
         case InputMode.NoCode:
             return {
                 type: InputMode.NoCode,
-                operand: {type: 'NoCodeStaticValue', value: null},
-            } satisfies AuthoredInputValue<unknown>;
+                operand: null,
+            } satisfies EmptyNoCodeInputDraft;
         case InputMode.LowCode:
-            return {type: InputMode.LowCode, code: ''} satisfies AuthoredInputValue<unknown>;
+            return {
+                type: InputMode.LowCode,
+                code: '',
+            } satisfies AuthoredInputValue<unknown>;
         case InputMode.Literal:
             return literalAuthoredValue(effectiveValue);
     }
@@ -492,8 +504,14 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleMenuClose}
-                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'right'}}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
             >
                 <Box
                     sx={{

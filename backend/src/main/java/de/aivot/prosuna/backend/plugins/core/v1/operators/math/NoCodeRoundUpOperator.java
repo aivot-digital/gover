@@ -20,45 +20,41 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Aufrunden";
+        return "Runden (bei gleichem Abstand von null weg)";
     }
 
     @Override
     public String getAbstract() {
-        return "Rundet eine Zahl auf die angegebene Anzahl von Dezimalstellen nach oben auf.";
+        return "Rundet zur nächstgelegenen Zahl; bei gleichem Abstand weg von null.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Aufrunden“** rundet eine gegebene Zahl auf die angegebene Anzahl von Dezimalstellen **nach oben** auf. \s
-                Das bedeutet, dass der Wert unabhängig vom nächsten Dezimalwert immer aufgerundet wird.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie haben die Zahl `3.14159` und möchten diese auf 2 Dezimalstellen aufrunden.
-                
-                Mit dem Operator **„Aufrunden“** formulieren Sie: \s
-                ```text
-                Aufrunden(3.14159, 2)
-                ```
-                
-                **Ergebnis:** \s
-                Die gerundete Zahl lautet: `3.15`
-                
-                **Weitere Beispiele:**
-                - **Aufrunden(4.123, 1):** → **4.2** \s
-                - **Aufrunden(5.6, 0):** → **6** (auf ganze Zahl gerundet) \s
-                - **Aufrunden(2.987, 3):** → **2.987** (keine Veränderung, da bereits 3 Dezimalstellen vorhanden sind)
-                
-                # Wann verwenden Sie den Operator „Aufrunden“?
-                Verwenden Sie **„Aufrunden“**, wenn:
-                - Sie präzise Werte auf eine definierte Anzahl von Dezimalstellen benötigen. \s
-                - Berechnungen oder Ergebnisse immer **nach oben** gerundet werden sollen, z. B. bei Preisberechnungen, die keine Rundungsverluste erlauben. \s
-                - Sie genaue, aufgerundete Werte für Berichte oder Darstellungen benötigen.
-                
-                Dieser Operator ist besonders hilfreich in Finanzberechnungen, wissenschaftlichen Analysen oder wenn garantierte Obergrenzen eingehalten werden müssen.
+                # Wofür verwenden Sie diese Funktion?
+                Runden Sie eine Zahl auf die gewünschte Anzahl von Nachkommastellen. Liegt die Zahl genau zwischen zwei möglichen Ergebnissen, wird das weiter von null entfernte Ergebnis gewählt.
+
+                # Welche Werte werden benötigt?
+                Eine „Zahl“ und die gewünschte Anzahl der „Nachkommastellen“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können die Eingaben aus Wertquellen oder Funktionen stammen.
+
+                # Welches Ergebnis erhalten Sie?
+                Die nächstgelegene Zahl mit der gewählten Anzahl an Nachkommastellen. Bei gleichem Abstand wird weg von null gerundet.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Runden (bei gleichem Abstand von null weg)“ als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei „Zahl“ `2.345` und bei „Nachkommastellen“ `2` ein.
+                3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert.
+
+                Das Ergebnis ist `2.35`. Bei `2.346` erhalten Sie mit beiden Rundungsfunktionen `2.35`, bei `2.344` jeweils `2.34`.
+
+                # Was ist zu beachten?
+                Es wird nicht grundsätzlich aufgerundet. Die Rundungsrichtung unterscheidet sich nur bei genau gleichem Abstand zu beiden Ergebnissen. Auch negative Zahlen werden dann weg von null gerundet: `-2.345` ergibt bei zwei Nachkommastellen `-2.35`. Mit `0` Nachkommastellen wird auf ganze Zahlen gerundet, mit negativen Angaben auf Zehner, Hunderter usw.: `2345` ergibt bei `-2` Nachkommastellen `2300`. Für „Nachkommastellen“ ist eine ganze Zahl von `-15` bis `15` erforderlich. Als „Zahl“ können Sie auch Text wie `2.345` oder `2,345` verwenden. Ein fehlender Wert und leerer Text gelten als `0`; andere Texte und Werte führen zu einer Fehlermeldung.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt";
     }
 
     @Override
@@ -68,14 +64,15 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
                         NoCodeDataType.Number,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Wert",
-                                "Die Zahl, die aufgerundet werden soll."
-                        ),
+                                "Zahl",
+                                "Die Zahl, die zur nächstgelegenen Zahl gerundet wird."
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Dezimalstellen",
-                                "Die Anzahl der Dezimalstellen, auf die aufgerundet werden soll."
-                        )
+                                "Nachkommastellen",
+                                "Die gewünschte Anzahl an Nachkommastellen von -15 bis 15; 0 rundet auf ganze Zahlen, negative Werte auf Zehner, Hunderter usw."
+                        ).withSentence("auf", "Nachkommastellen gerundet (bei gleichem Abstand von null weg)")
+                                .withNumberConstraints(RoundOperatorSupport.DECIMAL_PLACES)
                 )
         );
     }
@@ -83,7 +80,7 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "runde „#0“ auf „#1“ Dezimalstellen auf";
+        return "#0 auf #1 Nachkommastellen gerundet (bei gleichem Abstand von null weg)";
     }
 
     @Override
@@ -93,8 +90,8 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
         }
 
         var number = castToNumber(args[0]);
-        var decimalPlaces = castToNumber(args[1]).intValue();
+        var decimalPlaces = requireInteger(args[1], "Geben Sie für „Nachkommastellen“ eine ganze Zahl im unterstützten Zahlenbereich ein.");
 
-        return new NoCodeResult(number.setScale(decimalPlaces, RoundingMode.HALF_UP));
+        return new NoCodeResult(RoundOperatorSupport.round(number, decimalPlaces, RoundingMode.HALF_UP));
     }
 }

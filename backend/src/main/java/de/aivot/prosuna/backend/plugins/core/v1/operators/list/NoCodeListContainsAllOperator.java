@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
 import de.aivot.prosuna.backend.nocode.models.NoCodeParameter;
 import de.aivot.prosuna.backend.nocode.models.NoCodeResult;
 import de.aivot.prosuna.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -20,27 +21,33 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Liste beinhaltet alle";
+        return "Liste enthält alle Werte";
     }
 
     @Override
     public String getAbstract() {
-        return "Prüft, ob eine Liste alle Werte einer zweiten Liste enthält.";
+        return "Prüft, ob jeder gesuchte Wert in einer Liste vorkommt.";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Liste beinhaltet alle“** prüft, ob jeder Wert der zweiten Liste auch in der ersten Liste vorkommt. \s
-                Die Reihenfolge spielt keine Rolle. Die erste Liste darf weitere Werte enthalten.
+                # Wofür verwenden Sie diese Funktion?
+                Prüfen Sie, ob eine Liste alle benötigten Werte enthält, beispielsweise alle erforderlichen Kategorien.
 
-                # Beispiele:
-                - `["A", "B", "C"]` beinhaltet alle von `["A", "C"]` → **wahr**
-                - `["A", "B"]` beinhaltet alle von `["A", "D"]` → **falsch**
-                - `["A"]` beinhaltet alle von `[]` → **wahr**
+                # Welche Werte werden benötigt?
+                **Liste:** Die Liste, in der gesucht wird. **Gesuchte Werte:** Eine zweite Liste mit allen Werten, die enthalten sein sollen. Beide Listen können Sie selbst als JSON-Liste eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
-                Um zu prüfen, ob mindestens ein Wert vorkommt, verwenden Sie **„Listen überschneiden sich“**.
+                # Welches Ergebnis erhalten Sie?
+                **Wahr**, wenn jeder gesuchte Wert vorkommt; andernfalls **Falsch**. Die erste Liste darf zusätzliche Werte enthalten.
+
+                # Beispiel im No-Code-Editor
+                Wählen Sie in einer Bedingung **„Liste enthält alle Werte“**. Verwenden Sie für **Liste** die Variable „Ausgewählte Kategorien“ mit `["A", "B", "C"]` und für **Gesuchte Werte** die Variable „Erforderliche Kategorien“ mit `["A", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ enthält alle Werte aus „Erforderliche Kategorien“`. Das Ergebnis ist **Wahr**.
+
+                # Was ist zu beachten?
+                Die Reihenfolge ist unerheblich. Eine leere Liste gesuchter Werte ergibt **Wahr**. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Mehrfach gesuchte gleiche Werte müssen nicht mehrfach in der ersten Liste vorkommen. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 
@@ -53,12 +60,12 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
                                 NoCodeDataType.List,
                                 "Liste",
                                 "Die Liste, in der gesucht werden soll."
-                        ),
+                        ).withSentence("wenn die Liste"),
                         new NoCodeParameter(
                                 NoCodeDataType.List,
                                 "Gesuchte Werte",
                                 "Die Werte, die alle in der Liste enthalten sein müssen."
-                        )
+                        ).withSentence("alle Werte aus", "enthält")
                 )
         );
     }
@@ -66,13 +73,13 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "„#0“ beinhaltet alle Werte aus „#1“";
+        return "#0 enthält alle Werte aus #1";
     }
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var list = castToList(args[0]);
-        var searched = castToList(args[1]);
+        var list = listOperandOrEmpty(args[0]);
+        var searched = listOperandOrEmpty(args[1]);
 
         for (var value : searched) {
             if (!containsMatchingValue(list, value)) {
@@ -90,5 +97,11 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
         }
 
         return list.stream().anyMatch(item -> item != null && (isEqualToReference(value, item) || isEqualToReference(item, value)));
+    }
+
+    @Nonnull
+    @Override
+    public String getSentenceLead() {
+        return "ergibt wahr";
     }
 }

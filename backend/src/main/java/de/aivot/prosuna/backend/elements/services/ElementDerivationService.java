@@ -497,7 +497,7 @@ public class ElementDerivationService {
             }
         } catch (Exception e) {
             logger.error(currentElement, e);
-            elementState.setError(e.getMessage());
+            elementState.setError(e.getMessage()).setDerivationFailed(true);
         }
     }
 

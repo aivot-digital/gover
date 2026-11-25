@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.elements.models.elements;
 
+import de.aivot.prosuna.backend.elements.enums.ValidationFunctionType;
+import de.aivot.prosuna.backend.elements.enums.ValueFunctionType;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.elements.models.input.InputModePolicy;
@@ -10,6 +12,7 @@ import jakarta.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,6 +83,14 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
         // technical fields and fields with an override need one as well.
         if (StringUtils.isNullOrEmpty(label)) {
             addConfigurationError(errors, "label", "Geben Sie einen Titel für das Feld an.");
+        }
+        if (value != null && value.getType() == ValueFunctionType.NoCode) {
+            addNoCodeConfigurationError(errors, "value", "den dynamischen Wert", Collections.singletonList(value.getNoCode()));
+        }
+        if (validation != null && validation.getType() == ValidationFunctionType.NoCode) {
+            // Without any rule, the selected function is still incomplete, as in the editor.
+            var rules = validation.getNoCodeList() == null ? List.<ValidationNoCodeWrapper>of() : validation.getNoCodeList();
+            addNoCodeConfigurationError(errors, "validation", "die Validierung", rules.stream().map(ValidationNoCodeWrapper::getNoCode).toList());
         }
         return errors;
     }

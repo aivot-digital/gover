@@ -38,8 +38,8 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
 
     const selectableElements = useMemo(() => {
         return allElements;
-            // Remove this for now, because we have no current concept of how to limit this compatability.
-            //.filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
+        // Remove this for now, because we have no current concept of how to limit this compatability.
+        //.filter((e) => elementMatchesDesiredNoCodeDataType(e.element.type, desiredType));
     }, [allElements, desiredType]);
 
     const allElementOptions: SelectFieldComponentOption[] = useMemo(() => {
@@ -56,7 +56,8 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
     return (
         <>
             <SelectFieldComponent
-                label={`${label ?? ''} — (Wert eines Elementes)`}
+                required
+                label={label}
                 value={operand.elementId ?? ''}
                 onChange={(val) => {
                     onChange({
@@ -66,33 +67,33 @@ export function NoCodeOperandEditorReference(props: NoCodeOperandEditorReference
                 }}
                 hint={hint}
                 options={allElementOptions}
-                startIcon={<MyLocation />}
+                startIcon={<MyLocation/>}
                 endAction={[
                     {
                         color: 'error',
-                        tooltip: 'Diesen Verweis auf ein Element löschen',
-                        icon: <Delete />,
+                        tooltip: 'Diesen Verweis auf ein Formularelement löschen',
+                        icon: <Delete/>,
                         onClick: () => {
                             onChange(undefined);
                         },
                     },
                     {
-                        tooltip: 'Element für diesen Verweis auswählen',
-                        icon: <DatabaseSearch />,
+                        tooltip: 'Formularelement für diesen Verweis auswählen',
+                        icon: <DatabaseSearch/>,
                         onClick: () => {
                             setShowSelectElementDialog(true);
                         },
                     },
                     {
-                        tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
-                        icon: <Functions />,
+                        tooltip: 'Diesen Verweis mit einer Funktion verknüpfen',
+                        icon: <Functions/>,
                         onClick: onAddEnclosingExpression,
                     },
                 ]}
                 muiPassTroughProps={{
                     margin: 'none',
                 }}
-                emptyStatePlaceholder="Keine passenden Elemente verfügbar"
+                emptyStatePlaceholder="Keine passenden Formularelemente verfügbar"
                 error={operandError?.error ?? undefined}
             />
 

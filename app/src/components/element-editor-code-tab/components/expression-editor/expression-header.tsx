@@ -68,23 +68,23 @@ export function ExpressionHeader(props: ExpressionHeaderProps) {
                 actions={[
                     {
                         icon: <SwitchAccessShortcutAddIcon />,
-                        tooltip: 'Ausdruck oberhalb einfügen',
+                        tooltip: 'Übergeordnete Funktion hinzufügen',
                         onClick: props.onAddAbove,
                     },
                     {
                         icon: <HelpOutlineOutlinedIcon />,
-                        tooltip: 'Informationen zum Operator',
+                        tooltip: 'Informationen zur Funktion',
                         onClick: props.onShowInfo,
                     },
                     {
                         icon: <SwapHorizIcon />,
-                        tooltip: 'Operator tauschen',
+                        tooltip: 'Funktion austauschen',
                         onClick: props.onShowSelect,
                     },
                     {
                         color: 'error',
                         icon: <Delete />,
-                        tooltip: 'Operator löschen',
+                        tooltip: 'Funktion löschen',
                         onClick: () => {
                             props.onChange(null);
                         },

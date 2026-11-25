@@ -67,8 +67,8 @@ class ProcessVersionServiceTest {
                 mock(ProcessRepository.class),
                 mock(ProcessNodeService.class),
                 mock(ProcessNodeDefinitionService.class),
-                caseNumberGeneratorService
-        );
+                caseNumberGeneratorService,
+                mock(LegacyNoCodePublicationPolicy.class));
 
         var entity = new ProcessVersionEntity()
                 .setProcessId(12)
@@ -95,8 +95,8 @@ class ProcessVersionServiceTest {
                 mock(ProcessRepository.class),
                 mock(ProcessNodeService.class),
                 mock(ProcessNodeDefinitionService.class),
-                caseNumberGeneratorService
-        );
+                caseNumberGeneratorService,
+                mock(LegacyNoCodePublicationPolicy.class));
 
         var existingEntity = new ProcessVersionEntity()
                 .setProcessId(12)
@@ -172,8 +172,8 @@ class ProcessVersionServiceTest {
                 processRepository,
                 processNodeService,
                 processNodeDefinitionService,
-                mock(CaseNumberGeneratorService.class)
-        );
+                mock(CaseNumberGeneratorService.class),
+                mock(LegacyNoCodePublicationPolicy.class));
         var version = new ProcessVersionEntity()
                 .setProcessId(12)
                 .setProcessVersion(5);
@@ -195,8 +195,8 @@ class ProcessVersionServiceTest {
                 processRepository(new ProcessEntity().setId(12)),
                 processNodeService,
                 mock(ProcessNodeDefinitionService.class),
-                mock(CaseNumberGeneratorService.class)
-        );
+                mock(CaseNumberGeneratorService.class),
+                mock(LegacyNoCodePublicationPolicy.class));
 
         var result = service.validate(new ProcessVersionEntity()
                 .setProcessId(12)
@@ -223,8 +223,8 @@ class ProcessVersionServiceTest {
                 processRepository(new ProcessEntity().setId(12)),
                 processNodeService,
                 mock(ProcessNodeDefinitionService.class),
-                mock(CaseNumberGeneratorService.class)
-        );
+                mock(CaseNumberGeneratorService.class),
+                mock(LegacyNoCodePublicationPolicy.class));
 
         var result = service.validate(new ProcessVersionEntity()
                 .setProcessId(12)
@@ -246,7 +246,7 @@ class ProcessVersionServiceTest {
     void create_RejectsIncompleteAndNonPositiveRetention() {
         var repository = mock(ProcessVersionRepository.class);
         var service = new ProcessVersionService(repository, mock(ProcessRepository.class), mock(ProcessNodeService.class),
-                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class), mock(LegacyNoCodePublicationPolicy.class));
         var version = new ProcessVersionEntity().setProcessId(12).setStatus(ProcessVersionStatus.Drafted);
 
         assertThrows(ResponseException.class, () -> service.create(version.setRetentionTimeValue(1)));
@@ -261,7 +261,7 @@ class ProcessVersionServiceTest {
         var repository = mock(ProcessVersionRepository.class);
         when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var service = new ProcessVersionService(repository, mock(ProcessRepository.class), mock(ProcessNodeService.class),
-                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class), mock(LegacyNoCodePublicationPolicy.class));
         var maximum = (int) ProcessRetentionTime.maximumValue(unit);
         var version = new ProcessVersionEntity().setProcessId(12).setStatus(ProcessVersionStatus.Drafted)
                 .setRetentionTimeUnit(unit).setRetentionTimeValue(maximum);
@@ -284,7 +284,7 @@ class ProcessVersionServiceTest {
     void validate_ReportsRetentionAboveMaximumBeforePublication() throws ResponseException {
         var service = new ProcessVersionService(mock(ProcessVersionRepository.class),
                 processRepository(new ProcessEntity().setId(12)), mock(ProcessNodeService.class),
-                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class), mock(LegacyNoCodePublicationPolicy.class));
         var version = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
                 .setRetentionTimeValue(101).setRetentionTimeUnit(ProcessRetentionTimeUnit.Years);
 
@@ -386,7 +386,7 @@ class ProcessVersionServiceTest {
 
     private static ProcessVersionService createService(ProcessVersionRepository repository) {
         return new ProcessVersionService(repository, mock(ProcessRepository.class), mock(ProcessNodeService.class),
-                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class), mock(LegacyNoCodePublicationPolicy.class));
     }
 
     @Test
@@ -394,7 +394,7 @@ class ProcessVersionServiceTest {
         var repository = mock(ProcessVersionRepository.class);
         when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var service = new ProcessVersionService(repository, mock(ProcessRepository.class), mock(ProcessNodeService.class),
-                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class), mock(LegacyNoCodePublicationPolicy.class));
         var version = new ProcessVersionEntity().setProcessId(12).setStatus(ProcessVersionStatus.Drafted);
 
         assertEquals(1, service.create(version.setInstanceDeadlineDays(1)).getInstanceDeadlineDays());
@@ -417,7 +417,7 @@ class ProcessVersionServiceTest {
         var repository = mock(ProcessVersionRepository.class);
         when(repository.save(any(ProcessVersionEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var service = new ProcessVersionService(repository, mock(ProcessRepository.class), mock(ProcessNodeService.class),
-                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class));
+                mock(ProcessNodeDefinitionService.class), mock(CaseNumberGeneratorService.class), mock(LegacyNoCodePublicationPolicy.class));
         var id = ProcessVersionEntityId.of(12, 5);
         var published = new ProcessVersionEntity().setProcessId(12).setProcessVersion(5)
                 .setStatus(ProcessVersionStatus.Published)

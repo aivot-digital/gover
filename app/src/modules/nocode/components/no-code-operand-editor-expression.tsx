@@ -36,13 +36,12 @@ import {ReorderDialog} from '../../../dialogs/reorder-dialog/reorder-dialog';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {ElementType} from '../../../data/element-type/element-type';
-import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
 import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
-import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {Stack} from '@mui/material';
 import {NoCodeTreeRow} from './no-code-tree-row';
-import {useCodeListElementOptions} from '../../code-lists/hooks/use-code-list-element-options';
-import {useProcessDataReferenceOptions} from '../hooks/use-process-data-reference-options';
+import {useNoCodeParameterSuggestions} from '../hooks/use-no-code-parameter-suggestions';
+import {withFormElementSuggestions} from '../utils/no-code-options';
+import {resolveNoCodeParameterPresentation} from '../utils/no-code-parameter-presentation';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -58,6 +57,7 @@ interface NoCodeOperandEditorExpressionProps {
 
 interface ResolvedParameter {
     parameter: NoCodeParameter;
+    suggestions: NoCodeParameterOption[];
     operand: NoCodeOperand | undefined | null;
 }
 
@@ -100,66 +100,18 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
 
         return resolveNoCodeSignature(operator, {
             operandCount: operands.length > 0 ? operands.length : undefined,
-        }).parameters;
-    }, [operator, operands.length]);
+        }).parameters.map(parameter => resolveNoCodeParameterPresentation(parameter, operands));
+    }, [operator, operands]);
 
-    const referencedElements = useMemo(() => {
-        return operands
-            .filter(isNoCodeReference)
-            .map((op) => allElements.find((entry) => entry.element.id === op.elementId)?.element)
-            .filter((element): element is ElementWithParents['element'] => element != null);
-    }, [operands, allElements]);
-    const codeListOptions = useCodeListElementOptions(referencedElements);
-    const processDataOptions = useProcessDataReferenceOptions(operands);
-
-    // The options of the form element or process data key that each operand references, by operand position.
-    const referenceOptions: NoCodeParameterOption[][] = useMemo(() => {
-        return operands.map((op, index) => {
-            if (!isNoCodeReference(op)) {
-                return processDataOptions[index] ?? [];
-            }
-
-            const element = allElements
-                .find(el => el.element.id === op.elementId)?.element;
-
-            return element == null ? [] : getReferencedElementOptions(element, codeListOptions);
-        });
-    }, [operands, allElements, codeListOptions, processDataOptions]);
-
-    const parameterOptions: NoCodeParameterOption[][] = useMemo(() => {
-        return parameters.map((parameter) => {
-            // Options defined by the operator, such as the units of a date calculation, are the only valid values.
-            if (parameter.options.length > 0) {
-                return parameter.options;
-            }
-
-            // Suggest the options of referenced values only for parameters of a compatible type, so a number of days
-            // referenced in a date calculation does not become a suggestion for the date.
-            const optionsByValue = new Map<string, NoCodeParameterOption>();
-            referenceOptions.forEach((options, operandIndex) => {
-                const referencingParameter = parameters[operandIndex];
-                if (referencingParameter == null || !areCompatibleParameterTypes(parameter.type, referencingParameter.type)) {
-                    return;
-                }
-
-                for (const option of options) {
-                    if (!optionsByValue.has(option.value)) {
-                        optionsByValue.set(option.value, option);
-                    }
-                }
-            });
-
-            return Array.from(optionsByValue.values());
-        });
-    }, [parameters, referenceOptions]);
+    const parameterSuggestions = useNoCodeParameterSuggestions(operands, parameters, allElements);
+    const parameterOptions = useMemo(() => withFormElementSuggestions(operator?.identifier, parameterSuggestions, allElements),
+        [operator?.identifier, parameterSuggestions, allElements]);
 
     const leadingParameter: ResolvedParameter | undefined = useMemo(() => {
         if (parameters.length >= 2) {
             return {
-                parameter: {
-                    ...parameters[0],
-                    options: parameterOptions[0],
-                },
+                parameter: parameters[0],
+                suggestions: parameterOptions[0],
                 operand: operands[0],
             };
         }
@@ -173,10 +125,8 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         return parameters
             .slice(offset)
             .map((p, index) => ({
-                parameter: {
-                    ...p,
-                    options: parameterOptions[index + offset],
-                },
+                parameter: p,
+                suggestions: parameterOptions[index + offset],
                 operand: operands[index + offset],
             }));
     }, [parameters, operands, leadingParameter, parameterOptions]);
@@ -214,9 +164,15 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
             <Box data-no-code-expression>
                 {
                     leadingParameter != null &&
-                    <NoCodeTreeRow up={false} down contentSx={{pb: 2, pl: 1}}>
+                    <NoCodeTreeRow up={false}
+                                   down
+                                   contentSx={{
+                                       pb: 2,
+                                       pl: 1,
+                                   }}>
                         <NoCodeOperandEditor
                             parameter={leadingParameter.parameter}
+                            suggestions={leadingParameter.suggestions}
                             operand={leadingParameter.operand}
                             onChange={(updatedOperand) => {
                                 onChange({
@@ -235,7 +191,9 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                     </NoCodeTreeRow>
                 }
 
-                <NoCodeTreeRow operator up={leadingParameter != null} down={trailingParameters.length > 0}>
+                <NoCodeTreeRow operator
+                               up={leadingParameter != null}
+                               down={trailingParameters.length > 0}>
                     <Box
                         sx={{
                             display: 'flex',
@@ -302,7 +260,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 <Typography
                                     variant="caption"
                                     sx={{
-                                        color: "text.secondary"
+                                        color: 'text.secondary',
                                     }}
                                 >
                                     {operator.abstractDescription}
@@ -344,7 +302,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 },
                                 {
                                     icon: <SwapHoriz/>,
-                                    tooltip: 'Ausdrucksoperator austauschen',
+                                    tooltip: 'Funktion austauschen',
                                     onClick: () => {
                                         setShowOperatorSwitcher(true);
                                     },
@@ -358,14 +316,14 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 },
                                 {
                                     icon: <Help/>,
-                                    tooltip: 'Hilfe zum Ausdruckstyp',
+                                    tooltip: 'Informationen zur Funktion',
                                     onClick: () => {
                                         setShowOperatorInfo(true);
                                     },
                                 },
                                 {
                                     icon: <Functions/>,
-                                    tooltip: 'Diesen Ausdruck mit einem anderen Ausdruck verknüpfen',
+                                    tooltip: 'Diesen Ausdruck mit einer Funktion verknüpfen',
                                     onClick: () => {
                                         onChange({
                                             type: 'NoCodeExpression',
@@ -387,10 +345,14 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             key={index}
                             up
                             down={index < all.length - 1}
-                            contentSx={{pt: 2, pl: 1}}
+                            contentSx={{
+                                pt: 2,
+                                pl: 1,
+                            }}
                         >
                             <NoCodeOperandEditor
                                 parameter={p.parameter}
+                                suggestions={p.suggestions}
                                 operand={p.operand}
                                 onChange={(updatedOperand) => {
                                     const updatedOperands = operand.operands ? [...operand.operands] : [];
@@ -417,6 +379,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
 
             <SelectOperatorDialog
                 open={showOperatorSwitcher}
+                mode="replace"
                 operators={allOperators}
                 onSelect={(op) => {
                     setShowOperatorSwitcher(false);
@@ -506,7 +469,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
 
 function getReferenceOperandLabel(operand: NoCodeReference, allElements: ElementWithParents[]): string {
     if (isStringNullOrEmpty(operand.elementId)) {
-        return 'Kein Element ausgewählt';
+        return 'Kein Formularelement ausgewählt';
     }
 
     const element = allElements
@@ -514,66 +477,22 @@ function getReferenceOperandLabel(operand: NoCodeReference, allElements: Element
 
     return element != null
         ? generateComponentTitle(element.element)
-        : `Unbekanntes Element (ID: ${operand.elementId})`;
+        : `Unbekanntes Formularelement (ID: ${operand.elementId})`;
 }
 
 function getExpressionOperandLabel(operand: NoCodeExpression, allOperators: NoCodeOperatorDetailsDTO[]): string {
     if (isStringNullOrEmpty(operand.operatorIdentifier)) {
-        return 'Kein Ausdrucksoperator ausgewählt';
+        return 'Keine Funktion ausgewählt';
     }
 
     const operator = allOperators
         .find(op => op.identifier === operand.operatorIdentifier);
 
     if (operator == null) {
-        return `Der Ausdruck mit dem unbekannten No-Code-Operator (ID: ${operand.operatorIdentifier})`;
+        return `Unbekannte Funktion (ID: ${operand.operatorIdentifier})`;
     }
 
     return operator.label;
-}
-
-function getReferencedElementOptions(
-    element: ElementWithParents['element'],
-    codeListOptions: ReadonlyMap<string, NoCodeParameterOption[]>,
-): NoCodeParameterOption[] {
-    switch (element.type) {
-        case ElementType.Checkbox:
-            return BOOL_DEFAULT_OPTIONS;
-        case ElementType.Select:
-            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
-                return element.options.map((option) => (
-                    typeof option === 'string' ?
-                        {
-                            value: option,
-                            label: option,
-                        } :
-                        option
-                ));
-            }
-            return codeListOptions.get(element.id) ?? [];
-        case ElementType.MultiCheckbox:
-            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
-                return element.options;
-            }
-            return codeListOptions.get(element.id) ?? [];
-        case ElementType.ChipInput:
-            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.suggestions != null) {
-                return element.suggestions.map((value) => ({
-                    value,
-                    label: value,
-                }));
-            }
-            return codeListOptions.get(element.id) ?? [];
-        default:
-            return [];
-    }
-}
-
-/**
- * Operators that accept values of any type, such as the comparison operators, use runtime parameters.
- */
-function areCompatibleParameterTypes(first: NoCodeDataType, second: NoCodeDataType): boolean {
-    return first === second || first === NoCodeDataType.Runtime || second === NoCodeDataType.Runtime;
 }
 
 function getProcessDataOperandLabel(

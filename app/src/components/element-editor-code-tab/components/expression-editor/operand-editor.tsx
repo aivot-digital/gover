@@ -117,7 +117,7 @@ export function OperandEditor(props: OperandEditorProps) {
                                 startIcon={OperandTypeIcon.value}
                                 endAction={disabled ? undefined : [{
                                     color: 'error',
-                                    tooltip: 'Löschen',
+                                    tooltip: 'Diesen Wert löschen',
                                     icon: <Close />,
                                     onClick: () => {
                                         onChange(null);
@@ -142,7 +142,7 @@ export function OperandEditor(props: OperandEditorProps) {
                                 startIcon={OperandTypeIcon.value}
                                 endAction={disabled ? undefined : [{
                                     color: 'error',
-                                    tooltip: 'Löschen',
+                                    tooltip: 'Diesen Wert löschen',
                                     icon: <Close />,
                                     onClick: () => {
                                         onChange(null);
@@ -165,14 +165,14 @@ export function OperandEditor(props: OperandEditorProps) {
                                     endAction={disabled ? undefined : [
                                         {
                                             color: 'error',
-                                            tooltip: 'Löschen',
+                                            tooltip: 'Diesen Verweis auf ein Formularelement löschen',
                                             icon: <Close />,
                                             onClick: () => {
                                                 onChange(null);
                                             },
                                         },
                                         {
-                                            tooltip: 'Referenz auswählen',
+                                            tooltip: 'Formularelement für diesen Verweis auswählen',
                                             icon: <DatabaseSearch />,
                                             onClick: () => {
                                                 setShowElementSelectDialog(true);

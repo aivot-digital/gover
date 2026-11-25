@@ -4,32 +4,22 @@ import {NoCodeApiService} from '../../../../services/no-code-api-service';
 import {NoCodeOperatorDetailsDTO} from '../../../../models/dtos/no-code-operator-details-dto';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
-import {flattenElementsWithParents} from '../../../../utils/flatten-elements';
-import {ElementType} from '../../../../data/element-type/element-type';
-import {Alert, AlertTitle, Box, CircularProgress, Typography} from '@mui/material';
-import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
-import {
-    isNoCodeExpression,
-    isNoCodeReference,
-    NoCodeExpression,
-    NoCodeOperand,
-    NoCodeOperandError,
-} from '../../../../models/functions/no-code-expression';
-import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
-import {Collapse} from '../../../collapse/collapse';
-import {AuthoredElementValues, createDerivedRuntimeElementData} from '../../../../models/element-data';
-import {ElementDerivationContext} from '../../../../modules/elements/components/element-derivation-context';
-import {OperandEditor} from '../expression-editor/operand-editor';
+import {Alert, Box, Button, CircularProgress, Typography} from '@mui/material';
+import {NoCodeOperand, NoCodeOperandError} from '../../../../models/functions/no-code-expression';
 import {FormLayoutElement as RootElement} from '../../../../models/elements/form-layout-element';
 import {StepElement} from '../../../../models/elements/steps/step-element';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';
 import {NoCodeDataType} from '../../../../data/no-code-data-type';
 import {
-    NoCodeOperandEditor,
     NoCodeOperandEditorContextType,
 } from '../../../../modules/nocode/components/no-code-operand-editor';
+import {NoCodeEditor} from '../../../../modules/nocode/components/no-code-editor';
 import {AnyElement} from '../../../../models/elements/any-element';
+
+import {noCodeEditorElements} from '../../../../modules/nocode/utils/no-code-editor-elements';
+import {readsFormElementState} from '../../../../modules/nocode/utils/no-code-options';
+import {validateNoCode} from '../../../../modules/nocode/utils/validate-no-code';
 
 interface NoCodeEditorWrapperProps {
     parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | AnyElement>;
@@ -42,9 +32,15 @@ interface NoCodeEditorWrapperProps {
     label?: string;
     contextType?: NoCodeOperandEditorContextType;
     operandError?: NoCodeOperandError;
+    required?: boolean;
+    validationRequest?: number;
+    focusOnValidation?: boolean;
+    toolbarContainer?: HTMLElement | null;
+    emptyDescription?: string;
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+    onAvailabilityChange?: (available: boolean) => void;
+    onValidityChange?: (valid: boolean) => void;
 }
-
-const old_editor = localStorage.getItem('old_editor') != null;
 
 export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
     const {
@@ -58,94 +54,50 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         contextType = 'FORM',
         operandError,
     } = props;
-    const useNewEditor = !old_editor || contextType === 'PROCESS';
 
     const api = useApi();
     const dispatch = useAppDispatch();
 
     const [operators, setOperators] = useState<NoCodeOperatorDetailsDTO[]>([]);
-    const [testPayload, setTestPayload] = useState<AuthoredElementValues>({});
-    const [testResult, setTestResult] = useState<{
-        expression: NoCodeExpression;
-        result: string;
-        error: boolean;
-    }>();
-
     const [isBusy, setIsBusy] = useState<boolean>(true);
-    const [isBusyTesting, setIsBusyTesting] = useState<boolean>(false);
+    const [loadFailed, setLoadFailed] = useState(false);
+    const [loadAttempt, setLoadAttempt] = useState(0);
 
     useEffect(() => {
+        let active = true;
         setIsBusy(true);
+        setLoadFailed(false);
         new NoCodeApiService(api)
             .getNoCodeOperators()
-            .then(setOperators)
-            .catch(err => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Operatoren für No-Code-Ausdrücke konnten nicht geladen werden.'));
+            .then((loaded) => {
+                // Processes compute no visibility of form elements, so checking it there would always yield visible.
+                if (active) setOperators(contextType === 'PROCESS' ? loaded.filter((operator) => !readsFormElementState(operator.identifier)) : loaded);
             })
-            .finally(() => setIsBusy(false));
-    }, []);
-
-    const parent = useMemo(() => {
-        for (const par of [...parents].reverse()) {
-            if (par.type === ElementType.ReplicatingContainer) {
-                return par;
-            }
-        }
-        return parents[0];
-    }, [parents]);
-
-    const allElements = useMemo(() => {
-        const allElements = flattenElementsWithParents(parent, [], true)
-            .filter((e) => isAnyInputElement(e.element));
-
-        // Check if the parent is a replicating list container. shift it to prevent selectability for children
-        if (parent.type === ElementType.ReplicatingContainer) {
-            allElements.shift();
-        }
-
-        return allElements;
-    }, [parent]);
-
-    const referencedElementIds = useMemo(() => {
-        if (noCode == null) {
-            return [];
-        }
-        return extractReferencedElementIds(noCode);
-    }, [noCode]);
-
-    const referencedElements = useMemo(() => {
-        return referencedElementIds
-            .map(id => allElements.find(e => e.element.id === id))
-            .filter(e => e != null);
-    }, [referencedElementIds, allElements]);
-
-
-    const handleTest = async (expression: NoCodeExpression) => {
-        setTestResult(undefined);
-        setIsBusyTesting(true);
-
-        const service = new NoCodeApiService(api);
-        try {
-            const result = await service.evaluateNoCode(expression, createDerivedRuntimeElementData({
-                effectiveValues: testPayload,
-                elementStates: {},
-            }));
-            setTestResult({
-                expression,
-                result: JSON.stringify(result.result, null, 2),
-                error: false,
+            .catch(err => {
+                if (!active) return;
+                setLoadFailed(true);
+                console.error(err);
+                dispatch(showErrorSnackbar('Funktionen für No-Code-Ausdrücke konnten nicht geladen werden.'));
+            })
+            .finally(() => {
+                if (active) setIsBusy(false);
             });
-        } catch (e: any) {
-            setTestResult({
-                expression,
-                result: e.message,
-                error: true,
-            });
-        } finally {
-            setIsBusyTesting(false);
-        }
-    };
+        return () => {
+            active = false;
+        };
+    }, [loadAttempt]);
+
+    const allElements = useMemo(() => noCodeEditorElements(parents), [parents]);
+
+    const validation = useMemo(() => validateNoCode(noCode, operators, allElements, props.required ?? false),
+        [noCode, operators, allElements, props.required]);
+    useEffect(() => {
+        props.onAvailabilityChange?.(!isBusy && !loadFailed);
+    }, [isBusy, loadFailed, props.onAvailabilityChange]);
+    const valid = !isBusy && !loadFailed && validation.isValid;
+    useEffect(() => {
+        props.onValidityChange?.(valid);
+    }, [valid, validation, props.onValidityChange]);
 
     return (
         <>
@@ -161,7 +113,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                         border: '1px solid #e0e0e0',
                     }}
                 >
-                    <CircularProgress />
+                    <CircularProgress/>
                     <Typography
                         variant="body1"
                         sx={{ml: 3}}
@@ -169,125 +121,36 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                         Daten werden geladen, bitte warten...
                     </Typography>
                 </Box>
-            ) : (
+            ) : loadFailed ? <Alert severity="error"
+                                    action={<Button onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Erneut
+                                                                                                             laden</Button>}>
+                Die Funktionen konnten nicht geladen werden. Der Ausdruck kann noch nicht geprüft werden.
+            </Alert> : (
                 <>
-                    {
-                        !useNewEditor &&
-                        <OperandEditor
-                            allElements={allElements}
-                            allOperators={operators}
-                            disabled={!editable}
-                            operand={noCode}
-                            onChange={(noCode) => {
-                                onChange(noCode);
-                            }}
-                            isTopLevelOperand={true}
-                            isLastOperand={true}
-                            parameter={{
-                                label: 'Ausdruck',
-                                description: props.hint ?? '',
-                                type: NoCodeDataType.Runtime,
-                                options: [],
-                            }}
-                        />
-                    }
-
-                    {
-                        useNewEditor &&
-                        <Box
-                            sx={{
-                                pointerEvents: editable ? 'auto' : 'none',
-                                opacity: editable ? 1 : 0.65,
-                            }}
-                        >
-                            <NoCodeOperandEditor
-                                parameter={{
-                                    label: label ?? '',
-                                    description: hint ?? '',
-                                    type: desiredReturnType,
-                                    options: [],
-                                }}
-                                operand={noCode}
-                                onChange={onChange}
-                                allOperators={operators}
-                                allElements={allElements}
-                                contextType={contextType}
-                                operandError={operandError}
-                            />
-                        </Box>
-                    }
-
-                    {
-                        testResult != null && (
-                            <Alert
-                                severity={testResult.error ? 'error' : 'success'}
-                                sx={{
-                                    marginTop: 4,
-                                }}
-                                icon={<ScienceOutlinedIcon />}
-                                onClose={() => setTestResult(undefined)}
-                            >
-                                <AlertTitle>
-                                    Testergebnis
-                                </AlertTitle>
-
-                                {testResult.result}
-                            </Alert>
-                        )
-                    }
-
-                    {
-                        false &&
-                        referencedElements.length > 0 &&
-                        <Collapse
-                            label="Testdaten"
-                            openTooltip="Testdaten anzeigen"
-                            closeTooltip="Testdaten verbergen"
-                        >
-                            {
-                                referencedElements.map((element) => (
-                                    <ElementDerivationContext
-                                        key={element?.element.id}
-                                        element={element?.element}
-                                        authoredElementValues={testPayload}
-                                        onAuthoredElementValuesChange={(change) => {
-                                            setTestPayload({
-                                                ...testPayload,
-                                                ...change,
-                                            });
-                                        }}
-                                    />
-                                ))
-                            }
-                        </Collapse>
-                    }
+                    <NoCodeEditor
+                        validationRequest={props.validationRequest}
+                        focusOnValidation={props.focusOnValidation}
+                        toolbarContainer={props.toolbarContainer}
+                        emptyDescription={props.emptyDescription}
+                        scrollContainerRef={props.scrollContainerRef}
+                        parameter={{
+                            label: label ?? '',
+                            description: hint ?? '',
+                            type: desiredReturnType,
+                            options: [],
+                        }}
+                        operand={noCode}
+                        readOnly={!editable}
+                        onChange={(value) => {
+                            if (editable) onChange(value);
+                        }}
+                        allOperators={operators}
+                        allElements={allElements}
+                        contextType={contextType}
+                        operandError={!validation.isValid ? validation : operandError ?? validation}
+                    />
                 </>
             )}
         </>
     );
-}
-
-function extractReferencedElementIds(op: NoCodeOperand): string[] {
-    const ids: string[] = [];
-
-    if (isNoCodeReference(op)) {
-        if (!ids.includes(op.elementId!)) {
-            ids.push(op.elementId!);
-        }
-    } else if (isNoCodeExpression(op) && op.operands != null) {
-        for (const c of op.operands) {
-            if (c == null) {
-                continue;
-            }
-
-            extractReferencedElementIds(c)
-                .forEach((id) => {
-                    if (!ids.includes(id)) {
-                        ids.push(id);
-                    }
-                });
-        }
-    }
-
-    return ids;
 }

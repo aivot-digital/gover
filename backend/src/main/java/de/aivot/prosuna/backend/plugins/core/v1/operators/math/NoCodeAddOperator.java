@@ -20,49 +20,47 @@ public class NoCodeAddOperator extends NoCodeOperator {
 
     @Override
     public String getLabel() {
-        return "Addiere";
+        return "Addieren";
     }
 
     @Override
     public String getAbstract() {
-        return "Addiert zwei Werte.";
+        return "Bildet die Summe aus zwei oder mehr Zahlen.";
     }
 
     @Nullable
     @Override
     public String getHumanReadableTemplate() {
-        return "Addiere #0 und #1";
+        return "#0 plus #1";
     }
 
     @Override
     public String getDescription() {
         return """
-                # Beschreibung:
-                Der Operator **„Addiere“** summiert zwei oder mehr numerische Werte. \s
-                Das Ergebnis ist die Summe aller angegebenen Werte.
-                
-                # Anwendungsbeispiel:
-                Stellen Sie sich vor, Sie möchten die Summe von zwei Zahlen berechnen.
-                
-                Mit dem Operator **„Addiere“** wird diese Logik so formuliert: \s
-                `Addiere Wert1 Wert2`
-                
-                Beispielwerte: \s
-                - **Wert1:** 5 \s
-                - **Wert2:** 3
-                
-                **Ergebnis:**
-                - **Rückgabewert:** 8
-                
-                # Beispiele und Ergebnisse
-                - **Addiere 1 2** → **3** \s
-                - **Addiere 10 20 30** → **60** \s
-                - **Addiere -5 5** → **0**
-                
-                # Wann verwenden Sie den Operator „Addiere“?
-                Verwenden Sie **„Addiere“**, um die Summe von zwei oder mehr numerischen Werten zu berechnen. \s
-                Dieser Operator ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                # Wofür verwenden Sie diese Funktion?
+                Berechnen Sie einen Gesamtwert, etwa die Summe mehrerer Einzelbeträge.
+
+                # Welche Werte werden benötigt?
+                Sie benötigen mindestens zwei Zahlen. Jede Zahl können Sie frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
+
+                # Welches Ergebnis erhalten Sie?
+                Die Summe aller angegebenen Zahlen.
+
+                # Beispiel im No-Code-Editor
+                1. Wählen Sie „Addieren“ als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei „Zahl 1“ `5` und bei „Zahl 2“ `3` ein.
+                3. Wählen Sie „Weitere Zahl hinzufügen“ und geben Sie bei „Zahl 3“ `2` ein.
+
+                Der Ausdruck `5 plus 3 plus 2` ergibt `10`. Verwenden Sie die Summe beispielsweise als berechneten Wert eines Formularelements.
+
+                # Was ist zu beachten?
+                Verwenden Sie Zahlen. Zahlen als Text werden übernommen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung.
                 """;
+    }
+
+    @Override
+    public String getSentenceLead() {
+        return "ergibt";
     }
 
     @Override
@@ -72,14 +70,14 @@ public class NoCodeAddOperator extends NoCodeOperator {
                         NoCodeDataType.Number,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Summand 1",
-                                "Der erste Wert, der addiert werden soll."
-                        ),
+                                "Zahl 1",
+                                "Die erste Zahl für die Summe."
+                        ).withSentence(""),
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
-                                "Summand 2",
-                                "Der zweite Wert, der addiert werden soll."
-                        )
+                                "Zahl 2",
+                                "Die Zahl, die zur bisherigen Summe hinzukommt."
+                        ).withSentence("plus")
                 )
         );
     }
