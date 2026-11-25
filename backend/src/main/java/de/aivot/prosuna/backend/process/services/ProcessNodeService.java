@@ -71,6 +71,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -314,6 +315,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 }
         );
 
+        // An explicit save may confirm the current value while an earlier PUT is still in flight.
+        // Mark even an unchanged node dirty so its JPA version rejects that older request.
+        var now = Instant.now();
+        existingEntity.setUpdated(now.equals(existingEntity.getUpdated()) ? now.plusNanos(1_000) : now);
         return processNodeRepository.save(existingEntity);
     }
 

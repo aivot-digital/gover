@@ -36,7 +36,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
 
     const {
-        root,
         editable,
         allElements,
         allowElementIdEditing,
@@ -58,7 +57,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         type,
     } = currentElement;
 
-    const isRoot = root.id === currentElement.id;
+    const isRoot = parents.length === 0;
 
     const hasSummaryLayoutParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
@@ -141,7 +140,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         onChangeCurrentElement({
             ...currentElement,
             weight: normalizedWeight,
-        });
+        }, 'normalize');
     }, [currentElement, isRoot, normalizedWeight, onChangeCurrentElement]);
 
     return (

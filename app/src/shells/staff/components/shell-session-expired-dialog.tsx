@@ -1,19 +1,33 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import LoginOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Login';
 import {AuthService} from '../../../services/auth-service';
 import {useLocation} from 'react-router-dom';
 import {createStaffPath} from '../../../utils/url-path-utils';
+import {prepareEditorDraftLogin} from '../../../services/editor-draft-login';
 
 export function ShellSessionExpiredDialog() {
     const authService = AuthService;
     const location = useLocation();
 
     const [isAuthenticated, setIsAuthenticated] = useState(true);
+    const loginPending = useRef(false);
+    const [preparingLogin, setPreparingLogin] = useState(false);
 
-    const loginUrl = useMemo(() => {
-        return AuthService.getLoginUrl(location);
-    }, [location]);
+    const handleLogin = async () => {
+        if (loginPending.current) {
+            return;
+        }
+        loginPending.current = true;
+        setPreparingLogin(true);
+        try {
+            const returnId = await prepareEditorDraftLogin();
+            window.location.assign(AuthService.getLoginUrl(location, returnId));
+        } finally {
+            loginPending.current = false;
+            setPreparingLogin(false);
+        }
+    };
 
     useEffect(() => {
         const intervalPointer = setInterval(() => {
@@ -53,9 +67,8 @@ export function ShellSessionExpiredDialog() {
                     startIcon={
                         <LoginOutlinedIcon/>
                     }
-                    component="a"
-                    href={loginUrl}
-                    disabled={loginUrl.length === 0}
+                    onClick={handleLogin}
+                    loading={preparingLogin}
                 >
                     Erneut anmelden
                 </Button>

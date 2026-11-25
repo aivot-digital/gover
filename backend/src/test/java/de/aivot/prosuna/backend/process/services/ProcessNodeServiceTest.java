@@ -1195,6 +1195,16 @@ class ProcessNodeServiceTest {
     }
 
     @Test
+    void performUpdate_ShouldMarkAnUnchangedNodeForAVersionedWrite() throws Exception {
+        var existing = createNode(2, "existing").setUpdated(Instant.EPOCH);
+
+        service.performUpdate(2, existing, existing);
+
+        assertTrue(existing.getUpdated().isAfter(Instant.EPOCH));
+        verify(processNodeRepository).save(existing);
+    }
+
+    @Test
     void performUpdate_ShouldEditNodesOfDraftWithTestClaim() throws Exception {
         when(processTestClaimRepository.existsByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION)).thenReturn(true);
         when(processNodeRepository.save(any(ProcessNodeEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));

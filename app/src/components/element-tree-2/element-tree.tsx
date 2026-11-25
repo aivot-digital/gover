@@ -23,6 +23,9 @@ import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigat
 import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
 import {ElementType} from '../../data/element-type/element-type';
 import {isSectionElementType} from '../../models/elements/steps/step-element';
+import {applyPanelDraftToTree, type ElementPanelDraft} from './element-panel-draft';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {useElementConfigurationErrors} from '../../modules/elements/hooks/use-element-configuration-errors';
 import {type ElementConfigurationErrors} from '../../modules/elements/elements-api-service';
 
@@ -38,6 +41,8 @@ export interface ElementTreeProps<T extends AnyElement> {
     onHoveredElementIdChange?: (elementId: string | null) => void;
     openRootAddElementSignal?: number;
     identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
+    panelDraft?: ElementPanelDraft | null;
+    onPanelDraftChange?: (draft: ElementPanelDraft | null, reason?: 'normalize' | 'structure') => void;
     /** Configuration errors validated by a host that also needs them outside the tree. The tree then skips its own validation. */
     configurationErrors?: ElementConfigurationErrors | null;
 }
@@ -49,6 +54,7 @@ interface ElementTreeSearchResult {
 }
 
 export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
+    const dispatch = useAppDispatch();
     const {
         value,
         onChange,
@@ -61,6 +67,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         onHoveredElementIdChange,
         openRootAddElementSignal,
         identityMappingInformation,
+        panelDraft,
+        onPanelDraftChange,
         configurationErrors: hostConfigurationErrors,
     } = props;
 
@@ -518,6 +526,17 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 ids.delete(id);
                                 return {...previous, ids};
                             }),
+                            panelDraft,
+                            onPanelDraftChange,
+                            applyPanelDraft: (draft, element) => {
+                                const result = applyPanelDraftToTree(value, draft, element, displayContext);
+                                if ('error' in result) {
+                                    dispatch(showErrorSnackbar(result.error));
+                                    return false;
+                                }
+                                onChange(result.tree);
+                                return true;
+                            },
                             editable: editable,
                             parentModalZIndex: parentModalZIndex,
                             scrollToElement: handleScrollToElement,
@@ -566,6 +585,18 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                             onClone={() => {
                             }}
                         />
+                        {panelDraft?.detached && currentEditedElementId === panelDraft.base.id && currentEditorTab != null &&
+                            !allElements.some(({element}) => element.id === panelDraft.base.id) &&
+                            <ElementTreeEditor
+                                open
+                                parents={panelDraft.parents.map((parent) => parent.element)}
+                                value={panelDraft.base}
+                                onChange={() => {}}
+                                onCancel={closeElementEditor}
+                                onDelete={() => {}}
+                                onClone={() => {}}
+                            />
+                        }
                     </ElementTreeContextProvider>
                 </Box>
             </Box>

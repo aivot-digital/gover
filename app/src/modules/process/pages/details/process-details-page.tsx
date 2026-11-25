@@ -105,6 +105,7 @@ import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject'
 import {ProcessDataStructureDialog} from './components/process-data-structure-dialog';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
+import {applySavedProcessNode} from './apply-saved-process-node';
 import {Permission} from '../../../../data/permissions/permission';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
@@ -1581,6 +1582,10 @@ export function ProcessDetailsPage(): ReactNode {
         }
     };
 
+    const handleStoredNode = (stored: ProcessNodeEntity) => {
+        setProcessFlow((current) => applySavedProcessNode(current, stored));
+    };
+
     const handleSaveNode = async (node: ProcessNodeEntity, options?: RequestOptions): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
             throw new Error('Process flow is not loaded');
@@ -1589,10 +1594,7 @@ export function ProcessDetailsPage(): ReactNode {
         const updated = await new ProcessNodeApiService()
             .update(node.id, node, options);
 
-        setProcessFlow({
-            ...processFlow,
-            nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
-        });
+        handleStoredNode(updated);
 
         setShowProcessNodeProblemsForNodes((prev) => ({
             ...prev,
@@ -2684,6 +2686,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     editable: isProcessEditable,
                                     structureEditable: isProcessStructureEditable,
                                     onSave: handleSaveNode,
+                                    onStoredNode: handleStoredNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,

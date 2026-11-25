@@ -3,7 +3,7 @@ import {AnyElement} from '../../../models/elements/any-element';
 
 export interface ElementTreeEditorContextType<T extends AnyElement> {
     currentElement: T;
-    onChangeCurrentElement: (element: T) => void;
+    onChangeCurrentElement: (element: T, reason?: 'normalize') => void;
     parents: AnyElement[];
     originalElement?: T;
     dataKeyUnlocked?: boolean;

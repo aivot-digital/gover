@@ -42,6 +42,29 @@ export const showLockConflictSnackbar = (message: string) => {
     });
 };
 
+/**
+ * Shows a failed save after a newer saved state in an editor whose current changes are stored in this browser. After the
+ * reload, the editor offers to restore them and merge them with the newer state.
+ */
+export const showDraftLockConflictSnackbar = () => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message: 'Ihre Änderungen konnten nicht gespeichert werden, da zwischenzeitlich ein neuerer Stand gespeichert wurde. ' +
+            'Laden Sie die Seite neu. Ihre Änderungen sind in diesem Browser zwischengespeichert und können anschließend ' +
+            'wiederhergestellt und mit dem neueren Stand zusammengeführt werden.',
+        severity: SnackbarSeverity.Error,
+        type: SnackbarType.Dismissable,
+        action: SnackbarAction.ReloadPage,
+    });
+};
+
+/** Promises draft recovery for a lock conflict only once `backUpDraft` has stored the current changes. */
+export const showEditorSaveErrorSnackbar = async (error: unknown, defaultMessage: string, backUpDraft: () => Promise<boolean>) => {
+    return isLockVersionConflictError(error) && await backUpDraft() ?
+        showDraftLockConflictSnackbar() :
+        showApiErrorSnackbar(error, defaultMessage);
+};
+
 export const showApiErrorSnackbar = (error: any, defaultMessage: string, persist: boolean = false) => {
     if (isLockVersionConflictError(error)) {
         return showLockConflictSnackbar(error.message);
