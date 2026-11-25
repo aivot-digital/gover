@@ -1,5 +1,6 @@
 import {ProcessInstanceStatus} from '../enums/process-instance-status';
 import {ProcessTaskStatus} from '../enums/process-task-status';
+import {type ProcessDeputy} from './process-deputy';
 
 interface ProcessListEntry {
     id: number;
@@ -24,6 +25,7 @@ export interface ProcessTaskListEntry extends ProcessListEntry {
     taskName: string;
     taskType: string | null;
     description: string | null;
+    assignedUserDeputies: ProcessDeputy[];
     assignedCustomerIdentityLabel: string | null;
     status: ProcessTaskStatus;
     deadline: string | null;

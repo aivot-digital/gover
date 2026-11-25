@@ -5,6 +5,7 @@ import {CodeListsListPage} from './pages/list/code-lists-list-page';
 import {CodeListDetailsPage} from './pages/details/code-list-details-page';
 import {CodeListDetailsPageIndex} from './pages/details/code-list-details-page-index';
 import {CodeListDetailsPageItems} from './pages/details/code-list-details-page-items';
+import {CodeListSyncOutlet} from './pages/details/code-list-sync-outlet';
 
 export const codeListsRoutes: RouteObject[] = [
     {
@@ -15,15 +16,18 @@ export const codeListsRoutes: RouteObject[] = [
         path: '/code-lists/:key',
         element: <CodeListDetailsPage />,
         handle: duplicatePageWarningRouteHandle,
-        children: [
-            {
-                index: true,
-                element: <CodeListDetailsPageIndex />,
-            },
-            {
-                path: 'items',
-                element: <CodeListDetailsPageItems />,
-            },
-        ],
+        children: [{
+            element: <CodeListSyncOutlet/>,
+            children: [
+                {
+                    index: true,
+                    element: <CodeListDetailsPageIndex />,
+                },
+                {
+                    path: 'items',
+                    element: <CodeListDetailsPageItems />,
+                },
+            ],
+        }],
     },
 ];

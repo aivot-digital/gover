@@ -70,7 +70,10 @@ public final class ExecutionSummaryMarkdown {
     @Nonnull
     public String actor() {
         var user = context.triggeringUser();
-        return user != null ? user(user.getId(), user.getFullName()) : user(data("processedByUserId"), null);
+        if (user == null) return user(data("processedByUserId"), null);
+        var represented = context.representedUser();
+        return user(user.getId(), user.getFullName())
+                + (represented == null ? "" : " in Vertretung für " + user(represented.getId(), represented.getFullName()));
     }
 
     @Nonnull

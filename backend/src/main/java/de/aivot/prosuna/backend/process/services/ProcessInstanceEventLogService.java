@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.process.services;
 
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.enums.ProcessHistoryEventScope;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.dtos.ProcessInstanceEventLogDTO;
 import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
@@ -146,7 +147,8 @@ public class ProcessInstanceEventLogService {
                 .map(ProcessInstanceTaskEntity::getProcessNodeId)
                 .collect(Collectors.toSet()));
         var usersById = findUsersById(eventPage.getContent().stream()
-                .flatMap(event -> java.util.stream.Stream.of(event.getTriggeringUserId(), event.getConcernedUserId()))
+                .flatMap(event -> java.util.stream.Stream.of(event.getTriggeringUserId(), event.getConcernedUserId(),
+                        representedUserId(event)))
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toSet()));
         var entries = eventPage.map(event -> toLogEntry(event, tasksById, nodesById, usersById));
@@ -264,6 +266,8 @@ public class ProcessInstanceEventLogService {
         var node = task == null ? null : nodesById.get(task.getProcessNodeId());
         var triggeringUser = event.getTriggeringUserId() == null ? null : usersById.get(event.getTriggeringUserId());
         var concernedUser = event.getConcernedUserId() == null ? null : usersById.get(event.getConcernedUserId());
+        var representedUserId = representedUserId(event);
+        var representedUser = representedUserId == null ? null : usersById.get(representedUserId);
 
         return new ProcessInstanceEventLogDTO.Entry(
                 event.getId(),
@@ -280,12 +284,21 @@ public class ProcessInstanceEventLogService {
                 event.getTimestamp(),
                 event.getTriggeringUserId(),
                 triggeringUser == null ? null : resolveUserName(triggeringUser),
+                representedUserId,
+                representedUser == null ? null : resolveUserName(representedUser),
                 event.getConcernedUserId(),
                 concernedUser == null ? null : resolveUserName(concernedUser),
                 event.getConcernedIdentityId(),
                 event.getConcernedIdentityTitle(),
                 node == null ? null : resolveNodeName(node, "Prozesselement")
         );
+    }
+
+    /** Set by the logger when a deputy acted on a task of the person they represent. */
+    @Nullable
+    private static String representedUserId(@Nonnull ProcessInstanceEventEntity event) {
+        var value = event.getDetails() == null ? null : event.getDetails().get(ProcessNodeExecutionLogger.REPRESENTED_USER_ID_DETAIL);
+        return value instanceof String id ? id : null;
     }
 
     @Nonnull

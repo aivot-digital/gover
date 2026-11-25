@@ -36,6 +36,14 @@ public interface InputElement<T> {
             performValidation(formattedValue);
         }
     }
+
+    /**
+     * Validates definitions authored as the value of this input, such as an element tree configured for a process node.
+     * Only runs while authoring, so stricter checks never stop the execution of an already published process.
+     */
+    default void validateAuthoring(@Nullable Object rawValue) throws ValidationException {
+    }
+
     @Nonnull
     String getId();
 

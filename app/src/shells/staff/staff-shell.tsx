@@ -28,6 +28,7 @@ import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popu
 import {ShellLoader} from './components/shell-loader';
 import {AuthService} from '../../services/auth-service';
 import {ShellSessionExpiredDialog} from './components/shell-session-expired-dialog';
+import {ShellSessionKeepAlive} from './components/shell-session-keep-alive';
 import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
@@ -232,6 +233,7 @@ export function StaffShell(): ReactNode {
                     <ShellSearchDialog/>
                     <ShellSessionEndWarnPopup/>
                     <ShellSessionExpiredDialog/>
+                    <ShellSessionKeepAlive/>
                     <ShellResolutionOverlay/>
                     <PreReleaseVersionNoticeDialog/>
                     <DuplicatePageWarning/>

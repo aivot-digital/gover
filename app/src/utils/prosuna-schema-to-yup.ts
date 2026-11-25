@@ -375,6 +375,8 @@ function selectFieldToYup(elem: SelectFieldElement): Schema {
 
     if (elem.required) {
         selectFieldSchema = selectFieldSchema
+            // Let the required error take precedence over the option-membership check.
+            .transform((value) => value === '' ? undefined : value)
             .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
     } else {
         selectFieldSchema = selectFieldSchema

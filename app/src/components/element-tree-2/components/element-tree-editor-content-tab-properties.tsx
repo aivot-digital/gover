@@ -23,6 +23,7 @@ import {ElementDisplayContext} from '../../../data/element-type/element-child-op
 import {DataKeyDefinitionField} from '../../data-key-definition-field/data-key-definition-field';
 import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {collectHttpMappingProblems, suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
+import {useElementConfigurationErrors} from '../../../modules/elements/hooks/use-element-configuration-errors';
 
 const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
     ElementType.ChipInput,
@@ -35,7 +36,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
 
     const {
-        root,
         editable,
         allElements,
         allowElementIdEditing,
@@ -57,11 +57,15 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         type,
     } = currentElement;
 
-    const isRoot = root.id === currentElement.id;
+    const isRoot = parents.length === 0;
 
     const hasSummaryLayoutParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
     }, [parents]);
+
+    // Validate the unapplied draft so errors follow each edit, not only the state applied to the tree. Like the
+    // server, skip elements of summaries: they only display values.
+    const configurationErrors = useElementConfigurationErrors(currentElement, editable && !hasSummaryLayoutParent);
 
     const replicatingParents = useMemo(() => {
         return parents.filter((p) => p.type === ElementType.ReplicatingContainer);
@@ -136,7 +140,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         onChangeCurrentElement({
             ...currentElement,
             weight: normalizedWeight,
-        });
+        }, 'normalize');
     }, [currentElement, isRoot, normalizedWeight, onChangeCurrentElement]);
 
     return (
@@ -178,6 +182,8 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                     });
                                 }}
                                 hint="Dieser Titel wird als Beschriftung des Feldes angezeigt. Nutzen Sie eine kurze, aussagekräftige Bezeichnung."
+                                error={configurationErrors?.properties.label?.join(' ')}
+                                required
                                 disabled={!editable}
                             />
                         </Grid>
@@ -357,6 +363,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     scope={'application' /* TODO: remove this */}
                     hasSummaryLayoutParent={hasSummaryLayoutParent}
                     hasReplicatingContainerParent={replicatingParents.length > 0}
+                    configurationErrors={configurationErrors?.properties}
                 />
             }
 

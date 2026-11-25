@@ -309,6 +309,7 @@ export function ApplicationSettings() {
         new StorageProvidersApiService()
             .listAll({
                 type: StorageProviderType.Assets,
+                readOnlyStorage: false,
             })
             .then(({content: providers}) => {
                 if (isActive) {
@@ -348,6 +349,7 @@ export function ApplicationSettings() {
         new StorageProvidersApiService()
             .listAll({
                 type: StorageProviderType.Attachments,
+                readOnlyStorage: false,
             })
             .then(({content: providers}) => {
                 if (isActive) {

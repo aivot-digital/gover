@@ -41,6 +41,23 @@ describe('SnackbarProvider', () => {
         expect(screen.getAllByText('Einmalige Meldung')).toHaveLength(1);
     });
 
+    it('reloads the page from a notification that offers it', async () => {
+        const originalLocation = window.location;
+        const reload = vi.fn();
+        Object.defineProperty(window, 'location', {configurable: true, value: {...originalLocation, reload}});
+        state.shell.snackbars = [{key: 'conflict', message: 'Der Datensatz wurde zwischenzeitlich geändert.', severity: 'error', type: 'dismissable', action: 'reloadPage'} as never];
+        try {
+            render(<SnackbarProvider><span>Formular</span></SnackbarProvider>);
+
+            fireEvent.click(await screen.findByRole('button', {name: 'Neu laden'}));
+
+            await waitFor(() => expect(reload).toHaveBeenCalledOnce());
+        } finally {
+            Object.defineProperty(window, 'location', {configurable: true, value: originalLocation});
+            state.shell.snackbars = [{key: 'notice', message: 'Einmalige Meldung', severity: 'info', type: 'dismissable'}];
+        }
+    });
+
     it('dismisses a notification with Escape', async () => {
         render(<SnackbarProvider><span>Formular</span></SnackbarProvider>);
         await screen.findByText('Einmalige Meldung');

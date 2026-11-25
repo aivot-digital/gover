@@ -116,6 +116,44 @@ function configureMailProvider(configuration: Record<string, any>) {
     };
 }
 
+function configureFitConnectProvider(configuration: Record<string, any> = {}) {
+    testState.provider.configuration = Object.fromEntries(Object.entries(configuration).map(([key, value]) => [key, literalAuthoredValue(value)]));
+    testState.layout = configLayout(
+        textField('destinationId', 'Empfänger-Zustellpunkt-ID'),
+        textField('senderClientId', 'Sender Client ID'),
+        {
+            id: 'environment',
+            type: ElementType.Select,
+            label: 'FIT-Connect-Umgebung',
+            required: true,
+            options: [
+                {value: 'TEST', label: 'Test-Umgebung (TEST)'},
+                {value: 'STAGE', label: 'Stage-Umgebung (STAGE)'},
+                {value: 'PROD', label: 'Produktiv-Umgebung (PROD)'},
+            ],
+        },
+        {
+            id: 'senderDestinationType',
+            type: ElementType.Select,
+            label: 'Typ des Zustellpunktes (Sender)',
+            required: true,
+            options: [
+                {value: 'ADMINISTRATION', label: 'Verwaltung (Typ A)'},
+                {value: 'ONLINE_SERVICE', label: 'Onlinedienst (Typ C)'},
+            ],
+        },
+    );
+    testState.derivedData = {
+        effectiveValues: configuration,
+        elementStates: {
+            destinationId: {visible: true},
+            senderClientId: {visible: true},
+            environment: {visible: true},
+            senderDestinationType: {visible: true},
+        },
+    };
+}
+
 async function renderChangedProvider() {
     render(
         <MemoryRouter>
@@ -222,29 +260,67 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         }));
     });
 
-    it('rejects missing visible FIT-Connect fields before creating the provider', async () => {
-        testState.layout = configLayout(
-            textField('destinationId', 'Empfänger-Zustellpunkt-ID'),
-            textField('senderClientId', 'Sender Client ID'),
-        );
-        testState.derivedData = {
-            effectiveValues: {},
-            elementStates: {
-                destinationId: {visible: true},
-                senderClientId: {visible: true},
-            },
-        };
+    it.each([true, false])('rejects missing visible FIT-Connect fields when new is %s', async (isNewItem) => {
+        configureFitConnectProvider();
+        testState.isNewItem = isNewItem;
+        testState.provider.id = isNewItem ? 0 : 17;
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
             .mockResolvedValue(testState.layout as any);
         const createProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'createProvider')
             .mockResolvedValue({...testState.provider, id: 17} as any);
+        const updateProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'updateProvider')
+            .mockImplementation(async (id, request) => ({id, ...request}));
 
         await renderChangedProvider();
         fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
 
         expect(await screen.findByText('Empfänger-Zustellpunkt-ID ist ein Pflichtfeld.')).toBeInTheDocument();
         expect(screen.getByText('Sender Client ID ist ein Pflichtfeld.')).toBeInTheDocument();
+        expect(screen.getByText('FIT-Connect-Umgebung ist ein Pflichtfeld.')).toBeInTheDocument();
+        expect(screen.getByText('Typ des Zustellpunktes (Sender) ist ein Pflichtfeld.')).toBeInTheDocument();
         expect(createProvider).not.toHaveBeenCalled();
+        expect(updateProvider).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        {isNewItem: true, environment: 'TEST', senderDestinationType: 'ONLINE_SERVICE'},
+        {isNewItem: false, environment: 'PROD', senderDestinationType: 'ADMINISTRATION'},
+    ])('saves selected FIT-Connect options for %j', async ({isNewItem, environment, senderDestinationType}) => {
+        configureFitConnectProvider({
+            destinationId: 'destination',
+            senderClientId: 'sender-client',
+            environment,
+            senderDestinationType,
+        });
+        testState.isNewItem = isNewItem;
+        testState.provider.id = isNewItem ? 0 : 17;
+        vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
+            .mockResolvedValue(testState.layout as any);
+        const createProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'createProvider')
+            .mockImplementation(async (request) => ({id: 17, ...request}));
+        const updateProvider = vi.spyOn(CommunicationProvidersApiService.prototype, 'updateProvider')
+            .mockImplementation(async (id, request) => ({id, ...request}));
+
+        await renderChangedProvider();
+        fireEvent.click(screen.getByRole('button', {name: 'Speichern'}));
+
+        const request = expect.objectContaining({
+            configuration: {
+                destinationId: literalAuthoredValue('destination'),
+                senderClientId: literalAuthoredValue('sender-client'),
+                environment: literalAuthoredValue(environment),
+                senderDestinationType: literalAuthoredValue(senderDestinationType),
+            },
+        });
+        await waitFor(() => {
+            if (isNewItem) {
+                expect(createProvider).toHaveBeenCalledWith(request);
+                expect(updateProvider).not.toHaveBeenCalled();
+            } else {
+                expect(updateProvider).toHaveBeenCalledWith(17, request);
+                expect(createProvider).not.toHaveBeenCalled();
+            }
+        });
     });
 
     it('creates a provider with a complete custom sender configuration', async () => {
@@ -331,8 +407,9 @@ describe('CommunicationProviderDetailsPageIndex', () => {
         await waitFor(() => expect(createProvider).toHaveBeenCalledOnce());
     });
 
-    it('updates the test status of an existing provider', async () => {
+    it('updates the test status of an existing provider with its lock version', async () => {
         testState.provider.id = 17;
+        testState.provider.lockVersion = 3;
         testState.isNewItem = false;
         vi.spyOn(CommunicationProvidersApiService.prototype, 'getProviderConfigurationLayout')
             .mockResolvedValue(testState.layout as any);
@@ -354,6 +431,7 @@ describe('CommunicationProviderDetailsPageIndex', () => {
 
         await waitFor(() => expect(updateProvider).toHaveBeenCalledWith(17, expect.objectContaining({
             isTestProvider: true,
+            lockVersion: 3,
         })));
     });
 

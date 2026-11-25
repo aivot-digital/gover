@@ -11,6 +11,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -67,6 +68,27 @@ public class ProcessAssignmentService {
     public List<ProcessAssignmentOptionDTO> instanceOptions(@Nonnull String actorId, @Nonnull Long instanceId) throws ResponseException {
         requireAssignableInstance(actorId, instanceId);
         return options(instanceId, false);
+    }
+
+    @Nonnull
+    @Transactional(readOnly = true)
+    public List<ProcessAssignmentOptionDTO> manualInstanceOptions(@Nonnull String actorId, @Nonnull Long instanceId) throws ResponseException {
+        requireAssignableInstance(actorId, instanceId);
+        return instances.findManualInstanceAssignmentOptions(instanceId, PROCESS_INSTANCE_READ, null);
+    }
+
+    @Transactional(readOnly = true)
+    public void requireManualInstanceAssignee(@Nonnull String actorId, @Nonnull Long instanceId,
+                                              @Nonnull String userId) throws ResponseException {
+        requireAssignableInstance(actorId, instanceId);
+        requireManualInstanceAssignee(instanceId, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public void requireManualInstanceAssignee(@Nonnull Long instanceId, @Nonnull String userId) throws ResponseException {
+        if (instances.findManualInstanceAssignmentOptions(instanceId, PROCESS_INSTANCE_READ, userId).isEmpty()) {
+            throw new ManualAssignmentRecipientUnavailableException(userId);
+        }
     }
 
     /**

@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.department.entities.DepartmentEntity;
 import de.aivot.prosuna.backend.department.repositories.DepartmentRepository;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.process.entities.ProcessAccessControlEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAccessControlPresetEntity;
@@ -11,9 +12,11 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessRepository;
 import de.aivot.prosuna.backend.process.services.PotentialProcessInstanceAccessService;
+import de.aivot.prosuna.backend.process.services.ProcessAccessControlService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessAuditDescriptionService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessControlPresetService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAccessControlService;
+import de.aivot.prosuna.backend.process.services.ProcessService;
 import de.aivot.prosuna.backend.teams.entities.TeamEntity;
 import de.aivot.prosuna.backend.teams.repositories.TeamRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -68,6 +71,21 @@ class ProcessInstanceAccessAuditMessageTest {
     }
 
     @Test
+    void processAccessRulesDescribeTheProcessAndTheRecipient() {
+        when(actor.getFullName()).thenReturn("Alex Beispiel");
+        when(processes.findById(5)).thenReturn(Optional.of(new ProcessEntity().setInternalTitle("Bauantrag")));
+        when(teams.findById(8)).thenReturn(Optional.of(new TeamEntity().setName("Prüfteam")));
+        var controller = new ProcessAccessControlController(audit, mock(UserService.class),
+                mock(ProcessAccessControlService.class), mock(PermissionService.class), mock(ProcessService.class), descriptions);
+        var entry = new ProcessAccessControlEntity().setId(2).setTargetProcessId(5).setSourceTeamId(8);
+        var subject = "„Alex Beispiel“ hat die Prozessberechtigungen des Prozesses „Bauantrag“ für das Team „Prüfteam“ ";
+
+        assertEquals(subject + "hinzugefügt.", controller.buildCreateAuditMessage(actor, entry));
+        assertEquals(subject + "geändert.", controller.buildUpdateAuditMessage(actor, 2, entry));
+        assertEquals(subject + "entfernt.", controller.buildDeleteAuditMessage(actor, 2, entry));
+    }
+
+    @Test
     void missingNamesFallBackToIdentifiableReferences() {
         var preset = new ProcessInstanceAccessControlPresetEntity().setTargetProcessId(5)
                 .setTargetProcessVersion(3).setSourceTeamId(8);
@@ -77,5 +95,7 @@ class ProcessInstanceAccessAuditMessageTest {
                 descriptions.describePreset(preset));
         assertEquals("die Berechtigungen am Vorgang mit der ID 17 für die Organisationseinheit mit der ID 7",
                 descriptions.describeAccess(access));
+        assertEquals("die Prozessberechtigungen des Prozesses mit der ID 5 für die Organisationseinheit mit der ID 7",
+                descriptions.describeProcessAccess(new ProcessAccessControlEntity().setTargetProcessId(5).setSourceDepartmentId(7)));
     }
 }

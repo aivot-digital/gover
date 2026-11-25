@@ -68,6 +68,7 @@ describe('Instance header active task action', () => {
     it('links directly to a single active task', () => {
         state.item!.activeTasks = [
             {
+                assignedUserDeputies: [],
                 id: 8,
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
@@ -82,6 +83,7 @@ describe('Instance header active task action', () => {
     it('lets users choose when several tasks are active', async () => {
         state.item!.activeTasks = [
             {
+                assignedUserDeputies: [],
                 id: 8,
                 name: 'Prüfung',
                 status: ProcessTaskStatus.Running,
@@ -89,6 +91,7 @@ describe('Instance header active task action', () => {
                 assignedCustomerIdentityId: null,
             },
             {
+                assignedUserDeputies: [],
                 id: 9,
                 name: 'Freigabe',
                 status: ProcessTaskStatus.Paused,

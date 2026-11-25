@@ -10,6 +10,7 @@ interface CodeListSelectFieldProps {
     onChange: (value: string | undefined) => void;
     disabled?: boolean;
     required?: boolean;
+    error?: string;
 }
 
 export function CodeListSelectField(props: CodeListSelectFieldProps) {
@@ -20,6 +21,7 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
         onChange,
         disabled,
         required,
+        error,
     } = props;
     const [codeLists, setCodeLists] = useState<CodeList[]>([]);
     const [loading, setLoading] = useState(false);
@@ -80,6 +82,7 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
         <SelectFieldComponent
             label={label ?? 'Codeliste'}
             hint={hint}
+            error={error}
             value={value}
             onChange={(value) => onChange(value ?? undefined)}
             options={options}

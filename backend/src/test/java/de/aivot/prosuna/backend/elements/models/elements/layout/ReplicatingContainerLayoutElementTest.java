@@ -1,17 +1,35 @@
 package de.aivot.prosuna.backend.elements.models.elements.layout;
 
+import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.BaseElement;
 import de.aivot.prosuna.backend.enums.ConditionOperator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReplicatingContainerLayoutElementTest {
+    @Test
+    void preservesTheSortableOptionAndKeepsLegacyElementsUnsortable() throws Exception {
+        var mapper = JsonMapperFactory.getInstance();
+
+        var sortable = assertInstanceOf(ReplicatingContainerLayoutElement.class, mapper.readValue(
+                mapper.writeValueAsString(new ReplicatingContainerLayoutElement().setSortable(true)), BaseElement.class));
+        var legacy = assertInstanceOf(ReplicatingContainerLayoutElement.class, mapper.readValue(
+                mapper.writeValueAsString(new ReplicatingContainerLayoutElement()), BaseElement.class));
+
+        assertEquals(Boolean.TRUE, sortable.getSortable());
+        assertNull(legacy.getSortable());
+    }
+
     @Test
     void evaluatesRowCountWithoutReinterpretingAuthoredOrEffectiveCells() {
         var element = new ReplicatingContainerLayoutElement();

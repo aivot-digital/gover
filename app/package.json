@@ -6,6 +6,7 @@
   "scripts": {
     "generate:permissions": "node scripts/generate-permission-enum.mjs",
     "test": "vitest run",
+    "test:editor-drafts:browser": "node --test scripts/editor-draft-storage.browser.spec.mjs",
     "test:assets": "node --test scripts/compress-assets.spec.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -33,6 +34,7 @@
     "@mui/x-charts": "^9.11.1",
     "@mui/x-data-grid": "^9.11.0",
     "@mui/x-date-pickers": "^9.11.0",
+    "@mui/x-tree-view": "^9.11.0",
     "@reduxjs/toolkit": "^2.12.0",
     "@sentry/react": "^10.70.0",
     "@testing-library/jest-dom": "^7.0.1",

@@ -41,11 +41,12 @@ function permissionSet() {
     return {
         departmentPermissions: [], teamPermissions: [], domainPermissions: [],
         systemPermissions: [{userId: 'staff', permissions: [...mocks.systemPermissions]}],
-        processPermissions: [{id: 'process', userId: 'staff', processId: mocks.processGrantId, permissions: [...mocks.permissions]}],
-        processInstancePermissions: [{id: 'instance', userId: 'staff', processInstanceId: mocks.instanceGrantId, permissions: [...mocks.permissions]}],
+        processPermissions: [{id: 'process', userId: 'staff', processId: mocks.processGrantId, permissions: [...mocks.permissions].filter(permission => permission.startsWith('process_definition.'))}],
+        processInstancePermissions: [{id: 'instance', userId: 'staff', processInstanceId: mocks.instanceGrantId, permissions: [...mocks.permissions].filter(permission => permission.startsWith('process_instance.'))}],
     };
 }
 vi.mock('../../../../hooks/use-app-dispatch', () => ({useAppDispatch: () => mocks.dispatch}));
+// Each hook only knows the keys of its own scope, so a check at the wrong scope fails.
 vi.mock('../../../permissions/hooks/use-permissions', () => ({
     useHasProcessInstancePermission: (id: number, permission: string) => hasProcessInstancePermission(permissionSet(), id, permission),
     useHasProcessPermission: (id: number, permission: string) => hasProcessPermission(permissionSet(), id, permission),
@@ -1279,6 +1280,13 @@ describe('Process instance history preview', () => {
                 }
             });
             expect(mocks.dispatch).not.toHaveBeenCalled();
+        });
+
+        it('does not fetch history when the read permission is granted for a different process', async () => {
+            mocks.processGrantId = 99;
+            await renderHistory([node(1, 'Prüfung')], [], [task(1, 1)], {waitForLoad: false});
+            expect(screen.getByRole('alert')).toHaveTextContent(/den Prozess zu diesem Vorgang/);
+            expect(ProcessDefinitionApiService.prototype.retrieve).not.toHaveBeenCalled();
         });
 
         it.each([Permission.PROCESS_INSTANCE_READ, Permission.PROCESS_DEFINITION_READ])(

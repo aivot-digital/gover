@@ -276,6 +276,12 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         return ProcessNodeStaffView.of(context, layout, List.of(), new AuthoredElementValues());
     }
 
+    /** A previously displayed action can become unavailable while a staff task is open. */
+    @Nonnull
+    default ResponseException unavailableStaffTaskEvent(@Nonnull String event, @Nonnull AuthoredElementValues inputs) {
+        return ResponseException.badRequest("Ungültige Aktion: " + event);
+    }
+
     /**
      * Handle an event that was triggered from the staff task view. If this returns an empty Optional, the task is considered not updated.
      *

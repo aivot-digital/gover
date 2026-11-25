@@ -31,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -173,6 +175,26 @@ public class IdentityProviderController {
                 .retrieve(key)
                 .map(IdentityProviderDetailsDTO::from)
                 .orElseThrow(ResponseException::notFound);
+    }
+
+    @GetMapping("{key}/saml-metadata/")
+    @Operation(
+            summary = "Retrieve SAML Metadata of an Identity Provider",
+            description = "Loads the SAML metadata that the Keycloak realm brokering a system identity provider publishes " +
+                    "for the setup with the provider. " +
+                    "Requires the system-level permission `" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ + "`."
+    )
+    public ResponseEntity<String> retrieveSamlMetadata(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID key
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ);
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_XML)
+                .body(identityProviderService.fetchSamlMetadata(key));
     }
 
     @PutMapping("{key}/")

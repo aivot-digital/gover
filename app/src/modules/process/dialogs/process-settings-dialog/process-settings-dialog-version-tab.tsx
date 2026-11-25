@@ -24,6 +24,7 @@ import {RetentionTimeUnit} from '../../enums/retention-time-unit';
 import {formatNumToGermanNum} from '../../../../utils/format-german-numbers';
 
 interface ProcessSettingsDialogVersionTabProps {
+    readOnly?: boolean;
     open: boolean;
     version: ProcessVersionEntity;
     departments: VDepartmentShadowedEntity[];
@@ -90,6 +91,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
 
     const {
         open,
+        readOnly = false,
         version,
         departments,
         themes,
@@ -103,7 +105,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
     const [isSaving, setIsSaving] = useState(false);
     const [numberInputRevision, setNumberInputRevision] = useState(0);
 
-    const isEditable = version.status === ProcessStatus.Drafted;
+    const isEditable = version.status === ProcessStatus.Drafted && !readOnly;
     const caseNumberType = draft.caseNumberType;
     const themeOptions = useMemo<SelectFieldComponentOption[]>(() => {
         return sortThemesByName(themes ?? []).map((theme) => ({
@@ -400,7 +402,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<
                 verwendet; für die öffentliche Nutzung gelten sie nach der Veröffentlichung.
             </ElementEditorSectionHeader>
 
-            {!isEditable && (
+            {version.status !== ProcessStatus.Drafted && (
                 <Alert severity="info">
                     Versionsspezifische Einstellungen können nur in Entwurfsversionen geändert werden.
                 </Alert>

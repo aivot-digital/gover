@@ -2,8 +2,11 @@ package de.aivot.prosuna.backend.elements.models.elements.form.content;
 
 import de.aivot.prosuna.backend.elements.models.elements.BaseFormElement;
 import de.aivot.prosuna.backend.enums.ElementType;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class RichTextContentElement extends BaseFormElement {
@@ -12,6 +15,16 @@ public class RichTextContentElement extends BaseFormElement {
 
     public RichTextContentElement() {
         super(ElementType.RichText);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        if (isRichTextEmpty(content) && !hasOverride()) {
+            addConfigurationError(errors, "content", "Geben Sie einen Text ein.");
+        }
+        return errors;
     }
 
     @Override

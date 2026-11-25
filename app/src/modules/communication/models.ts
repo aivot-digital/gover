@@ -11,6 +11,7 @@ export interface CommunicationProvider {
     configuration: Record<string, any>;
     isEnabled: boolean;
     isTestProvider: boolean;
+    lockVersion?: number | null;
 }
 
 export interface CommunicationProviderDefinition {
@@ -30,6 +31,7 @@ export interface CommunicationProviderBinding {
     isEnabled: boolean;
     position: number;
     configuration: Record<string, any>;
+    lockVersion?: number | null;
 }
 
 export type CommunicationProviderRequest = Omit<CommunicationProvider, 'id'>;

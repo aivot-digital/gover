@@ -1,4 +1,4 @@
-import {type ApiError} from '../../../../models/api-error';
+import {type ApiError, isApiError} from '../../../../models/api-error';
 import {getDefaultProcessNodePort, mapReplacementPorts} from '../../utils/process-node-ports';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Button, Divider, Paper, Typography} from '@mui/material';
@@ -29,7 +29,7 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../slices/shell-slice';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-editor';
 import {ReactFlowProvider} from '@xyflow/react';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
@@ -86,7 +86,13 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
-import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {
+    useHasProcessPermission,
+    useHasSystemPermission,
+    useRefreshPermissionSet,
+} from '../../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 import {
     buildProcessInstanceAttachmentSetItems,
@@ -95,8 +101,11 @@ import {
 import {ProcessInstanceIdentityList} from '../../components/process-instance-identity-list';
 import {SearchItemService} from '../../../search/search-item-service';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import {ProcessDataStructureDialog} from './components/process-data-structure-dialog';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
+import {applySavedProcessNode} from './apply-saved-process-node';
 import {Permission} from '../../../../data/permissions/permission';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
@@ -485,10 +494,22 @@ export function getProcessNodeEditURL(processId: number, processVersion: number,
     return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}${tabPath}${query}`;
 }
 
+function toProcessFlowLoadError(error: unknown): ApiError {
+    return isApiError(error) ? error : {
+        status: 500,
+        message: 'Der Prozessfluss konnte nicht geladen werden.',
+        details: error,
+        displayableToUser: false,
+    };
+}
+
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-    const {pathname, state} = useLocation();
+    const {
+        pathname,
+        state,
+    } = useLocation();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
@@ -501,6 +522,9 @@ export function ProcessDetailsPage(): ReactNode {
     const revokeProcessVersion = useRevokeProcessVersion();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
+    const [processFlowLoadError, setProcessFlowLoadError] = useState<ApiError | null>(null);
+    const canReadDataStructure = useHasProcessPermission(processFlow?.definition.id, Permission.PROCESS_DEFINITION_READ);
+    const [showDataStructure, setShowDataStructure] = useState(false);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
     const [flowNodeProviderCache, setFlowNodeProviderCache] = useState<Record<string, ProcessNodeProvider>>({});
@@ -595,6 +619,10 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, [params]);
 
+    const canUpdateProcess = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_UPDATE);
+    const canPublishLocal = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
+    const canPublishTest = useHasProcessPermission(processId, Permission.PROCESS_DEFINITION_PUBLISH_TEST);
+
     // Kept per tab and process version, so revealed problems survive leaving the page, e.g. for the form editor.
     const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useSessionStorageState<Record<number, boolean>>(
         `process_${processId}_${processVersion}_shown_node_problems`,
@@ -617,6 +645,7 @@ export function ProcessDetailsPage(): ReactNode {
 
         let cancelled = false;
         setProcessFlow(null);
+        setProcessFlowLoadError(null);
         setIsLoadingProcessFlow(true);
 
         new ProcessDefinitionApiService()
@@ -651,7 +680,7 @@ export function ProcessDetailsPage(): ReactNode {
                 }
 
                 setIsLoadingProcessFlow(false);
-                dispatch(showApiErrorSnackbar(error, 'Die neueste Prozessversion konnte nicht geladen werden.'));
+                setProcessFlowLoadError(toProcessFlowLoadError(error));
             });
 
         return () => {
@@ -894,6 +923,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
+        setProcessFlowLoadError(null);
         if (processId < 1 || processVersion < 1 || processVersionParam === 'latest') {
             setProcessFlow(null);
             setIsLoadingProcessFlow(processVersionParam === 'latest');
@@ -943,7 +973,7 @@ export function ProcessDetailsPage(): ReactNode {
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(error, 'Der Prozessfluss konnte nicht geladen werden.'));
+                setProcessFlowLoadError(toProcessFlowLoadError(error));
             })
             .finally(() => {
                 if (cancelled) {
@@ -1177,9 +1207,17 @@ export function ProcessDetailsPage(): ReactNode {
     }, []);
 
     const requireCandidatePorts = async (node: ProcessNodeEntity, useInitialConfiguration = false, forImport = false): Promise<ProcessNodePort[]> => {
-        const resolution = await new ProcessNodeApiService().resolvePorts(node, {useInitialConfiguration, forImport});
+        const resolution = await new ProcessNodeApiService().resolvePorts(node, {
+            useInitialConfiguration,
+            forImport,
+        });
         if (resolution.problems.length > 0) {
-            throw {status: 400, message: resolution.problems.join(' '), details: null, displayableToUser: true} satisfies ApiError;
+            throw {
+                status: 400,
+                message: resolution.problems.join(' '),
+                details: null,
+                displayableToUser: true,
+            } satisfies ApiError;
         }
         return resolution.ports;
     };
@@ -1544,6 +1582,10 @@ export function ProcessDetailsPage(): ReactNode {
         }
     };
 
+    const handleStoredNode = (stored: ProcessNodeEntity) => {
+        setProcessFlow((current) => applySavedProcessNode(current, stored));
+    };
+
     const handleSaveNode = async (node: ProcessNodeEntity, options?: RequestOptions): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
             throw new Error('Process flow is not loaded');
@@ -1552,10 +1594,7 @@ export function ProcessDetailsPage(): ReactNode {
         const updated = await new ProcessNodeApiService()
             .update(node.id, node, options);
 
-        setProcessFlow({
-            ...processFlow,
-            nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
-        });
+        handleStoredNode(updated);
 
         setShowProcessNodeProblemsForNodes((prev) => ({
             ...prev,
@@ -1605,7 +1644,8 @@ export function ProcessDetailsPage(): ReactNode {
                             Möchten Sie die Prozessmodellierung testen?
                             Die Prozessversion kann während des Tests nicht veröffentlicht werden.
                             Sie können den Test jederzeit abbrechen.
-                            Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
+                            Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge
+                            gelöscht.
                         </Typography>
                         {
                             (nodeProblems.length > 0 || versionProblems.length > 0) &&
@@ -1918,6 +1958,24 @@ export function ProcessDetailsPage(): ReactNode {
         newNodeFor,
         processFlow,
     ]);
+    // Edges are only created and deleted, so a stale editor cannot be detected by a lock version; reload them instead.
+    const refreshEdges = useCallback(() => {
+        new ProcessDefinitionEdgeApiService()
+            .listAll({
+                processDefinitionId: processId,
+                processDefinitionVersion: processVersion,
+            })
+            .then((edges) => {
+                setProcessFlow((current) => current == null ? current : {
+                    ...current,
+                    edges: edges.content,
+                });
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Verbindungen konnten nicht neu geladen werden.'));
+            });
+    }, [dispatch, processId, processVersion]);
+
     const handleCreateEdge = useCallback((fromNodeId: number, toNodeId: number, viaPortKey: string): void => {
         if (processFlow == null) {
             return;
@@ -1949,8 +2007,12 @@ export function ProcessDetailsPage(): ReactNode {
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht erstellt werden.'));
+                // A conflict means another editor connected the port meanwhile, so show the current connections.
+                if (isApiError(err) && err.status === 409) {
+                    refreshEdges();
+                }
             });
-    }, [dispatch, processFlow]);
+    }, [dispatch, processFlow, refreshEdges]);
     const handleReplaceNode = useCallback(async (node: ProcessNodeEntity, replacementProvider: ProcessNodeProvider): Promise<void> => {
         if (processFlow == null) {
             return;
@@ -1995,7 +2057,11 @@ export function ProcessDetailsPage(): ReactNode {
             title: 'Prozesselement ersetzen',
             confirmButtonText: 'Ersetzen',
             children: (
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                }}>
                     <Typography>
                         Möchten Sie das Prozesselement <strong>{getNodeName(node, currentProvider)}</strong> wirklich
                         durch <strong>{replacementProvider.name}</strong> ersetzen?
@@ -2072,10 +2138,27 @@ export function ProcessDetailsPage(): ReactNode {
             }
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht ersetzt werden.'));
+            // Edges may already be deleted and the node may already be replaced, so show what the server now holds.
+            refreshEdges();
+            nodeApi
+                .retrieve(node.id)
+                .then((currentNode) => {
+                    setProcessFlow((previousProcess) => previousProcess == null ? previousProcess : {
+                        ...previousProcess,
+                        nodes: previousProcess.nodes.map((processNode) => processNode.id === currentNode.id ? currentNode : processNode),
+                    });
+                    setNodeRefreshSignal((previousSignal) => ({
+                        nodeId: node.id,
+                        version: previousSignal.version + 1,
+                    }));
+                })
+                .catch((reloadError) => {
+                    console.error(reloadError);
+                });
         } finally {
             dispatch(clearLoadingMessage());
         }
-    }, [confirm, dispatch, flowNodeProviderCache, processFlow]);
+    }, [confirm, dispatch, flowNodeProviderCache, processFlow, refreshEdges]);
     const isInTestMode = currentTestClaim != null;
 
     const headerActions = useMemo<Action[]>(() => {
@@ -2146,6 +2229,13 @@ export function ProcessDetailsPage(): ReactNode {
                 'separator' as const,
             ] : []),
             {
+                tooltip: 'Datenstruktur anzeigen',
+                ariaLabel: 'Datenstruktur anzeigen',
+                icon: <DataObject/>,
+                visible: canReadDataStructure,
+                onClick: () => setShowDataStructure(true),
+            },
+            {
                 tooltip: 'Versionen',
                 ariaLabel: 'Versionen',
                 icon: <HomeStorage/>,
@@ -2174,13 +2264,15 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Veröffentlichen',
                 tooltip: 'Prozessversion veröffentlichen',
-                disabledTooltip: 'Vor der Veröffentlichung muss der laufende Test beendet werden.',
+                disabledTooltip: canPublishLocal
+                    ? 'Vor der Veröffentlichung muss der laufende Test beendet werden.'
+                    : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_LOCAL),
                 icon: null,
                 onClick: () => {
                     setShowPublishDialog(true);
                 },
                 variant: 'contained',
-                disabled: processFlow == null || isInTestMode,
+                disabled: processFlow == null || isInTestMode || !canPublishLocal,
                 visible: processFlow?.version.status === ProcessStatus.Drafted || processFlow?.version.status === ProcessStatus.Revoked,
                 activeStyle: {
                     ml: 1,
@@ -2189,13 +2281,15 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Zurückziehen',
                 tooltip: 'Prozessversion zurückziehen',
-                disabledTooltip: 'Vor dem Zurückziehen muss der laufende Test beendet werden.',
+                disabledTooltip: canPublishLocal
+                    ? 'Vor dem Zurückziehen muss der laufende Test beendet werden.'
+                    : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_LOCAL),
                 icon: null,
                 onClick: () => {
                     void handleRevokeCurrentProcessVersion();
                 },
                 variant: 'contained',
-                disabled: processFlow == null || isInTestMode,
+                disabled: processFlow == null || isInTestMode || !canPublishLocal,
                 visible: processFlow?.version.status === ProcessStatus.Published,
                 activeStyle: {
                     ml: 1,
@@ -2204,6 +2298,7 @@ export function ProcessDetailsPage(): ReactNode {
         ];
     }, [
         processFlow,
+        canReadDataStructure,
         activeTestClaimId,
         currentTestClaim,
         instanceId,
@@ -2215,6 +2310,7 @@ export function ProcessDetailsPage(): ReactNode {
         processInstanceAttachmentSetItems.length,
         runtimeData,
         isInTestMode,
+        canPublishLocal,
         notImplemented,
         handleDeleteProcess,
         handleRevokeCurrentProcessVersion,
@@ -2270,6 +2366,11 @@ export function ProcessDetailsPage(): ReactNode {
             });
     }, [dispatch, navigate]);
 
+    // Propagate essential load failures to the router so the staff shell renders its error screen.
+    if (processFlowLoadError != null) {
+        throw processFlowLoadError;
+    }
+
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
             return <ProcessDetailsPageSkeleton/>;
@@ -2290,7 +2391,7 @@ export function ProcessDetailsPage(): ReactNode {
         );
     }
 
-    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted;
+    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted && canUpdateProcess;
     const isProcessStructureEditable = isProcessEditable && currentTestClaim == null;
 
     return (
@@ -2393,26 +2494,32 @@ export function ProcessDetailsPage(): ReactNode {
                                                                 >
                                                                     Testmodus
                                                                 </Typography>
-                                                                <Button
-                                                                    size="small"
-                                                                    color="error"
-                                                                    variant="text"
-                                                                    onClick={handleEndTestClaim}
-                                                                    sx={{
-                                                                        minWidth: 0,
-                                                                        ml: 'auto',
-                                                                        px: 0.5,
-                                                                        py: 0.125,
-                                                                        borderRadius: 1,
-                                                                        fontSize: '0.75rem',
-                                                                        fontWeight: 600,
-                                                                        lineHeight: 1.2,
-                                                                        textTransform: 'none',
-                                                                        transform: 'translateY(-1px)',
-                                                                    }}
+                                                                <DisabledTooltip
+                                                                    disabled={!canPublishTest}
+                                                                    title={formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_TEST)}
+                                                                    wrapperSx={{ml: 'auto'}}
                                                                 >
-                                                                    Beenden
-                                                                </Button>
+                                                                    <Button
+                                                                        size="small"
+                                                                        color="error"
+                                                                        variant="text"
+                                                                        disabled={!canPublishTest}
+                                                                        onClick={handleEndTestClaim}
+                                                                        sx={{
+                                                                            minWidth: 0,
+                                                                            px: 0.5,
+                                                                            py: 0.125,
+                                                                            borderRadius: 1,
+                                                                            fontSize: '0.75rem',
+                                                                            fontWeight: 600,
+                                                                            lineHeight: 1.2,
+                                                                            textTransform: 'none',
+                                                                            transform: 'translateY(-1px)',
+                                                                        }}
+                                                                    >
+                                                                        Beenden
+                                                                    </Button>
+                                                                </DisabledTooltip>
                                                             </Box>
                                                             <Divider
                                                                 sx={{
@@ -2513,6 +2620,14 @@ export function ProcessDetailsPage(): ReactNode {
                                                                     edges: prevProcess.edges.filter((edge) => edge.id !== edgeId),
                                                                 };
                                                             });
+                                                        })
+                                                        .catch((err) => {
+                                                            if (isApiError(err) && err.status === 404) {
+                                                                dispatch(showWarningSnackbar('Die Verbindung wurde zwischenzeitlich bereits entfernt. Die Verbindungen wurden neu geladen.'));
+                                                                refreshEdges();
+                                                                return;
+                                                            }
+                                                            dispatch(showApiErrorSnackbar(err, 'Die Verbindung konnte nicht aufgehoben werden.'));
                                                         });
                                                 }}
                                                 onDeleteNode={handleDeleteNode}
@@ -2532,7 +2647,7 @@ export function ProcessDetailsPage(): ReactNode {
                                             }}
                                         >
                                             <Typography sx={{
-                                                color: "text.secondary"
+                                                color: 'text.secondary',
                                             }}>
                                                 {
                                                     hasFlowNodeProviderLoadError ?
@@ -2571,10 +2686,12 @@ export function ProcessDetailsPage(): ReactNode {
                                     editable: isProcessEditable,
                                     structureEditable: isProcessStructureEditable,
                                     onSave: handleSaveNode,
+                                    onStoredNode: handleStoredNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,
-                                    testClaim: currentTestClaim?.claim ?? null,
+                                    // The node testing tab loads data that requires the update permission.
+                                    testClaim: canUpdateProcess ? currentTestClaim?.claim ?? null : null,
                                     nodeProblems: processNodeProblems,
                                     showNodeProblemsForNodes: showProcessNodeProblemsForNodes,
                                 }}
@@ -2758,7 +2875,22 @@ export function ProcessDetailsPage(): ReactNode {
                     setShowMenuAtEl(null);
                 }}
                 onMenuEvent={handleMenuEvent}
+                canStartTest={canPublishTest}
             />
+
+            {showDataStructure && canReadDataStructure && <ProcessDataStructureDialog
+                processId={processFlow.definition.id}
+                processVersion={processFlow.version.processVersion}
+                savedRevision={processFlow}
+                onClose={() => setShowDataStructure(false)}
+                onSelectNode={nodeId => {
+                    const node = processFlow.nodes.find(candidate => candidate.id === nodeId);
+                    if (node != null) {
+                        setShowDataStructure(false);
+                        handleSelectNode(node);
+                    }
+                }}
+            />}
 
             <ProcessNotesOverviewDialog
                 open={showProcessNotesOverviewDialog}
@@ -2822,7 +2954,10 @@ export function ProcessDetailsPage(): ReactNode {
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}
-                onNewDraft={({process, version}) => {
+                onNewDraft={({
+                                 process,
+                                 version,
+                             }) => {
                     return handleAddDraft(process.id, version.processVersion);
                 }}
                 onDeleteVersion={(process, version) => {

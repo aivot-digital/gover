@@ -10,6 +10,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUse
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.exceptions.ValidationException;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
 import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
@@ -21,10 +22,12 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
+import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
@@ -34,6 +37,7 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.ProcessAssignmentService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +53,8 @@ import static org.mockito.Mockito.*;
 class InstanceAssignmentActionNodeV1Test {
     private final AssignmentContextAssigneeResolverService resolver = mock(AssignmentContextAssigneeResolverService.class);
     private final ProcessAssignmentService assignments = mock(ProcessAssignmentService.class);
-    private final InstanceAssignmentActionNodeV1 node = new InstanceAssignmentActionNodeV1(resolver, assignments);
+    private final UserDeputyService deputies = mock(UserDeputyService.class);
+    private final InstanceAssignmentActionNodeV1 node = new InstanceAssignmentActionNodeV1(resolver, assignments, deputies);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -73,6 +78,7 @@ class InstanceAssignmentActionNodeV1Test {
         var result = assertInstanceOf(ProcessNodeExecutionResultInstanceAssigned.class,
                 node.init(initContext(config("automatic"))));
         assertNull(result.getNewDeadlineKey());
+        assertFalse(result.isDirectMembershipRequired());
 
         assertEquals("recipient", result.getAssignedUserId());
         assertEquals("success", result.getViaPort());
@@ -116,7 +122,7 @@ class InstanceAssignmentActionNodeV1Test {
 
     @Test
     void manualTaskUsesCurrentInstanceOptionsWithoutPreselection() throws Exception {
-        when(assignments.instanceOptions("dispatcher", 99L))
+        when(assignments.manualInstanceOptions("dispatcher", 99L))
                 .thenReturn(List.of(option("recipient"), option("previous")));
         var config = config("manual");
         config.taskDescription = "<p>Wählen Sie die zuständige Person für diesen Vorgang aus.</p>";
@@ -139,7 +145,7 @@ class InstanceAssignmentActionNodeV1Test {
 
     @Test
     void manualTaskKeepsAssignmentOpenWhenNoRecipientIsAvailable() throws Exception {
-        when(assignments.instanceOptions("dispatcher", 99L)).thenReturn(List.of());
+        when(assignments.manualInstanceOptions("dispatcher", 99L)).thenReturn(List.of());
 
         var view = node.getStaffTaskView(staffContext(config("manual")));
         var layout = (GroupLayoutElement) view.layout();
@@ -149,6 +155,42 @@ class InstanceAssignmentActionNodeV1Test {
         assertEquals(List.of(field), layout.getChildren());
         assertTrue(field.getDisabled());
         assertTrue(view.events().isEmpty());
+    }
+
+    @Test
+    void unavailableRecipientIsIdentifiedDuringValidationAndWhenTheLastOptionWasWithdrawn() throws Exception {
+        var view = node.getStaffTaskView(staffContext(config("manual")));
+        var select = view.layout().findChild("assignedUserId", SelectInputElement.class).orElseThrow();
+        var selected = "4869086b-5edd-4c6b-9c64-2eb081044ef1";
+        var inputs = new AuthoredElementValues().putLiteral("assignedUserId", selected);
+        var expected = Map.of("code", "manual_assignment_recipient_unavailable", "fieldId", "assignedUserId",
+                "rejectedValue", selected);
+
+        var fieldError = assertThrows(ValidationException.class, () -> select.validate(selected));
+        assertEquals(expected, fieldError.getErrorDetails());
+        assertEquals("Die ausgewählte Person steht für diesen Vorgang nicht mehr zur Verfügung.", fieldError.getMessage());
+        var eventError = node.unavailableStaffTaskEvent("assign", inputs);
+        assertEquals(expected, eventError.getDetails());
+        assertEquals(fieldError.getMessage(), eventError.getMessage());
+        assertNull(node.unavailableStaffTaskEvent("unknown", inputs).getDetails());
+    }
+
+    @Test
+    void autosaveRemovesOnlyAWithdrawnRecipientFromTheDraft() throws Exception {
+        var context = staffContext(config("manual"));
+        context.getThisTask().setNodeData(Map.of());
+        doThrow(new ManualAssignmentRecipientUnavailableException("withdrawn")).when(assignments)
+                .requireManualInstanceAssignee("dispatcher", 99L, "withdrawn");
+        var draft = new AuthoredElementValues().putLiteral("assignedUserId", "withdrawn").putLiteral("notes", "draft");
+
+        var result = node.onAutoSaveFromStaffTaskView(context, draft).orElseThrow();
+        var saved = ProcessNodeDefinition.getAutoSavedTaskViewData(result.getRuntimeData(),
+                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
+        assertEquals(new AuthoredElementValues().putLiteral("notes", "draft"), saved);
+        draft.putLiteral("assignedUserId", "eligible");
+        var valid = node.onAutoSaveFromStaffTaskView(context, draft).orElseThrow();
+        assertEquals(draft, ProcessNodeDefinition.getAutoSavedTaskViewData(valid.getRuntimeData(),
+                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
     }
 
     @Test
@@ -163,8 +205,9 @@ class InstanceAssignmentActionNodeV1Test {
     }
 
     @Test
-    void manualSubmissionRechecksSelectionAgainstCurrentOptions() throws Exception {
-        when(assignments.instanceOptions("dispatcher", 99L)).thenReturn(List.of(option("recipient")));
+    void manualSubmissionChecksTheSelectedRecipientForTheCallingUser() throws Exception {
+        doThrow(ResponseException.badRequest("Kein Zugriff")).when(assignments)
+                .requireManualInstanceAssignee("dispatcher", 99L, "unauthorized");
         var context = staffContext(config("manual"));
 
         assertThrows(ResponseException.class, () -> node.onEventFromStaffTaskView(
@@ -179,6 +222,7 @@ class InstanceAssignmentActionNodeV1Test {
         assertEquals("recipient", result.getAssignedUserId());
         assertEquals("success", result.getViaPort());
         assertEquals(Map.of("assignedUserId", "recipient"), result.getNodeData());
+        verify(assignments).requireManualInstanceAssignee("dispatcher", 99L, "recipient");
     }
 
     @Test
@@ -190,7 +234,32 @@ class InstanceAssignmentActionNodeV1Test {
         assertThrows(ResponseException.class, () -> node.getStaffTaskView(context));
         assertThrows(ResponseException.class, () -> node.onEventFromStaffTaskView(context,
                 new AuthoredElementValues().putLiteral("assignedUserId", "recipient"), "assign"));
-        verify(assignments, never()).instanceOptions("other", 99L);
+        verify(assignments, never()).manualInstanceOptions("other", 99L);
+        verify(assignments, never()).requireManualInstanceAssignee("other", 99L, "recipient");
+    }
+
+    @Test
+    void deputyCanAssignToTheRepresentedPersonWithoutBeingAnEligibleRecipient() throws Exception {
+        when(deputies.isActiveDeputyFor("deputy", "dispatcher")).thenReturn(true);
+        when(assignments.manualInstanceOptions("deputy", 99L)).thenReturn(List.of(option("dispatcher")));
+        doThrow(ResponseException.badRequest("Kein Zugriff")).when(assignments)
+                .requireManualInstanceAssignee("deputy", 99L, "deputy");
+        var context = staffContext(config("manual"), "deputy");
+
+        var field = ((GroupLayoutElement) node.getStaffTaskView(context).layout())
+                .findChild("assignedUserId", SelectInputElement.class).orElseThrow();
+        assertEquals(List.of("dispatcher"), field.getOptions().stream().map(o -> o.getValue()).toList());
+        var rejection = assertThrows(ResponseException.class, () -> node.onEventFromStaffTaskView(context,
+                new AuthoredElementValues().putLiteral("assignedUserId", "deputy"), "assign"));
+        assertEquals(400, rejection.getStatus().value());
+
+        var result = assertInstanceOf(ProcessNodeExecutionResultInstanceAssigned.class,
+                node.onEventFromStaffTaskView(context,
+                        new AuthoredElementValues().putLiteral("assignedUserId", "dispatcher"), "assign")
+                        .orElseThrow());
+        assertEquals("dispatcher", result.getAssignedUserId());
+        assertTrue(result.isDirectMembershipRequired());
+        verify(assignments).requireManualInstanceAssignee("deputy", 99L, "dispatcher");
     }
 
     @Test
@@ -306,8 +375,13 @@ class InstanceAssignmentActionNodeV1Test {
 
     private static ProcessNodeExecutionContextUIStaff<InstanceAssignmentActionNodeV1.Config> staffContext(
             InstanceAssignmentActionNodeV1.Config config) {
+        return staffContext(config, "dispatcher");
+    }
+
+    private static ProcessNodeExecutionContextUIStaff<InstanceAssignmentActionNodeV1.Config> staffContext(
+            InstanceAssignmentActionNodeV1.Config config, String callingUserId) {
         return new ProcessNodeExecutionContextUIStaff<>(mock(ProcessNodeExecutionLogger.class), processNode(),
-                instance(), task(), null, new UserEntity().setId("dispatcher"), config,
+                instance(), task(), null, new UserEntity().setId(callingUserId), config,
                 new ProcessExecutionData().addProcessData(Map.of("case", "data")));
     }
 

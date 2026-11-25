@@ -2,7 +2,6 @@ import {useMemo} from 'react';
 import {type NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {isNoCodeProcessDataReference, type NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {parseProcessDataPath} from '../../../utils/process-data-path';
-import {CodeListValueMode} from '../../code-lists/enums/code-list-value-mode';
 import {type CodeListOptionsSource, useCodeListOptions} from '../../code-lists/hooks/use-code-list-element-options';
 import {type ProcessNodeDefinitionMetadataForwardedProcessDataKey} from '../../process/entities/process-node-definition-metadata';
 import {useOptionalProcessNodeEditorContext} from '../../process/pages/details/components/process-node-editor/process-node-editor-context';
@@ -29,7 +28,8 @@ export function useProcessDataReferenceOptions(
         .flatMap((keys, operandIndex) => keys.flatMap((key, keyIndex) => key.codeListKey == null ? [] : [{
             id: getCodeListSourceId(operandIndex, keyIndex),
             codeListKey: key.codeListKey,
-            valueMode: key.codeListValueMode ?? CodeListValueMode.ValueAndLabel,
+            valueColumnKey: key.codeListValueColumnKey,
+            labelColumnKey: key.codeListLabelColumnKey,
         }])), [referencedKeysByOperand]);
     const codeListOptions = useCodeListOptions(codeListSources);
 

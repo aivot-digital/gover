@@ -38,11 +38,14 @@ import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchO
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.EventState;
+import dev.fitko.fitconnect.rest.model.event.problems.Problem;
 import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
 import dev.fitko.fitconnect.sdk.FitConnectSdk;
 import dev.fitko.fitconnect.sdk.api.*;
 import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.clients.Cases;
 import dev.fitko.fitconnect.sdk.clients.OnlineService;
+import dev.fitko.fitconnect.sdk.clients.Organisation;
 import dev.fitko.fitconnect.zbp.ZBPEnvelopeBuilder;
 import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
 import dev.fitko.fitconnect.zbp.model.AuthorKeyPair;
@@ -59,7 +62,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service.
@@ -156,6 +163,21 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                     element.setAllowedMimeTypes(List.of(CERT_MIME_TYPE));
                     element.setAssetVisibility(AssetVisibility.Private);
                 });
+
+        config
+                .findChild(Config.ENVIRONMENT_FIELD_ID, SelectInputElement.class)
+                .ifPresent(element -> element.setOptions(List.of(
+                        SelectInputElementOption.of(Config.ENVIRONMENT_TEST, "Test-Umgebung (TEST)"),
+                        SelectInputElementOption.of(Config.ENVIRONMENT_STAGE, "Stage-Umgebung (STAGE)"),
+                        SelectInputElementOption.of(Config.ENVIRONMENT_PROD, "Produktiv-Umgebung (PROD)")
+                )));
+
+        config
+                .findChild(Config.SENDER_DESTINATION_TYPE_FIELD_ID, SelectInputElement.class)
+                .ifPresent(element -> element.setOptions(List.of(
+                        SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ADMINISTRATION, "Verwaltung (Typ A)"),
+                        SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE, "Onlinedienst (Typ C)")
+                )));
 
         return config;
     }
@@ -397,30 +419,52 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 .addAttachments(fitConnectAttachments)
                 .build();
 
-        final OnlineService onlineService;
+        final Function<OutgoingSubmission, SentSubmission> send;
+        final Cases cases;
         try {
-            onlineService = createOnlineService(
+            final FitConnectSdk sdk = createSdk(
                     config.senderClientId,
                     resolveSenderClientSecret(config),
-                    senderDestinationId
+                    resolveEnvironment(config.environment)
             );
+            // The SDK only accepts a sender destination whose type matches the client; FIT-Connect fixes the type at creation.
+            if (Config.SENDER_DESTINATION_TYPE_ADMINISTRATION.equals(config.senderDestinationType)) {
+                final Organisation organisation = sdk.organisation(senderDestinationId);
+                send = organisation::send;
+                cases = organisation.cases();
+            } else {
+                // Configurations saved before the type was selectable always sent as an online service.
+                final OnlineService onlineService = sdk.onlineService(senderDestinationId);
+                send = onlineService::send;
+                cases = onlineService.cases();
+            }
         } catch (CommunicationException e) {
             throw e;
         } catch (Exception e) {
-            throw new CommunicationException("Der FIT-Connect-Client der Organisation konnte nicht initialisiert werden.", e);
+            throw new CommunicationException(
+                    "Die FIT-Connect-Verbindung für den Zustellpunkt (Sender) „%s“ konnte nicht aufgebaut werden: %s"
+                            .formatted(senderDestinationId, describe(e)),
+                    e
+            );
         }
 
         final SentSubmission sentSubmission;
         final CaseEvent status;
         try {
-            sentSubmission = onlineService.send(submission);
-            status = onlineService.cases().logOf(sentSubmission).latest();
+            sentSubmission = send.apply(submission);
+            status = cases.logOf(sentSubmission).latest();
         } catch (Exception e) {
-            throw new CommunicationException("Die Nachricht konnte nicht über FIT-Connect versendet werden.", e);
+            throw new CommunicationException(
+                    "Der Versand über FIT-Connect ist fehlgeschlagen: %s".formatted(describe(e)),
+                    e
+            );
         }
 
         if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
-            throw new CommunicationException("Die Nachricht konnte nicht über FIT-Connect versendet werden. Status: " + status);
+            throw new CommunicationException(
+                    "FIT-Connect meldete für die Nachricht den Status „%s“. Probleme: %s"
+                            .formatted(status.state(), describeProblems(status.problems()))
+            );
         }
 
         return Map.of(
@@ -449,7 +493,8 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 .content(renderMessageHtml(message))
                 .sender(sender)
                 .reference(message.referenceId())
-                .service(departmentName)
+                // The ZBP rejects messages without a service, e.g. test messages without a sending department.
+                .service(sender)
                 .title(message.subject())
                 //.retrievalConfirmationAddress("retrieval@mail.net")
                 //.replyAddress("reply@mail.net")
@@ -583,15 +628,45 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     }
 
     @Nonnull
-    OnlineService createOnlineService(@Nonnull String clientId,
-                                      @Nonnull String clientSecret,
-                                      @Nonnull UUID senderDestinationId) {
+    FitConnectSdk createSdk(@Nonnull String clientId,
+                            @Nonnull String clientSecret,
+                            @Nonnull FitConnectEnvironment environment) {
         return FitConnectSdk
                 .fromConfigBuilder()
                 .credentials(clientId, clientSecret)
-                .environment(FitConnectEnvironment.TEST)
-                .build()
-                .onlineService(senderDestinationId);
+                .environment(environment)
+                .build();
+    }
+
+    @Nonnull
+    private static FitConnectEnvironment resolveEnvironment(@Nullable String environment) {
+        // Configurations saved before the environment was selectable always used the test environment.
+        return switch (Objects.requireNonNullElse(environment, Config.ENVIRONMENT_TEST)) {
+            case Config.ENVIRONMENT_TEST -> FitConnectEnvironment.TEST;
+            case Config.ENVIRONMENT_STAGE -> FitConnectEnvironment.STAGE;
+            case Config.ENVIRONMENT_PROD -> FitConnectEnvironment.PROD;
+            default -> throw new IllegalArgumentException(
+                    "Die FIT-Connect-Umgebung „%s“ wird nicht unterstützt.".formatted(environment)
+            );
+        };
+    }
+
+    @Nonnull
+    private static String describe(@Nonnull Exception e) {
+        return Objects.requireNonNullElse(e.getMessage(), e.getClass().getSimpleName());
+    }
+
+    // Problem does not override toString(), so its title and detail are joined explicitly for the event log.
+    @Nonnull
+    private static String describeProblems(@Nullable List<Problem> problems) {
+        if (problems == null || problems.isEmpty()) {
+            return "keine";
+        }
+        return problems.stream()
+                .map(problem -> Stream.of(problem.getTitle(), problem.getDetail())
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(": ")))
+                .collect(Collectors.joining("; "));
     }
 
     private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {
@@ -637,8 +712,15 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
     public static class Config {
         public static final String ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID = "zbpCertificatePrivateKeyAssetKey";
         public static final String ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID = "zbpCertificateClientCertAssetKey";
+        public static final String ENVIRONMENT_FIELD_ID = "environment";
+        public static final String ENVIRONMENT_TEST = "TEST";
+        public static final String ENVIRONMENT_STAGE = "STAGE";
+        public static final String ENVIRONMENT_PROD = "PROD";
         public static final String DESTINATION_ID_FIELD_ID = "destinationId";
         public static final String SENDER_DESTINATION_ID_FIELD_ID = "senderDestinationId";
+        public static final String SENDER_DESTINATION_TYPE_FIELD_ID = "senderDestinationType";
+        public static final String SENDER_DESTINATION_TYPE_ADMINISTRATION = "ADMINISTRATION";
+        public static final String SENDER_DESTINATION_TYPE_ONLINE_SERVICE = "ONLINE_SERVICE";
         public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
         public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
 
@@ -662,6 +744,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
         })
         public String zbpCertificatePrivateKeyAssetKey;
 
+        @InputElementPOJOBinding(id = ENVIRONMENT_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "FIT-Connect-Umgebung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Für FIT-Connect stehen derzeit mehrere Betriebsumgebungen bereit, die unterschiedliche Zwecke erfüllen. Wählen Sie die Umgebung aus, über die Nachrichten an das zentrale Bürgerpostfach versendet werden."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String environment;
+
         @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Empfänger)"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), welcher als ZBP-Adapter fungiert und die Nachricht empfängt."),
@@ -677,6 +767,14 @@ public class FitConnectZbpCommunicationProviderV1 implements CommunicationProvid
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
         public String senderDestinationId;
+
+        @InputElementPOJOBinding(id = SENDER_DESTINATION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Typ des Zustellpunktes (Sender)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den Typ aus, mit dem der Zustellpunkt (Sender) in FIT-Connect angelegt wurde."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderDestinationType;
 
         @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Kennung"),

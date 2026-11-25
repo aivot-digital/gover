@@ -10,14 +10,14 @@ const eventActions = [
     {key: 'customerTaskEvent', label: 'Aufgabenaktion für externe Beteiligte'},
 ] as const;
 
-function renderEditor(overrides: Partial<LinkButtonElement> = {}, editable = true) {
+function renderEditor(overrides: Partial<LinkButtonElement> = {}, editable = true, configurationErrors?: Record<string, string[]>) {
     let element = {...generateElementWithDefaultValues(ElementType.LinkButton), ...overrides};
     const onPatch = vi.fn((patch: Partial<LinkButtonElement>) => {
         element = {...element, ...patch};
         view.rerender(editor());
     });
     const editor = () => <LinkButtonEditor element={element} onPatch={onPatch} editable={editable}
-        hasSummaryLayoutParent={false} scope="application"/>;
+        hasSummaryLayoutParent={false} scope="application" configurationErrors={configurationErrors}/>;
     const view = render(editor());
     return {...view, onPatch, getElement: () => element};
 }
@@ -70,6 +70,26 @@ describe('LinkButtonEditor action selection', () => {
         renderEditor(saved);
         expect(screen.getByRole('combobox', {name: /^Aktion/})).toHaveTextContent(label);
         expect(screen.getByRole('textbox', {name: /^Ereigniskennung/})).toHaveValue('');
+    });
+
+    it.each(eventActions)('shows the configuration error of a selected $key at the event name', ({key}) => {
+        const message = 'Geben Sie die Ereigniskennung an, die die Schaltfläche auslösen soll.';
+        renderEditor({[key]: ''}, true, {[key]: [message]});
+        const input = screen.getByRole('textbox', {name: /^Ereigniskennung$/});
+        expect(input).toBeRequired();
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAccessibleDescription(new RegExp(message));
+    });
+
+    it('marks the settings that the configuration validation requires as required', () => {
+        renderEditor({}, true, {label: ['Geben Sie eine Beschriftung für die Schaltfläche an.']});
+        const label = screen.getByRole('textbox', {name: /^Beschriftung$/});
+        expect(label).toBeRequired();
+        expect(label).toHaveAccessibleDescription(/Geben Sie eine Beschriftung für die Schaltfläche an/);
+        expect(screen.getByRole('textbox', {name: /^Link$/})).toBeRequired();
+        for (const name of ['Aktion', 'Variante', 'Farbe']) {
+            expect(screen.getByRole('combobox', {name: new RegExp(`^${name}$`)})).toHaveAttribute('aria-required', 'true');
+        }
     });
 
     it('switches between both event actions and back to a link without retaining incompatible targets', async () => {

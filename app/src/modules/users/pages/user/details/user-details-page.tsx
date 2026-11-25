@@ -54,8 +54,12 @@ export function UserDetailsPage() {
                                     In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen einsehen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Die hier gepflegten Basisdaten werden mit dem Identitätsanbieter (IdP) synchron gehalten.
-                                    Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in der Verwaltungsoberfläche von Keycloak.
+                                    Mit den entsprechenden Berechtigungen können Sie hier Vorname, Nachname, E-Mail-Adresse und Systemrolle ändern,
+                                    das Konto aktivieren oder deaktivieren, einen Link zum Zurücksetzen des Passworts versenden und das Konto löschen.
+                                </Typography>
+                                <Typography sx={{mt: 2}}>
+                                    Für weitergehende Sicherheitsfragen, etwa bei verlorenen Zugangsmitteln für die Zwei-Faktor-Authentifizierung,
+                                    wenden Sie sich an Ihre Administration. Die Konto-ID hilft bei der Zuordnung von Supportanfragen.
                                 </Typography>
                             </>
                         ),
@@ -90,7 +94,7 @@ export function UserDetailsPage() {
                     },
                     {
                         path: '/users/:id/deputies',
-                        label: 'Stellvertreter:innen',
+                        label: 'Stellvertretung',
                         onlyExisting: true,
                         requiredPermission: Permission.DEPUTY_READ,
                     },

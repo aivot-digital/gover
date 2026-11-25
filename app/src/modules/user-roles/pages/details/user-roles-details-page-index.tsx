@@ -8,7 +8,7 @@ import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save'
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar, showLockConflictSnackbar} from '../../../../slices/snackbar-slice';
 import {isLockVersionConflictError} from '../../../../models/api-error';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
@@ -141,7 +141,7 @@ export function UserRolesDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar(isLockVersionConflictError(err) ? err.message : 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -187,16 +187,6 @@ export function UserRolesDetailsPageIndex() {
                 zum Beispiel in Organisationseinheiten oder Teams.
                 Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>
-
-            <AlertComponent
-                color="warning"
-                title="Hinweis zum aktuellen Entwicklungsstand von Rollen und Berechtigungen"
-                sx={{mb: 3}}
-            >
-                Rollen und die damit verbundenen Berechtigungen werden in Prosuna derzeit noch nicht überall vollständig berücksichtigt.
-                Funktionen können unvollständig sein, sich ändern oder sich in einzelnen Bereichen noch nicht wie erwartet verhalten.
-                Bitte verlassen Sie sich daher aktuell nicht darauf, dass konfigurierte Berechtigungen bereits konsistent an allen Stellen durchgesetzt werden.
-            </AlertComponent>
 
             <Grid
                 container

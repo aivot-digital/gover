@@ -1,5 +1,5 @@
 import {Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeContext} from '../element-tree-context';
@@ -23,6 +23,9 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {validateDataKeyPath} from '../../../utils/data-key-input';
 import {suggestDestinationKey} from './element-tree-editor-content-tab-properties-utils';
+import {getPanelDraftParents} from '../element-panel-draft';
+import {editorValuesEqual} from '../../../utils/variable-reference-merge';
+import {mergeRecalculatedReferencedIds} from '../../../utils/ui-definition-utils';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -41,10 +44,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const {
         currentEditorTab,
         navigateToEditorTab,
+        navigateToElementEditor,
     } = useElementEditorNavigation();
 
     const {
-        root,
         editable,
         parentModalZIndex,
         displayContext,
@@ -52,6 +55,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         newElementIds,
         markElementApplied,
         allElements,
+        panelDraft,
+        onPanelDraftChange,
+        applyPanelDraft,
     } = useElementTreeContext();
 
     const {
@@ -64,11 +70,18 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         onClone,
     } = props;
 
-    const [updatedElement, setUpdatedElement] = useState<T>();
+    const panel = open && panelDraft?.base.id === value.id ? panelDraft : null;
+    const [localElement, setLocalElement] = useState<T>();
+    const updatedElement = panel == null ? localElement : panel.mine as T;
     const [isBusy, setIsBusy] = useState<boolean>(false);
-    const [dataKeyUnlocked, setDataKeyUnlocked] = useState(false);
-    const [automaticDataKey, setAutomaticDataKey] = useState(false);
+    const [localKeyUnlocked, setDataKeyUnlocked] = useState(false);
+    const [localAutomaticKey, setAutomaticDataKey] = useState(false);
+    const dataKeyUnlocked = panel?.dataKeyUnlocked ?? localKeyUnlocked;
+    const automaticDataKey = panel?.automaticDataKey ?? localAutomaticKey;
     const [dataKeyValidationRequested, setDataKeyValidationRequested] = useState(false);
+    const editGeneration = useRef(0);
+    const currentTree = useRef({panel, applyPanelDraft});
+    useLayoutEffect(() => { currentTree.current = {panel, applyPanelDraft}; }, [panel, applyPanelDraft]);
 
     const hasSummaryAsParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
@@ -76,43 +89,74 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     // Only a newly added field follows its title. A loaded empty key deliberately keeps values in element data.
     // Snapshot this policy per editor session; ordinary parent updates must not reset an in-progress edit.
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (open) {
-            const automatic = displayContext !== ElementDisplayContext.DataObjectSchema &&
-                newElementIds?.has(value.id) === true && isAnyInputElement(value) && !value.destinationKey;
+            const automatic = panel?.automaticDataKey ?? (displayContext !== ElementDisplayContext.DataObjectSchema &&
+                newElementIds?.has(value.id) === true && isAnyInputElement(value) && !value.destinationKey);
             setAutomaticDataKey(automatic);
-            setDataKeyUnlocked(false);
+            setDataKeyUnlocked(panel?.dataKeyUnlocked ?? false);
             setDataKeyValidationRequested(false);
             const generatedKey = automatic && isAnyInputElement(value)
                 ? suggestDestinationKey(value.label, {element: value, parents}, allElements)
                 : null;
-            setUpdatedElement(generatedKey == null ? undefined : {...value, destinationKey: generatedKey});
+            setLocalElement(generatedKey == null ? undefined : {...value, destinationKey: generatedKey});
             setIsBusy(false);
         }
+        return () => { editGeneration.current++; };
     }, [open, value.id]);
 
-    const changeCurrentElement = (updated: T) => {
+    const changeCurrentElement = (updated: T, reason?: 'normalize' | 'structure') => {
+        if (onPanelDraftChange != null && (!open || !editable)) return;
         const previous = updatedElement ?? value;
-        if (automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
+        let trackTitle = automaticDataKey;
+        if (reason !== 'structure' && automaticDataKey && isAnyInputElement(previous) && isAnyInputElement(updated)) {
             if (updated.destinationKey !== previous.destinationKey) {
-                setAutomaticDataKey(false);
+                trackTitle = false;
             } else if (updated.label !== previous.label) {
                 updated = {...updated, destinationKey: suggestDestinationKey(updated.label, {element: updated, parents}, allElements)};
             }
         }
-        setUpdatedElement(updated);
+        // A later keystroke supersedes an in-flight reference calculation for the previous value.
+        editGeneration.current++;
+        setIsBusy(false);
+        setAutomaticDataKey(trackTitle);
+        if (onPanelDraftChange == null || (reason === 'normalize' && panel == null)) {
+            setLocalElement(updated);
+            return;
+        }
+        const base = panel?.base ?? value;
+        const hasPendingStructure = panel?.detached || !!panel?.pendingMovedRemovals?.length;
+        if (!hasPendingStructure && editorValuesEqual(updated, base)) {
+            setLocalElement(undefined);
+            onPanelDraftChange(null);
+            return;
+        }
+        if (!hasPendingStructure && localElement != null && editorValuesEqual(updated, localElement)) {
+            onPanelDraftChange(null);
+            return;
+        }
+        onPanelDraftChange({
+            ...panel,
+            base,
+            mine: updated,
+            parents: panel?.parents ?? getPanelDraftParents(parents, value.id),
+            tab: currentEditorTab ?? DefaultTabs.properties,
+            automaticDataKey: trackTitle,
+            dataKeyUnlocked,
+        }, reason);
     };
 
     const handleSetCurrentTab = (newTab: string): void => {
+        if (panel != null) onPanelDraftChange?.({...panel, tab: newTab});
         navigateToEditorTab(newTab);
     };
 
-    const handleSave = (): void => {
+    const handleSave = async (): Promise<void> => {
         const current = updatedElement ?? value;
         setDataKeyValidationRequested(true);
         if (displayContext !== ElementDisplayContext.DataObjectSchema && isAnyInputElement(current) &&
             validateDataKeyPath(current.destinationKey) != null) {
-            navigateToEditorTab(DefaultTabs.properties);
+            handleSetCurrentTab(DefaultTabs.properties);
             return;
         }
         if (updatedElement == null) {
@@ -122,25 +166,41 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         }
 
         setIsBusy(true);
-        new ElementsApiService()
-            .recalculateReferencedIds(updatedElement)
-            .then((recalculatedElement) => {
-                setDataKeyUnlocked(false);
-                markElementApplied?.(value.id);
-                onChange(recalculatedElement);
-            })
-            .catch(() => {
-                // If the recalculation fails, we can still try to save the element with the risk of broken references.
-                setDataKeyUnlocked(false);
-                markElementApplied?.(value.id);
-                onChange(updatedElement);
-            })
-            .finally(() => {
-                setIsBusy(false);
-            });
+        const generation = editGeneration.current;
+        const api = new ElementsApiService();
+        let candidate = updatedElement;
+        for (;;) {
+            // If the calculation fails, keep the references already present on this element.
+            const recalculated = await api.recalculateReferencedIds(candidate).catch(() => candidate);
+            if (generation !== editGeneration.current) return;
+            const latest = currentTree.current;
+            if (panel != null && latest.panel != null && !editorValuesEqual(candidate, latest.panel.mine)) {
+                // A form save rebased the open edit while its references were being calculated.
+                candidate = latest.panel.mine as T;
+                continue;
+            }
+            setIsBusy(false);
+            if (panel != null && latest.panel == null) {
+                // The confirmed layout already contains this edit.
+                onCancel();
+            } else if (panel != null && latest.panel != null && latest.applyPanelDraft != null) {
+                // The backend may serialize additional default/null properties. Only reference IDs come from it.
+                const applied = mergeRecalculatedReferencedIds(candidate, recalculated);
+                if (!latest.applyPanelDraft(latest.panel, applied)) return;
+                onPanelDraftChange?.(null);
+                onCancel();
+            } else {
+                onChange(recalculated);
+                if (panel != null) onPanelDraftChange?.(null);
+            }
+            setDataKeyUnlocked(false);
+            markElementApplied?.(value.id);
+            return;
+        }
     };
 
-    const handleClose = async (): Promise<void> => {
+    const confirmDiscard = async (): Promise<boolean> => {
+        const generation = editGeneration.current;
         if (updatedElement != null) {
             const confirmed = await showConfirm({
                 theme: drawerTheme,
@@ -156,15 +216,21 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                 ),
             });
 
-            if (confirmed) {
-                onCancel();
-            }
-        } else {
-            onCancel();
+            if (!confirmed || generation !== editGeneration.current) return false;
         }
+        return true;
     };
 
-    const handleClone = () => {
+    const handleClose = async (): Promise<boolean> => {
+        if (!await confirmDiscard()) return false;
+        editGeneration.current++;
+        if (panel != null) onPanelDraftChange?.(null);
+        onCancel();
+        return true;
+    };
+
+    const handleClone = async () => {
+        if (panel != null && !await confirmDiscard()) return;
         setIsBusy(true);
         try {
             onClone();
@@ -173,9 +239,31 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         }
     };
 
-    const isRoot = root === value;
-    const componentTitle = useMemo(() => generateComponentTitle(value), [value]);
-    const typeName = useMemo(() => getElementNameForType(value.type), [value.type]);
+    const handleElementLink = (event: React.MouseEvent) => {
+        if (panel == null || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+        if (link == null || link.target === '_blank') return;
+        const [elementId, tab] = link.hash.slice(1).split('/');
+        if (!elementId || elementId === value.id) return;
+        event.preventDefault();
+        void handleClose().then((closed) => {
+            if (closed) navigateToElementEditor(elementId, tab ?? null);
+        });
+    };
+
+    const changeKeyLock = (unlocked: boolean) => {
+        setDataKeyUnlocked(unlocked);
+        // Manual control ends title tracking, even if the user later locks the key again.
+        if (unlocked) setAutomaticDataKey(false);
+        if (panel != null) {
+            onPanelDraftChange?.({...panel, dataKeyUnlocked: unlocked, automaticDataKey: unlocked ? false : automaticDataKey});
+        }
+    };
+
+    const isRoot = parents.length === 0;
+    const shownElement = panel != null && panel.mine.type !== value.type ? panel.mine : value;
+    const componentTitle = useMemo(() => generateComponentTitle(shownElement), [shownElement]);
+    const typeName = useMemo(() => getElementNameForType(shownElement.type), [shownElement.type]);
     const showTypeSuffix = useMemo(() => componentTitle.trim() !== typeName.trim(), [componentTitle, typeName]);
 
     const drawerTheme = useMemo(() => {
@@ -220,6 +308,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                     },
                 }}
                 onClose={handleClose}
+                onClick={handleElementLink}
             >
                 <Box
                     sx={{
@@ -314,7 +403,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         />
 
                         {
-                            ElementIsInput[value.type] &&
+                            ElementIsInput[shownElement.type] &&
                             identityMappingInformation != null &&
                             identityMappingInformation.length > 0 &&
                             <Tab
@@ -344,7 +433,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         }
 
                         {
-                            ElementIsInput[value.type] &&
+                            ElementIsInput[shownElement.type] &&
                             !hasSummaryAsParent &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
@@ -354,9 +443,9 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         }
 
                         {
-                            ElementIsInput[value.type] &&
+                            ElementIsInput[shownElement.type] &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
-                            value.type != ElementType.FileUpload &&
+                            shownElement.type != ElementType.FileUpload &&
                             <Tab
                                 label="Dynamischer Wert"
                                 value={DefaultTabs.value}
@@ -405,14 +494,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         <ElementTreeEditorContextProvider
                             value={{
                                 currentElement: updatedElement ?? value,
-                                originalElement: value,
+                                originalElement: panel?.base ?? value,
                                 dataKeyUnlocked,
-                                onUnlockDataKey: () => {
-                                    setDataKeyUnlocked(true);
-                                    // Manual control ends title tracking, even if the user later locks the key again.
-                                    setAutomaticDataKey(false);
-                                },
-                                onLockDataKey: () => setDataKeyUnlocked(false),
+                                onUnlockDataKey: () => changeKeyLock(true),
+                                onLockDataKey: () => changeKeyLock(false),
                                 dataKeyValidationRequested,
                                 onChangeCurrentElement: changeCurrentElement,
                                 parents: parents,
@@ -422,10 +507,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 element={updatedElement ?? value}
                                 currentTab={currentEditorTab}
                                 onChange={(changedElement) => {
-                                    setUpdatedElement({
+                                    changeCurrentElement({
                                         ...(updatedElement ?? value),
                                         ...changedElement,
-                                    });
+                                    }, 'structure');
                                 }}
                                 editable={editable}
                             />
@@ -471,14 +556,14 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     iconPosition: 'start',
                                     label: 'Duplizieren',
                                     onClick: handleClone,
-                                    visible: editable && !isRoot,
+                                    visible: editable && !isRoot && !panel?.detached,
                                     disabled: isBusy,
                                 },
                                 {
                                     icon: <Delete/>,
                                     iconPosition: 'start',
                                     label: 'Löschen',
-                                    visible: !isRoot,
+                                    visible: !isRoot && !panel?.detached,
                                     onClick: onDelete,
                                     disabled: isBusy || !editable,
                                     variant: 'outlined',
