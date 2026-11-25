@@ -1550,35 +1550,63 @@ export function ProcessDetailsPage(): ReactNode {
                 ));
 
         const edgeApi = new ProcessDefinitionEdgeApiService();
-
-        await Promise
-            .all(edgesToRemove.map((e) => edgeApi.destroy(e.id)));
-
-        await new ProcessNodeApiService()
-            .destroy(node.id);
-
-        const createdBridgeEdges = await Promise.all(
-            bridgeEdgePayloads.map((payload) => edgeApi.create(payload)),
-        );
-
-        setProcessFlow({
-            ...processFlow,
-            nodes: processFlow.nodes.filter((n) => n.id !== node.id),
-            edges: [
-                ...remainingEdges,
-                ...createdBridgeEdges,
-            ],
-        });
-
-        if (selectedNode?.id === node.id) {
-            await navigate(
-                `/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`,
-                {
-                    state: {
-                        [PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY]: true,
+        const nodeApi = new ProcessNodeApiService();
+        const navigateAwayFromDeletedNode = async (): Promise<void> => {
+            if (selectedNode?.id === node.id) {
+                await navigate(
+                    `/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`,
+                    {
+                        state: {
+                            [PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY]: true,
+                        },
                     },
-                },
-            );
+                );
+            }
+        };
+
+        try {
+            await Promise
+                .all(edgesToRemove.map((e) => edgeApi.destroy(e.id)));
+
+            await nodeApi
+                .destroy(node.id);
+
+            // Created one after another: each insert updates the parent process row, and concurrent
+            // updates of that row fail with a serialization error at REPEATABLE READ.
+            const createdBridgeEdges: ProcessDefinitionEdgeEntity[] = [];
+            for (const payload of bridgeEdgePayloads) {
+                createdBridgeEdges.push(await edgeApi.create(payload));
+            }
+
+            setProcessFlow({
+                ...processFlow,
+                nodes: processFlow.nodes.filter((n) => n.id !== node.id),
+                edges: [
+                    ...remainingEdges,
+                    ...createdBridgeEdges,
+                ],
+            });
+
+            await navigateAwayFromDeletedNode();
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht gelöscht werden.'));
+            // Edges and the node may already be deleted, so show what the server now holds.
+            refreshEdges();
+            try {
+                const nodes = await nodeApi.listAll({
+                    processId: processFlow.definition.id,
+                    processVersion: processFlow.version.processVersion,
+                });
+                setProcessFlow((current) => current == null ? current : {
+                    ...current,
+                    nodes: nodes.content,
+                });
+                if (!nodes.content.some((n) => n.id === node.id)) {
+                    await navigateAwayFromDeletedNode();
+                }
+            } catch (reloadError) {
+                console.error(reloadError);
+            }
         }
     };
 
@@ -2100,9 +2128,11 @@ export function ProcessDetailsPage(): ReactNode {
             await Promise.all(edgesToRemove.map((edge) => edgeApi.destroy(edge.id)));
 
             const updatedNode = await nodeApi.update(node.id, replacementPlan.replacementNode);
-            const recreatedEdges = await Promise.all(
-                replacementPlan.recreatedOutgoingEdges.map((edgePlan) => edgeApi.create(edgePlan.createPayload)),
-            );
+            // Created one after another, as in handleDeleteNode: concurrent inserts fail at REPEATABLE READ.
+            const recreatedEdges: ProcessDefinitionEdgeEntity[] = [];
+            for (const edgePlan of replacementPlan.recreatedOutgoingEdges) {
+                recreatedEdges.push(await edgeApi.create(edgePlan.createPayload));
+            }
 
             setFlowNodeProviderCache((previousCache) => ({
                 ...previousCache,
