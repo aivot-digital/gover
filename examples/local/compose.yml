@@ -114,7 +114,7 @@ services:
   # Development identity provider. start-dev and the fixed bootstrap credentials are
   # intentionally convenient and must never be copied to a production deployment.
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.8.2.0
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.8.2.1
     restart: unless-stopped
     depends_on:
       - keycloak_database
