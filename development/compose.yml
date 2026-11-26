@@ -6,7 +6,7 @@ name: prosuna_dev_environment
 services:
 
   prosuna-database:
-    image: docker.io/library/postgres:16.12-alpine3.23
+    image: docker.io/library/postgres:18.7-alpine3.24
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: prosuna
@@ -14,59 +14,51 @@ services:
       POSTGRES_DB: prosuna
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - prosuna_pg_data:/var/lib/postgresql/data
+      - prosuna_database_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   antivirus:
-    image: docker.io/clamav/clamav:1.5.4-debian
+    image: docker.io/clamav/clamav:1.5.5-debian
     restart: unless-stopped
     ports:
       - "3310:3310"
 
   cache:
-    image: docker.io/library/redis:8.2.4-alpine3.22
+    image: docker.io/library/redis:8.12.0-alpine3.23
     restart: unless-stopped
     ports:
       - "6379:6379"
 
   pdf-printer:
-    image: docker.io/gotenberg/gotenberg:8.26.0
+    image: docker.io/gotenberg/gotenberg:8.40.0
     restart: unless-stopped
     network_mode: host
     environment:
       API_PORT: 9191
-      # Like the examples, deny Chromium every URL except the local Prosuna URL and temporary render files. This
-      # version enforces the allow-list on every request; CHROMIUM_DENY_PRIVATE_IPS needs Gotenberg 8.32 or later.
+      # Like the examples, deny Chromium every URL except the local Prosuna URL and temporary render files.
+      # Allow-list matches bypass the IP checks, so the local Prosuna URL stays reachable.
+      CHROMIUM_DENY_PRIVATE_IPS: "true"
+      CHROMIUM_DENY_PUBLIC_IPS: "true"
       CHROMIUM_ALLOW_LIST: "^(http://localhost:9595/|file:///tmp/)"
 
   s3-object-storage:
-    image: docker.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: docker.io/chrislusf/seaweedfs:4.55
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    # Runs all SeaweedFS components in one process and creates the bucket on every start if it is missing.
+    command: mini -dir=/data -bucket=prosuna -admin.password=adminpassword -master.telemetry=false
     environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: adminpassword
+      # Static admin identity for the S3 API. Configuring it also makes SeaweedFS reject unsigned requests.
+      AWS_ACCESS_KEY_ID: super-access-key
+      AWS_SECRET_ACCESS_KEY: super-secret-key
     volumes:
-      - minio_data:/data
+      - seaweedfs_data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
-
-  s3-object-storage-setup:
-    image: docker.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
-    depends_on:
-      - s3-object-storage
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10 &&
-      mc alias set local http://s3-object-storage:9000 admin adminpassword &&
-      mc mb --ignore-existing local/prosuna &&
-      mc admin accesskey create local/ --access-key super-access-key --secret-key super-secret-key
-      "
+      - "9000:8333"
+      - "9001:12535"
 
   smtp:
-    image: docker.io/axllent/mailpit:v1.29.1
+    image: docker.io/axllent/mailpit:v1.34.0
     restart: unless-stopped
     environment:
       MP_MAX_MESSAGES: 5000
@@ -80,7 +72,7 @@ services:
       - "2025:1025"
 
   keycloak-database:
-    image: docker.io/library/postgres:16.12-alpine3.23
+    image: docker.io/library/postgres:18.7-alpine3.24
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: keycloak
@@ -88,12 +80,12 @@ services:
       POSTGRES_DB: keycloak
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - keycloak_pg_data:/var/lib/postgresql/data
+      - keycloak_database_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.7.4.0
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.8.2.0
     restart: unless-stopped
     depends_on:
       - keycloak-database
@@ -113,7 +105,7 @@ services:
       KC_FEATURES: "transient-users,update-email,hostname:v2"
 
   keycloak-setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.28
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.30
     depends_on:
       - keycloak
     environment:
@@ -139,7 +131,7 @@ services:
       BACKEND_CLIENT_SECRET: "my-super-secret-key"
 
   message-broker:
-    image: docker.io/library/rabbitmq:4.2.4-management-alpine
+    image: docker.io/library/rabbitmq:4.4.1-management-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: admin
@@ -151,7 +143,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
 
   reverse-proxy:
-    image: docker.io/library/caddy:2.10.2-alpine
+    image: docker.io/library/caddy:2.11.9-alpine
     restart: unless-stopped
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
@@ -164,8 +156,9 @@ services:
 
 
 volumes:
-  prosuna_pg_data:
-  keycloak_pg_data:
-  minio_data:
+  # PostgreSQL 18 cannot open the data of the former PostgreSQL 16 volumes prosuna_pg_data and keycloak_pg_data.
+  prosuna_database_data:
+  keycloak_database_data:
+  seaweedfs_data:
   mailpit_data:
   rabbitmq_data:
