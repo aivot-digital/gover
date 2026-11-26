@@ -30,6 +30,29 @@
 * **App:** Limit the rich text editor to what mails, PDFs and the app can show. Underline, superscript, subscript and highlight are no longer available, Markdown the editor cannot edit is shown as a protected part, and opening a field no longer changes its value.
 * **App:** Let authors choose whether a variable is inserted into a Markdown field as text or with its formatting. Payment texts and text slots of HTML templates offer the variable picker as well. Identity descriptions no longer offer variables, as they were never filled in.
 
+## [4.6.3](https://github.com/aivot-digital/gover/compare/v4.6.2...v4.6.3) (2026-11-20)
+
+### Breaking Changes
+- **UTF-8 handling of environment variables:** Before updating, check whether `GOVER_SECRETS_KEY` contains non-ASCII characters, such as umlauts or `ß`. If it does, the corrected character decoding changes the effective encryption key, making existing secrets unreadable after the update. Ensure you have their original values available and re-enter the affected secrets after updating.
+
+### Bug Fixes
+* **Mail:** Fix non-ASCII sender names in the `From` header of outgoing mails.
+* **Reverse Proxy:** Pin Traefik backend network on multi-homed routed services.
+
+### Improvements
+* **Services:** Updated patch versions of all services in the docker compose setup.
+* **Image:** Updated base image to `eclipse-temurin:21.0.13_9-jre-noble`.
+* **Image:** Disabled the JVM Base64 intrinsics (`-XX:-UseBASE64Intrinsics`) for Gover and Keycloak.
+* **Backend:** Updated the following backend dependencies:
+    * spring-boot to `3.5.16`
+    * postgresql to `42.7.14`
+    * json to `20260814`
+    * java-jwt to `4.6.2`
+    * thymeleaf to `3.1.7.RELEASE`
+    * flyway to `11.20.3`
+    * commons-codec to `1.23.0`
+
+
 ## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
 
 ### Bug Fixes
