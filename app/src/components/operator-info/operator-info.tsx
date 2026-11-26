@@ -1,30 +1,31 @@
 import {OperatorInfoProps} from './operator-info-props';
 import {NoCodeDataTypeLabels} from '../../data/no-code-data-type';
 import React, {Fragment} from 'react';
-import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
-import {Collapse} from '../collapse/collapse';
+import {Box, Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
 import {MarkdownContent} from '../markdown-content/markdown-content';
+import {TechnicalInformationSection} from '../technical-information-section/technical-information-section';
 
 export function OperatorInfo(props: OperatorInfoProps) {
     return (
-        <>
+        <Box>
             <MarkdownContent
                 markdown={props.operator.description}
                 headingBaseLevel={props.headingBaseLevel ?? 3}
             />
 
-            <Collapse
-                label="Technische Informationen"
-                closeTooltip="Technische Informationen ausblenden"
-                openTooltip="Technische Informationen einblenden"
-            >
+            <TechnicalInformationSection headingBaseLevel={props.headingBaseLevel}>
                 <TableContainer>
-                    <Table>
+                    <Table sx={{
+                        tableLayout: 'fixed',
+                        '& .MuiTableCell-root': {overflowWrap: 'anywhere', verticalAlign: 'top'},
+                        '& .MuiTableCell-root:first-child': {width: '35%'},
+                        '& ul': {m: 0, pl: 2.5},
+                    }}>
                         <TableBody>
                             {
                                 props.operator.packageName.length > 0 &&
                                 <TableRow>
-                                    <TableCell>
+                                    <TableCell component="th" scope="row">
                                         Paket
                                     </TableCell>
                                     <TableCell>
@@ -35,7 +36,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
 
 
                             <TableRow>
-                                <TableCell>
+                                <TableCell component="th" scope="row">
                                     Eindeutige ID
                                 </TableCell>
                                 <TableCell>
@@ -44,7 +45,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
                             </TableRow>
 
                             <TableRow>
-                                <TableCell>
+                                <TableCell component="th" scope="row">
                                     Signaturen
                                 </TableCell>
                                 <TableCell>
@@ -78,7 +79,7 @@ export function OperatorInfo(props: OperatorInfoProps) {
                         </TableBody>
                     </Table>
                 </TableContainer>
-            </Collapse>
-        </>
+            </TechnicalInformationSection>
+        </Box>
     );
 }

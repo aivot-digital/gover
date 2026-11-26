@@ -65,6 +65,7 @@ export function PresetInfoTab({
 
     return (
         <SelectionDetailsPanel
+            contentKey={preset.key}
             icon={<MenuOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
             label="Vorlage"
             title={preset.title}

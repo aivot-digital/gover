@@ -1,5 +1,7 @@
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {Box, ThemeProvider} from '@mui/material';
+import {BaseTheme} from '../../../theming/base-theme';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {Permission} from '../../../data/permissions/permission';
 import {type PluginDTO, PluginsApiService} from '../../../services/plugins-api-service';
@@ -58,13 +60,43 @@ describe('ProcessNodeProviderDetails', () => {
         );
     });
 
-    it('keeps the full version in technical information without adding header badges for active elements', () => {
+    it.each([3, 4] as const)('renders compact description and warning headings at level %s', (headingBaseLevel) => {
+        render(<ThemeProvider theme={BaseTheme}>
+            <Box sx={{color: 'text.primary'}}>
+                <ProcessNodeProviderDetailsContent
+                    provider={createProvider({
+                        description: '# Beschreibung\n\nNormaler Beschreibungstext.\n\n## Beispiel\n\n`Wert`',
+                        deprecationNotice: '# Hinweis\n\nBitte **Ersatzaktion** verwenden.',
+                    })}
+                    showDescription
+                    headingBaseLevel={headingBaseLevel}
+                />
+            </Box>
+        </ThemeProvider>);
+
+        expect(screen.getByRole('heading', {name: 'Beschreibung', level: headingBaseLevel}))
+            .toHaveStyle({'font-size': '18px', 'font-weight': '600'});
+        expect(screen.getByRole('heading', {name: 'Beispiel', level: headingBaseLevel + 1}))
+            .toHaveStyle({'font-size': '16px'});
+        expect(screen.getByRole('heading', {name: 'Ausgangsports', level: headingBaseLevel}))
+            .toHaveStyle({'font-size': '18px', 'font-weight': '600'});
+        expect(screen.getByRole('heading', {name: 'Ausgangsdaten', level: headingBaseLevel})).toBeVisible();
+        expect(screen.getByRole('heading', {name: 'Hinweis', level: headingBaseLevel})).toBeVisible();
+        expect(screen.getByText('Normaler Beschreibungstext.')).toHaveStyle({color: BaseTheme.palette.text.primary});
+        expect(screen.getByRole('alert')).toHaveTextContent('Bitte Ersatzaktion verwenden.');
+        expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
+    });
+
+    it('keeps the full version in initially collapsed technical information without adding header badges', async () => {
+        const user = userEvent.setup();
         render(<>
             <ProcessNodeProviderDetailsHeader provider={createProvider()}/>
             <ProcessNodeProviderDetailsContent provider={createProvider()}/>
         </>);
 
-        expect(screen.getByText('Technische Informationen')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Technische Informationen'})).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByText('1.4.2')).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Technische Informationen'}));
         expect(screen.getByText('Version der Elementdefinition')).toBeInTheDocument();
         expect(screen.getByText('1.4.2')).toBeInTheDocument();
         expect(screen.queryByText(/^Version \d/)).not.toBeInTheDocument();
@@ -101,22 +133,26 @@ describe('ProcessNodeProviderDetails', () => {
         expect(onShowDeprecationDetails).toHaveBeenCalledOnce();
     });
 
-    it('shows only the plugin category and key without plugin.read', () => {
+    it('shows only the plugin category and key without plugin.read', async () => {
+        const user = userEvent.setup();
         const getPlugin = vi.spyOn(PluginsApiService.prototype, 'getPlugin');
 
         render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
 
+        await user.click(screen.getByRole('button', {name: 'Technische Informationen'}));
         expect(screen.getByText('Erweiterung')).toBeInTheDocument();
         expect(screen.getByText('de.aivot.test')).toBeInTheDocument();
         expect(screen.queryByText('Aivot Test-Plugin')).not.toBeInTheDocument();
         expect(getPlugin).not.toHaveBeenCalled();
     });
 
-    it('marks the core plugin as standard scope', () => {
+    it('marks the core plugin as standard scope', async () => {
+        const user = userEvent.setup();
         render(<ProcessNodeProviderDetailsContent provider={createProvider({
             parentPluginKey: 'de.aivot.core',
         })}/>);
 
+        await user.click(screen.getByRole('button', {name: 'Technische Informationen'}));
         expect(screen.getByText('Standardumfang')).toBeInTheDocument();
         expect(screen.getByText('de.aivot.core')).toBeInTheDocument();
     });
@@ -130,6 +166,7 @@ describe('ProcessNodeProviderDetails', () => {
 
         render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
 
+        await user.click(screen.getByRole('button', {name: 'Technische Informationen'}));
         expect(await screen.findByText('Aivot Test-Plugin')).toBeInTheDocument();
         expect(screen.getByText('Aivot Test GmbH')).toBeInTheDocument();
 
@@ -156,6 +193,7 @@ describe('ProcessNodeProviderDetails', () => {
 
         render(<ProcessNodeProviderDetailsContent provider={createProvider()}/>);
 
+        await user.click(screen.getByRole('button', {name: 'Technische Informationen'}));
         await screen.findByText('Die Informationen zur Erweiterung konnten nicht geladen werden.');
         await user.click(screen.getByRole('button', {name: 'Erneut versuchen'}));
 

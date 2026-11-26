@@ -1,7 +1,7 @@
-import React, {type ReactNode, useId} from 'react';
-import {Accordion, AccordionDetails, AccordionSummary, Box, Typography} from '@mui/material';
-import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
+import React, {type ReactNode} from 'react';
+import {Box} from '@mui/material';
 import {MarkdownContent} from '../../components/markdown-content/markdown-content';
+import {TechnicalInformationSection} from '../../components/technical-information-section/technical-information-section';
 
 interface ElementDescriptionContentProps {
     usage: string;
@@ -26,46 +26,25 @@ export function ElementDescriptionContent({
     notes,
     technicalDetails,
 }: ElementDescriptionContentProps) {
-    const technicalId = useId();
-
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2.5}}>
-            <DescriptionSection title="Wofür verwenden Sie dieses Element?" content={usage}/>
-            <DescriptionSection title="Welche Einstellungen sind wichtig?" content={settings}/>
+        <Box>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 2.5}}>
+                <DescriptionSection title="Wofür verwenden Sie dieses Element?" content={usage}/>
+                <DescriptionSection title="Welche Einstellungen sind wichtig?" content={settings}/>
 
-            {children != null && <Box>
-                <MarkdownContent markdown="# Wie sieht das Element aus?" headingBaseLevel={4}/>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    {children}
-                </Box>
-            </Box>}
+                {children != null && <Box>
+                    <MarkdownContent markdown="# Wie sieht das Element aus?" headingBaseLevel={4}/>
+                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                        {children}
+                    </Box>
+                </Box>}
 
-            <DescriptionSection title="Was ist zu beachten?" content={notes}/>
+                <DescriptionSection title="Was ist zu beachten?" content={notes}/>
+            </Box>
 
-            {technicalDetails?.trim() && <Accordion
-                disableGutters
-                elevation={0}
-                slots={{heading: 'h4'}}
-                slotProps={{transition: {unmountOnExit: true}}}
-                sx={{
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    '&::before': {display: 'none'},
-                }}
-            >
-                <AccordionSummary
-                    id={`${technicalId}-heading`}
-                    aria-controls={`${technicalId}-content`}
-                    expandIcon={<KeyboardArrowDown/>}
-                >
-                    <Typography component="span" sx={{fontSize: '1.125rem', fontWeight: 600}}>
-                        Technische Informationen
-                    </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                    <MarkdownContent markdown={technicalDetails}/>
-                </AccordionDetails>
-            </Accordion>}
+            {technicalDetails?.trim() && <TechnicalInformationSection headingBaseLevel={4}>
+                <MarkdownContent markdown={technicalDetails} headingBaseLevel={4}/>
+            </TechnicalInformationSection>}
         </Box>
     );
 }

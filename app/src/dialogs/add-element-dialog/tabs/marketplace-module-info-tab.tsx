@@ -75,6 +75,7 @@ export function MarketplaceModuleInfoTab({
 
     return (
         <SelectionDetailsPanel
+            contentKey={marketplaceModuleId}
             icon={<ExtensionOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
             label="Prosuna Marktplatz"
             title={module.title}

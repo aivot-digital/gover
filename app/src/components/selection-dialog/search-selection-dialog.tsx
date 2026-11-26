@@ -54,8 +54,8 @@ export function SearchSelectionDialog<T>(props: SearchSelectionDialogProps<T>) {
     };
     const closeDetails = () => {
         setSelectedId(null);
-        if (detailsTriggerRef.current?.isConnected) detailsTriggerRef.current.focus();
-        else searchRef.current?.focus();
+        if (detailsTriggerRef.current?.isConnected) detailsTriggerRef.current.focus({preventScroll: true});
+        if (document.activeElement !== detailsTriggerRef.current) searchRef.current?.focus({preventScroll: true});
     };
 
     return <SelectionDialogShell open={props.open}
@@ -81,7 +81,8 @@ export function SearchSelectionDialog<T>(props: SearchSelectionDialogProps<T>) {
                                                                             minHeight: 0,
                                                                             height: '100%',
                                                                         }}>
-                                     <SelectionDetailsPanel icon={selected.icon}
+                                     <SelectionDetailsPanel contentKey={selected.id}
+                                                            icon={selected.icon}
                                                             title={selected.title}
                                                             label={retained.detailLabel}
                                                             description={selected.description}
@@ -133,8 +134,8 @@ export function SearchSelectionDialog<T>(props: SearchSelectionDialogProps<T>) {
                                       detailsAriaLabel={`${option.title}: Details anzeigen`}
                                       detailsExpanded={selectedId === option.id}
                                       detailsControls={selectedId === option.id ? detailsId : undefined}
-                                      onShowDetails={() => {
-                                          detailsTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                                      onShowDetails={(event) => {
+                                          detailsTriggerRef.current = event.currentTarget;
                                           setSelectedId(option.id);
                                       }}/>
                 </Box>)}

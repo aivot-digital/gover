@@ -285,7 +285,7 @@ export function ElementInfoTab({
 
     return (
         <SelectionDetailsPanel
-            key={type}
+            contentKey={type}
             icon={<ElementIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
             label={getElementGroupLabelForType(type)}
             title={getElementNameForType(type)}
