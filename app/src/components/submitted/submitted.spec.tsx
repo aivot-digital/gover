@@ -130,12 +130,12 @@ describe('Submitted', () => {
             expect(screen.getByRole('heading', {name: 'Verarbeitung fehlgeschlagen'})).toBeVisible();
             if (taskStatus === ProcessTaskStatus.Completed) {
                 expect(screen.queryByText('Ihre Angaben konnten nicht weiterverarbeitet werden')).not.toBeInTheDocument();
-                expect(screen.queryByText(/Öffnen Sie „Hilfe“ am Ende der Seite\. Dort finden Sie die Kontaktinformationen\./)).not.toBeInTheDocument();
+                expect(screen.queryByText(/Kontaktinformationen finden Sie gegebenenfalls unter „Hilfe“ am Ende der Seite\./)).not.toBeInTheDocument();
                 expect(screen.getByText('Für diese Übermittlung ist keine weitere Zahlung erforderlich.')).toBeVisible();
                 expect(screen.queryByText('Zahlung abgeschlossen')).not.toBeInTheDocument();
             } else {
                 expect(screen.getByText('Ihre Angaben konnten nicht weiterverarbeitet werden')).toBeVisible();
-                expect(screen.getByText(/Öffnen Sie „Hilfe“ am Ende der Seite\. Dort finden Sie die Kontaktinformationen\./)).toBeVisible();
+                expect(screen.getByText(/Kontaktinformationen finden Sie gegebenenfalls unter „Hilfe“ am Ende der Seite\./)).toBeVisible();
                 expect(screen.getByRole('button', {name: 'Zahlung nicht verfügbar'})).toBeDisabled();
             }
             fireEvent.click(screen.getByRole('button', {name: 'Angaben als PDF herunterladen'}));

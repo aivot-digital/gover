@@ -163,7 +163,7 @@ describe('ProcessSettingsDialog', () => {
         expect(save).toBeDisabled();
         await userEvent.hover(save.parentElement!);
         const tooltip = await screen.findByRole('tooltip');
-        expect(tooltip).toHaveTextContent('Die Prozessberechtigungen können Sie nur mit der Berechtigung „Prozess bearbeiten“ (process_definition.update) in der verwaltenden Organisationseinheit des Prozesses ändern.');
+        expect(tooltip).toHaveTextContent('Zum Ändern der Prozessberechtigungen benötigen Sie die Berechtigung „Prozess bearbeiten“ (process_definition.update) in der verwaltenden Organisationseinheit des Prozesses oder systemweit.');
         // Delegates hold the permission for this process, so the tooltip must not claim it is missing.
         expect(tooltip).not.toHaveTextContent('Sie besitzen nicht die erforderliche Berechtigung');
         await userEvent.unhover(save.parentElement!);

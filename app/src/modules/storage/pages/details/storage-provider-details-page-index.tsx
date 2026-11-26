@@ -621,7 +621,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         variant="switch"
                         error={errors.readOnlyStorage}
                         disabled={inputsDisabled || readOnlyStorageLocked}
-                        hint={readOnlyStorageLocked ? 'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht schreibgeschützt werden.' : undefined}
+                        hint={readOnlyStorageLocked ? 'Dieser Speicheranbieter ist als Standardanbieter für Anlagen von Vorgängen oder Dateien und Medien konfiguriert und kann nicht schreibgeschützt werden.' : undefined}
                     />
 
                     <CheckboxFieldComponent

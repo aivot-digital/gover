@@ -42,13 +42,13 @@ public class SubmissionNotificationDestinationUserConfigDefinition implements Us
     @Nonnull
     @Override
     public String getLabel() {
-        return "Fehler bei der Übertragung an eine Schnittstelle";
+        return "Fehler bei der Übertragung an eine Schnittstelle (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden benachrichtigt, wenn bei der Übertragung von Vorgangsdaten an eine Schnittstelle in einer Ihrer verwaltenden Organisationseinheiten ein Fehler auftritt.";
+        return "Diese Einstellung wird derzeit nicht verwendet. Bei Übertragungsfehlern an einer Schnittstelle werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override

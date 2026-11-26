@@ -20,7 +20,7 @@ import {resolveElementState, resolveReplicatingContainerItemDerivedData} from '.
 const noLinkKeys = [SummaryAttachmentsTooLargeKey];
 
 const additionErrorKeys: Record<string, string> = {
-    [IdentityCustomerInputKey]: 'Konto',
+    [IdentityCustomerInputKey]: 'Angaben zur Identität',
     [SummaryAttachmentsTooLargeKey]: 'Hinzugefügte Anlagen',
 };
 

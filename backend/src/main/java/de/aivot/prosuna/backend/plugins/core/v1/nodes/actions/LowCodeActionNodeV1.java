@@ -109,7 +109,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
     @Override
     public String getDescription() {
         return """
-                Führt ein Low-Code-Skript in JavaScript aus, das auf Vorgangsdaten (`$`), geschützte Vorgangsdaten (`$$`) und Elementdaten (`_`) zugreifen kann. Der Wert des letzten Ausdrucks ersetzt die Vorgangsdaten vollständig; ist er `null` oder `undefined`, bleiben die Vorgangsdaten unverändert.
+                Führt ein Low-Code-Skript in JavaScript aus, das auf Vorgangsdaten (`$`), geschützte Vorgangsdaten (`$$`) und Elementdaten (`_`) zugreifen kann. Geben Sie als Ergebnis des letzten Ausdrucks ein Objekt mit den gewünschten Vorgangsdaten zurück. Dieses ersetzt die Vorgangsdaten vollständig; bei `null` oder `undefined` bleiben die Vorgangsdaten unverändert.
 
                 Standardausgabe und Fehlerausgabe werden in den Elementdaten festgehalten. Tritt bei der Ausführung ein Fehler auf, schlägt die Aufgabe fehl.
                 """;

@@ -280,31 +280,8 @@ export function HelpDialog(props: HelpDialogProps) {
             question: 'Welche Dateiformate kann ich hochladen?',
             answer: (
                 <>
-                    <Typography>Grundsätzlich können folgende Dateiformate hochgeladen werden:</Typography>
-                    <ul>
-                        <li>
-                            <b>Dokumente:</b>
-                            pdf, doc, docx, odt, fodt, odf
-                        </li>
-                        <li>
-                            <b>Tabellen:</b>
-                            xls, xlsx, ods, fods
-                        </li>
-                        <li>
-                            <b>Präsentationen:</b>
-                            ppt, pptx, odp, fodp
-                        </li>
-                        <li>
-                            <b>Bilder & Grafiken:</b>
-                            png, jpg, jpeg, odg, fodg
-                        </li>
-                        <li>
-                            <b>Maximale Dateigröße:</b>
-                            In der Regel 100 MB pro Datei und insgesamt 500 MB.
-                        </li>
-                    </ul>
                     <Typography>
-                        Je nach Formular und Anlagenfeld können andere Dateiformate und Größenbegrenzungen gelten.
+                        Welche Dateiformate und Dateigrößen zulässig sind, hängt von den Einstellungen des Formulars ab.
                         Beachten Sie die Hinweise am jeweiligen Anlagenfeld.
                     </Typography>
                 </>

@@ -432,7 +432,7 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Kontos
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Identitätsanbieters
                             gelesen und umgesetzt haben.
                         </Typography>
                         <Typography gutterBottom>
@@ -455,12 +455,11 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Konto automatisch aus
-                            Formularen mit dem Status "In Bearbeitung" entfernt.
+                            Nach dem Speichern der Deaktivierung können sich Beteiligte in Formularen nicht mehr
+                            über diesen Identitätsanbieter anmelden.
                         </Typography>
                         <Typography gutterBottom>
-                            Bitte beachten Sie, dass Sie den Identitätsanbieter speichern müssen, um diese Änderung zu
-                            übernehmen.
+                            Speichern Sie den Identitätsanbieter, um diese Änderung zu übernehmen.
                         </Typography>
                     </>
                 ),
@@ -643,7 +642,7 @@ export function IdentityProviderDetailsPageIndex() {
                             sx={{width: '100%'}}
                         >
                             <strong>Hinweis:</strong>{' '}
-                            Die Konfigurationen für die offiziellen Konten von Bund und Ländern werden von Prosuna
+                            Die Konfigurationen für die vorkonfigurierten Identitätsanbieter von Bund und Ländern werden von Prosuna
                             bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }

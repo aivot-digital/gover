@@ -32,8 +32,8 @@ export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindH
                     Den aktuellen eingegebenen oder berechneten Wert eines Formularelements verwenden.
                 </Typography>
                 <Typography>
-                    Sie können nur Elemente auswählen, die sich im selben Kontext befinden und die oberhalb des
-                    aktuellen Elements liegen.
+                    Sie können Eingabefelder aus demselben Kontext auswählen. Innerhalb wiederholbarer Datensätze
+                    ist die Auswahl auf diesen Bereich beschränkt.
                 </Typography>
             </>
         ),
@@ -43,13 +43,10 @@ export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindH
         details: (
             <>
                 <Typography gutterBottom>
-                    Mit der Option „Vorgangsdaten” können Sie auf Daten aus dem Prozesskontext zugreifen.
-                </Typography>
-                <Typography gutterBottom>
-                    Diese Option greift auf den Vorgangsdaten-Kontext (`$`) zu.
+                    Verwenden Sie einen Wert aus der Vorgangsdatenebene (<code>$</code>).
                 </Typography>
                 <Typography>
-                    Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
+                    Geben Sie den Datenpfad zum gewünschten Wert an, zum Beispiel <code>person.name</code>.
                 </Typography>
             </>
         ),
@@ -59,10 +56,10 @@ export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindH
         details: (
             <>
                 <Typography gutterBottom>
-                    Diese Option greift auf geschützte Vorgangsdaten (`$$`) zu.
+                    Verwenden Sie eine systemseitig bereitgestellte Information aus der geschützten Vorgangsdatenebene (<code>$$</code>).
                 </Typography>
                 <Typography>
-                    Über einen optionalen Pfad können Sie gezielt verschachtelte Werte auslesen.
+                    Geben Sie den Datenpfad zum gewünschten Wert an, zum Beispiel <code>caseNumber</code>.
                 </Typography>
             </>
         ),
@@ -72,10 +69,11 @@ export const NoCodeOperandKindHelp: Record<NoCodeOperandKind, NoCodeOperandKindH
         details: (
             <>
                 <Typography gutterBottom>
-                    Diese Option greift auf Elementdaten (`_`) zu.
+                    Verwenden Sie ein Ergebnis eines Prozesselements aus der Elementdatenebene (<code>_</code>).
                 </Typography>
                 <Typography>
-                    Für Elementdaten muss zusätzlich der Datenschlüssel des Prozesselementes angegeben werden.
+                    Geben Sie den Datenschlüssel des Prozesselements und den Pfad zum gewünschten Wert an,
+                    zum Beispiel <code>pruefung.ergebnis</code>.
                 </Typography>
             </>
         ),

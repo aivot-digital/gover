@@ -131,9 +131,9 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
     @Override
     public String getDescription() {
         return """
-                Prüft beliebig viele Fälle in der konfigurierten Reihenfolge und führt den Prozess über den Ausgang des ersten Falls fort, dessen Bedingung zu „Wahr“ ausgewertet wird. Trifft kein Fall zu, wird der Prozess über den Standardausgang fortgesetzt.
+                Prüft die Fälle in der konfigurierten Reihenfolge und setzt den Vorgang über den Ausgangsport des ersten Falls fort, dessen Bedingung zu „Wahr“ ausgewertet wird. Trifft kein Fall zu, wird der Vorgang über den Standardausgang fortgesetzt.
 
-                Jeder Fall erhält einen eigenen Ausgang. Die Bedingung eines Falls kann als Low-Code- oder No-Code-Ausdruck konfiguriert werden und auf die aktuellen Laufzeitdaten zugreifen. Der zutreffende Fall wird als Elementausgang bereitgestellt.
+                Jeder Fall erhält einen eigenen Ausgangsport. Seine Bedingung wird als No-Code-Ausdruck oder als Low-Code-Skript formuliert und kann auf Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten zugreifen. Die ID und die Beschriftung des zutreffenden Falls stehen in den Elementdaten bereit. Ein Low-Code-Skript muss einen Wahrheitswert zurückgeben, sonst schlägt die Aufgabe fehl. Bei einem No-Code-Ausdruck gilt ein leeres Ergebnis als nicht erfüllt.
                 """;
     }
 
@@ -169,14 +169,14 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
             ports.add(new ProcessNodePort(
                     getPortKey(caseConfig),
                     getCaseLabel(caseConfig, i),
-                    "Der Prozessfluss wird hier fortgesetzt, wenn dieser Fall als erster zu „Wahr“ ausgewertet wird."
+                    "Der Vorgang wird hier fortgesetzt, wenn dieser Fall als erster zu „Wahr“ ausgewertet wird."
             ));
         }
         // The default port is always the last one, so it reads as the fallback after all cases.
         ports.add(new ProcessNodePort(
                 PORT_NAME_DEFAULT,
                 getDefaultPortLabel(configuration),
-                "Der Prozessfluss wird hier fortgesetzt, wenn keiner der Fälle zu „Wahr“ ausgewertet wird."
+                "Der Vorgang wird hier fortgesetzt, wenn keiner der Fälle zu „Wahr“ ausgewertet wird."
         ));
         return ports;
     }

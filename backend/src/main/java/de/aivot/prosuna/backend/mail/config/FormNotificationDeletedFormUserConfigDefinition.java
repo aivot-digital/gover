@@ -42,13 +42,13 @@ public class FormNotificationDeletedFormUserConfigDefinition implements UserConf
     @Nonnull
     @Override
     public String getLabel() {
-        return "Formular gelöscht";
+        return "Formular gelöscht (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sie werden informiert, wenn in einer Ihrer verwaltenden Organisationseinheiten ein Formular gelöscht wird.";
+        return "Diese Einstellung wird derzeit nicht verwendet. Beim Löschen eines Formulars werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override

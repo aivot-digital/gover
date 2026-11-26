@@ -224,7 +224,7 @@ export function Submitted(props: SubmittedProps) {
                                 setMailErrorWithSnackbar('Es konnte keine E-Mail an diese Adresse verschickt werden.');
                                 setMailSent(false);
                             } else if (err.status === 403) {
-                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die verantwortliche Stelle. Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.');
+                                setMailErrorWithSnackbar('Die Zugriffsfrist für diesen Vorgang ist bereits abgelaufen. Bitte wenden Sie sich an die verantwortliche Stelle. Kontaktinformationen finden Sie gegebenenfalls unter „Hilfe“ am Ende der Seite.');
                             } else if (err.status === 404) {
                                 setMailErrorWithSnackbar('Der Vorgang konnte nicht gefunden werden.');
                             } else if (err.status === 409) {
@@ -296,7 +296,7 @@ export function Submitted(props: SubmittedProps) {
                     sx={{my: 0, mb: 4}}
                 >
                     Bei der weiteren Verarbeitung Ihrer Angaben ist ein Fehler aufgetreten. Bitte wenden Sie sich an die
-                    verantwortliche Stelle. Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
+                    verantwortliche Stelle. Kontaktinformationen finden Sie gegebenenfalls unter „Hilfe“ am Ende der Seite.
                 </AlertComponent>
             }
 
@@ -412,7 +412,7 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Die Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle.
-                    Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
+                    Kontaktinformationen finden Sie gegebenenfalls unter „Hilfe“ am Ende der Seite.
                     <br/>
                     Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                     an: {status.submissionId}.
@@ -620,7 +620,7 @@ export function Submitted(props: SubmittedProps) {
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
-                    >Hilfe</Link>“ am Ende der Seite. Dort finden Sie die Kontaktinformationen.
+                    >Hilfe</Link>“ am Ende der Seite, falls dort Kontaktinformationen hinterlegt sind.
                         <br/>
                         Bitte geben Sie zur Zuordnung Ihres Vorgangs folgende Kennung
                         an: {status.submissionId}.

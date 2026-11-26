@@ -491,7 +491,7 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                         disabled={isInteractionDisabled}
                         multiline
                         rows={2}
-                        hint="Diese Beschreibung wird im Bezahlvorgang des Zahlungsanbieters angezeigt und erläutert die Zahlung. Übertragen werden höchstens 250 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt, Zeilenumbrüche werden zu Leerzeichen."
+                        hint="Diese Beschreibung erläutert die Zahlung. Ob und wie sie im Bezahlvorgang angezeigt wird, hängt vom Zahlungsanbieter ab. Übertragen werden höchstens 250 Zeichen, ein längerer Text wird nach dem Einfügen der Variablenwerte gekürzt. Nicht erlaubte Zeichen in Variablenwerten werden entfernt, Zeilenumbrüche werden zu Leerzeichen."
                         error={getFieldError(errorDetails, 'description')}
                     />
                 </Grid>

@@ -1193,7 +1193,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     problems.add(
                             "Es gibt keine Verbindung von diesem Prozesselement über den Ausgangsport " +
                                     StringUtils.quote(ports.label()) +
-                                    ". Jeder Ausgangsport muss mit einem anderen Prozesselement verbunden sein."
+                                    ". Verbinden Sie diesen Ausgangsport mit einem Prozesselement."
                     );
                 }
             }

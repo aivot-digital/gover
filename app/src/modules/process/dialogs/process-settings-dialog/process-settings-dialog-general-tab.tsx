@@ -328,7 +328,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                     }
                     hint={
                         'Versionsunabhängig. Eine Übertragung kann die Sichtbarkeit des Prozesses und Ihre eigenen Berechtigungen verändern.' +
-                        (canMoveProcess ? '' : ' Nur die verwaltende Organisationseinheit kann diesen Prozess übertragen.') +
+                        (canMoveProcess ? '' : ' Zum Übertragen benötigen Sie die Berechtigung „Prozess bearbeiten“ in der verwaltenden Organisationseinheit oder systemweit.') +
                         (hasUnsavedChanges ? ' Speichern Sie zuerst die allgemeinen Einstellungen.' : '')
                     }
                     externalAction={

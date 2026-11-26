@@ -363,7 +363,7 @@ const elementConstructors: {
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
         textPreSubmit: 'Sie können Ihre Angaben nun übermitteln. Bitte prüfen Sie zuvor, ob Ihre Angaben vollständig und richtig sind.',
-        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Falls weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
+        textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Beachten Sie die Hinweise zum weiteren Ablauf.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
             }),

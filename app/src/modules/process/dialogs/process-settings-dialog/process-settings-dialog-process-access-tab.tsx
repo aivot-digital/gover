@@ -358,7 +358,7 @@ export const ProcessSettingsDialogProcessAccessTab = forwardRef<ProcessSettingsD
                     severity="info"
                     sx={{mb: 2}}
                 >
-                    Nur die verwaltende Organisationseinheit kann die Prozessberechtigungen ändern. Sie können sie hier einsehen.
+                    Zum Ändern der Prozessberechtigungen benötigen Sie die Berechtigung „Prozess bearbeiten“ in der verwaltenden Organisationseinheit oder systemweit. Sie können die Prozessberechtigungen hier einsehen.
                 </Alert>
             }
 

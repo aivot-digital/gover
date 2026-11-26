@@ -42,13 +42,13 @@ public class FormNotificationAddedFormUserConfigDefinition implements UserConfig
     @Nonnull
     @Override
     public String getLabel() {
-        return "Neues Formular angelegt";
+        return "Formular angelegt (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn in einer Ihrer verwaltenden Organisationseinheiten ein neues Formular angelegt wird.";
+        return "Diese Einstellung wird derzeit nicht verwendet. Beim Anlegen eines Formulars werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override

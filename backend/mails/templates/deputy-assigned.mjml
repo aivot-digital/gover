@@ -31,8 +31,9 @@
                         Während der Vertretung finden Sie die Aufgaben von
                         <span th:text="${originalUser.getFullName()}">Philipp Schröder</span>
                         in Ihrer Aufgabenliste unter „Mir zugewiesen oder in Vertretung“ und können sie bearbeiten. Dafür
-                        erhalten Sie für diesen Zeitraum alle Berechtigungen dieser Person. Benachrichtigungen zu ihren
-                        Aufgaben und Vorgängen erhalten Sie ebenfalls.
+                        erhalten Sie für diesen Zeitraum alle Berechtigungen dieser Person. E-Mail-Benachrichtigungen über die
+                        Zuweisung ihrer Aufgaben und Vorgänge erhalten Sie entsprechend Ihren persönlichen
+                        Benachrichtigungseinstellungen ebenfalls.
                     </p>
                 </mj-text>
 

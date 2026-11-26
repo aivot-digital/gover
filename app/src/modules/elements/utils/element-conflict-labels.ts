@@ -40,7 +40,7 @@ const ElementPropertyLabels = {
     destinationKey: 'Datenschlüssel',
     dialogTitle: 'Dialogtitel',
     disableAssignmentContextRepeatExecutionAssigneePreferenceOptions: 'Auswahl zur erneuten Ausführung deaktivieren',
-    disableProcessInstanceAssigneeOption: 'Auswahl der für den Vorgang verantwortlichen Person deaktivieren',
+    disableProcessInstanceAssigneeOption: 'Auswahl der für den Vorgang zuständigen Person deaktivieren',
     disableWildCards: 'Wildcards deaktivieren',
     disabled: 'Eingabe deaktiviert',
     displayContext: 'Darstellungskontext',
