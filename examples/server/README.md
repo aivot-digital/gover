@@ -147,6 +147,13 @@ docker compose down
 
 ## 7. Updates
 
+All images are pinned to specific versions, so `docker compose pull` only fetches new versions after you take the image versions of the current example configuration into your `compose.yml`.
+
+Since Keycloak 26.8.2, the Admin REST API only accepts tokens with the `kc-admin-api` client scope.
+Keycloak creates this scope during the update, but stacks set up with an older version lack it on the deployment client, so `keycloak_setup` fails with `401 Unauthorized` after the first update to 26.8.2 or later.
+Log into the Keycloak Admin Console of the `master` realm, open Clients → `deployment` → Client scopes → Add client scope, and add `kc-admin-api` as `Default`.
+`keycloak_setup` restarts after failures and completes once the scope is assigned.
+
 Back up the volumes first, then update the stack with:
 
 ```bash

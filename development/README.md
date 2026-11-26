@@ -29,7 +29,6 @@ The project contains the following modules and directories:
 * `./default-assets`: The directory that contains the default assets for the Prosuna service, such as default templates
   for PDFs
 * `./container`: The directory contains additional files for the container image
-* `./tools`: The directory contains additional tools for installing a prosuna instance
 
 ### 2.1 Getting started
 
@@ -72,8 +71,7 @@ The docker compose file includes the following services:
 * `antivirus`: A ClamAV antivirus service for scanning uploaded files for viruses
 * `cache`: A Redis instance for caching and session management
 * `pdf-printer`: A Gotenberg instance for converting documents to PDF format
-* `s3-object-storage`: A MinIO instance for storing uploaded files
-* `s3-object-storage-setup`: A helper service for setting up the MinIO instance with the necessary buckets and keys
+* `s3-object-storage`: A SeaweedFS instance for storing uploaded files, which creates the necessary bucket on startup
 * `smtp`: A Mailpit instance for capturing outgoing emails from the application and providing a web interface to view
   them
 * `keycloak-database`: A PostgreSQL database for storing the keycloak application data
@@ -92,16 +90,24 @@ After running the above command, you can check the status of the services with t
 docker compose -f ./development/compose.yml ps
 ```
 
-The services for setting up the Keycloak and MinIO instance may take a few minutes to complete.
-They will stop automatically after they have completed their setup.
-You can check the logs of these services to see when they have completed their setup with the following command:
+The service for setting up the Keycloak instance may take a few minutes to complete.
+It will stop automatically after it has completed its setup.
+You can check its logs to see when it has completed its setup with the following command:
 
 ```bash
 docker compose -f ./development/compose.yml logs -f keycloak-setup 
 ```
 
+**Upgrading from PostgreSQL 16:**
+
+The databases run on PostgreSQL 18 and use the volumes `prosuna_database_data` and `keycloak_database_data`.
+PostgreSQL 18 cannot open the data of the former PostgreSQL 16 volumes `prosuna_pg_data` and `keycloak_pg_data`, so the
+services start with empty databases.
+To keep existing data, dump it with a PostgreSQL 16 container from the old volumes and restore it into the new databases.
+The old volumes and the former MinIO volume `minio_data` are not used anymore and can be removed afterwards:
+
 ```bash
-docker compose -f ./development/compose.yml logs -f s3-object-storage-setup
+docker volume rm prosuna_dev_environment_prosuna_pg_data prosuna_dev_environment_keycloak_pg_data prosuna_dev_environment_minio_data
 ```
 
 ### 2.3 Compile the mail templates
@@ -171,31 +177,31 @@ You can connect to the database with the following credentials:
 
 You can find these credentials in the `./development/compose.yml` file under `services.prosuna-database.environment`.
 
-### 3.2 S3 Object Storage (MinIO)
+### 3.2 S3 Object Storage (SeaweedFS)
 
-MinIO exposes two ports to the host machine.
+SeaweedFS exposes two ports to the host machine.
 
-* Port `9000` is for accessing the MinIO API.
-* Port `9001` is for accessing the MinIO Web Console.
+* Port `9000` is for accessing the S3 API.
+* Port `9001` is for accessing the SeaweedFS Admin UI.
 
-You can access the MinIO web interface at [http://localhost:9001](http://localhost:9001) with the following credentials:
+You can access the SeaweedFS Admin UI at [http://localhost:9001](http://localhost:9001) with the following credentials:
 
 | Parameter | Value           |
 |-----------|-----------------|
 | Username  | `admin`         |
 | Password  | `adminpassword` |
 
-You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage.command`.
 
-The MinIO Setup Helper automatically creates a bucket named `prosuna` for storing the uploaded files and configures an access key and secret key for the application to access the MinIO instance.
-You can use the following Access Key and Secret Key to access the MinIO API:
+SeaweedFS automatically creates a bucket named `prosuna` for storing the uploaded files on startup.
+You can use the following Access Key and Secret Key to access the S3 API:
 
 | Parameter  | Value              |
 |------------|--------------------|
 | Access Key | `super-access-key` |
 | Secret Key | `super-secret-key` |
 
-You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage-setup.entrypoint`.
+You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage.environment`.
 
 ### 3.3 SMTP (Mailpit)
 
