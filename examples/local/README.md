@@ -59,6 +59,7 @@ You can use the email address `admin@example.com` for the staff user to automati
 ## 5. Updates
 
 Since Keycloak 26.8.2, the Admin REST API only accepts tokens with the `kc-admin-api` client scope.
-Stacks set up with an older Keycloak version lack this scope on the deployment client, and `keycloak_setup` fails with `401 Unauthorized`.
-Before the first update to Keycloak 26.8.2 or later, log into the Keycloak Admin Console of the `master` realm, open Clients → `deployment` → Client scopes → Add client scope, and add `kc-admin-api` as `Default`.
+Keycloak creates this scope during the update, but stacks set up with an older version lack it on the deployment client, so `keycloak_setup` fails with `401 Unauthorized` after the first update to 26.8.2 or later.
+Log into the Keycloak Admin Console of the `master` realm, open Clients → `deployment` → Client scopes → Add client scope, and add `kc-admin-api` as `Default`.
+`keycloak_setup` restarts after failures and completes once the scope is assigned.
 Alternatively, remove the `keycloak_database_data` volume to start with a new Keycloak configuration.
