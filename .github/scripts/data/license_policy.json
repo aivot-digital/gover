@@ -514,7 +514,7 @@
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     },
     "aspectjweaver": {
-      "versions": ["1.9.25.1"],
+      "versions": ["1.9.27"],
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     },
     "jakarta.mail-api": {
@@ -526,7 +526,7 @@
       "_comment": "Reviewed under EPL-2.0; weak copyleft, used but not modified."
     },
     "javassist": {
-      "versions": ["3.29.0-GA"],
+      "versions": ["3.33.0-GA"],
       "_comment": "Weak copyleft licenses, ok to use because it is used but not modified."
     },
     "elkjs": {
@@ -554,30 +554,30 @@
     "slick@1.12.2": {
       "license": "MIT"
     },
-    "icu4j@25.2.4": {
+    "icu4j@25.6.5.1": {
       "license": "ICU",
       "_comment": "Normalize the upstream Unicode/ICU License label to its SPDX identifier."
     },
     "jai-imageio-core@1.4.0": {
       "license": "LicenseRef-scancode-bsd-3-clause-no-nuclear-warranty"
     },
-    "bcprov-jdk18on@1.86": {
+    "bcprov-jdk18on@1.87": {
       "license": "MIT",
       "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
     },
-    "bcpkix-jdk18on@1.86": {
+    "bcpkix-jdk18on@1.87": {
       "license": "MIT",
       "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
     },
-    "bcutil-jdk18on@1.86": {
+    "bcutil-jdk18on@1.87": {
       "license": "MIT",
       "_comment": "Normalize the upstream Bouncy Castle Licence label to MIT."
     },
-    "js@25.2.4": {
+    "js@25.6.5.1": {
       "license": "UPL-1.0",
       "_comment": "Manual override for the GraalJS POM components with missing SBOM license information."
     },
-    "amqp-client@5.30.0": {
+    "amqp-client@5.37.1": {
       "license": "Apache-2.0",
       "_comment": "Triple-licensed dependency; select the approved Apache-2.0 option."
     },
