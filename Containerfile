@@ -42,7 +42,8 @@ RUN npm run build:staff
 # Build customer app
 RUN npm run build:customer
 
-FROM  docker.io/library/maven:3.10.2-eclipse-temurin-25-alpine AS build_server
+# shortcut: maven:3.10.2-eclipse-temurin-25-alpine has no arm64 image yet; move to it once Docker Hub publishes one.
+FROM  docker.io/library/maven:3.10.0-eclipse-temurin-25-alpine AS build_server
 
 # Set build version and date
 ARG BUILD_VERSION=0.0.0
