@@ -167,6 +167,41 @@ describe('AddElementDialog', () => {
         expect(elementsTab).toHaveFocus();
         expect(screen.getByRole('searchbox', {name: 'Element suchen'})).not.toHaveFocus();
     });
+
+    it('opens another element description at the top while keeping search and focus in the list', async () => {
+        const user = userEvent.setup();
+        const onAddElements = vi.fn();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+                                 displayContext={ElementDisplayContext.CustomerFacing}
+                                 limitElementTypes={[ElementType.Text, ElementType.Number]}
+                                 onClose={vi.fn()} onAddElements={onAddElements}/>);
+
+        const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
+        const search = within(dialog).getByRole('searchbox', {name: 'Element suchen'});
+        await user.type(search, 'Erfasst');
+        const detailsButtonFor = (name: string) => {
+            let row = within(dialog).getByText(name, {exact: true}).parentElement!;
+            while (within(row).queryByRole('button', {name: 'Details'}) == null) row = row.parentElement!;
+            return within(row).getByRole('button', {name: 'Details'});
+        };
+        const textDetails = detailsButtonFor('Texteingabe');
+        const numberDetails = detailsButtonFor('Zahl');
+        await user.click(textDetails);
+        const detailsBody = () => within(dialog).getByRole('button', {name: 'Details schließen'})
+            .parentElement!.previousElementSibling as HTMLElement;
+        detailsBody().scrollTop = 320;
+        expect(detailsBody().scrollTop).toBe(320);
+
+        await user.click(numberDetails);
+
+        expect(within(dialog).getByRole('heading', {name: 'Zahl', level: 3})).toBeVisible();
+        expect(detailsBody().scrollTop).toBe(0);
+        expect(numberDetails).toHaveFocus();
+        expect(search).toHaveValue('Erfasst');
+        expect(textDetails).toBeVisible();
+        expect(numberDetails).toBeVisible();
+        expect(onAddElements).not.toHaveBeenCalled();
+    });
 });
 
 function Harness({onAddElements}: Pick<ComponentProps<typeof AddElementDialog>, 'onAddElements'>) {
