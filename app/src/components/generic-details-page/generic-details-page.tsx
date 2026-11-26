@@ -307,7 +307,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData, Events extends 
                     ? error
                     : {
                         status: 500,
-                        message: 'Unexpected error while loading details.',
+                        message: 'Die Details des Eintrags konnten nicht geladen werden.',
                         details: error,
                         displayableToUser: false,
                     });
@@ -462,10 +462,10 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData, Events extends 
                                         alignItems: "center"
                                     }}>
                                     <NotFoundIllustration/>
-                                    <Typography variant={"h2"} sx={{marginTop: 1}}>Diese Ressource konnte leider nicht (mehr) gefunden werden</Typography>
+                                    <Typography variant={"h2"} sx={{marginTop: 1}}>Der Eintrag wurde nicht gefunden</Typography>
                                     <Typography>
-                                        Die angeforderte Ressource existiert nicht oder wurde möglicherweise entfernt.
-                                        Bitte überprüfen Sie die URL oder nutzen Sie eine der folgenden Möglichkeiten.
+                                        Der angeforderte Eintrag existiert nicht oder wurde bereits entfernt.
+                                        Prüfen Sie die Adresse oder nutzen Sie eine der folgenden Möglichkeiten.
                                     </Typography>
                                     <Stack
                                         direction={"row"}

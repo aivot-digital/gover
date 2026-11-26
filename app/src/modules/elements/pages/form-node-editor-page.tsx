@@ -878,7 +878,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
         try {
             await saveForm();
         } catch (err) {
-            void showEditorSaveErrorSnackbar(err, 'Fehler beim Speichern der Änderungen', backUpDraft).then(dispatch);
+            void showEditorSaveErrorSnackbar(err, 'Die Änderungen konnten nicht gespeichert werden.', backUpDraft).then(dispatch);
         }
     };
 
@@ -970,7 +970,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
             dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert'));
         } catch (err) {
             console.error(err);
-            dispatch(showErrorSnackbar('Formularlink konnte nicht kopiert werden'));
+            dispatch(showErrorSnackbar('Der Formularlink konnte nicht in die Zwischenablage kopiert werden.'));
         }
     };
 
@@ -980,7 +980,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
             dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
         } catch (err) {
             console.error(err);
-            dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
+            dispatch(showErrorSnackbar('Der QR-Code konnte nicht heruntergeladen werden.'));
         }
     };
 
@@ -1037,7 +1037,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                     confirmed = saved;
                 } catch (err) {
                     console.error(err);
-                    void showEditorSaveErrorSnackbar(err, 'Fehler beim Speichern der Änderungen', backUpDraft).then(dispatch);
+                    void showEditorSaveErrorSnackbar(err, 'Die Änderungen konnten nicht gespeichert werden.', backUpDraft).then(dispatch);
                     return;
                 }
             } else {
@@ -1434,7 +1434,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                     return;
                 }
 
-                errorMessage = 'Fehler beim Speichern der Änderungen';
+                errorMessage = 'Die Änderungen konnten nicht gespeichert werden.';
                 const saved = await saveForm();
                 if (saved == null || signal.aborted) return;
                 confirmedLayout = toEditableFormLayout(getStoredFormLayout(saved), formLayout.id);
@@ -1538,7 +1538,7 @@ function FormNodeEditor({nodeId}: {nodeId: string}) {
                 estimatedTime: 1000,
                 message: 'Formular wird abgesendet',
             }, signal);
-            errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten';
+            errorMessage = 'Beim Absenden des Formulars ist ein Fehler aufgetreten.';
 
             const startRes = await new FormTriggerApiService()
                 .submitForm(process.slug, formSlug, formData, {

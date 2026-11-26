@@ -132,11 +132,11 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
         }
 
         if (minItems != null && minItems > 0 && normalizedValues.size() < minItems) {
-            throw new ValidationException(this, "Mindestens " + minItems + " Einträge erforderlich.");
+            throw new ValidationException(this, "Die erforderliche Mindestanzahl an Einträgen beträgt " + minItems + ".");
         }
 
         if (maxItems != null && maxItems > 0 && normalizedValues.size() > maxItems) {
-            throw new ValidationException(this, "Maximal " + maxItems + " Einträge erlaubt.");
+            throw new ValidationException(this, "Die zulässige Höchstanzahl an Einträgen beträgt " + maxItems + ".");
         }
 
         if (normalizedValues.stream().anyMatch(v -> !isAllowedType(v.getType()) || v.getId() == null || v.getId().isBlank())) {

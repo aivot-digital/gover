@@ -161,7 +161,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
         if (_id == null) {
             throw ResponseException
-                    .badRequest("Für die ID-Generierungsmethode '__CUSTOM__' muss im Datenobjekt ein Feld „" + ID_FIELD_NAME + "“ mit dem gewünschten ID-Wert übergeben werden.");
+                    .badRequest("Für den gewählten ID-Typ muss im Datenobjekt ein Feld „" + ID_FIELD_NAME + "“ mit dem gewünschten ID-Wert übergeben werden.");
         }
 
         return _id;

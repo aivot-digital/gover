@@ -24,21 +24,21 @@ import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const SecretSchema = yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name muss mindestens 3 Zeichen lang sein.')
         .max(64, 'Der Name darf maximal 64 Zeichen lang sein.')
         .required('Der Name ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Die Beschreibung muss mindestens 3 Zeichen lang sein.')
         .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung ist ein Pflichtfeld.'),
-    value: yup.string()
+    value: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(1, 'Der Wert darf nicht leer sein.')
         .required('Der Wert ist ein Pflichtfeld.'),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export function SecretsDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -112,7 +112,7 @@ export function SecretsDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Das Geheimnis konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -128,7 +128,7 @@ export function SecretsDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Das Geheimnis konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -183,7 +183,7 @@ export function SecretsDetailsPageIndex() {
                                     if (success) {
                                         dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
                                     } else {
-                                        dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        dispatch(showErrorSnackbar('Der Link konnte nicht in die Zwischenablage kopiert werden.'));
                                     }
                                 },
                             },

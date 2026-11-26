@@ -8,13 +8,13 @@ import java.util.List;
 
 public record IdentityCommunicationDerivationRequestDTO(
         @Nonnull
-        @NotNull
+        @NotNull(message = "Wählen Sie einen Kommunikationsweg aus.")
         Integer bindingId,
         @Nonnull
-        @NotNull
+        @NotNull(message = "Die Angaben zur Identität müssen übermittelt werden.")
         AuthoredElementValues customerData,
         @Nonnull
-        @NotNull
+        @NotNull(message = "Die Liste der von der Prüfung ausgenommenen Formularelemente muss angegeben werden.")
         List<String> skipErrorsForElementIds
 ) {
 }

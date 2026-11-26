@@ -75,11 +75,11 @@ public class NoCodeEvaluationService {
      */
     private NoCodeOperator getNoCodeOperator(@Nullable String identifier) {
         if (identifier == null) {
-            throw new IllegalArgumentException("NoCodeOperatorProvider identifier must not be null");
+            throw new IllegalArgumentException("Die Kennung der No-Code-Funktion fehlt.");
         }
 
         if (!noCodeOperatorProviders.containsKey(identifier)) {
-            throw new IllegalArgumentException("NoCodeOperatorProvider with identifier " + identifier + " does not exist");
+            throw new IllegalArgumentException("Die No-Code-Funktion mit der Kennung „" + identifier + "“ ist nicht verfügbar.");
         }
         return noCodeOperatorProviders.get(identifier);
     }
@@ -432,7 +432,7 @@ public class NoCodeEvaluationService {
     private static IllegalStateException evaluationFailure(@Nonnull NoCodeExpression expression,
                                                            @Nonnull NoCodeException exception) {
         return new IllegalStateException(
-                "Failed to evaluate no-code operator '%s': %s".formatted(expression.getOperatorIdentifier(), exception.getMessage()),
+                "Die No-Code-Funktion „%s“ konnte nicht ausgewertet werden: %s".formatted(expression.getOperatorIdentifier(), exception.getMessage()),
                 exception
         );
     }
@@ -519,13 +519,13 @@ public class NoCodeEvaluationService {
         }
 
         if (wildcardIndices == null) {
-            throw new IllegalArgumentException("Wildcard destination keys require explicit indices.");
+            throw new IllegalArgumentException("Zielschlüssel mit Platzhaltern benötigen explizite Indizes.");
         }
 
         if (wildcardIndices.size() < wildcardCount) {
             throw new IllegalArgumentException(
-                    "Wildcard destination key requires " + wildcardCount + " bound index values, but only " +
-                            wildcardIndices.size() + " are available."
+                    "Der Zielschlüssel mit Platzhaltern benötigt " + wildcardCount + " zugeordnete Indexwerte. Verfügbar: " +
+                            wildcardIndices.size() + "."
             );
         }
 

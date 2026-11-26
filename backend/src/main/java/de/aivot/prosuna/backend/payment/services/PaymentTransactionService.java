@@ -225,7 +225,7 @@ public class PaymentTransactionService implements
                     listener.onDelete(entity);
                 } catch (ResponseException e) {
                     status.setRollbackOnly();
-                    return ResponseException.internalServerError(e, "Error notifying change listener for transaction %s", entity.getKey());
+                    return ResponseException.internalServerError(e, "Der Zahlungsstatus für die Zahlung %s konnte nicht weiterverarbeitet werden.", entity.getKey());
                 }
             }
 
@@ -326,7 +326,7 @@ public class PaymentTransactionService implements
                         listener.onChange(updatedTransaction);
                     } catch (ResponseException e) {
                         status.setRollbackOnly();
-                        return new PaymentException(e, "Error notifying change listener for transaction %s", updatedTransaction.getKey());
+                        return new PaymentException(e, "Der Zahlungsstatus für die Zahlung %s konnte nicht weiterverarbeitet werden.", updatedTransaction.getKey());
                     }
                 }
                 return null;

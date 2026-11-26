@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotNull;
 
 public record IdentityCommunicationSelectionRequestDTO(
         @Nonnull
-        @NotNull
+        @NotNull(message = "Wählen Sie einen Kommunikationsweg aus.")
         Integer bindingId,
         @Nonnull
-        @NotNull
+        @NotNull(message = "Die Angaben zur Identität müssen übermittelt werden.")
         AuthoredElementValues customerData
 ) {
 }

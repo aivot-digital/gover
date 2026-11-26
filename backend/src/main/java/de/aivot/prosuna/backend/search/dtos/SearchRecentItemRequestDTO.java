@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 
 public record SearchRecentItemRequestDTO(
         @Nonnull
-        @NotBlank
+        @NotBlank(message = "Die Kennung des zuletzt geöffneten Eintrags muss angegeben werden.")
         String id,
         @Nonnull
-        @NotBlank
+        @NotBlank(message = "Die Art des zuletzt geöffneten Eintrags muss angegeben werden.")
         String originTable
 ) {
 }

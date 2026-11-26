@@ -134,7 +134,7 @@ export function SecretsListPage() {
                     if (success) {
                         dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
                     } else {
-                        dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                        dispatch(showErrorSnackbar('Der Link konnte nicht in die Zwischenablage kopiert werden.'));
                     }
                 },
                 tooltip: `Schlüssel (ID) in Zwischenablage kopieren (${item.key})`,

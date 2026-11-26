@@ -133,7 +133,7 @@ class TemplateRenderServiceTest {
         assertEquals(1, diagnostics.size());
         assertEquals(2, diagnostics.getFirst().lineNumber());
         assertEquals("{% if $.enabled %}", diagnostics.getFirst().lineContent());
-        assertEquals("If block is missing '{% endif %}'.", diagnostics.getFirst().message());
+        assertEquals("Dem if-Block fehlt die schließende Anweisung '{% endif %}'.", diagnostics.getFirst().message());
     }
 
     @Test
@@ -147,7 +147,7 @@ class TemplateRenderServiceTest {
         assertEquals(1, diagnostics.size());
         assertEquals(2, diagnostics.getFirst().lineNumber());
         assertEquals("{% useBlock missing %}", diagnostics.getFirst().lineContent());
-        assertEquals("useBlock directive references undefined block 'missing'.", diagnostics.getFirst().message());
+        assertEquals("Die useBlock-Anweisung verweist auf den nicht definierten Block 'missing'.", diagnostics.getFirst().message());
     }
 
     @Test
@@ -161,7 +161,7 @@ class TemplateRenderServiceTest {
         assertEquals(1, diagnostics.size());
         assertEquals(2, diagnostics.getFirst().lineNumber());
         assertEquals("{% endblock %}", diagnostics.getFirst().lineContent());
-        assertEquals("Unexpected directive '{% endblock %}'.", diagnostics.getFirst().message());
+        assertEquals("Unerwartete Anweisung '{% endblock %}'.", diagnostics.getFirst().message());
     }
 
     @Test
@@ -174,7 +174,7 @@ class TemplateRenderServiceTest {
         assertEquals(1, diagnostics.size());
         assertEquals(2, diagnostics.getFirst().lineNumber());
         assertEquals("{% block content %}two{% endblock %}", diagnostics.getFirst().lineContent());
-        assertEquals("Block 'content' is defined multiple times.", diagnostics.getFirst().message());
+        assertEquals("Der Block 'content' ist mehrfach definiert.", diagnostics.getFirst().message());
     }
 
     @Test
@@ -191,7 +191,7 @@ class TemplateRenderServiceTest {
         assertEquals(1, diagnostics.size());
         assertEquals(5, diagnostics.getFirst().lineNumber());
         assertEquals("{% useBlock first %}", diagnostics.getFirst().lineContent());
-        assertEquals("Circular block reference detected involving 'first'.", diagnostics.getFirst().message());
+        assertEquals("Die Blockverweise bilden einen Kreis mit dem Block 'first'.", diagnostics.getFirst().message());
     }
 
     @Test
@@ -205,7 +205,7 @@ class TemplateRenderServiceTest {
         assertEquals(1, diagnostics.size());
         assertEquals(2, diagnostics.getFirst().lineNumber());
         assertEquals("{% block content %}", diagnostics.getFirst().lineContent());
-        assertEquals("Block is missing '{% endblock %}'.", diagnostics.getFirst().message());
+        assertEquals("Dem Block fehlt die schließende Anweisung '{% endblock %}'.", diagnostics.getFirst().message());
     }
 
     @Test
@@ -219,7 +219,7 @@ class TemplateRenderServiceTest {
         );
 
         assertEquals(
-                "Invalid template syntax.\nLine 2: If block is missing '{% endif %}'. [{% if $.enabled %}]",
+                "Die Vorlage enthält Syntaxfehler.\nZeile 2: Dem if-Block fehlt die schließende Anweisung '{% endif %}'. [{% if $.enabled %}]",
                 exception.getMessage()
         );
     }

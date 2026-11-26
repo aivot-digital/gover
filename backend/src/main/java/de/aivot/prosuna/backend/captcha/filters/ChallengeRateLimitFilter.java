@@ -31,7 +31,7 @@ public class ChallengeRateLimitFilter implements Filter {
             HttpServletResponse httpRes = (HttpServletResponse) res;
             httpRes.setStatus(429);
             httpRes.setContentType("text/plain");
-            httpRes.getWriter().write("Too many requests");
+            httpRes.getWriter().write("Zu viele Anfragen. Bitte warten Sie kurz und versuchen Sie es erneut.");
         }
     }
 

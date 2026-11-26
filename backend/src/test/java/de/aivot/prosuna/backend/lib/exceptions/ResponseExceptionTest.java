@@ -12,7 +12,7 @@ class ResponseExceptionTest {
         var exception = ResponseException.internalServerError();
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
-        assertEquals("Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", exception.getMessage());
+        assertEquals("Ein unerwarteter Fehler ist aufgetreten.", exception.getMessage());
     }
 
     @Test
@@ -28,6 +28,6 @@ class ResponseExceptionTest {
         var exception = ResponseException.notAcceptable();
 
         assertEquals(HttpStatus.NOT_ACCEPTABLE, exception.getStatus());
-        assertEquals("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.", exception.getMessage());
+        assertEquals("Die angeforderten Daten sind im gewünschten Format nicht verfügbar.", exception.getMessage());
     }
 }

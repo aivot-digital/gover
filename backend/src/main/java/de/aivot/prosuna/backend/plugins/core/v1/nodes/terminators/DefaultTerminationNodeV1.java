@@ -155,7 +155,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         try {
             layout = ElementPOJOMapper.createFromPOJO(DefaultTerminationNodeV1Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts für den DefaultTerminationNodeV1: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Abschlusses konnte nicht geladen werden.");
         }
 
         layout

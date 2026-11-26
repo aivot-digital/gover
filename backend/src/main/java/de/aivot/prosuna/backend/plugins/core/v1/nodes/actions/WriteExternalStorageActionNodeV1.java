@@ -202,8 +202,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             layout = ElementPOJOMapper.createFromPOJO(WriteExternalStorageActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für das Speichern eines Anlagensatzes: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
 

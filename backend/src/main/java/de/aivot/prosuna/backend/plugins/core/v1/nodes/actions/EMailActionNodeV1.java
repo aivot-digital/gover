@@ -177,8 +177,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                     .createFromPOJO(EMailActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für den E-Mail-Versand: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
 

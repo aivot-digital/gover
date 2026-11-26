@@ -228,7 +228,7 @@ export function handleFetchError(error: any, options?: RequestOptions): Response
                 reason: API_ERROR_REASON_TIMEOUT,
                 online: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
             },
-            message: 'Die Anfrage hat zu lange gedauert und wurde abgebrochen. Versuchen Sie es später erneut.',
+            message: 'Die Antwort des Servers ist nicht rechtzeitig eingegangen. Prüfen Sie den aktuellen Stand, bevor Sie die Aktion erneut ausführen.',
             displayableToUser: true,
         };
 
@@ -248,7 +248,7 @@ export function handleFetchError(error: any, options?: RequestOptions): Response
                 reason: API_ERROR_REASON_NETWORK_UNREACHABLE,
                 online: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
             },
-            message: 'Der Server ist nicht erreichbar. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
+            message: 'Der Server ist nicht erreichbar. Bitte prüfen Sie Ihre Internetverbindung.',
             displayableToUser: true,
         };
 

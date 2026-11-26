@@ -144,8 +144,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         } catch (IOException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Fehler bei der Erstellung des Konfigurationslayouts: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
     }

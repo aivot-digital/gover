@@ -67,7 +67,7 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
                 .build();
 
         if (exists(spec)) {
-            throw ResponseException.conflict("Diese Mitarbeiter:in ist bereits Teil des Teams.");
+            throw ResponseException.conflict("Die ausgewählte Person ist bereits Mitglied des Teams.");
         }
 
         return teamMembershipRepository.save(entity);

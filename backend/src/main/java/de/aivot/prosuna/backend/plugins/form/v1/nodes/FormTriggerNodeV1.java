@@ -507,7 +507,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             var paymentProvider = paymentProviderRepository
                     .findById(paymentConfig.paymentProviderKey())
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden",
+                            "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden.",
                             StringUtils.quote(paymentConfig.paymentProviderKey().toString())
                     ));
 
@@ -804,7 +804,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var paymentProvider = paymentProviderRepository
                 .findById(transaction.get().getPaymentProviderKey())
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden".formatted(
+                        "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden.".formatted(
                                 StringUtils.quote(transaction.get().getPaymentProviderKey().toString())
                         )
                 ));

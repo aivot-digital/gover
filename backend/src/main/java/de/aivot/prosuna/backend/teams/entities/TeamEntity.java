@@ -21,7 +21,7 @@ public class TeamEntity implements LockVersioned {
 
     @Nullable
     @Column(length = 64, nullable = false, unique = true)
-    @NotNull(message = "Der Name des Teams darf nicht null sein.")
+    @NotNull(message = "Der Name des Teams muss angegeben werden.")
     @NotBlank(message = "Der Name des Teams darf nicht leer sein.")
     @Size(min = 3, max = 64, message = "Der Name des Teams muss zwischen 3 und 64 Zeichen lang sein.")
     private String name;

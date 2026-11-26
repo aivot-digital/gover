@@ -56,7 +56,7 @@ export function SamlMetadataDialog({ open, loading, fields, error, onClose }: Sa
                                                     if (success) {
                                                         dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
                                                     } else {
-                                                        dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                                        dispatch(showErrorSnackbar('Der Link konnte nicht in die Zwischenablage kopiert werden.'));
                                                     }
                                                 },
                                             }}

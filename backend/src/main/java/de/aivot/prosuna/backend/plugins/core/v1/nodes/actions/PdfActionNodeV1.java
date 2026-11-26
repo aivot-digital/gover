@@ -169,8 +169,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                     .createFromPOJO(PdfActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für die PDF-Erstellung: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
 

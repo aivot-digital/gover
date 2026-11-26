@@ -24,17 +24,17 @@ import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissi
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const UserRoleSchema = yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name muss mindestens 3 Zeichen lang sein.')
         .max(64, 'Der Name darf maximal 64 Zeichen lang sein.')
         .required('Der Name ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Die Beschreibung muss mindestens 3 Zeichen lang sein.')
         .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung ist ein Pflichtfeld.'),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export function UserRolesDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -124,7 +124,7 @@ export function UserRolesDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Die Domänenrolle konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -141,7 +141,7 @@ export function UserRolesDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Die Domänenrolle konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);

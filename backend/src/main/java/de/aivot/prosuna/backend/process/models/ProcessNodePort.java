@@ -7,15 +7,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ProcessNodePort (
-        @NotNull(message = "Der Schlüssel des Ausgangsports darf nicht null sein.")
+        @NotNull(message = "Der Schlüssel des Ausgangsports muss angegeben werden.")
         @NotBlank(message = "Der Schlüssel des Ausgangsports darf nicht leer sein.")
         @Size(max = 32, message = "Der Schlüssel des Ausgangsports darf maximal 32 Zeichen lang sein.")
         @Nonnull String key,
-        @NotNull(message = "Die Beschriftung des Ausgangsports darf nicht null sein.")
+        @NotNull(message = "Die Beschriftung des Ausgangsports muss angegeben werden.")
         @NotBlank(message = "Die Beschriftung des Ausgangsports darf nicht leer sein.")
         @Size(max = 64, message = "Die Beschriftung des Ausgangsports darf maximal 64 Zeichen lang sein.")
         @Nonnull String label,
-        @NotNull(message = "Die Beschreibung des Ausgangsports darf nicht null sein.")
+        @NotNull(message = "Die Beschreibung des Ausgangsports muss angegeben werden.")
         @NotBlank(message = "Die Beschreibung des Ausgangsports darf nicht leer sein.")
         @Size(max = 512, message = "Die Beschreibung des Ausgangsports darf maximal 512 Zeichen lang sein.")
         @Nonnull String description,

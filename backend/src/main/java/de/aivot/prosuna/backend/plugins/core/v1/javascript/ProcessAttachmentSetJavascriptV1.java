@@ -145,7 +145,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
                                       @Nonnull byte[] content) throws ResponseException {
         var attachmentSet = processInstanceAttachmentSetService
                 .retrieve(normalizedAttachmentSetId)
-                .orElseThrow(() -> new IllegalArgumentException("Attachment set not found: " + normalizedAttachmentSetId));
+                .orElseThrow(() -> new IllegalArgumentException("Der Anlagensatz wurde nicht gefunden. Anlagensatz-ID: " + normalizedAttachmentSetId));
 
         ensureAttachmentSetCanBeChanged(attachmentSet.getProcessInstanceId(), attachmentSet.getProcessInstanceTaskId());
 
@@ -174,10 +174,10 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
                                                  @Nullable Long processInstanceTaskId) {
         var processInstance = processInstanceRepository
                 .findById(processInstanceId)
-                .orElseThrow(() -> new IllegalArgumentException("Process instance not found: " + processInstanceId));
+                .orElseThrow(() -> new IllegalArgumentException("Der Vorgang wurde nicht gefunden. Vorgangs-ID: " + processInstanceId));
 
         if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
-            throw new IllegalStateException("Cannot change attachment sets for process instance that is not running: " + processInstanceId);
+            throw new IllegalStateException("Anlagensätze können nur in laufenden Vorgängen geändert werden. Vorgangs-ID: " + processInstanceId);
         }
 
         if (processInstanceTaskId == null) {
@@ -186,15 +186,15 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
 
         var task = processInstanceTaskRepository
                 .findById(processInstanceTaskId)
-                .orElseThrow(() -> new IllegalArgumentException("Process instance task not found: " + processInstanceTaskId));
+                .orElseThrow(() -> new IllegalArgumentException("Die Aufgabe wurde nicht gefunden. Aufgaben-ID: " + processInstanceTaskId));
 
         if (!Objects.equals(task.getProcessInstanceId(), processInstanceId)) {
-            throw new IllegalArgumentException("Process instance task does not belong to process instance: " + processInstanceTaskId);
+            throw new IllegalArgumentException("Die Aufgabe gehört nicht zu diesem Vorgang. Aufgaben-ID: " + processInstanceTaskId);
         }
 
         if (task.getStatus() != ProcessTaskStatus.Running && task.getStatus() != ProcessTaskStatus.InProgress &&
                 task.getStatus() != ProcessTaskStatus.AwaitingStaff) {
-            throw new IllegalStateException("Cannot change attachment sets for process instance task that is not running: " + processInstanceTaskId);
+            throw new IllegalStateException("Anlagensätze können für diese Aufgabe derzeit nicht geändert werden. Aufgaben-ID: " + processInstanceTaskId);
         }
     }
 
@@ -203,10 +203,10 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
                                       @Nonnull String fieldName) {
         var normalizedValue = StringUtils.toNullableTrimmedString(value);
         if (normalizedValue == null) {
-            throw new IllegalArgumentException(fieldName + " must not be empty.");
+            throw new IllegalArgumentException(fieldName + " darf nicht leer sein.");
         }
         if (normalizedValue.length() > 255) {
-            throw new IllegalArgumentException(fieldName + " must not be longer than 255 characters.");
+            throw new IllegalArgumentException(fieldName + " darf höchstens 255 Zeichen enthalten.");
         }
         return normalizedValue;
     }
@@ -215,7 +215,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
     private static Long requireLong(@Nullable Number value,
                                     @Nonnull String fieldName) {
         if (value == null) {
-            throw new IllegalArgumentException(fieldName + " must not be null.");
+            throw new IllegalArgumentException(fieldName + " muss übergeben werden.");
         }
         return value.longValue();
     }
@@ -224,7 +224,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
     private static Integer requireInt(@Nullable Number value,
                                       @Nonnull String fieldName) {
         if (value == null) {
-            throw new IllegalArgumentException(fieldName + " must not be null.");
+            throw new IllegalArgumentException(fieldName + " muss übergeben werden.");
         }
         return value.intValue();
     }
@@ -233,7 +233,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
     private static byte[] decodeBase64Content(@Nullable String base64Content) {
         var normalizedBase64Content = StringUtils.toNullableTrimmedString(base64Content);
         if (normalizedBase64Content == null) {
-            throw new IllegalArgumentException("base64Content must not be empty.");
+            throw new IllegalArgumentException("Der Dateiinhalt in base64Content darf nicht leer sein.");
         }
 
         byte[] content;
@@ -242,11 +242,11 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
                     .getMimeDecoder()
                     .decode(normalizedBase64Content);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("base64Content must be valid Base64.", e);
+            throw new IllegalArgumentException("Der Dateiinhalt in base64Content muss gültig Base64-kodiert sein.", e);
         }
 
         if (content.length == 0) {
-            throw new IllegalArgumentException("base64Content must not decode to an empty file.");
+            throw new IllegalArgumentException("Der Dateiinhalt in base64Content darf keine leere Datei ergeben.");
         }
         return content;
     }
@@ -254,7 +254,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
     @Nonnull
     private static byte[] encodeStringContent(@Nullable String content) {
         if (content == null || content.isEmpty()) {
-            throw new IllegalArgumentException("content must not be empty.");
+            throw new IllegalArgumentException("Der Dateiinhalt in content darf nicht leer sein.");
         }
         return content.getBytes(StandardCharsets.UTF_8);
     }

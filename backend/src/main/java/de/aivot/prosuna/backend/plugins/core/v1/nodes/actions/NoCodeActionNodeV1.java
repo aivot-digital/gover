@@ -157,7 +157,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         try {
             layout = ElementPOJOMapper.createFromPOJO(NoCodeActionNodeConfiguration.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         layout

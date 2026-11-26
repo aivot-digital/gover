@@ -187,8 +187,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Das Konfigurationslayout für den Nachrichtenversand konnte nicht erstellt werden: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
 

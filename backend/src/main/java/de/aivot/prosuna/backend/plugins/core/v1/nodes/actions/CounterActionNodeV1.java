@@ -154,7 +154,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
             return ElementPOJOMapper
                     .createFromPOJO(CounterActionNodeV1Configuration.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
     }
 

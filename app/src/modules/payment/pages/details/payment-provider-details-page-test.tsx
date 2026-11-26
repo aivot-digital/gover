@@ -48,15 +48,15 @@ export function PaymentProviderDetailsPageTest() {
         clearValidationErrors();
 
         if (isStringNullOrEmpty(data.purpose)) {
-            setValidationError('purpose', 'Verwendungszweck ist erforderlich');
+            setValidationError('purpose', 'Geben Sie einen Verwendungszweck ein.');
         }
 
         if (isStringNullOrEmpty(data.description)) {
-            setValidationError('description', 'Beschreibung ist erforderlich');
+            setValidationError('description', 'Geben Sie eine Beschreibung ein.');
         }
 
         if (data.amount === 0) {
-            setValidationError('amount', 'Einzelpreis (netto) ist erforderlich');
+            setValidationError('amount', 'Geben Sie einen Einzelpreis (netto) ungleich 0 ein.');
         }
 
         if (hasValidationErrors()) {
@@ -72,7 +72,7 @@ export function PaymentProviderDetailsPageTest() {
                 console.error(error);
                 setResult({
                     ok: false,
-                    errorMessage: 'Ein Fehler ist aufgetreten: ' + error,
+                    errorMessage: 'Beim Testen des Zahlungsanbieters ist ein Fehler aufgetreten.',
                 });
             })
             .finally(() => {

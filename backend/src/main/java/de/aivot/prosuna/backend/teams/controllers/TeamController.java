@@ -191,12 +191,12 @@ public class TeamController {
                     .update(id, updateDTO);
         } catch (ResponseException e) {
             // An outdated lock version keeps its 409, so clients can tell a conflict from a failed save.
-            throw e.getStatus() == HttpStatus.CONFLICT ? e : ResponseException.badRequest("Fehler beim Speichern des Teams", e);
+            throw e.getStatus() == HttpStatus.CONFLICT ? e : ResponseException.badRequest("Das Team konnte nicht gespeichert werden.", e);
         } catch (ConcurrencyFailureException | OptimisticLockException e) {
             // The GlobalExceptionHandler answers a concurrent commit with 409.
             throw e;
         } catch (Exception e) {
-            throw ResponseException.badRequest("Fehler beim Speichern des Teams", e);
+            throw ResponseException.badRequest("Das Team konnte nicht gespeichert werden.", e);
         }
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, TeamEntity.class, result.getId(), "id", Map.of(

@@ -23,11 +23,11 @@ public class DepartmentMembershipEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein")
+    @NotNull(message = "Die ID der Organisationseinheit muss angegeben werden.")
     private Integer departmentId;
 
     @Nonnull
-    @NotNull(message = "Die Konto-ID darf nicht null sein")
+    @NotNull(message = "Die Konto-ID muss angegeben werden.")
     private String userId;
 
     @Nonnull

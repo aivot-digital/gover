@@ -26,9 +26,9 @@ public class DepartmentEntity implements LockVersioned {
 
     @Nonnull
     @Column(length = 96)
-    @NotNull(message = "Der Name darf nicht null sein")
-    @NotBlank(message = "Der Name darf nicht leer sein")
-    @Length(min = 3, max = 96, message = "Der Name muss zwischen 3 und 96 Zeichen lang sein")
+    @NotNull(message = "Der Name muss angegeben werden.")
+    @NotBlank(message = "Der Name darf nicht leer sein.")
+    @Length(min = 3, max = 96, message = "Der Name muss zwischen 3 und 96 Zeichen lang sein.")
     private String name;
 
     @Nullable
@@ -49,12 +49,12 @@ public class DepartmentEntity implements LockVersioned {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die E-Mail-Adresse für den technischen Support darf maximal 255 Zeichen lang sein")
+    @Length(max = 255, message = "Die E-Mail-Adresse für den technischen Support darf maximal 255 Zeichen lang sein.")
     private String technicalSupportEmail;
 
     @Nullable
     @Column(length = 96)
-    @Length(max = 96, message = "Die Telefonnummer für den technischen Support darf maximal 96 Zeichen lang sein")
+    @Length(max = 96, message = "Die Telefonnummer für den technischen Support darf maximal 96 Zeichen lang sein.")
     private String technicalSupportPhone;
 
     @Nullable
@@ -63,12 +63,12 @@ public class DepartmentEntity implements LockVersioned {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die E-Mail-Adresse für den fachlichen Support darf maximal 255 Zeichen lang sein")
+    @Length(max = 255, message = "Die E-Mail-Adresse für den fachlichen Support darf maximal 255 Zeichen lang sein.")
     private String specialSupportEmail;
 
     @Nullable
     @Column(length = 96)
-    @Length(max = 96, message = "Die Telefonnummer für den fachlichen Support darf maximal 96 Zeichen lang sein")
+    @Length(max = 96, message = "Die Telefonnummer für den fachlichen Support darf maximal 96 Zeichen lang sein.")
     private String specialSupportPhone;
 
     @Nullable

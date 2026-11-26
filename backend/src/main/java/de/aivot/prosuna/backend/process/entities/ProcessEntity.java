@@ -23,18 +23,18 @@ public class ProcessEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der interne Titel des Prozesses darf nicht null sein.")
+    @NotNull(message = "Der interne Titel des Prozesses muss angegeben werden.")
     @NotBlank(message = "Der interne Titel des Prozesses darf nicht leer sein.")
     @Length(min=3, max = 96, message = "Der interne Titel des Prozesses muss zwischen 3 und 96 Zeichen lang sein.")
     private String internalTitle;
 
     @Nonnull
-    @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein.")
+    @NotNull(message = "Die ID der Organisationseinheit muss angegeben werden.")
     private Integer departmentId;
 
     @Nonnull
     @Column(unique = true)
-    @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
+    @NotNull(message = "Der Zugriffsschlüssel muss angegeben werden.")
     private UUID accessKey;
 
     @Nonnull
@@ -46,7 +46,7 @@ public class ProcessEntity implements LockVersioned {
     // Maintained by database triggers on the process versions, which do not raise the lock version. Never written by updates,
     // so saving a copy loaded before a publish or a new draft cannot revert them.
     @Nonnull
-    @NotNull(message = "Die Versionsanzahl darf nicht null sein.")
+    @NotNull(message = "Die Versionsanzahl muss angegeben werden.")
     @Column(updatable = false)
     private Integer versionCount;
 
@@ -59,11 +59,11 @@ public class ProcessEntity implements LockVersioned {
     private Integer publishedVersion;
 
     @Nonnull
-    @NotNull(message = "Das Erstellungsdatum darf nicht null sein.")
+    @NotNull(message = "Das Erstellungsdatum muss angegeben werden.")
     private Instant created;
 
     @Nonnull
-    @NotNull(message = "Das Aktualisierungsdatum darf nicht null sein.")
+    @NotNull(message = "Das Aktualisierungsdatum muss angegeben werden.")
     private Instant updated;
 
     @Nullable

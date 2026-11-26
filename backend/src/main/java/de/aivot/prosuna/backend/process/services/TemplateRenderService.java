@@ -173,12 +173,12 @@ public class TemplateRenderService {
     private static String formatDiagnostics(@Nonnull List<TemplateSyntaxDiagnostic> diagnostics) {
         return diagnostics.stream()
                 .map(diagnostic -> String.format(
-                        "Line %d: %s [%s]",
+                        "Zeile %d: %s [%s]",
                         diagnostic.lineNumber(),
                         diagnostic.message(),
                         diagnostic.lineContent()
                 ))
-                .reduce("Invalid template syntax.", (left, right) -> left + "\n" + right);
+                .reduce("Die Vorlage enthält Syntaxfehler.", (left, right) -> left + "\n" + right);
     }
 
     /**
@@ -299,7 +299,7 @@ public class TemplateRenderService {
                 } else if (source.startsWith(index, "{!")) {
                     parseExpressionNode(nodes, "{!", "!}", false);
                 } else if (source.startsWith(index, "{#")) {
-                    skipTag("{#", "#}", "Comment tag is not closed.");
+                    skipTag("{#", "#}", "Der Kommentar muss mit #} geschlossen werden.");
                 } else {
                     var stopDirective = parseDirectiveNode(nodes, stopDirectives);
                     if (stopDirective != null) {
@@ -319,15 +319,15 @@ public class TemplateRenderService {
                                          boolean escaped) {
             var start = index;
             var content = readTagContent(openToken, closeToken, start, escaped
-                    ? "Print tag is not closed."
-                    : "Raw tag is not closed.");
+                    ? "Die Ausgabe muss mit }} geschlossen werden."
+                    : "Die unmaskierte Ausgabe muss mit !} geschlossen werden.");
             if (content == null) {
                 return;
             }
 
             var expression = content.trim();
             if (expression.isEmpty()) {
-                diagnostics.add(source.diagnostic(start, "Expression tag must not be empty."));
+                diagnostics.add(source.diagnostic(start, "Der Ausdruck darf nicht leer sein."));
             }
 
             nodes.add(escaped
@@ -345,14 +345,14 @@ public class TemplateRenderService {
         private String parseDirectiveNode(@Nonnull List<TemplateNode> nodes,
                                           @Nonnull Set<String> stopDirectives) {
             var start = index;
-            var content = readTagContent("{%", "%}", start, "Directive tag is not closed.");
+            var content = readTagContent("{%", "%}", start, "Die Anweisung muss mit %} geschlossen werden.");
             if (content == null) {
                 return null;
             }
 
             var directive = content.trim();
             if (directive.isEmpty()) {
-                diagnostics.add(source.diagnostic(start, "Directive tag must not be empty."));
+                diagnostics.add(source.diagnostic(start, "Die Anweisung darf nicht leer sein."));
                 return null;
             }
 
@@ -361,12 +361,12 @@ public class TemplateRenderService {
             }
 
             if (directive.equals("else") || directive.equals("endif") || directive.equals("endfor")) {
-                diagnostics.add(source.diagnostic(start, "Unexpected directive '{% " + directive + " %}'."));
+                diagnostics.add(source.diagnostic(start, "Unerwartete Anweisung '{% " + directive + " %}'."));
                 return null;
             }
 
             if (directive.equals("endblock")) {
-                diagnostics.add(source.diagnostic(start, "Unexpected directive '{% " + directive + " %}'."));
+                diagnostics.add(source.diagnostic(start, "Unerwartete Anweisung '{% " + directive + " %}'."));
                 return null;
             }
 
@@ -393,14 +393,14 @@ public class TemplateRenderService {
                 return null;
             }
 
-            diagnostics.add(source.diagnostic(start, "Unknown directive '{% " + directive + " %}'."));
+            diagnostics.add(source.diagnostic(start, "Unbekannte Anweisung '{% " + directive + " %}'."));
             return null;
         }
 
         @Nonnull
         private IfNode parseIfNode(int sourceIndex, @Nonnull String expression) {
             if (expression.isEmpty()) {
-                diagnostics.add(source.diagnostic(sourceIndex, "If directive requires a condition expression."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die if-Anweisung benötigt einen Bedingungsausdruck."));
             }
 
             var trueBranch = parseNodes(IF_STOP_DIRECTIVES);
@@ -410,10 +410,10 @@ public class TemplateRenderService {
                 var falseBranch = parseNodes(Set.of("endif"));
                 falseNodes = falseBranch.nodes();
                 if (falseBranch.stopDirective() == null) {
-                    diagnostics.add(source.diagnostic(sourceIndex, "If block is missing '{% endif %}'."));
+                    diagnostics.add(source.diagnostic(sourceIndex, "Dem if-Block fehlt die schließende Anweisung '{% endif %}'."));
                 }
             } else if (trueBranch.stopDirective() == null) {
-                diagnostics.add(source.diagnostic(sourceIndex, "If block is missing '{% endif %}'."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Dem if-Block fehlt die schließende Anweisung '{% endif %}'."));
             }
 
             return new IfNode(expression, trueBranch.nodes(), falseNodes, sourceIndex);
@@ -429,16 +429,16 @@ public class TemplateRenderService {
                 variableName = matcher.group(1);
                 expression = matcher.group(2).trim();
             } else {
-                diagnostics.add(source.diagnostic(sourceIndex, "For directive must match '{% for <name> in <expression> %}'."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die for-Anweisung muss dem Muster '{% for <name> in <expression> %}' entsprechen."));
             }
 
             if (expression.isEmpty()) {
-                diagnostics.add(source.diagnostic(sourceIndex, "For directive requires a list expression."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die for-Anweisung benötigt einen Ausdruck, der eine Liste ergibt."));
             }
 
             var body = parseNodes(FOR_STOP_DIRECTIVES);
             if (body.stopDirective() == null) {
-                diagnostics.add(source.diagnostic(sourceIndex, "For block is missing '{% endfor %}'."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Dem for-Block fehlt die schließende Anweisung '{% endfor %}'."));
             }
 
             return new ForNode(variableName, expression, body.nodes(), sourceIndex);
@@ -446,14 +446,14 @@ public class TemplateRenderService {
 
         private void parseBlockDefinition(int sourceIndex, @Nonnull String identifier) {
             if (identifier.isEmpty()) {
-                diagnostics.add(source.diagnostic(sourceIndex, "Block directive requires an identifier."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die block-Anweisung benötigt einen Namen."));
             } else if (!IDENTIFIER_PATTERN.matcher(identifier).matches()) {
-                diagnostics.add(source.diagnostic(sourceIndex, "Block directive must match '{% block <identifier> %}'."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die block-Anweisung muss dem Muster '{% block <identifier> %}' entsprechen."));
             }
 
             var body = parseNodes(BLOCK_STOP_DIRECTIVES);
             if (body.stopDirective() == null) {
-                diagnostics.add(source.diagnostic(sourceIndex, "Block is missing '{% endblock %}'."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Dem Block fehlt die schließende Anweisung '{% endblock %}'."));
             }
 
             if (!IDENTIFIER_PATTERN.matcher(identifier).matches()) {
@@ -461,7 +461,7 @@ public class TemplateRenderService {
             }
 
             if (blocks.containsKey(identifier)) {
-                diagnostics.add(source.diagnostic(sourceIndex, "Block '" + identifier + "' is defined multiple times."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Der Block '" + identifier + "' ist mehrfach definiert."));
                 return;
             }
 
@@ -471,11 +471,11 @@ public class TemplateRenderService {
         @Nullable
         private UseBlockNode parseUseBlockNode(int sourceIndex, @Nonnull String identifier) {
             if (identifier.isEmpty()) {
-                diagnostics.add(source.diagnostic(sourceIndex, "useBlock directive requires an identifier."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die useBlock-Anweisung benötigt einen Blocknamen."));
                 return null;
             }
             if (!IDENTIFIER_PATTERN.matcher(identifier).matches()) {
-                diagnostics.add(source.diagnostic(sourceIndex, "useBlock directive must match '{% useBlock <identifier> %}'."));
+                diagnostics.add(source.diagnostic(sourceIndex, "Die useBlock-Anweisung muss dem Muster '{% useBlock <identifier> %}' entsprechen."));
                 return null;
             }
             return new UseBlockNode(identifier, sourceIndex);
@@ -495,7 +495,7 @@ public class TemplateRenderService {
                         if (!blocks.containsKey(useBlockNode.blockIdentifier())) {
                             diagnostics.add(source.diagnostic(
                                     useBlockNode.sourceIndex(),
-                                    "useBlock directive references undefined block '" + useBlockNode.blockIdentifier() + "'."
+                                    "Die useBlock-Anweisung verweist auf den nicht definierten Block '" + useBlockNode.blockIdentifier() + "'."
                             ));
                         }
                     }
@@ -535,7 +535,7 @@ public class TemplateRenderService {
                     if (targetState == VisitState.VISITING) {
                         diagnostics.add(source.diagnostic(
                                 reference.sourceIndex(),
-                                "Circular block reference detected involving '" + reference.blockIdentifier() + "'."
+                                "Die Blockverweise bilden einen Kreis mit dem Block '" + reference.blockIdentifier() + "'."
                         ));
                         continue;
                     }
@@ -676,7 +676,7 @@ public class TemplateRenderService {
             if (block == null) {
                 throw evaluator.failure(
                         useBlockNode.sourceIndex(),
-                        "useBlock directive references undefined block '" + useBlockNode.blockIdentifier() + "'.",
+                        "Die useBlock-Anweisung verweist auf den nicht definierten Block '" + useBlockNode.blockIdentifier() + "'.",
                         null
                 );
             }
@@ -684,7 +684,7 @@ public class TemplateRenderService {
             if (activeBlocks.contains(useBlockNode.blockIdentifier())) {
                 throw evaluator.failure(
                         useBlockNode.sourceIndex(),
-                        "Circular block reference detected involving '" + useBlockNode.blockIdentifier() + "'.",
+                        "Die Blockverweise bilden einen Kreis mit dem Block '" + useBlockNode.blockIdentifier() + "'.",
                         null
                 );
             }
@@ -796,7 +796,7 @@ public class TemplateRenderService {
                 return List.of(array);
             }
 
-            throw failure(sourceIndex, "For expression must evaluate to a list.", null);
+            throw failure(sourceIndex, "Der Ausdruck der for-Anweisung muss eine Liste ergeben.", null);
         }
 
         /**
@@ -822,7 +822,7 @@ public class TemplateRenderService {
                         body
                 )));
             } catch (Exception e) {
-                throw failure(sourceIndex, "Failed to evaluate expression '" + expression.trim() + "'.", e);
+                throw failure(sourceIndex, "Der Ausdruck konnte nicht ausgewertet werden: '" + expression.trim() + "'.", e);
             }
         }
 
@@ -832,7 +832,7 @@ public class TemplateRenderService {
                                                  @Nullable Exception cause) {
             var line = source.lineNumberAt(sourceIndex);
             var fullMessage = String.format(
-                    "Template evaluation failed at line %d: %s [%s]",
+                    "Die Vorlage konnte in Zeile %d nicht ausgewertet werden: %s [%s]",
                     line,
                     message,
                     source.lineText(line)

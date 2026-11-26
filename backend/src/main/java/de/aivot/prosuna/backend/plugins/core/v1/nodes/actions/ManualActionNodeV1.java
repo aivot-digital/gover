@@ -168,8 +168,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
             layout = ElementPOJOMapper.createFromPOJO(ManualActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für die freie Aufgabe: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
 

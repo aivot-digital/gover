@@ -692,7 +692,7 @@ public class FormTriggerControllerV1 {
                                      @Nonnull EffectiveElementValues effectiveValues) throws ResponseException {
         var captchaPayload = extractCaptchaPayload(form, effectiveValues);
         if (captchaPayload != null && captchaReplayGuard.isUsed(captchaPayload)) {
-            throw ResponseException.badRequest("Die Captcha-Bestätigung wurde bereits verwendet. Bitte erneut bestätigen.");
+            throw ResponseException.badRequest("Die Captcha-Bestätigung wurde bereits verwendet. Bitte bestätigen Sie erneut, dass Sie ein Mensch sind.");
         }
     }
 
@@ -961,7 +961,7 @@ public class FormTriggerControllerV1 {
             Thread.currentThread().interrupt();
             throw ResponseException.internalServerError(e, "Die PDF-Erstellung der Zahlungsbestätigung wurde unterbrochen.");
         } catch (IOException | URISyntaxException | TemplateProcessingException e) {
-            throw ResponseException.internalServerError(e, "Fehler beim Erzeugen der Zahlungsbestätigung: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Zahlungsbestätigung konnte nicht als PDF erstellt werden.");
         }
 
         response.setContentType("application/pdf");

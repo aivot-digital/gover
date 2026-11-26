@@ -79,7 +79,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
                     setEditable(false);
                 } catch (e) {
                     console.error(e);
-                    dispatch(showErrorSnackbar('Fehler beim Verarbeiten der Elementstruktur!'));
+                    dispatch(showErrorSnackbar('Die Elementstruktur konnte nicht verarbeitet werden.'));
                 }
             }
         }

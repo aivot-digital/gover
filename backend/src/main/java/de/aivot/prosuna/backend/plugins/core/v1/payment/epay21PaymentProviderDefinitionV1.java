@@ -414,30 +414,30 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     ) throws PaymentMissingDataException {
         var passwordSecretField = (String) config.getEffectiveValues().get(PASSWORD_SECRET_KEY_FIELD);
         if (StringUtils.isNullOrEmpty(passwordSecretField)) {
-            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+            throw new PaymentMissingDataException("Projektpasswort", paymentProviderEntity);
         }
 
         UUID passwordSecretFieldKey;
         try {
             passwordSecretFieldKey = UUID.fromString(passwordSecretField);
         } catch (IllegalArgumentException e) {
-            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+            throw new PaymentMissingDataException("Projektpasswort", paymentProviderEntity);
         }
 
         var passwordSecretEntity = secretService
                 .retrieve(passwordSecretFieldKey)
-                .orElseThrow(() -> new PaymentMissingDataException("Project password entity", paymentProviderEntity));
+                .orElseThrow(() -> new PaymentMissingDataException("Geheimnis für das Projektpasswort", paymentProviderEntity));
 
         String passwordSecret = null;
         try {
             passwordSecret = secretService
                     .decrypt(passwordSecretEntity);
         } catch (Exception e) {
-            throw new PaymentMissingDataException("Project password value", paymentProviderEntity);
+            throw new PaymentMissingDataException("Wert des Projektpassworts", paymentProviderEntity);
         }
 
         if (StringUtils.isNullOrEmpty(passwordSecret)) {
-            throw new PaymentMissingDataException("Project password value", paymentProviderEntity);
+            throw new PaymentMissingDataException("Wert des Projektpassworts", paymentProviderEntity);
         }
 
         return passwordSecret;

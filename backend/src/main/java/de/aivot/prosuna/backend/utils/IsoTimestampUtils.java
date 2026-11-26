@@ -59,7 +59,7 @@ public final class IsoTimestampUtils {
 
         if (!LOCAL_DATE_TIME_PATTERN.matcher(value).matches()) {
             throw new DateTimeParseException(
-                    "Expected an ISO-8601 timestamp with seconds",
+                    "Der Zeitstempel muss im ISO-8601-Format mit Sekunden angegeben werden.",
                     value,
                     0
             );
@@ -70,7 +70,7 @@ public final class IsoTimestampUtils {
         var validOffsets = zoneId.getRules().getValidOffsets(localDateTime);
         if (validOffsets.isEmpty()) {
             throw new DateTimeParseException(
-                    "Local date-time does not exist in application timezone " + zoneId,
+                    "Die lokale Uhrzeit existiert nicht in der Zeitzone " + zoneId,
                     value,
                     0
             );

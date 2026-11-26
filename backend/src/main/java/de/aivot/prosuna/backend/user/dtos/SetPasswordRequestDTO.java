@@ -8,12 +8,12 @@ import jakarta.validation.constraints.Size;
 
 public record SetPasswordRequestDTO(
         @Nonnull
-        @NotNull(message = "Das Passwort darf nicht null sein")
-        @NotBlank(message = "Das Passwort darf nicht leer sein")
-        @Size(min = 12, max = 128, message = "Das Passwort muss zwischen 12 und 128 Zeichen lang sein")
+        @NotNull(message = "Das Passwort muss angegeben werden.")
+        @NotBlank(message = "Das Passwort darf nicht leer sein.")
+        @Size(min = 12, max = 128, message = "Das Passwort muss zwischen 12 und 128 Zeichen lang sein.")
         @Pattern(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,}$",
-                message = "Das Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen enthalten"
+                message = "Das Passwort muss Groß- und Kleinbuchstaben (A–Z, a–z), mindestens eine Zahl und mindestens eines der Sonderzeichen @$!%*?& enthalten. Andere Zeichen sind nicht erlaubt."
         )
         String password
 ) {

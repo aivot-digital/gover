@@ -119,7 +119,7 @@ public class ProcessDataService {
                                                 @Nonnull ProcessInstanceTaskEntity currentTask) {
         var initialNode = processDefinitionNodeRepository
                 .findById(instance.getInitialNodeId())
-                .orElseThrow(() -> new RuntimeException("Initial node not found for process instance " + instance.getId()));
+                .orElseThrow(() -> new RuntimeException("Der Auslöser des Vorgangs wurde nicht gefunden. Vorgangs-ID: " + instance.getId()));
 
         List<ProcessInstanceAttachmentEntity> allAttachments = processInstanceAttachmentRepository
                 .findAllByProcessInstanceIdAndRemovedAtIsNull(instance.getId());

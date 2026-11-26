@@ -270,7 +270,7 @@ public class IdentityService {
                     } catch (NoSuchAlgorithmException e) {
                         throw ResponseException.internalServerError(
                                 e,
-                                "Der SHA-256-Algorithmus wird nicht unterstützt."
+                                "Die Anmeldung konnte wegen eines technischen Fehlers nicht vorbereitet werden."
                         );
                     }
                     byte[] encodedhash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
@@ -545,7 +545,7 @@ public class IdentityService {
         // Check if the request has a referer header
         if (referer == null) {
             throw ResponseException
-                    .badRequest("Es wurde kein Referer-Header übergeben.");
+                    .badRequest("Die Rücksprungadresse für die Anmeldung fehlt.");
         }
 
         // Check if referer header is a valid URI
@@ -555,7 +555,7 @@ public class IdentityService {
             refererURI.toURL();
         } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
             throw ResponseException
-                    .badRequest("Der Referer-Header ist ungültig.");
+                    .badRequest("Die Rücksprungadresse für die Anmeldung ist ungültig.");
         }
 
         URI prosunaHostnameUri;
@@ -575,7 +575,7 @@ public class IdentityService {
                 || !prosunaHostnameUri.getHost().equalsIgnoreCase(refererURI.getHost())
                 || prosunaHostnameUri.getPort() != refererURI.getPort()) {
             throw ResponseException
-                    .badRequest("Der Referer-Header ist ungültig oder nicht erlaubt.");
+                    .badRequest("Die Rücksprungadresse für die Anmeldung ist ungültig oder nicht erlaubt.");
         }
 
         return refererURI;
@@ -604,7 +604,7 @@ public class IdentityService {
         var storedStateNonce = getStoredStateNonce(identity);
         if (!Objects.equals(storedStateNonce, state)) {
             throw ResponseException
-                    .badRequest("Der state-Parameter ist ungültig.");
+                    .badRequest("Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Starten Sie die Anmeldung erneut.");
         }
 
         getStoredOrigin(identity);
@@ -631,7 +631,7 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getStateNonce())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Anmeldung %s wurde kein state-Nonce gespeichert."
+                            "Die Sicherheitsdaten für die Anmeldung %s fehlen."
                                     .formatted(identity.getId())
                     );
         }
@@ -644,7 +644,7 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getOrigin())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Anmeldung %s wurde keine Ursprungs-URL gespeichert."
+                            "Die Rücksprungadresse für die Anmeldung %s fehlt."
                                     .formatted(identity.getId())
                     );
         }
@@ -657,7 +657,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Die gespeicherte Ursprungs-URL der Anmeldung %s ist ungültig.",
+                            "Die gespeicherte Rücksprungadresse für die Anmeldung %s ist ungültig.",
                             identity.getId()
                     );
         }
@@ -706,7 +706,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für den Zugriffsschlüssel",
+                            "Die Anmeldedaten konnten vom Identitätsanbieter %s (%s) nicht abgerufen werden.",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -715,7 +715,7 @@ public class IdentityService {
         if (response.statusCode() != 200) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Identitätsanbieter %s (%s): %d",
+                            "Der Identitätsanbieter %s (%s) hat beim Abrufen der Anmeldedaten mit dem unerwarteten HTTP-Statuscode %d geantwortet.",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -733,7 +733,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verarbeiten der Rückgabe des Zugriffsschlüssels des Identitätsanbieters %s (%s)",
+                            "Die Anmeldedaten des Identitätsanbieters %s (%s) konnten nicht verarbeitet werden.",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -777,7 +777,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für die Nutzerinformationen",
+                            "Die Angaben zur Identität konnten vom Identitätsanbieter %s (%s) nicht abgerufen werden.",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -786,7 +786,7 @@ public class IdentityService {
         if (response.statusCode() != 200) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Abrufen der Nutzerinformationen für Identitätsanbieter %s (%s): %d",
+                            "Der Identitätsanbieter %s (%s) hat beim Abrufen der Angaben zur Identität mit dem unerwarteten HTTP-Statuscode %d geantwortet.",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()
@@ -802,7 +802,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verarbeiten der Rückgabe der Nutzerinformationen des Identitätsanbieters %s (%s)",
+                            "Die Angaben zur Identität des Identitätsanbieters %s (%s) konnten nicht verarbeitet werden.",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -865,7 +865,7 @@ public class IdentityService {
             throw ResponseException
                     .internalServerError(
                             e,
-                            "Fehler beim Verbindungsaufbau zum Identitätsanbieter %s (%s) für den Logout",
+                            "Die Abmeldung beim Identitätsanbieter %s (%s) konnte nicht abgeschlossen werden.",
                             provider.getName(),
                             provider.getKey()
                     );
@@ -874,7 +874,7 @@ public class IdentityService {
         if (response.statusCode() >= 400) {
             throw ResponseException
                     .internalServerError(
-                            "Ungültiger Status-Code beim Logout für Identitätsanbieter %s (%s): %d",
+                            "Der Identitätsanbieter %s (%s) hat bei der Abmeldung mit dem unerwarteten HTTP-Statuscode %d geantwortet.",
                             provider.getName(),
                             provider.getKey(),
                             response.statusCode()

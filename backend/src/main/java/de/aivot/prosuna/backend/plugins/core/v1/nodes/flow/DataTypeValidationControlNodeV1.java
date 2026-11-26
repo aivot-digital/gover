@@ -154,7 +154,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         try {
             layout = ElementPOJOMapper.createFromPOJO(DataTypeValidationControlNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         layout

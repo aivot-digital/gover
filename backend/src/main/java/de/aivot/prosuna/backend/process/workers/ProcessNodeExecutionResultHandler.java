@@ -176,7 +176,7 @@ public class ProcessNodeExecutionResultHandler {
             var err = String.format(
                     """
                             Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat ein leeres Ergebnis zurückgegeben.
-                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            Bitte wenden Sie sich an den technischen Support.
                             """,
                     StringUtils.quote(provider.getName()),
                     StringUtils.quote(currentNode.resolveName(provider))
@@ -243,7 +243,7 @@ public class ProcessNodeExecutionResultHandler {
             default -> throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
                             Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine unbekannte Ergebnisklasse erzeugt: %s.
-                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            Bitte wenden Sie sich an den technischen Support.
                             """,
                     StringUtils.quote(provider.getName()),
                     StringUtils.quote(currentNode.resolveName(provider)),
@@ -701,7 +701,7 @@ public class ProcessNodeExecutionResultHandler {
                     e,
                     """
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
-                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            Bitte wenden Sie sich an den technischen Support.
                             """,
                     context.provider.getName(),
                     context.currentNode.resolveName(context.provider),
@@ -713,7 +713,7 @@ public class ProcessNodeExecutionResultHandler {
             throw new ProcessNodeExecutionExceptionInvalidAssignment(
                     """
                             Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine unbekannte Mitarbeiter:in-ID „%s“ zurückgegeben.
-                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            Bitte wenden Sie sich an den technischen Support.
                             """,
                     context.provider.getName(),
                     context.currentNode.resolveName(context.provider),
@@ -1043,7 +1043,7 @@ public class ProcessNodeExecutionResultHandler {
                         e,
                         """
                                 Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat eine ungültige Mitarbeiter:in-ID „%s“ zurückgegeben.
-                                Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                                Bitte wenden Sie sich an den technischen Support.
                                 """,
                         context.provider.getName(),
                         context.currentNode.resolveName(context.provider),
@@ -1085,7 +1085,7 @@ public class ProcessNodeExecutionResultHandler {
             throw new ProcessNodeExecutionExceptionInvalidAssignment(
                     """
                             Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat eine ungültige Identitäts-ID %s zurückgegeben.
-                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            Bitte wenden Sie sich an den technischen Support.
                             """,
                     StringUtils.quote(context.provider.getName()),
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),

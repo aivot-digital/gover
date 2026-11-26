@@ -309,7 +309,7 @@ public class IdentityProviderController {
     }
 
     public record IdentityProviderTestStartRequestDTO(
-            @NotBlank String origin
+            @NotBlank(message = "Die Rücksprungadresse für den Test des Identitätsanbieters fehlt.") String origin
     ) {
     }
 

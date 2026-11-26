@@ -52,7 +52,7 @@ export function IdentityProviderDetailsPageTest() {
                             setIdentityData(res[identityProvider.key]);
                         } else {
                             const err: ApiError = {
-                                message: 'Die Identität wurde nicht gesetzt',
+                                message: 'Nach der Anmeldung wurde keine Identität für diesen Identitätsanbieter übermittelt.',
                                 details: `In der Map der Identitäten ist keine Identität mit dem Provider-Key ${identityProvider.key} vorhanden.`,
                                 displayableToUser: true,
                                 status: 404,
@@ -71,7 +71,7 @@ export function IdentityProviderDetailsPageTest() {
                 break;
             default:
             case IdentityResultState.UnknownError:
-                setIdentityError('Unbekannter Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+                setIdentityError('Beim Testen des Identitätsanbieters ist ein Fehler aufgetreten. Bitte starten Sie den Test erneut.');
                 break;
         }
     }, [urlSearchParams, identityProvider]);

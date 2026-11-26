@@ -218,7 +218,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             layout = ElementPOJOMapper
                     .createFromPOJO(NodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         layout.findChild(NodeConfig.RECIPIENT_MODE_FIELD_ID, SelectInputElement.class)

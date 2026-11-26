@@ -37,7 +37,7 @@ export function StorageProviderDetailsPageTest() {
             const result = await api.testStorageProvider(storageProvider.id, writable);
             setTestResult(result);
         } catch (e) {
-            setTestResult({ success: false, error: 'Unbekannter Fehler beim Testen.' });
+            setTestResult({ success: false, error: 'Beim Testen des Speicheranbieters ist ein Fehler aufgetreten.' });
         } finally {
             setIsTesting(false);
         }

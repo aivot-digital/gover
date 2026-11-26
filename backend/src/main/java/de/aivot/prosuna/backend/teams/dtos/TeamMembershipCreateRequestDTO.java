@@ -8,10 +8,10 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record TeamMembershipCreateRequestDTO(
-        @NotNull
+        @NotNull(message = "Wählen Sie ein Team aus.")
         Integer teamId,
 
-        @NotNull
+        @NotNull(message = "Wählen Sie eine Person aus.")
         String userId,
 
         @Nullable

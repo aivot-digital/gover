@@ -484,7 +484,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         try {
             config = ElementPOJOMapper.mapToPOJO(derivedData.getEffectiveValues(), provider.getNodeConfigurationClass());
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Ableitung der Konfiguration des Prozesselements ist fehlgeschlagen: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht verarbeitet werden.");
         }
 
         var details = new ProcessConfigurationDetails<NodeConfig>(

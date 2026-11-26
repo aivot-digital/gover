@@ -46,14 +46,14 @@ public class PaymentProviderTestService {
     ) {
         var paymentProviderEntity = paymentProviderService
                 .retrieve(paymentProviderKey)
-                .orElseThrow(() -> new BadRequestException("Invalid provider key"));
+                .orElseThrow(() -> new BadRequestException("Der ausgewählte Zahlungsanbieter wurde nicht gefunden."));
 
         var paymentProviderDefinition = paymentProviderService
                 .getProviderDefinition(
                         paymentProviderEntity.getPaymentProviderDefinitionKey(),
                         paymentProviderEntity.getPaymentProviderDefinitionVersion()
                 )
-                .orElseThrow(() -> new BadRequestException("Invalid provider key"));
+                .orElseThrow(() -> new BadRequestException("Der ausgewählte Zahlungsanbieter wurde nicht gefunden."));
 
         DerivedRuntimeElementData derivedConfiguration;
         try {

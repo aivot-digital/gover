@@ -270,7 +270,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             layout = ElementPOJOMapper
                     .createFromPOJO(PaymentRequestActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)

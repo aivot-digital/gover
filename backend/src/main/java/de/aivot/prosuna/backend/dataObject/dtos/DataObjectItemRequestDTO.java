@@ -13,7 +13,7 @@ public record DataObjectItemRequestDTO(
         @Nonnull
         String id,
         @Nonnull
-        @NotNull
+        @NotNull(message = "Die Werte des Datenobjekts müssen angegeben werden.")
         Map<String, Object> data,
         @Nullable
         Long lockVersion

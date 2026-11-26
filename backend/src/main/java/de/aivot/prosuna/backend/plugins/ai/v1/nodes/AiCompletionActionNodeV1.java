@@ -173,8 +173,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Fehler bei der Erstellung des Konfigurationslayouts: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
     }

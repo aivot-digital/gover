@@ -71,7 +71,7 @@ class _AuthService {
                 const apiError: ApiError = {
                     details: undefined,
                     displayableToUser: false,
-                    message: `Authentication refresh failed with status ${response.status}`,
+                    message: `Die Sitzung konnte nicht verlängert werden. HTTP-Statuscode: ${response.status}`,
                     status: response.status,
                 }
                 throw apiError;

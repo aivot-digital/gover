@@ -190,8 +190,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Fehler bei der Erstellung des Konfigurationslayouts: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
     }

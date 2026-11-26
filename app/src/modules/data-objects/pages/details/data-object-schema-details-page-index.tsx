@@ -59,23 +59,23 @@ const AllowedDisplayFieldTypes = [
 ];
 
 export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'created' | 'updated' | 'displayFields'>> = yup.object({
-    key: yup.string()
+    key: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Schlüssel des Datenmodells muss mindestens 3 Zeichen lang sein.')
         .max(64, 'Der Schlüssel des Datenmodells darf maximal 64 Zeichen lang sein.')
         .matches(/^[a-zA-Z][a-zA-Z0-9_]{2,}$/, 'Der Schlüssel darf nur alphanumerische Zeichen und Unterstriche (_) enthalten und muss mit einem Buchstaben beginnen.')
         .required('Der Schlüssel des Datenmodells ist ein Pflichtfeld.'),
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name des Datenmodells muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name des Datenmodells darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Datenmodells ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
         .required('Die Beschreibung des Datenmodells ist ein Pflichtfeld.'),
-    idGen: yup.string()
+    idGen: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .max(64, 'Die ID-Formatvorlage darf maximal 64 Zeichen lang sein.')
         .required('Die Angabe des ID-Typs ist ein Pflichtfeld.'),
@@ -85,7 +85,7 @@ export const YupSchema: ObjectSchema<Omit<DataObjectSchema, 'created' | 'updated
             schema != null && schema.type === ElementType.GroupLayout &&
             flattenElements(schema).some(element => isAnyInputElement(element) && element.type !== ElementType.ReplicatingContainer)
         )),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 const IdGenOptions = [
     {
@@ -225,7 +225,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     if (isApiError(err) && err.displayableToUser) {
                         dispatch(showErrorSnackbar(err.message));
                     } else {
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Das Datenmodell konnte nicht gespeichert werden.'));
                     }
                 })
                 .finally(() => {
@@ -241,7 +241,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen am Datenmodell erfolgreich gespeichert.'));
                 })
                 .catch(err => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Das Datenmodell konnte nicht gespeichert werden.'));
                 })
                 .finally(() => {
                     setIsBusy(false);

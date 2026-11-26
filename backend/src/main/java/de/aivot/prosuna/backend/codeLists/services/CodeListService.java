@@ -318,7 +318,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
                         .toList());
             }
         } catch (IOException | UncheckedIOException e) {
-            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht erzeugt werden: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht erzeugt werden.");
         }
 
         return outputStream.toByteArray();
@@ -738,7 +738,7 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
         try (var inputStream = storageService.getDocumentContent(asset.getStorageProviderId(), asset.getStoragePathFromRoot())) {
             return readCsvSource(inputStream);
         } catch (IOException e) {
-            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Verarbeitung der CSV-Datei konnte nicht abgeschlossen werden.");
         }
     }
 
@@ -760,9 +760,9 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             }
             return new SourceData(columns, Map.of(), rows, null);
         } catch (CsvParseException | UncheckedIOException e) {
-            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
+            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", e);
         } catch (IOException e) {
-            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Verarbeitung der CSV-Datei konnte nicht abgeschlossen werden.");
         }
     }
 

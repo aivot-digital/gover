@@ -94,7 +94,7 @@ public class ProcessNodeExportService {
             @Nonnull
             String createdByVendor,
             @Nonnull
-            @NotNull
+            @NotNull(message = "Die Importdatei muss ein Prozesselement enthalten.")
             ProcessNodeEntity node
     ) {
     }

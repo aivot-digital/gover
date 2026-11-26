@@ -87,7 +87,7 @@ public class SecretService implements EntityService<SecretEntity, UUID> {
                     secretEntity.getSalt()
             );
         } catch (Exception e) {
-            throw new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Fehler beim Verschlüsseln des Geheimnisses", e.getMessage(), e);
+            throw new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Das Geheimnis konnte nicht verschlüsselt werden.", "Prüfen Sie die Verschlüsselungskonfiguration der Prosuna-Instanz.", e);
         }
 
         secretEntity.setValue(encryptedValue);
@@ -165,7 +165,7 @@ public class SecretService implements EntityService<SecretEntity, UUID> {
                         originalEntity.getSalt()
                 );
             } catch (Exception e) {
-                throw new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Fehler beim Verschlüsseln des Geheimnisses", e.getMessage(), e);
+                throw new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Das Geheimnis konnte nicht verschlüsselt werden.", "Prüfen Sie die Verschlüsselungskonfiguration der Prosuna-Instanz.", e);
             }
 
             originalEntity.setValue(encryptedValue);

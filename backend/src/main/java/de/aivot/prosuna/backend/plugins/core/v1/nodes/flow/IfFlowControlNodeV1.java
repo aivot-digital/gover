@@ -134,7 +134,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         try {
             layout = ElementPOJOMapper.createFromPOJO(IfFlowControlNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         FlowConditionSupport.configureConditionFields(layout);

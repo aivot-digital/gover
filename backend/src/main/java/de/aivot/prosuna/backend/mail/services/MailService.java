@@ -288,7 +288,7 @@ public class MailService {
         if (template.getUserConfigKey() != null) {
             var def = userConfigService
                     .getDefinition(template.getUserConfigKey())
-                    .orElseThrow(() -> ResponseException.internalServerError("User config definition not found: " + template.getUserConfigKey()));
+                    .orElseThrow(() -> ResponseException.internalServerError("Die Benachrichtigungseinstellung wurde nicht gefunden."));
 
             var config = userConfigService
                     .retrieve(template.getUserConfigKey(), user.getId());

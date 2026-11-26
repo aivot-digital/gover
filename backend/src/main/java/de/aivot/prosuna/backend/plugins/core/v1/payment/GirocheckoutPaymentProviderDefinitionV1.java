@@ -163,12 +163,12 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         var merchantId = (String) effectiveValues.get(MERCHANT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(merchantId)) {
-            throw new PaymentMissingDataException("Merchant ID", paymentProviderEntity);
+            throw new PaymentMissingDataException("Verkäufer-ID", paymentProviderEntity);
         }
 
         var projectId = (String) effectiveValues.get(PROJECT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(projectId)) {
-            throw new PaymentMissingDataException("Project ID", paymentProviderEntity);
+            throw new PaymentMissingDataException("Projekt-ID", paymentProviderEntity);
         }
 
         var passwordSecret = getPasswordSecret(paymentProviderEntity, config);
@@ -277,7 +277,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         if (!desiredHash.equals(callbackResponse.getGcHash())) {
             throw new PaymentException(
-                    "Hash mismatch for callback response for provider %s (%s)",
+                    "Die Prüfsumme der Zahlungsrückmeldung des Zahlungsanbieters %s (%s) stimmt nicht mit dem erwarteten Wert überein.",
                     paymentProviderEntity.getName(),
                     paymentProviderEntity.getKey()
             );
@@ -326,30 +326,30 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     ) throws PaymentMissingDataException {
         var passwordSecretField = (String) config.getEffectiveValues().get(PROJECT_PASSWORD_FIELD);
         if (StringUtils.isNullOrEmpty(passwordSecretField)) {
-            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+            throw new PaymentMissingDataException("Projektpasswort", paymentProviderEntity);
         }
 
         UUID passwordSecretFieldKey;
         try {
             passwordSecretFieldKey = UUID.fromString(passwordSecretField);
         } catch (IllegalArgumentException e) {
-            throw new PaymentMissingDataException("Project password", paymentProviderEntity);
+            throw new PaymentMissingDataException("Projektpasswort", paymentProviderEntity);
         }
 
         var passwordSecretEntity = secretService
                 .retrieve(passwordSecretFieldKey)
-                .orElseThrow(() -> new PaymentMissingDataException("Project password entity", paymentProviderEntity));
+                .orElseThrow(() -> new PaymentMissingDataException("Geheimnis für das Projektpasswort", paymentProviderEntity));
 
         String passwordSecret = null;
         try {
             passwordSecret = secretService
                     .decrypt(passwordSecretEntity);
         } catch (Exception e) {
-            throw new PaymentMissingDataException("Project password value", paymentProviderEntity);
+            throw new PaymentMissingDataException("Wert des Projektpassworts", paymentProviderEntity);
         }
 
         if (StringUtils.isNullOrEmpty(passwordSecret)) {
-            throw new PaymentMissingDataException("Project password value", paymentProviderEntity);
+            throw new PaymentMissingDataException("Wert des Projektpassworts", paymentProviderEntity);
         }
 
         return passwordSecret;

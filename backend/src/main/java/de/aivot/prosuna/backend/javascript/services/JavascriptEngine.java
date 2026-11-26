@@ -181,7 +181,7 @@ public class JavascriptEngine implements AutoCloseable {
      */
     public void validateCode(JavascriptCode code) throws JavascriptException {
         if (code == null || code.isEmpty() || code.getCode() == null) {
-            throw new JavascriptException(new IllegalArgumentException("JavaScript code must not be empty."));
+            throw new JavascriptException(new IllegalArgumentException("Der JavaScript-Code darf nicht leer sein."));
         }
 
         try {

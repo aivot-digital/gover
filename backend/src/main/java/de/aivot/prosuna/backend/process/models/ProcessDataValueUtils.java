@@ -122,7 +122,7 @@ public final class ProcessDataValueUtils {
         var segments = parseDestinationKeySegments(destinationKey, true);
         if (segments.isEmpty()) {
             if (wildcardIndices != null && !wildcardIndices.isEmpty()) {
-                throw new IllegalArgumentException("Wildcard indices can only be provided for destination keys that contain '*'.");
+                throw new IllegalArgumentException("Konkrete Listenindizes können nur für Datenschlüssel angegeben werden, die einen Platzhalter (*) enthalten.");
             }
             return root;
         }
@@ -193,7 +193,7 @@ public final class ProcessDataValueUtils {
         var segments = parseDestinationKeySegments(destinationKey, allowArrayRoot);
         if (segments.isEmpty()) {
             if (wildcardIndices != null && !wildcardIndices.isEmpty()) {
-                throw new IllegalArgumentException("Wildcard indices can only be provided for destination keys that contain '*'.");
+                throw new IllegalArgumentException("Konkrete Listenindizes können nur für Datenschlüssel angegeben werden, die einen Platzhalter (*) enthalten.");
             }
             return "";
         }
@@ -258,7 +258,7 @@ public final class ProcessDataValueUtils {
                                              @Nullable Object value) {
         var segments = parseDestinationKeySegments(destinationKey, false);
         if (segments.isEmpty()) {
-            throw new IllegalArgumentException("Destination key must not be empty when writing process data.");
+            throw new IllegalArgumentException("Zum Schreiben von Vorgangsdaten muss ein Datenschlüssel angegeben werden.");
         }
         assertNoImplicitWildcards(segments, "write");
         processExecutionData.put(
@@ -280,7 +280,7 @@ public final class ProcessDataValueUtils {
                                              @Nullable List<Integer> wildcardIndices) {
         var segments = parseDestinationKeySegments(destinationKey, false);
         if (segments.isEmpty()) {
-            throw new IllegalArgumentException("Destination key must not be empty when writing process data.");
+            throw new IllegalArgumentException("Zum Schreiben von Vorgangsdaten muss ein Datenschlüssel angegeben werden.");
         }
         processExecutionData.put(
                 ProcessExecutionData.PROCESS_DATA_KEY,
@@ -302,7 +302,7 @@ public final class ProcessDataValueUtils {
                                                  boolean cleanupEmptyContainers) {
         var segments = parseDestinationKeySegments(destinationKey, false);
         if (segments.isEmpty()) {
-            throw new IllegalArgumentException("Destination key must not be empty when removing process data.");
+            throw new IllegalArgumentException("Zum Entfernen von Vorgangsdaten muss ein Datenschlüssel angegeben werden.");
         }
 
         var currentRoot = processExecutionData.get(ProcessExecutionData.PROCESS_DATA_KEY);
@@ -337,7 +337,7 @@ public final class ProcessDataValueUtils {
                                                  @Nullable List<Integer> wildcardIndices) {
         var segments = parseDestinationKeySegments(destinationKey, false);
         if (segments.isEmpty()) {
-            throw new IllegalArgumentException("Destination key must not be empty when removing process data.");
+            throw new IllegalArgumentException("Zum Entfernen von Vorgangsdaten muss ein Datenschlüssel angegeben werden.");
         }
 
         var validatedWildcardIndices = validateExplicitWildcardIndices(segments, wildcardIndices);
@@ -374,7 +374,7 @@ public final class ProcessDataValueUtils {
                                                   @Nullable Object value) {
         var segments = parseDestinationKeySegments(destinationKey, true);
         if (segments.isEmpty()) {
-            throw new IllegalArgumentException("Destination key must not be empty when writing a value.");
+            throw new IllegalArgumentException("Zum Schreiben eines Wertes muss ein Datenschlüssel angegeben werden.");
         }
 
         assertNoImplicitWildcards(segments, "write");
@@ -402,7 +402,7 @@ public final class ProcessDataValueUtils {
                                                   @Nullable List<Integer> wildcardIndices) {
         var segments = parseDestinationKeySegments(destinationKey, true);
         if (segments.isEmpty()) {
-            throw new IllegalArgumentException("Destination key must not be empty when writing a value.");
+            throw new IllegalArgumentException("Zum Schreiben eines Wertes muss ein Datenschlüssel angegeben werden.");
         }
 
         var validatedWildcardIndices = validateExplicitWildcardIndices(segments, wildcardIndices);
@@ -452,7 +452,7 @@ public final class ProcessDataValueUtils {
             var property = (segments.isEmpty() ? FIRST_PROPERTY : NEXT_PROPERTY)
                     .matcher(normalizedKey).region(offset, normalizedKey.length());
             if (!property.lookingAt()) {
-                throw new IllegalArgumentException("Invalid destination key. Use object.name, items[0].name or items[*].name.");
+                throw new IllegalArgumentException("Der Datenschlüssel ist ungültig. Verwenden Sie ein Format wie object.name, items[0].name oder items[*].name.");
             }
             segments.add(segments.isEmpty() ? property.group() : property.group(1));
             offset = property.end();
@@ -484,7 +484,7 @@ public final class ProcessDataValueUtils {
         }
 
         throw new IllegalArgumentException(
-                "Wildcard destination keys require explicit indices to " + operation + " a value."
+                "Datenschlüssel mit Platzhaltern (*) benötigen konkrete Listenindizes für die Operation " + operation + "."
         );
     }
 
@@ -494,22 +494,22 @@ public final class ProcessDataValueUtils {
         var wildcardCount = countWildcardSegments(segments);
         if (wildcardCount == 0) {
             if (wildcardIndices != null) {
-                throw new IllegalArgumentException("Wildcard indices can only be provided for destination keys that contain '*'.");
+                throw new IllegalArgumentException("Konkrete Listenindizes können nur für Datenschlüssel angegeben werden, die einen Platzhalter (*) enthalten.");
             }
             return List.of();
         }
 
         if (wildcardIndices == null) {
-            throw new IllegalArgumentException("Wildcard destination keys require explicit indices.");
+            throw new IllegalArgumentException("Für Datenschlüssel mit Platzhaltern (*) müssen konkrete Listenindizes angegeben werden.");
         }
 
         if (wildcardCount != wildcardIndices.size()) {
-            throw new IllegalArgumentException("Wildcard index count must match the number of '*' segments in the destination key.");
+            throw new IllegalArgumentException("Für jeden Platzhalter (*) im Datenschlüssel muss genau ein Listenindex angegeben werden.");
         }
 
         for (var index : wildcardIndices) {
             if (index == null || index < 0) {
-                throw new IllegalArgumentException("Wildcard indices must be non-negative integers.");
+                throw new IllegalArgumentException("Listenindizes für Platzhalter (*) müssen ganze Zahlen ab 0 sein.");
             }
         }
 
@@ -583,13 +583,13 @@ public final class ProcessDataValueUtils {
         }
 
         if (!(container instanceof List<?> currentListContainer)) {
-            throw new IllegalStateException("Destination key expects an array segment, but the current value is not a list.");
+            throw new IllegalStateException("Der Datenschlüssel verweist auf einen Listeneintrag, aber der aktuelle Wert ist keine Liste.");
         }
 
         var currentList = toMutableList(currentListContainer);
         var arrayIndex = resolveBoundArrayIndex(segment, wildcardIndices, wildcardIndexCursor);
         if (arrayIndex == null) {
-            throw new IllegalStateException("Destination key expects an array index, but the current segment is not numeric.");
+            throw new IllegalStateException("Für einen Listeneintrag muss der Datenschlüssel einen numerischen Index enthalten.");
         }
 
         ensureListSize(currentList, arrayIndex + 1);
@@ -734,7 +734,7 @@ public final class ProcessDataValueUtils {
             if (root instanceof List<?> currentList) {
                 return toMutableList(currentList);
             }
-            throw new IllegalStateException("Destination key expects an array root, but the current value is not a list.");
+            throw new IllegalStateException("Der Datenschlüssel erwartet eine Liste als Ausgangswert, aber der aktuelle Wert ist keine Liste.");
         }
 
         if (root == null) {
@@ -743,7 +743,7 @@ public final class ProcessDataValueUtils {
         if (root instanceof Map<?, ?> currentMap) {
             return toMutableStringObjectMap(currentMap);
         }
-        throw new IllegalStateException("Destination key expects an object root, but the current value is not an object.");
+        throw new IllegalStateException("Der Datenschlüssel erwartet ein Objekt als Ausgangswert, aber der aktuelle Wert ist kein Objekt.");
     }
 
     @Nonnull
@@ -760,14 +760,14 @@ public final class ProcessDataValueUtils {
                 return toMutableList(currentList);
             }
 
-            throw new IllegalStateException("Destination key expects an array, but an incompatible value already exists.");
+            throw new IllegalStateException("Der Datenschlüssel erwartet eine Liste, aber an dieser Stelle ist bereits ein Wert eines anderen Typs vorhanden.");
         }
 
         if (currentValue instanceof Map<?, ?> currentMap) {
             return toMutableStringObjectMap(currentMap);
         }
 
-        throw new IllegalStateException("Destination key expects an object, but an incompatible value already exists.");
+        throw new IllegalStateException("Der Datenschlüssel erwartet ein Objekt, aber an dieser Stelle ist bereits ein Wert eines anderen Typs vorhanden.");
     }
 
     private static boolean isArraySegment(@Nullable String segment) {

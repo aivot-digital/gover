@@ -35,7 +35,7 @@ public final class StrictInstantDeserializer extends JsonDeserializer<Instant> {
             return (Instant) context.handleWeirdStringValue(
                     Instant.class,
                     value,
-                    "Expected an ISO-8601 timestamp with seconds"
+                    "Der Zeitstempel muss im ISO-8601-Format mit Sekunden angegeben werden."
             );
         }
     }

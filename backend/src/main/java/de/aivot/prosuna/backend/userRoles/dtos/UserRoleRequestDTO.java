@@ -10,15 +10,15 @@ import jakarta.annotation.Nullable;
 import java.util.List;
 
 public record UserRoleRequestDTO(
-    @NotNull
-    @NotBlank
-    @Size(max = 64)
+    @NotNull(message = "Geben Sie einen Namen für die Domänenrolle ein.")
+    @NotBlank(message = "Geben Sie einen Namen für die Domänenrolle ein.")
+    @Size(max = 64, message = "Der Name der Domänenrolle darf höchstens 64 Zeichen lang sein.")
     String name,
 
     @Nullable
     String description,
 
-    @NotNull
+    @NotNull(message = "Die Berechtigungen der Domänenrolle müssen angegeben werden.")
     List<String> permissions,
 
     @Nullable

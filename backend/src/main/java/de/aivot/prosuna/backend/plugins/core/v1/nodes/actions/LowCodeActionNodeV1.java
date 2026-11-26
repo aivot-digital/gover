@@ -130,7 +130,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
 
             return layout;
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
     }
 

@@ -155,7 +155,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         try {
             config = ElementPOJOMapper.createFromPOJO(SendDataFitConnectActionNodeV1Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für das Prozesselement konnte nicht erstellt werden: " + NODE_KEY, e);
+            throw ResponseException.internalServerError("Die Konfiguration für den FIT-Connect-Versand konnte nicht geladen werden.", e);
         }
 
         config

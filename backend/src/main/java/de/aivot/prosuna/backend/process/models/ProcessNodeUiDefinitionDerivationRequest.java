@@ -17,9 +17,9 @@ import jakarta.validation.constraints.NotNull;
  * @param derivationOptions     the options for the derivation
  */
 public record ProcessNodeUiDefinitionDerivationRequest(
-        @Nonnull @NotBlank String fieldId,
+        @Nonnull @NotBlank(message = "Das Feld der UI-Definition muss angegeben werden.") String fieldId,
         @Nullable BaseElement uiDefinition,
-        @Nonnull @NotNull AuthoredElementValues authoredElementValues,
-        @Nonnull @NotNull ElementDerivationOptions derivationOptions
+        @Nonnull @NotNull(message = "Die Eingabedaten der Formularelemente müssen angegeben werden.") AuthoredElementValues authoredElementValues,
+        @Nonnull @NotNull(message = "Die Einstellungen zur Ableitung der Formulardaten müssen angegeben werden.") ElementDerivationOptions derivationOptions
 ) {
 }

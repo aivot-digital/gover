@@ -30,13 +30,13 @@ export async function createApiError(response: Response): Promise<ApiError> {
         try {
             details = strBody;
         } catch (error) {
-            details = `No details provided. The error was not parseable as json or text. Error: ${error}`;
+            details = `Es sind keine Fehlerdetails verfügbar. Die Antwort konnte weder als JSON noch als Text gelesen werden. Technische Informationen: ${error}`;
         }
     }
 
     return {
         status: response.status,
-        message: response.statusText,
+        message: 'Der Server hat die Anfrage mit einem Fehler beantwortet.',
         details: details,
         displayableToUser: false,
     };

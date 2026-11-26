@@ -63,18 +63,18 @@ export function DataObjectItemDetailsPageIndex() {
     const yupSchema = useMemo(() => {
         if (dataObjectSchema == null || derivedData == null) {
             return yup
-                .object()
-                .required()
+                .object().typeError('Die Angaben haben ein ungültiges Format.')
+                .required('Die Angaben zum Datenobjekt müssen übermittelt werden.')
                 .shape({});
         }
 
         return yup
-            .object()
-            .required()
+            .object().typeError('Die Angaben haben ein ungültiges Format.')
+            .required('Die Angaben zum Datenobjekt müssen übermittelt werden.')
             .shape({
                 data: yup
-                    .object()
-                    .required()
+                    .object().typeError('Die Angaben haben ein ungültiges Format.')
+                    .required('Die Angaben zum Datenobjekt müssen übermittelt werden.')
                     .shape(prosunaSchemaToYup(dataObjectSchema.schema, derivedData.elementStates)),
             });
     }, [dataObjectSchema, derivedData.elementStates]);
@@ -203,7 +203,7 @@ export function DataObjectItemDetailsPageIndex() {
                         console.error(err);
                     }
 
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showErrorSnackbar('Das Datenobjekt konnte nicht gespeichert werden.'));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -225,7 +225,7 @@ export function DataObjectItemDetailsPageIndex() {
                         console.error(err);
                     }
 
-                    dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Das Datenobjekt konnte nicht gespeichert werden.'));
                 })
                 .finally(() => {
                     setIsBusy(false);

@@ -66,39 +66,39 @@ function getIndexedFieldError(
 }
 
 export const _StorageProviderSchema = {
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name des Speicheranbieters muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name des Speicheranbieters darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Speicheranbieters ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
         .required('Die Beschreibung des Speicheranbieters ist ein Pflichtfeld.'),
-    storageProviderDefinitionKey: yup.string()
+    storageProviderDefinitionKey: yup.string().typeError('Wählen Sie einen gültigen Speichertyp aus.')
         .trim()
         .required('Bitte wählen Sie einen Speichertyp aus.'),
-    storageProviderDefinitionVersion: yup.number()
+    storageProviderDefinitionVersion: yup.number().typeError('Wählen Sie eine gültige Version des Speicheranbieters aus.')
         .min(1, 'Die Version des Speicheranbieters muss mindestens 1 sein.')
         .required('Die Version des Speicheranbieters ist ein Pflichtfeld.'),
-    type: yup.string()
+    type: yup.string().typeError('Wählen Sie einen gültigen Verwendungszweck für den Speicheranbieter aus.')
         .trim()
         .required('Der Typ des Speicheranbieters ist ein Pflichtfeld.'),
-    maxFileSizeInBytes: yup.number()
+    maxFileSizeInBytes: yup.number().typeError('Bitte geben Sie eine gültige Zahl ein.')
         .min(0, 'Die maximale Dateigröße muss mindestens 0 Bytes betragen.')
         .required('Die maximale Dateigröße ist ein Pflichtfeld.'),
-    readOnlyStorage: yup.boolean()
+    readOnlyStorage: yup.boolean().nonNullable('Geben Sie an, ob der Speicheranbieter schreibgeschützt ist.').typeError('Geben Sie an, ob der Speicheranbieter schreibgeschützt ist.')
         .optional(),
-    testProvider: yup.boolean()
+    testProvider: yup.boolean().nonNullable('Geben Sie an, ob der Speicheranbieter im Testbetrieb verwendet wird.').typeError('Geben Sie an, ob der Speicheranbieter im Testbetrieb verwendet wird.')
         .default(false),
-    metadataAttributes: yup.array()
+    metadataAttributes: yup.array().nonNullable('Die Einträge haben ein ungültiges Format.').typeError('Die Einträge haben ein ungültiges Format.')
         .of(
             yup.object({
-                label: yup.string().trim(),
-                description: yup.string().trim(),
-                key: yup.string().trim(),
-            }).test('row-completeness', 'Bitte geben Sie mind. Titel und Feldname an oder löschen Sie die Zeile.', function (row) {
+                label: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+                description: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+                key: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+            }).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.').test('row-completeness', 'Bitte geben Sie mind. Titel und Feldname an oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
                 const {label, description, key} = row;
@@ -173,7 +173,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         handleInputPatch,
         validate,
         reset,
-    } = useFormManager<StorageProviderEntity>(originalStorageProvider, yup.object(storageProviderSchema) as any, true);
+    } = useFormManager<StorageProviderEntity>(originalStorageProvider, yup.object(storageProviderSchema).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.') as any, true);
 
     const {
         storageProviderDefinitionKey,
@@ -203,7 +203,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         if (definition?.providerConfigLayout != null) {
             setStorageProviderSchema({
                 ..._StorageProviderSchema,
-                configuration: yup.object().shape(
+                configuration: yup.object().nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.').shape(
                     prosunaSchemaToYup(definition.providerConfigLayout, derivedElementData?.elementStates ?? {}),
                 ),
             });
@@ -298,7 +298,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 const maxFileSizeError = err.details.elementStates.maxFileSizeInBytes?.error;
                 setMaxFileSizeApiError(typeof maxFileSizeError === 'string' ? maxFileSizeError : null);
             } else {
-                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht gespeichert werden.'));
             }
             return false;
         } finally {

@@ -32,32 +32,32 @@ public class StorageProviderEntity implements LockVersioned {
     @Nonnull
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = ID_SEQUENCE_NAME)
     @SequenceGenerator(name = ID_SEQUENCE_NAME, allocationSize = 1)
-    @NotNull(message = "Die ID des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die ID des Speicheranbieters muss angegeben werden.")
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der Definitionsschlüssel des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Der Definitionsschlüssel des Speicheranbieters muss angegeben werden.")
     @NotBlank(message = "Der Definitionsschlüssel des Speicheranbieters darf nicht leer sein.")
     @Size(max = 255, message = "Der Definitionsschlüssel des Speicheranbieters darf maximal 255 Zeichen lang sein.")
     private String storageProviderDefinitionKey;
 
     @Nonnull
-    @NotNull(message = "Die Definitionsversion des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die Definitionsversion des Speicheranbieters muss angegeben werden.")
     private Integer storageProviderDefinitionVersion;
 
     @Nonnull
-    @NotNull(message = "Der Name des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Der Name des Speicheranbieters muss angegeben werden.")
     @NotBlank(message = "Der Name des Speicheranbieters darf nicht leer sein.")
     @Size(max = 255, message = "Der Name des Speicheranbieters darf maximal 255 Zeichen lang sein.")
     private String name;
 
     @Nonnull
-    @NotNull(message = "Die Beschreibung des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die Beschreibung des Speicheranbieters muss angegeben werden.")
     @Size(max = 1024, message = "Die Beschreibung des Speicheranbieters darf maximal 1024 Zeichen lang sein.")
     private String description;
 
     @Nonnull
-    @NotNull(message = "Der Typ des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Der Typ des Speicheranbieters muss angegeben werden.")
     @Column(columnDefinition = "int2")
     private StorageProviderType type;
 
@@ -65,7 +65,7 @@ public class StorageProviderEntity implements LockVersioned {
     // does not make open edit forms outdated. Content changes by a sync still do.
     @OptimisticLock(excluded = true)
     @Nonnull
-    @NotNull(message = "Der Status des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Der Status des Speicheranbieters muss angegeben werden.")
     @Column(columnDefinition = "int2")
     private StorageProviderStatus status;
 
@@ -75,34 +75,34 @@ public class StorageProviderEntity implements LockVersioned {
     private String statusMessage;
 
     @Nonnull
-    @NotNull(message = "Die Read-Only-Eigenschaft des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Geben Sie an, ob der Speicheranbieter schreibgeschützt ist.")
     @ColumnDefault("FALSE")
     private Boolean readOnlyStorage;
 
     @Nonnull
-    @NotNull(message = "Die Konfiguration des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die Konfiguration des Speicheranbieters muss angegeben werden.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = AuthoredElementValuesConverter.class)
     private AuthoredElementValues configuration;
 
     @Nonnull
-    @NotNull(message = "Die maximale Dateigröße des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die maximale Dateigröße des Speicheranbieters muss angegeben werden.")
     @Min(value = 0, message = "Die maximale Dateigröße des Speicheranbieters muss größer oder gleich 0 sein.")
     @ColumnDefault("0")
     private Long maxFileSizeInBytes;
 
     @Nonnull
-    @NotNull(message = "Die Verhinderung der Löschung des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Geben Sie an, ob der Speicheranbieter vor dem Löschen geschützt ist.")
     @ColumnDefault("FALSE")
     private Boolean systemProvider;
 
     @Nonnull
-    @NotNull(message = "Die vorproduktive Eigenschaft des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Geben Sie an, ob der Speicheranbieter im Testbetrieb verwendet wird.")
     @ColumnDefault("FALSE")
     private Boolean testProvider;
 
     @Nonnull
-    @NotNull(message = "Die Liste der Metadatenattribute des Speicheranbieters darf nicht null sein.")
+    @NotNull(message = "Die Liste der Metadatenattribute des Speicheranbieters muss angegeben werden.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = StorageProviderMetadataAttributesConverter.class)
     private List<StorageProviderMetadataAttribute> metadataAttributes;

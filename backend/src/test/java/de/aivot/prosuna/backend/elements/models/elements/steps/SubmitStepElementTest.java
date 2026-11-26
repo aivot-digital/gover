@@ -52,7 +52,7 @@ class SubmitStepElementTest {
                 "expiresAt", Instant.now().minusSeconds(1).getEpochSecond()
         )));
 
-        assertEquals("Die Captcha-Bestätigung ist abgelaufen. Bitte erneut bestätigen.", exception.getMessage());
+        assertEquals("Die Captcha-Bestätigung ist abgelaufen. Bitte bestätigen Sie erneut, dass Sie ein Mensch sind.", exception.getMessage());
     }
 
     @Test
@@ -70,7 +70,7 @@ class SubmitStepElementTest {
                     "payload", "payload"
             )));
 
-            assertEquals("Captcha-Verifizierung fehlgeschlagen. Bitte erneut bestätigen.", exception.getMessage());
+            assertEquals("Die Captcha-Bestätigung konnte nicht geprüft werden. Bitte bestätigen Sie erneut, dass Sie ein Mensch sind.", exception.getMessage());
         } finally {
             setSpringContext(previousContext);
         }

@@ -23,7 +23,7 @@ public class SystemRoleEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der Name der Systemrolle darf nicht null sein.")
+    @NotNull(message = "Der Name der Systemrolle muss angegeben werden.")
     @NotBlank(message = "Der Name der Systemrolle darf nicht leer sein.")
     @Size(min = 3, max = 64, message = "Der Name der Systemrolle muss zwischen 3 und 64 Zeichen lang sein.")
     @Column(length = 64, nullable = false, unique = true)
@@ -36,7 +36,7 @@ public class SystemRoleEntity implements LockVersioned {
 
     @Nonnull
     @Column(nullable = false)
-    @NotNull(message = "Die Berechtigungen der Systemrolle dürfen nicht null sein.")
+    @NotNull(message = "Die Berechtigungen der Systemrolle müssen angegeben werden.")
     private List<String> permissions;
 
     @Nonnull

@@ -67,7 +67,7 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
     @HostAccess.Export
     public String formatGermanNumber(Number number) {
         if (number == null) {
-            throw new IllegalArgumentException("Number cannot be null");
+            throw new IllegalArgumentException("Es muss eine Zahl übergeben werden.");
         }
         return formatGermanNumber(number.doubleValue(), 2);
     }
@@ -75,7 +75,7 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
     @HostAccess.Export
     public String formatGermanNumber(Number number, int decimalPlaces) {
         if (number == null) {
-            throw new IllegalArgumentException("Number cannot be null");
+            throw new IllegalArgumentException("Es muss eine Zahl übergeben werden.");
         }
         return NumberInputElement.formatGermanNumber(number.doubleValue(), decimalPlaces < 0 ? 2 : decimalPlaces);
     }
@@ -83,7 +83,7 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
     @HostAccess.Export
     public Double parseGermanNumber(String numberStr) {
         if (numberStr == null || numberStr.isEmpty()) {
-            throw new IllegalArgumentException("Input string cannot be null or empty");
+            throw new IllegalArgumentException("Es muss eine Zeichenkette mit einer Zahl übergeben werden.");
         }
 
         var cleanedStr = numberStr
@@ -93,7 +93,7 @@ public class NumberJavascriptV1 implements JavascriptFunctionProvider {
         try {
             return Double.parseDouble(cleanedStr);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid number format: " + numberStr, e);
+            throw new IllegalArgumentException("Ungültiges Zahlenformat: " + numberStr, e);
         }
     }
 }

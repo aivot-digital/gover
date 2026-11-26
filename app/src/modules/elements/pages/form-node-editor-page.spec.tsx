@@ -1162,7 +1162,7 @@ describe('FormNodeEditorPage', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Testformular absenden'}));
 
-        await waitFor(() => expectSnackbar('Fehler beim Speichern der Änderungen'));
+        await waitFor(() => expectSnackbar('Die Änderungen konnten nicht gespeichert werden.'));
         expect(FormTriggerApiService.prototype.calculateCosts).not.toHaveBeenCalled();
         expect(FormTriggerApiService.prototype.submitForm).not.toHaveBeenCalled();
     });
@@ -1347,7 +1347,7 @@ describe('FormNodeEditorPage', () => {
 
         fireEvent.click(screen.getByRole('button', {name: 'Testformular absenden'}));
 
-        await waitFor(() => expectSnackbar('Beim Absenden des Formulars ist ein Fehler aufgetreten'));
+        await waitFor(() => expectSnackbar('Beim Absenden des Formulars ist ein Fehler aufgetreten.'));
         expectDispatchedAction('shell/setLoadingMessage', {
             blocking: true,
             estimatedTime: 1000,

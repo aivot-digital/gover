@@ -145,7 +145,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
         try {
             layout = ElementPOJOMapper.createFromPOJO(SwitchFlowControlNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         FlowConditionSupport.configureConditionFields(layout);

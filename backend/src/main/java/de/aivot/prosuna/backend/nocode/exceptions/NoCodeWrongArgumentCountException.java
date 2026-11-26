@@ -5,6 +5,6 @@ package de.aivot.prosuna.backend.nocode.exceptions;
  */
 public class NoCodeWrongArgumentCountException extends NoCodeException {
     public NoCodeWrongArgumentCountException(int expected, int actual) {
-        super("Wrong argument count. Expected " + expected + " but got " + actual);
+        super("Die Anzahl der Parameter passt nicht zur Funktion. Erwartet: " + expected + ". Vorhanden: " + actual + ".");
     }
 }

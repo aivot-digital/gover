@@ -122,7 +122,7 @@ public class PaymentTransactionController {
 
         // Check if the callback data is empty. If so, throw a bad request exception.
         if (callbackData == null || callbackData.isEmpty()) {
-            throw ResponseException.badRequest("Keine Zahlungsinformationen erhalten");
+            throw ResponseException.badRequest("Es wurden keine Zahlungsinformationen zurückgegeben.");
         }
 
         // Fetch the payment transaction by the transaction key
@@ -181,7 +181,7 @@ public class PaymentTransactionController {
             paymentTransactionService
                     .processCallback(transaction, cleanedData);
         } catch (PaymentException e) {
-            throw ResponseException.internalServerError("Fehler beim Abrufen der Zahlungsinformationen", e);
+            throw ResponseException.internalServerError("Die Zahlungsinformationen konnten nicht abgerufen werden.", e);
         }
 
         var redirect = prosunaConfig

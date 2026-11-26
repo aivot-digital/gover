@@ -65,7 +65,7 @@ public class FormNotificationDeletedFormUserConfigDefinition implements UserConf
         if (value instanceof List) {
             return String.join(",", (List<String>) value);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

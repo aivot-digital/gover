@@ -45,7 +45,7 @@ public class XRepositoryCodeListService {
                     .get(uri);
         } catch (HttpConnectionException e) {
             throw ResponseException
-                    .internalServerError(e, "Beim Abrufen der Codeliste mit der URN %s ist ein Fehler aufgetreten: %s", codeListUrn, e.getMessage());
+                    .internalServerError(e, "Die Codeliste mit der URN %s konnte nicht abgerufen werden.", codeListUrn);
         }
 
         switch (response.statusCode()) {
@@ -53,12 +53,12 @@ public class XRepositoryCodeListService {
                 try {
                     return XML_MAPPER.readValue(response.body(), XRepositoryCodeList.class);
                 } catch (JacksonException e) {
-                    throw ResponseException.internalServerError(e, "Fehler beim Parsen der Codeliste mit der URN %s: %s", codeListUrn, e.getMessage());
+                    throw ResponseException.internalServerError(e, "Die Codeliste mit der URN %s konnte nicht gelesen werden.", codeListUrn);
                 }
             case 404:
                 throw ResponseException.notFound("Die Codeliste mit der URN %s wurde nicht gefunden.", codeListUrn);
             default:
-                throw ResponseException.internalServerError("Fehler beim Abrufen der Codeliste mit der URN %s. Der Statuscode war %d", codeListUrn, response.statusCode());
+                throw ResponseException.internalServerError("Die Codeliste mit der URN %s konnte nicht abgerufen werden. Das XRepository hat mit dem HTTP-Statuscode %d geantwortet.", codeListUrn, response.statusCode());
         }
     }
 

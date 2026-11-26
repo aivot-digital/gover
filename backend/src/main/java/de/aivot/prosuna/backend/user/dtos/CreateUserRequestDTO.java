@@ -7,12 +7,12 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateUserRequestDTO(
         @Nonnull
-        @NotNull(message = "Die Mitarbeiter:in darf nicht null sein.")
+        @NotNull(message = "Die Kontodaten müssen angegeben werden.")
         @Valid
         UserEntity user,
 
         @Nonnull
-        @NotNull(message = "Die Versandoption für initiale Zugangsdaten darf nicht null sein.")
+        @NotNull(message = "Geben Sie an, ob die ersten Zugangsdaten per E-Mail versendet werden sollen.")
         Boolean sendInitialCredentialsByEmail
 ) {
 }

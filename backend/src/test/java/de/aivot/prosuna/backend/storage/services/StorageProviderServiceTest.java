@@ -220,7 +220,7 @@ class StorageProviderServiceTest {
                 () -> storageProviderService.performUpdate(existingEntity.getId(), updatedEntity, existingEntity)
         );
 
-        assertEquals("Dieser Speicheranbieter kann nicht bearbeitet werden", exception.getMessage());
+        assertEquals("Dieser Speicheranbieter kann nicht bearbeitet werden.", exception.getMessage());
         verifyNoInteractions(storageProviderRepository, storageSyncWorker, storageProviderDefinitionService, storageProviderConfigurationService);
     }
 

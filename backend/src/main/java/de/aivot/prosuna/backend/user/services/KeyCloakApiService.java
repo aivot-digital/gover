@@ -50,7 +50,7 @@ public class KeyCloakApiService {
         try {
             keycloakUserJson = mapper.writeValueAsString(userToCreate);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden", e);
+            throw ResponseException.internalServerError("Das Konto konnte nicht angelegt werden.", e);
         }
 
         String accessToken;
@@ -58,7 +58,7 @@ public class KeyCloakApiService {
             accessToken = getAccessToken();
         } catch (URISyntaxException | IOException | HttpConnectionException e) {
             throw ResponseException
-                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da keine Anmeldung am Keycloak möglich war.", e);
+                    .internalServerError("Das Konto konnte nicht angelegt werden, da die Anmeldung beim Identitätsanbieter fehlgeschlagen ist.", e);
         }
 
         URI uri;
@@ -66,7 +66,7 @@ public class KeyCloakApiService {
             uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users");
         } catch (URISyntaxException e) {
             throw ResponseException
-                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da die Keycloak-URL ungültig ist.", e);
+                    .internalServerError("Das Konto konnte nicht angelegt werden, da die Adresse des Identitätsanbieters ungültig ist.", e);
         }
 
         ResponseEntity<Void> response;
@@ -82,17 +82,17 @@ public class KeyCloakApiService {
                             Void.class
                     );
         } catch (RestClientResponseException e) {
-            throw mapUserModificationException("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+            throw mapUserModificationException("Das Konto konnte nicht angelegt werden.", e);
         }
 
         if (response.getStatusCode().isError()) {
             throw switch (response.getStatusCode()) {
                 case HttpStatus.BAD_REQUEST ->  ResponseException
-                        .badRequest("Die Mitarbeiter:in konnte nicht erstellt werden. Ungültige Daten wurden übermittelt.");
+                        .badRequest("Das Konto konnte nicht angelegt werden. Prüfen Sie die Eingaben.");
                 case HttpStatus.FORBIDDEN ->  ResponseException
-                        .badRequest("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu erstellen.");
+                        .badRequest("Die Anbindung an den Identitätsanbieter hat keine Berechtigung, Konten anzulegen.");
                 default -> ResponseException
-                        .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden. Status-Code: " + response.getStatusCode());
+                        .internalServerError("Das Konto konnte nicht angelegt werden. Status-Code: " + response.getStatusCode());
             };
         }
 
@@ -134,7 +134,7 @@ public class KeyCloakApiService {
         try {
             keycloakUsers = mapper.readerForListOf(KeycloakUser.class).readValue(response.body());
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
+            throw ResponseException.internalServerError("Das Konto konnte nicht geladen werden.", e);
         }
 
         return keycloakUsers;
@@ -164,7 +164,7 @@ public class KeyCloakApiService {
         try {
             keycloakUser = mapper.readValue(response.body(), KeycloakUser.class);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht geladen werden", e);
+            throw ResponseException.internalServerError("Das Konto konnte nicht geladen werden.", e);
         }
 
         return Optional.of(keycloakUser);
@@ -181,7 +181,7 @@ public class KeyCloakApiService {
         try {
             keycloakUserJson = mapper.writeValueAsString(userToUpdate);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden", e);
+            throw ResponseException.internalServerError("Die Kontodaten konnten nicht aktualisiert werden.", e);
         }
 
         String accessToken;
@@ -189,7 +189,7 @@ public class KeyCloakApiService {
             accessToken = getAccessToken();
         } catch (URISyntaxException | IOException | HttpConnectionException e) {
             throw ResponseException
-                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da keine Anmeldung am Keycloak möglich war.", e);
+                    .internalServerError("Die Kontodaten konnten nicht aktualisiert werden, da die Anmeldung beim Identitätsanbieter fehlgeschlagen ist.", e);
         }
 
         URI uri;
@@ -197,7 +197,7 @@ public class KeyCloakApiService {
             uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId);
         } catch (URISyntaxException e) {
             throw ResponseException
-                    .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da die Keycloak-URL ungültig ist.", e);
+                    .internalServerError("Die Kontodaten konnten nicht aktualisiert werden, da die Adresse des Identitätsanbieters ungültig ist.", e);
         }
 
         ResponseEntity<Void> response;
@@ -212,15 +212,15 @@ public class KeyCloakApiService {
                     Void.class
             );
         } catch (RestClientResponseException e) {
-            throw mapUserModificationException("Die Mitarbeiter:in konnte nicht aktualisiert werden.", e);
+            throw mapUserModificationException("Die Kontodaten konnten nicht aktualisiert werden.", e);
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerErrorWithDetails("Die Mitarbeiter:in konnte nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Die Kontodaten konnten nicht aktualisiert werden.", "Status-Code: " + response.getStatusCode());
         }
 
         return retrieveUser(userId)
-                .orElseThrow(() -> ResponseException.internalServerError("Die Mitarbeiter:in konnte nach der Aktualisierung nicht geladen werden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Die Kontodaten konnten nach der Aktualisierung nicht geladen werden."));
     }
 
     public void triggerPasswordReset(String userId) throws ResponseException {
@@ -229,7 +229,7 @@ public class KeyCloakApiService {
             accessToken = getAccessToken();
         } catch (URISyntaxException | IOException | HttpConnectionException e) {
             throw ResponseException
-                    .internalServerError("Der Passwort-Reset kann nicht initiiert werden, da keine Anmeldung am Keycloak möglich war.", e);
+                    .internalServerError("Das Zurücksetzen des Passworts konnte nicht gestartet werden, da die Anmeldung beim Identitätsanbieter fehlgeschlagen ist.", e);
         }
 
         URI uri;
@@ -237,7 +237,7 @@ public class KeyCloakApiService {
             uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/execute-actions-email");
         } catch (URISyntaxException e) {
             throw ResponseException
-                    .internalServerError("Der Passwort-Reset kann nicht initiiert werden, da die Keycloak-URL ungültig ist.", e);
+                    .internalServerError("Das Zurücksetzen des Passworts konnte nicht gestartet werden, da die Adresse des Identitätsanbieters ungültig ist.", e);
         }
 
         ResponseEntity<Void> response;
@@ -252,11 +252,11 @@ public class KeyCloakApiService {
                     Void.class
             );
         } catch (RestClientResponseException e) {
-            throw ResponseException.internalServerError("Der Passwort-Reset kann nicht initiiert werden.", e);
+            throw ResponseException.internalServerError("Das Zurücksetzen des Passworts konnte nicht gestartet werden.", e);
         }
 
         if (response.getStatusCode().isError()) {
-            throw ResponseException.internalServerErrorWithDetails("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
+            throw ResponseException.internalServerErrorWithDetails("Das Zurücksetzen des Passworts konnte nicht gestartet werden.", "Status-Code: " + response.getStatusCode());
         }
     }
 
@@ -280,7 +280,7 @@ public class KeyCloakApiService {
             accessToken = getAccessToken();
         } catch (URISyntaxException | IOException | HttpConnectionException e) {
             throw ResponseException
-                    .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da keine Anmeldung am Keycloak möglich war.", e);
+                    .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da die Anmeldung beim Identitätsanbieter fehlgeschlagen ist.", e);
         }
 
         URI uri;
@@ -288,7 +288,7 @@ public class KeyCloakApiService {
             uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/reset-password");
         } catch (URISyntaxException e) {
             throw ResponseException
-                    .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da die Keycloak-URL ungültig ist.", e);
+                    .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da die Adresse des Identitätsanbieters ungültig ist.", e);
         }
 
         ResponseEntity<Void> response;
@@ -322,7 +322,7 @@ public class KeyCloakApiService {
                 yield ResponseException.badRequestWithDetails(validationError, body);
             }
             case 403 -> ResponseException
-                    .badRequestWithDetails("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu verwalten.", exception.getResponseBodyAsString());
+                    .badRequestWithDetails("Die Anbindung an den Identitätsanbieter hat keine Berechtigung, Konten zu verwalten.", exception.getResponseBodyAsString());
             default -> ResponseException
                     .internalServerError(defaultMessage, exception);
         };

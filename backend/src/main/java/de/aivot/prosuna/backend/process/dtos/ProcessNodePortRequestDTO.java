@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 
 /** A prospective node; initial/import configuration is prepared without persisting it. */
 public record ProcessNodePortRequestDTO(
-        @Nonnull @NotNull @Valid ProcessNodeEntity node,
+        @Nonnull @NotNull(message = "Das Prozesselement muss angegeben werden.") @Valid ProcessNodeEntity node,
         @Nonnull Boolean forImport,
         @Nonnull Boolean useInitialConfiguration
 ) {

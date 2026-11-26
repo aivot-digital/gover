@@ -52,12 +52,12 @@ public interface PaymentProviderDefinition extends PluginComponent {
     ) throws PaymentException {
         // Check that the purpose is not empty
         if (StringUtils.isNullOrEmpty(payload.getPurpose())) {
-            throw new PaymentException("Failed to create payment request. Purpose is empty");
+            throw new PaymentException("Die Zahlungsanforderung kann nicht erstellt werden, da der Verwendungszweck fehlt.");
         }
 
         // Check that the list of paymentItems is not empty
         if (payload.getPaymentItems().isEmpty()) {
-            throw new PaymentException("Failed to create payment request. Products are empty");
+            throw new PaymentException("Die Zahlungsanforderung kann nicht erstellt werden, da keine Positionen angegeben sind.");
         }
 
         // Transform the list of paymentItems to a list of XBezahldienstePaymentItem
@@ -70,7 +70,7 @@ public interface PaymentProviderDefinition extends PluginComponent {
 
         // Check that the list of XBezahldienstePaymentItem is not empty
         if (xBezahldienstePaymentItems.isEmpty()) {
-            throw new PaymentException("No items for payment request");
+            throw new PaymentException("Die Zahlungsanforderung enthält keine Positionen.");
         }
 
         // Construct the payment request
@@ -85,7 +85,7 @@ public interface PaymentProviderDefinition extends PluginComponent {
         request.setRedirectUrl(redirectURL);
 
         if (request.getGrosAmount().equals(BigDecimal.ZERO)) {
-            throw new PaymentException("Gros amount is 0");
+            throw new PaymentException("Der Bruttobetrag der Zahlungsanforderung darf nicht 0 sein.");
         }
 
         return request;

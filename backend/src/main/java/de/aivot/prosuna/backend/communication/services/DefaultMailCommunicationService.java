@@ -148,10 +148,7 @@ public class DefaultMailCommunicationService {
             );
         } catch (MessagingException | MailException | IOException | ResponseException | IllegalArgumentException e) {
             throw new CommunicationException(
-                    "Die E-Mail an %s konnte nicht versendet werden. Die Fehlermeldung lautet: %s".formatted(
-                            recipient,
-                            e.getMessage()
-                    ),
+                    "Die E-Mail an %s konnte nicht versendet werden.".formatted(recipient),
                     e
             );
         }

@@ -43,7 +43,7 @@ const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
 const KEYCLOAK_PERSON_NAME_REGEX = /^[^<>&"$%!#?§;*~/\\|^=\[\]{}()\u0000-\u001F\u007F]+$/;
 
 const createPersonNameSchema = (fieldLabel: 'Vorname' | 'Nachname') => yup
-    .string()
+    .string().typeError('Bitte geben Sie einen Text ein.')
     .trim()
     .required(`Bitte einen ${fieldLabel === 'Vorname' ? 'Vornamen' : 'Nachnamen'} angeben.`)
     .max(KEYCLOAK_PERSON_NAME_MAX_CHARACTERS, `${fieldLabel} darf maximal ${KEYCLOAK_PERSON_NAME_MAX_CHARACTERS} Zeichen lang sein.`)
@@ -59,19 +59,19 @@ const Schema = yup.object({
     firstName: createPersonNameSchema('Vorname'),
     lastName: createPersonNameSchema('Nachname'),
     email: yup
-        .string()
+        .string().typeError('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
         .trim()
         .email('Bitte eine gültige E-Mail-Adresse angeben.')
         .max(KEYCLOAK_EMAIL_MAX_CHARACTERS, `Die E-Mail-Adresse darf maximal ${KEYCLOAK_EMAIL_MAX_CHARACTERS} Zeichen lang sein.`)
         .required('Bitte eine E-Mail-Adresse angeben.'),
     enabled: yup
-        .boolean()
-        .required(),
+        .boolean().typeError('Geben Sie an, ob das Konto aktiviert ist.')
+        .required('Geben Sie an, ob das Konto aktiviert ist.'),
     systemRoleId: yup
-        .number()
+        .number().typeError('Bitte wählen Sie eine gültige Systemrolle aus.')
         .nullable()
         .required('Bitte eine Systemrolle auswählen.'),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 const DELETION_BLOCKING_TASK_STATUSES = new Set<ProcessTaskStatus>([
     ProcessTaskStatus.Running,

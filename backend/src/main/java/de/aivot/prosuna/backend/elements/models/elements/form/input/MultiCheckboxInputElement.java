@@ -156,7 +156,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     private void testRequiredOptionsMet(@Nonnull List<String> values) throws ValidationException {
         if (minimumRequiredOptions != null && values.size() < minimumRequiredOptions) {
-            throw new ValidationException(this, "Mindestens " + minimumRequiredOptions + " Optionen müssen ausgewählt werden.");
+            throw new ValidationException(this, "Die erforderliche Mindestanzahl an ausgewählten Optionen beträgt " + minimumRequiredOptions + ".");
         }
     }
 

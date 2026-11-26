@@ -247,7 +247,7 @@ public class IdentitySlotService {
         var identityId = slot.getId();
         if (identityId == null || identityId.isBlank()) {
             throw ResponseException.internalServerError(
-                    "Für den konfigurierten Identitäts-Slot fehlt eine gültige ID."
+                    "Für die konfigurierte Identität fehlt eine gültige ID."
             );
         }
         return identityId;

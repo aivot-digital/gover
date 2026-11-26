@@ -30,7 +30,7 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
     @Override
     public List<Map<String, Object>> formatValue(Object value) {
         if (fields == null) {
-            throw new IllegalStateException("TableField must have at least one column defined.");
+            throw new IllegalStateException("Für die Tabelle wurden keine Spalten konfiguriert.");
         }
 
         List<Map<String, Object>> res = new LinkedList<>();
@@ -105,14 +105,14 @@ public class TableInputElement extends BaseInputElement<List<Map<String, Object>
             String actualLabel = actualRows == 1 ? "Zeile" : "Zeilen";
             String minLabel = minimumRequiredRows == 1 ? "Zeile" : "Zeilen";
 
-            throw new ValidationException(this, "Es müssen mindestens " + minimumRequiredRows + " " + minLabel + " hinzugefügt werden (derzeit nur " + actualRows + " " + actualLabel + ").");
+            throw new ValidationException(this, "Die Tabelle benötigt mindestens " + minimumRequiredRows + " " + minLabel + " (derzeit " + actualRows + " " + actualLabel + ").");
         }
 
         if (maximumRows != null && maximumRows > 0 && value.size() > maximumRows) {
             String maxLabel = maximumRows == 1 ? "Zeile" : "Zeilen";
             String actualLabel = value.size() == 1 ? "Zeile" : "Zeilen";
 
-            throw new ValidationException(this, "Es dürfen maximal " + maximumRows + " " + maxLabel + " hinzugefügt werden (derzeit " + value.size() + " " + actualLabel + ").");
+            throw new ValidationException(this, "Die Tabelle darf höchstens " + maximumRows + " " + maxLabel + " enthalten (derzeit " + value.size() + " " + actualLabel + ").");
         }
 
         int rowNumber = 1;

@@ -19,7 +19,7 @@ public class PresetEntity implements LockVersioned {
 
     @Nonnull
     @Column(length = 255)
-    @Length(min = 3, max = 255)
+    @Length(min = 3, max = 255, message = "Der Titel der Vorlage muss zwischen 3 und 255 Zeichen lang sein.")
     private String title;
 
     // Maintained by database triggers on the preset versions, which do not raise the lock version. Never written by updates,

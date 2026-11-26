@@ -64,24 +64,24 @@ import {AssetsApiService} from '../../../assets/assets-api-service';
 import {resolveThemeLogoKey} from '../../../../theming/resolve-theme-logo';
 
 export const ThemeSchema = yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name des Erscheinungsbildes muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name des Erscheinungsbildes darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Erscheinungsbildes ist ein Pflichtfeld.'),
-    primaryColor: yup.string()
+    primaryColor: yup.string().typeError('Bitte geben Sie eine gültige HEX-Farbe ein.')
         .matches(/^#[0-9a-f]{6}$/i, 'Die Markenfarbe muss eine gültige HEX-Farbe sein.')
         .required('Die Markenfarbe ist ein Pflichtfeld.'),
-    secondaryColor: yup.string()
+    secondaryColor: yup.string().typeError('Bitte geben Sie eine gültige HEX-Farbe ein.')
         .matches(/^#[0-9a-f]{6}$/i, 'Die Sekundärfarbe muss eine gültige HEX-Farbe sein.')
         .required('Die Sekundärfarbe ist ein Pflichtfeld.'),
-    primaryColorDark: yup.string()
+    primaryColorDark: yup.string().typeError('Bitte geben Sie eine gültige HEX-Farbe ein.')
         .nullable()
         .matches(/^#[0-9a-f]{6}$/i, 'Die Primärfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.'),
-    secondaryColorDark: yup.string()
+    secondaryColorDark: yup.string().typeError('Bitte geben Sie eine gültige HEX-Farbe ein.')
         .nullable()
         .matches(/^#[0-9a-f]{6}$/i, 'Die Sekundärfarbe für das dunkle Farbschema muss eine gültige HEX-Farbe sein.'),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export function ThemeDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -219,7 +219,7 @@ export function ThemeDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Das Erscheinungsbild konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -235,7 +235,7 @@ export function ThemeDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Das Erscheinungsbild konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -283,7 +283,7 @@ export function ThemeDetailsPageIndex() {
             }
         } catch (error) {
             console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
+            dispatch(showErrorSnackbar('Es konnte nicht geprüft werden, ob das Erscheinungsbild gelöscht werden kann.'));
         } finally {
             setIsBusy(false);
         }
@@ -301,7 +301,7 @@ export function ThemeDetailsPageIndex() {
                 });
                 dispatch(showSuccessSnackbar('Das Erscheinungsbild wurde erfolgreich gelöscht.'));
             })
-            .catch((error) => dispatch(showApiErrorSnackbar(error, 'Beim Löschen ist ein Fehler aufgetreten.')))
+            .catch((error) => dispatch(showApiErrorSnackbar(error, 'Das Erscheinungsbild konnte nicht gelöscht werden.')))
             .finally(() => setIsBusy(false));
     };
 

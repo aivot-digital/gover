@@ -167,8 +167,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
             layout = ElementPOJOMapper.createFromPOJO(DataChangeActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für das Datenänderungselement: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
             );
         }
 

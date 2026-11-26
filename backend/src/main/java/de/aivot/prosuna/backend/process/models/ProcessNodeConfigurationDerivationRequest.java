@@ -6,7 +6,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.NotNull;
 
 public record ProcessNodeConfigurationDerivationRequest(
-        @Nonnull @NotNull AuthoredElementValues authoredElementValues,
-        @Nonnull @NotNull ElementDerivationOptions derivationOptions
+        @Nonnull @NotNull(message = "Die Eingabedaten der Formularelemente müssen angegeben werden.") AuthoredElementValues authoredElementValues,
+        @Nonnull @NotNull(message = "Die Einstellungen zur Ableitung der Formulardaten müssen angegeben werden.") ElementDerivationOptions derivationOptions
 ) {
 }

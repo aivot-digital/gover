@@ -52,7 +52,7 @@ const requiredShadowedString = (
     emptyOverrideMessage: string,
     missingValueMessage: string,
     isCreatedAsChild: boolean,
-) => yup.string()
+) => yup.string().typeError('Bitte geben Sie einen Text ein.')
     .nullable()
     .test('required-or-inherited', missingValueMessage, function (value) {
         return value != null || canInheritRequiredSetting(this, isCreatedAsChild);
@@ -65,10 +65,10 @@ const requiredShadowedString = (
         return value.trim().length > 0;
     });
 
-const optionalShadowedString = () => yup.string()
+const optionalShadowedString = () => yup.string().typeError('Bitte geben Sie einen Text ein.')
     .nullable();
 
-const optionalShadowedTrimmedString = () => yup.string()
+const optionalShadowedTrimmedString = () => yup.string().typeError('Bitte geben Sie einen Text ein.')
     .transform((value, originalValue) => {
         if (typeof originalValue === 'string' && originalValue.trim().length === 0) {
             return '';
@@ -152,7 +152,7 @@ const validateOptionalContactInfo = () => optionalShadowedInfo();
 
 const validateOptionalContactPhone = (legacyValue?: string | null) => optionalShadowedPhone(legacyValue);
 
-const validateThemeId = () => yup.number()
+const validateThemeId = () => yup.number().typeError('Wählen Sie ein gültiges Erscheinungsbild aus.')
     .optional()
     .nullable()
     .test('valid-theme', 'Bitte wählen Sie ein Standard-Erscheinungsbild aus oder übernehmen Sie den geerbten Wert.', (value) => {
@@ -171,7 +171,7 @@ export const createDepartmentSchema = (
     isCreatedAsChild: boolean,
     legacyDepartment?: Pick<DepartmentEntity, 'specialSupportPhone' | 'technicalSupportPhone'> | null,
 ) => yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name der Organisationseinheit muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name der Organisationseinheit darf maximal 96 Zeichen lang sein.')
@@ -188,7 +188,7 @@ export const createDepartmentSchema = (
     commonPrivacy: validateRichTextRequired('Die Datenschutzerklärung', isCreatedAsChild),
     commonAccessibility: validateRichTextRequired('Die Barrierefreiheitserklärung', isCreatedAsChild),
     themeId: validateThemeId(),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export const DepartmentSchema = createDepartmentSchema(false);
 
@@ -420,7 +420,7 @@ export function DepartmentsDetailsPageIndex() {
                 })
                 .catch(err => dispatch(showApiErrorSnackbar(
                     err,
-                    'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+                    'Die Organisationseinheit konnte nicht gespeichert werden.',
                 )))
                 .finally(() => {
                     setIsBusy(false);
@@ -436,7 +436,7 @@ export function DepartmentsDetailsPageIndex() {
                 })
                 .catch(err => dispatch(showApiErrorSnackbar(
                     err,
-                    'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+                    'Die Organisationseinheit konnte nicht gespeichert werden.',
                 )))
                 .finally(() => {
                     setIsBusy(false);
@@ -479,7 +479,7 @@ export function DepartmentsDetailsPageIndex() {
             }
         } catch (error) {
             console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
+            dispatch(showErrorSnackbar('Es konnte nicht geprüft werden, ob die Organisationseinheit gelöscht werden kann.'));
         } finally {
             setIsBusy(false);
         }
@@ -497,7 +497,7 @@ export function DepartmentsDetailsPageIndex() {
                 });
                 dispatch(showSuccessSnackbar('Die Organisationseinheit wurde erfolgreich gelöscht.'));
             })
-            .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
+            .catch(() => dispatch(showErrorSnackbar('Die Organisationseinheit konnte nicht gelöscht werden.')))
             .finally(() => setIsBusy(false));
     };
 

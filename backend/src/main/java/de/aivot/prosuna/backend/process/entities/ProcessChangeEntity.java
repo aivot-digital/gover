@@ -25,16 +25,16 @@ public class ProcessChangeEntity {
     private Long id;
 
     @Nonnull
-    @NotNull(message = "Der Zeitstempel darf nicht null sein.")
+    @NotNull(message = "Der Zeitstempel muss angegeben werden.")
     private Instant timestamp;
 
     @Nonnull
-    @NotNull(message = "Die Konto-ID darf nicht null sein.")
+    @NotNull(message = "Die Konto-ID muss angegeben werden.")
     @Length(min = 36, max = 36, message = "Die Konto-ID muss genau 36 Zeichen lang sein.")
     private String userId;
 
     @Nonnull
-    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID muss angegeben werden.")
     private Integer processId;
 
     @Nullable
@@ -47,11 +47,11 @@ public class ProcessChangeEntity {
     private Integer processEdgeId;
 
     @Nonnull
-    @NotNull(message = "Der Änderungstyp darf nicht null sein.")
+    @NotNull(message = "Der Änderungstyp muss angegeben werden.")
     private ProcessChangeType changeType;
 
     @Nonnull
-    @NotNull(message = "Die Änderungen dürfen nicht null sein.")
+    @NotNull(message = "Die Änderungen müssen angegeben werden.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = DiffItemsConverter.class)
     private List<DiffItem> diff;

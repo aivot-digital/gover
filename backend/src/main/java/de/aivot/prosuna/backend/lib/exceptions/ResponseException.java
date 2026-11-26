@@ -21,8 +21,8 @@ public class ResponseException extends Exception {
     public ResponseException() {
         super();
         this.status = HttpStatus.INTERNAL_SERVER_ERROR;
-        this.title = "Unbekannter Fehler";
-        this.details = "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.";
+        this.title = "Unerwarteter Fehler";
+        this.details = "Ein unerwarteter Fehler ist aufgetreten.";
     }
 
     public ResponseException(
@@ -157,7 +157,7 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException notFound() {
-        return ResponseException.notFound("Die angeforderte Ressource wurde nicht gefunden.");
+        return ResponseException.notFound("Der angeforderte Eintrag wurde nicht gefunden.");
     }
 
     public static ResponseException notFound(String message, Object... args) {
@@ -181,7 +181,7 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException locked() {
-        return ResponseException.locked("Die angeforderte Ressource wird gerade bearbeitet. Bitte versuchen Sie es später erneut.");
+        return ResponseException.locked("Der angeforderte Eintrag wird gerade bearbeitet. Bitte versuchen Sie es später erneut.");
     }
 
     public static ResponseException locked(String message) {
@@ -189,7 +189,7 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException internalServerError() {
-        return ResponseException.internalServerError("Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+        return ResponseException.internalServerError("Ein unerwarteter Fehler ist aufgetreten.");
     }
 
     public static ResponseException internalServerError(String message) {
@@ -217,11 +217,11 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException internalServerError(Throwable cause) {
-        return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.", cause);
+        return new ResponseException(HttpStatus.INTERNAL_SERVER_ERROR, "Ein unerwarteter Fehler ist aufgetreten.", cause);
     }
 
     public static ResponseException notAcceptable() {
-        return ResponseException.notAcceptable("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
+        return ResponseException.notAcceptable("Die angeforderten Daten sind im gewünschten Format nicht verfügbar.");
     }
 
     public static ResponseException notAcceptable(String format, Object... args) {

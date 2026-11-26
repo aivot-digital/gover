@@ -58,7 +58,7 @@ public class JsonMapperConfiguration {
                 return (Instant) context.handleWeirdStringValue(
                         Instant.class,
                         value,
-                        "Expected an ISO-8601 instant with Z or an explicit numeric offset"
+                        "Der Zeitstempel muss im ISO-8601-Format mit Sekunden angegeben werden."
                 );
             }
         }

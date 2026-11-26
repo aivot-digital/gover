@@ -94,7 +94,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         }
 
         if (addedItems < files.length) {
-            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
+            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da die maximale Anzahl an Dateien erreicht ist.'));
         }
 
         props.onChange(fileUploadItems.length > 0 ? fileUploadItems : null);
