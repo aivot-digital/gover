@@ -26,26 +26,32 @@ public class NoCodeIfOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Berechnen Sie beispielsweise den Betrag pro Eintrag, wenn Einträge vorliegen. Bei einer Anzahl von null können Sie stattdessen einen Hinweis ausgeben.
 
                 # Welche Werte werden benötigt?
-                - Als **Bedingung** wählen Sie „Wahr“ oder „Falsch“ aus der festen Auswahl. Über „Andere Wertquelle verwenden …“ können Sie eine Wertquelle oder Funktion nutzen.
-                - Für **Ergebnis bei Wahr** und **Ergebnis bei Falsch** können Sie einen Text frei eingeben, einen Wert aus einer Wertquelle übernehmen oder eine Funktion verwenden.
+
+                - **Bedingung:** Wählen Sie **„Wahr“** oder **„Falsch“** aus der festen Auswahl. Über **„Andere Wertquelle verwenden …“** können Sie eine Wertquelle oder Funktion nutzen.
+                - **Ergebnis bei Wahr:** Geben Sie einen Text frei ein, übernehmen Sie einen Wert aus einer Wertquelle oder verwenden Sie eine Funktion.
+                - **Ergebnis bei Falsch:** Geben Sie einen Text frei ein, übernehmen Sie einen Wert aus einer Wertquelle oder verwenden Sie eine Funktion.
 
                 # Welches Ergebnis erhalten Sie?
-                Ist die Bedingung wahr, erhalten Sie den Wert aus „Ergebnis bei Wahr“. Ist sie falsch, erhalten Sie den Wert aus „Ergebnis bei Falsch“. Die Funktion übernimmt den ausgewählten Wert mit seinem Datentyp unverändert.
+
+                Ist die Bedingung wahr, erhalten Sie den Wert aus **„Ergebnis bei Wahr“**. Ist sie falsch, erhalten Sie den Wert aus **„Ergebnis bei Falsch“**. Die Funktion übernimmt den ausgewählten Wert mit seinem Datentyp unverändert.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie **„Wenn, dann, sonst“**. Verwenden Sie für die **„Bedingung“** die Funktion **„Größer als“**. Wählen Sie bei „Zahl“ die Variable „Anzahl“ und geben Sie bei „Vergleichszahl“ `0` ein.
-                2. Wählen Sie für **„Ergebnis bei Wahr“** die Funktion **„Dividieren“**. Übernehmen Sie bei „Ausgangszahl“ die Variable „Gesamtbetrag“ und bei „Teiler 1“ die Variable „Anzahl“.
+
+                1. Wählen Sie **„Wenn, dann, sonst“**. Verwenden Sie für die **„Bedingung“** die Funktion **„Größer als“**. Wählen Sie bei **„Zahl“** die Variable **„Anzahl“** und geben Sie bei **„Vergleichszahl“** `0` ein.
+                2. Wählen Sie für **„Ergebnis bei Wahr“** die Funktion **„Dividieren“**. Übernehmen Sie bei **„Ausgangszahl“** die Variable **„Gesamtbetrag“** und bei **„Teiler 1“** die Variable **„Anzahl“**.
                 3. Wählen Sie für **„Ergebnis bei Falsch“** die freie Texteingabe und geben Sie `Keine Einträge` ein.
 
-                Aufgeklappt sehen Sie bei „wenn“ die Funktion „Größer als“, bei „dann“ die Funktion „Dividieren“ und bei „sonst“ den Text „Keine Einträge“. Zugeklappt und in der Vorschau lesen Sie `wenn („Anzahl“ ist größer als 0), dann („Gesamtbetrag“ geteilt durch „Anzahl“), sonst „Keine Einträge“`.
+                Aufgeklappt sehen Sie bei **„wenn“** die Funktion **„Größer als“**, bei **„dann“** die Funktion **„Dividieren“** und bei **„sonst“** den Text `Keine Einträge`. Zugeklappt und in der Vorschau lesen Sie `wenn („Anzahl“ ist größer als 0), dann („Gesamtbetrag“ geteilt durch „Anzahl“), sonst „Keine Einträge“`.
 
-                Bei einem Gesamtbetrag von `24` und einer Anzahl von `3` erhalten Sie die Zahl `8`. Bei einer Anzahl von `0` erhalten Sie den Text „Keine Einträge“. Die Division wird nur bei einer Anzahl größer als null ausgeführt.
+                Bei einem Gesamtbetrag von `24` und einer Anzahl von `3` erhalten Sie die Zahl `8`. Bei einer Anzahl von `0` erhalten Sie den Text `Keine Einträge`. Die Division wird nur bei einer Anzahl größer als null ausgeführt.
 
                 # Was ist zu beachten?
-                Die Funktion wertet zuerst die Bedingung aus. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text „Nein“, führen zu einer Fehlermeldung. Anschließend wertet die Funktion nur den gewählten Ergebniszweig aus. Im Testlauf steht am übersprungenen Zweig „Nicht ausgewertet“ mit der Begründung.
+
+                Die Funktion wertet zuerst die Bedingung aus. Ein fehlender Wert und leerer Text gelten als falsch. Die Texte `wahr`, `falsch`, `true` und `false` werden unabhängig von Groß- und Kleinschreibung erkannt. Andere Werte, etwa Zahlen, Listen oder der Text `Nein`, führen zu einer Fehlermeldung. Anschließend wertet die Funktion nur den gewählten Ergebniszweig aus. Im Testlauf steht am übersprungenen Zweig **„Nicht ausgewertet“** mit der Begründung.
                 """;
     }
 

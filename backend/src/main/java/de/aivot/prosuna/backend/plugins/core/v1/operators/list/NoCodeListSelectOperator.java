@@ -31,22 +31,27 @@ public class NoCodeListSelectOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Lesen Sie eine Spalte einer Tabelle oder ein bestimmtes Feld aus allen Einträgen einer Liste aus, beispielsweise die Beträge aller Positionen.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Eine Tabelle oder Liste mit Einträgen, die Felder enthalten. Sie können eine andere Wertquelle oder Funktion verwenden oder die Liste selbst als JSON eingeben, beispielsweise `[{"betrag": 100}, {"betrag": 50}]`.
 
-                **Feldname:** Der technische Name des Feldes, beispielsweise `betrag`. Diesen Namen geben Sie frei ein oder übernehmen ihn aus einer anderen Wertquelle beziehungsweise Funktion. Es gibt keine vorgegebenen Auswahlwerte.
+                - **Liste:** Eine Tabelle oder Liste mit Einträgen, die Felder enthalten. Sie können eine andere Wertquelle oder Funktion verwenden oder die Liste selbst als JSON eingeben, beispielsweise `[{"betrag": 100}, {"betrag": 50}]`.
+                - **Feldname:** Der technische Name des Feldes, beispielsweise `betrag`. Diesen Namen geben Sie frei ein oder übernehmen ihn aus einer anderen Wertquelle beziehungsweise Funktion. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine neue Liste mit einem Feldwert je ursprünglichem Eintrag. Fehlt das Feld in einem Eintrag, steht an dieser Stelle ein fehlender Wert.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Feldwerte aus Liste“**. Verwenden Sie für **Liste** die Variable „Positionen“ mit `[{"betrag": 100}, {"betrag": 50}]` und geben Sie als **Feldname** `betrag` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `Werte des Feldes „betrag“ aus „Positionen“`. Das Ergebnis ist `[100, 50]`. Setzen Sie diese Funktion als **Liste** in **„Summe einer Liste“** ein, um die Gesamtsumme `150` zu berechnen.
+                1. Wählen Sie **„Feldwerte aus Liste“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Positionen“** mit `[{"betrag": 100}, {"betrag": 50}]` und geben Sie als **„Feldname“** `betrag` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Werte des Feldes „betrag“ aus „Positionen“`. Das Ergebnis ist `[100, 50]`. Setzen Sie diese Funktion als **„Liste“** in **„Summe einer Liste“** ein, um die Gesamtsumme `150` zu berechnen.
 
                 # Was ist zu beachten?
+
                 Verwenden Sie den technischen Feldnamen mit passender Groß- und Kleinschreibung. Es wird nur ein direktes Feld gelesen; ein Name wie `person.name` ist kein Zugriff auf ein verschachteltes Feld. Die Reihenfolge und Anzahl der Einträge bleiben erhalten; ein fehlender Eintrag ergibt an seiner Stelle einen fehlenden Wert. Jeder andere Eintrag muss ein Objekt sein, sonst erhalten Sie eine Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }

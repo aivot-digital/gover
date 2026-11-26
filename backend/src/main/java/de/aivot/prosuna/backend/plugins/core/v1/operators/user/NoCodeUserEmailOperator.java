@@ -43,22 +43,28 @@ public class NoCodeUserEmailOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Lesen Sie die hinterlegte E-Mail-Adresse eines internen Kontos, beispielsweise um sie in einem weiteren Ausdruck zu verwenden.
 
                 # Welche Werte werden benötigt?
-                **Konto-ID:** Die eindeutige ID des internen Kontos. Sie können die ID frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Eine Auswahl von Konten wird hier nicht angeboten.
+
+                - **Konto-ID:** Die eindeutige ID des internen Kontos. Sie können die ID frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Eine Auswahl von Konten wird hier nicht angeboten.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Die zum Konto gespeicherte E-Mail-Adresse als Text. Ist die ID leer oder das Konto nicht vorhanden, erhalten Sie keinen Wert (`null`).
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie **„E-Mail-Adresse zum Konto“**.
                 2. Verwenden Sie bei **„Konto-ID“** eine Wertquelle, die die ID des gewünschten Kontos liefert.
-                3. Für ein Konto mit der hinterlegten E-Mail-Adresse `erika.muster@example.org` erhalten Sie den Text `erika.muster@example.org`.
 
-                Zugeklappt und in der Vorschau lesen Sie beispielsweise: **E-Mail-Adresse zum Konto „Zugewiesenes Konto“**, wenn Sie eine Variable mit dieser Bezeichnung verwenden.
+                Für ein Konto mit der hinterlegten E-Mail-Adresse `erika.muster@example.org` erhalten Sie den Text `erika.muster@example.org`.
+
+                Zugeklappt und in der Vorschau lesen Sie beispielsweise: `E-Mail-Adresse zum Konto „Zugewiesenes Konto“`, wenn Sie eine Variable mit dieser Bezeichnung verwenden.
 
                 # Was ist zu beachten?
+
                 Die Eingabe muss die Konto-ID liefern, nicht den Namen oder eine vollständige Auswahl aus Organisationseinheiten, Teams und Personen. Die Funktion verwendet die bei der Ausführung hinterlegte Adresse; die Vorschau ruft sie nicht ab.
                 """;
     }

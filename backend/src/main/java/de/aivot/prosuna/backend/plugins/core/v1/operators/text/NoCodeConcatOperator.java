@@ -30,22 +30,30 @@ public class NoCodeConcatOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Setzen Sie einen Text aus einzelnen Werten zusammen, beispielsweise eine Kennung mit einem festen Präfix und einem Zusatz.
 
                 # Welche Werte werden benötigt?
-                Sie benötigen mindestens zwei Werte in der gewünschten Reihenfolge. Sie können jeden Wert frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
+
+                - **Wert 1:** Der erste Wert des Textes.
+                - **Wert 2:** Der Wert, der direkt an den ersten Wert angefügt wird.
+
+                Sie benötigen mindestens zwei Werte in der gewünschten Reihenfolge. Sie können jeden Wert frei eingeben oder über **„Andere Wertquelle verwenden …“** aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Ein Text, der die Werte in ihrer angegebenen Reihenfolge direkt aneinanderfügt.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie **„Werte zu Text zusammenfügen“**.
-                2. Geben Sie bei „Wert 1“ `AZ-` ein. Verwenden Sie bei „Wert 2“ die Variable „Kennung“, die `2026-17` liefert.
-                3. Wählen Sie „Weiteren Wert hinzufügen“ und geben Sie bei „Wert 3“ `-A` ein.
+                2. Geben Sie bei **„Wert 1“** `AZ-` ein. Verwenden Sie bei **„Wert 2“** die Variable **„Kennung“**, die `2026-17` liefert.
+                3. Wählen Sie **„Weiteren Wert hinzufügen“** und geben Sie bei **„Wert 3“** `-A` ein.
 
                 Zugeklappt und in der Vorschau lesen Sie `Text aus „AZ-“, „Kennung“ und „-A“`. Das Ergebnis ist `AZ-2026-17-A`.
 
                 # Was ist zu beachten?
+
                 Leerzeichen am Anfang und Ende jedes Textbausteins bleiben erhalten. Soll zwischen zwei Werten ein Leerzeichen stehen, können Sie es am Ende des ersten Wertes oder als eigenen Textbaustein eingeben. Fehlende Werte werden als leerer Text eingefügt.
                 """;
     }

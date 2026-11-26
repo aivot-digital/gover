@@ -33,22 +33,30 @@ public class NoCodeDivideOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Verteilen Sie einen Gesamtbetrag gleichmäßig, beispielsweise zuerst auf mehrere Gruppen und anschließend auf gleich viele Personen je Gruppe.
 
                 # Welche Werte werden benötigt?
-                Sie benötigen eine „Ausgangszahl“ und mindestens einen Teiler. Jeder Teiler muss von null verschieden sein. Jede Zahl können Sie frei eingeben oder über „Andere Wertquelle verwenden …“ aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
+
+                - **Ausgangszahl:** Die Zahl, die geteilt wird.
+                - **Teiler 1:** Die Zahl, durch die geteilt wird.
+
+                Sie benötigen mindestens einen Teiler. Jeder Teiler muss von null verschieden sein. Jede Zahl können Sie frei eingeben oder über **„Andere Wertquelle verwenden …“** aus einer Wertquelle oder Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Die Funktion teilt die Ausgangszahl durch den ersten Teiler und anschließend jedes Zwischenergebnis durch den nächsten Teiler. Nach jedem Schritt rundet sie auf acht Nachkommastellen.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Dividieren“ als Funktion für einen Zahlenwert.
-                2. Tragen Sie für einen Betrag von 24 Euro bei „Ausgangszahl“ `24` ein. Geben Sie bei „Teiler 1“ für drei Gruppen `3` ein.
-                3. Wählen Sie „Weitere Zahl hinzufügen“ und geben Sie bei „Teiler 2“ für zwei Personen je Gruppe `2` ein.
 
-                Der Ausdruck `24 geteilt durch 3 geteilt durch 2` ergibt `4`. Auf jede Person entfallen 4 Euro.
+                1. Wählen Sie **„Dividieren“** als Funktion für einen Zahlenwert.
+                2. Tragen Sie für einen Betrag von `24` Euro bei **„Ausgangszahl“** `24` ein. Geben Sie bei **„Teiler 1“** für drei Gruppen `3` ein.
+                3. Wählen Sie **„Weitere Zahl hinzufügen“** und geben Sie bei **„Teiler 2“** für zwei Personen je Gruppe `2` ein.
+
+                Der Ausdruck `24 geteilt durch 3 geteilt durch 2` ergibt `4`. Auf jede Person entfallen `4` Euro.
 
                 # Was ist zu beachten?
+
                 Verwenden Sie Zahlen. Zahlen als Text werden übernommen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt; ein fehlender Teiler führt deshalb zu einer Fehlermeldung. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen ebenfalls zu einer Fehlermeldung.
                 """;
     }

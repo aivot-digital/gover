@@ -29,22 +29,27 @@ public class NoCodeValueOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Übernehmen Sie einen Wert unverändert, etwa einen Text aus einer Wertquelle als Ergebnis eines Ausdrucks.
 
                 # Welche Werte werden benötigt?
-                Einen „Wert“. Einen festen Text können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie den Wert aus einer Wertquelle oder einer Funktion übernehmen.
+
+                - **Wert:** Der Wert, den Sie übernehmen möchten. Einen festen Text können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über **„Andere Wertquelle verwenden …“** können Sie den Wert aus einer Wertquelle oder einer Funktion übernehmen.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Genau den übergebenen Wert, ohne ihn zu verändern. Wird ein Text übergeben, erhalten Sie denselben Text; Werte anderer Typen behalten ihren Typ.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Wert übernehmen“ als Funktion für einen Textwert.
-                2. Wählen Sie für „Wert“ über „Andere Wertquelle verwenden …“ die Wertquelle „E-Mail-Adresse“.
+
+                1. Wählen Sie **„Wert übernehmen“** als Funktion für einen Textwert.
+                2. Wählen Sie für **„Wert“** über **„Andere Wertquelle verwenden …“** die Wertquelle **„E-Mail-Adresse“**.
                 3. Verwenden Sie den Ausdruck beispielsweise als berechneten Text.
 
-                Enthält die Wertquelle „person@example.org“, erhalten Sie genau diesen Text.
+                Enthält die Wertquelle `person@example.org`, erhalten Sie genau diesen Text.
 
                 # Was ist zu beachten?
+
                 Ein selbst eingegebener Text wird wörtlich übernommen. Die Eingabe `email` sucht kein Formularelement mit dieser Kennung. Um einen vorhandenen Wert zu übernehmen, wählen Sie die entsprechende Wertquelle.
                 """;
     }

@@ -29,22 +29,28 @@ public class NoCodeListLengthOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Zählen Sie die Einträge einer Liste, beispielsweise die ausgewählten Städte oder die Zeilen einer Tabelle.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Die Liste, deren Einträge Sie zählen möchten.
+
+                - **Liste:** Die Liste, deren Einträge Sie zählen möchten.
 
                 Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine ganze Zahl mit der Anzahl der Einträge. Eine leere Liste ergibt `0`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Anzahl der Listeneinträge“**. Verwenden Sie für **Liste** die Variable „Städte“ mit `["Berlin", "Hamburg", "München"]`.
+
+                1. Wählen Sie **„Anzahl der Listeneinträge“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Städte“** mit `["Berlin", "Hamburg", "München"]`.
 
                 Zugeklappt und in der Vorschau lesen Sie: `Anzahl der Einträge in „Städte“`. Das Ergebnis ist `3`. Verwenden Sie die Funktion beispielsweise als ersten Wert von **„Größer als“** und vergleichen Sie mit `0`.
 
                 # Was ist zu beachten?
+
                 Jeder Eintrag zählt mit, auch doppelte Einträge und Einträge ohne Wert. Diese Funktion zählt alle Einträge; **„Vorkommen in Liste zählen“** zählt nur die passenden Einträge eines gesuchten Wertes. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }

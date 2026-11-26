@@ -32,28 +32,33 @@ public class NoCodeCreateDurationOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Bilden Sie eine Zeitdauer aus einer Anzahl von Sekunden, Minuten, Stunden oder Tagen, zum Beispiel für eine Bearbeitungszeit von anderthalb Stunden.
 
                 # Welche Werte werden benötigt?
+
                 - **Anzahl:** Wie viele Einheiten die Zeitdauer umfasst. Sie können die Zahl frei eingeben; es gibt keine festen Auswahlwerte.
                 - **Einheit:** Wählen Sie **„Sekunden“**, **„Minuten“**, **„Stunden“** oder **„Tage“**. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
 
                 Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine Zahl: die gesamte Zeitdauer in Sekunden. Dieses Ergebnis können Sie in einem Zeitdauer-Feld verwenden oder mit **„Zeitdauer formatieren“** als Text ausgeben.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für einen berechneten Zahlenwert **„Zeitdauer bilden“**.
-                2. Legen Sie als **„Anzahl“** **1.5** fest und wählen Sie als **„Einheit“** **„Stunden“**.
+                2. Legen Sie als **„Anzahl“** `1.5` fest und wählen Sie als **„Einheit“** **„Stunden“**.
                 3. Verwenden Sie das Ergebnis beispielsweise als **„Zeitdauer in Sekunden“** von **„Zeitdauer formatieren“**.
 
-                Das Ergebnis sind **5400 Sekunden**. Zugeklappt lesen Sie: **„1.5 Stunden als Zeitdauer in Sekunden“**.
+                Das Ergebnis sind `5400 Sekunden`. Zugeklappt lesen Sie: `1.5 Stunden als Zeitdauer in Sekunden`.
 
                 # Was ist zu beachten?
-                Ein Tag entspricht immer **24 Stunden**. Die Funktion berechnet eine Zeitdauer und berücksichtigt weder Kalenderdaten noch Zeitumstellungen.
 
-                Die Anzahl darf Nachkommastellen haben, sofern daraus genau ganze Sekunden entstehen; **0.999999999** Sekunden führen beispielsweise zu einer Fehlermeldung. Fehlende oder leere Zahlenwerte werden als **0** behandelt. Für Dezimalzahlen in einer selbst festgelegten Eingabe verwenden Sie einen Punkt, zum Beispiel **1.5**. Aus einer anderen Wertquelle wird auch ein Dezimalkomma wie **1,5** erkannt.
+                Ein Tag entspricht immer `24 Stunden`. Die Funktion berechnet eine Zeitdauer und berücksichtigt weder Kalenderdaten noch Zeitumstellungen.
+
+                Die Anzahl darf Nachkommastellen haben, sofern daraus genau ganze Sekunden entstehen; `0.999999999` Sekunden führen beispielsweise zu einer Fehlermeldung. Fehlende oder leere Zahlenwerte werden als `0` behandelt. Für Dezimalzahlen in einer selbst festgelegten Eingabe verwenden Sie einen Punkt, zum Beispiel `1.5`. Aus einer anderen Wertquelle wird auch ein Dezimalkomma wie `1,5` erkannt.
                 """;
     }
 

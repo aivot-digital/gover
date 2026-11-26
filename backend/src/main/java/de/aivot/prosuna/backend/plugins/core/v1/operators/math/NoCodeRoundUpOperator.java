@@ -32,23 +32,31 @@ public class NoCodeRoundUpOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Runden Sie eine Zahl auf die gewünschte Anzahl von Nachkommastellen. Liegt die Zahl genau zwischen zwei möglichen Ergebnissen, wird das weiter von null entfernte Ergebnis gewählt.
 
                 # Welche Werte werden benötigt?
-                Eine „Zahl“ und die gewünschte Anzahl der „Nachkommastellen“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können die Eingaben aus Wertquellen oder Funktionen stammen.
+
+                - **Zahl:** Die Zahl, die gerundet wird.
+                - **Nachkommastellen:** Die gewünschte Anzahl der Nachkommastellen.
+
+                Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über **„Andere Wertquelle verwenden …“** können die Eingaben aus Wertquellen oder Funktionen stammen.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Die nächstgelegene Zahl mit der gewählten Anzahl an Nachkommastellen. Bei gleichem Abstand wird weg von null gerundet.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Runden (bei gleichem Abstand von null weg)“ als Funktion für einen Zahlenwert.
-                2. Tragen Sie bei „Zahl“ `2.345` und bei „Nachkommastellen“ `2` ein.
+
+                1. Wählen Sie **„Runden (bei gleichem Abstand von null weg)“** als Funktion für einen Zahlenwert.
+                2. Tragen Sie bei **„Zahl“** `2.345` und bei **„Nachkommastellen“** `2` ein.
                 3. Verwenden Sie das Ergebnis beispielsweise als berechneten Zahlenwert.
 
                 Das Ergebnis ist `2.35`. Bei `2.346` erhalten Sie mit beiden Rundungsfunktionen `2.35`, bei `2.344` jeweils `2.34`.
 
                 # Was ist zu beachten?
-                Es wird nicht grundsätzlich aufgerundet. Die Rundungsrichtung unterscheidet sich nur bei genau gleichem Abstand zu beiden Ergebnissen. Auch negative Zahlen werden dann weg von null gerundet: `-2.345` ergibt bei zwei Nachkommastellen `-2.35`. Mit `0` Nachkommastellen wird auf ganze Zahlen gerundet, mit negativen Angaben auf Zehner, Hunderter usw.: `2345` ergibt bei `-2` Nachkommastellen `2300`. Für „Nachkommastellen“ ist eine ganze Zahl von `-15` bis `15` erforderlich. Als „Zahl“ können Sie auch Text wie `2.345` oder `2,345` verwenden. Ein fehlender Wert und leerer Text gelten als `0`; andere Texte und Werte führen zu einer Fehlermeldung.
+
+                Es wird nicht grundsätzlich aufgerundet. Die Rundungsrichtung unterscheidet sich nur bei genau gleichem Abstand zu beiden Ergebnissen. Auch negative Zahlen werden dann weg von null gerundet: `-2.345` ergibt bei zwei Nachkommastellen `-2.35`. Mit `0` Nachkommastellen wird auf ganze Zahlen gerundet, mit negativen Angaben auf Zehner, Hunderter usw.: `2345` ergibt bei `-2` Nachkommastellen `2300`. Für **„Nachkommastellen“** ist eine ganze Zahl von `-15` bis `15` erforderlich. Als **„Zahl“** können Sie auch Text wie `2.345` oder `2,345` verwenden. Ein fehlender Wert und leerer Text gelten als `0`; andere Texte und Werte führen zu einer Fehlermeldung.
                 """;
     }
 

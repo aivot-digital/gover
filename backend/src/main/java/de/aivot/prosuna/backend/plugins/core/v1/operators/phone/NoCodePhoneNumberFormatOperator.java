@@ -16,25 +16,30 @@ public class NoCodePhoneNumberFormatOperator extends NoCodeOperator {
     @Override @Nonnull public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Geben Sie eine Telefonnummer mit landesüblichen Trennzeichen aus, zum Beispiel als lesbare Kontaktnummer in einer Nachricht.
 
                 # Welche Werte werden benötigt?
+
                 - **Telefonnummer:** Eine Telefonnummer mit internationaler Ländervorwahl. Sie können sie frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
                 - **Darstellung:** In der Variante mit dieser zusätzlichen Eingabe wählen Sie **„International“** oder **„National“**. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Die Darstellung kann auch aus einer anderen Wertquelle oder einer Funktion stammen.
 
                 Ohne die zusätzliche Eingabe wird die internationale Darstellung verwendet.
 
                 # Welches Ergebnis erhalten Sie?
-                Einen Text mit der formatierten Telefonnummer. Bei einer fehlenden, leeren oder nicht plausiblen Nummer erhalten Sie keinen Wert (**null**). Die ursprüngliche Telefonnummer bleibt unverändert.
+
+                Einen Text mit der formatierten Telefonnummer. Bei einer fehlenden, leeren oder nicht plausiblen Nummer erhalten Sie keinen Wert (`null`). Die ursprüngliche Telefonnummer bleibt unverändert.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für einen Textwert **„Telefonnummer formatieren“**.
-                2. Wählen Sie als **„Telefonnummer“** ein Telefonnummer-Feld als andere Wertquelle oder legen Sie **+4930123456** selbst fest.
+                2. Wählen Sie als **„Telefonnummer“** ein Telefonnummer-Feld als andere Wertquelle oder legen Sie `+4930123456` selbst fest.
                 3. Verwenden Sie das Ergebnis beispielsweise als Kontaktnummer in einem berechneten Text.
 
-                Ohne zusätzliche Darstellung erhalten Sie **„+49 30 123456“**. Zugeklappt lesen Sie: **„formatierte Telefonnummer von „+4930123456““**. Mit der Darstellung **„National“** lautet das Ergebnis **„030 123456“**.
+                Ohne zusätzliche Darstellung erhalten Sie `+49 30 123456`. Zugeklappt lesen Sie: `formatierte Telefonnummer von „+4930123456“`. Mit der Darstellung **„National“** lautet das Ergebnis `030 123456`.
 
                 # Was ist zu beachten?
+
                 Die nationale Darstellung ist für die Verwendung innerhalb des jeweiligen Landes gedacht. Auch dafür muss die Eingabe zunächst die internationale Ländervorwahl enthalten.
 
                 Die Funktion verwendet die Plausibilitätsprüfung und bestätigt weder die tatsächliche Vergabe noch die Erreichbarkeit. Separate Nebenstellenzusätze werden abgelehnt. Ein leerer Wert für **„Darstellung“** verwendet **„International“**.

@@ -40,25 +40,30 @@ public class NoCodeCombineDateAndTimeOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Verbinden Sie ein Datum und eine Uhrzeit zu einem Zeitpunkt, zum Beispiel für den Beginn einer Veranstaltung.
 
                 # Welche Werte werden benötigt?
+
                 - **Datum:** Ein vollständiges Datum mit Tag, Monat und Jahr.
                 - **Uhrzeit:** Die Uhrzeit an diesem Datum.
 
                 Beide Werte können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für selbst festgelegte Werte stehen ein Datumsfeld und ein Uhrzeitfeld bereit; eine feste Auswahlliste gibt es nicht.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Einen Zeitpunkt. Datum und Uhrzeit werden in der Zeitzone der Anwendung zusammengeführt.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für den gewünschten Zeitpunkt **„Datum und Uhrzeit verbinden“**.
-                2. Legen Sie unter **„Datum“** den **22.11.2026** und unter **„Uhrzeit“** **09:30:00 Uhr** fest.
+                2. Legen Sie unter **„Datum“** den `22.11.2026` und unter **„Uhrzeit“** `09:30:00 Uhr` fest.
                 3. Verwenden Sie das Ergebnis zum Beispiel als Ausgangszeitpunkt in **„Zum Zeitpunkt hinzufügen“**.
 
-                In der Zeitzone **Europe/Berlin** entsteht der Zeitpunkt **22.11.2026, 09:30:00 Uhr**. Zugeklappt lesen Sie: **„22.11.2026 um 09:30:00 Uhr“**.
+                In der Zeitzone `Europe/Berlin` entsteht der Zeitpunkt `22.11.2026, 09:30:00 Uhr`. Zugeklappt lesen Sie: `22.11.2026 um 09:30:00 Uhr`.
 
                 # Was ist zu beachten?
+
                 Die Zeitzone der Anwendung bestimmt, welcher Zeitpunkt gemeint ist. Ein Monat ohne Tag oder ein Jahr allein reicht dafür nicht aus.
 
                 Bei einer Zeitumstellung kann eine Uhrzeit ausfallen oder zweimal vorkommen. Ausfallende Uhrzeiten werden abgelehnt; bei einer doppelt vorkommenden Uhrzeit wird das erste Vorkommen verwendet.

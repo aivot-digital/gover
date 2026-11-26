@@ -44,28 +44,33 @@ public class NoCodeSelectionIncludesOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob eine Auswahl bestimmte Organisationseinheiten, Teams oder Personen enthält, beispielsweise ein zuständiges Team. Auch die Auswahl aus einem Zuweisungskontext kann geprüft werden.
 
                 # Welche Werte werden benötigt?
+
                 - **Auswahl:** Die zu prüfenden Einträge, beispielsweise aus einem Formularelement oder einem Zuweisungskontext.
                 - **Gesuchte Einträge:** Ein einzelner gesuchter Eintrag oder eine weitere Auswahl, deren Einträge alle enthalten sein sollen.
 
                 Beide Eingaben können aus einer anderen Wertquelle oder einer Funktion stammen. Einen einzelnen Eintrag können Sie auch frei als Text eingeben: `orgUnit:12` für die Organisationseinheit mit ID `12`, `team:7` für das Team mit ID `7` oder `user:abc` für das Konto mit ID `abc`. Eine Auswahl mit Namen wird hier nicht angeboten. Für mehrere Einträge verwenden Sie eine Wertquelle oder eine Funktion, die eine entsprechende Auswahl liefert.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn alle gesuchten Einträge in der Auswahl enthalten sind. Die Auswahl darf weitere Einträge enthalten. Sind Einträge nicht enthalten oder ist eine der beiden Auswahlen leer, erhalten Sie **Falsch**.
+
+                `Wahr`, wenn alle gesuchten Einträge in der Auswahl enthalten sind. Die Auswahl darf weitere Einträge enthalten. Sind Einträge nicht enthalten oder ist eine der beiden Auswahlen leer, erhalten Sie `Falsch`.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie **„Auswahl enthält Einträge“**.
                 2. Verwenden Sie bei **„Auswahl“** das Formularelement **„Zuständige Teams“**.
                 3. Legen Sie bei **„Gesuchte Einträge“** den Text `team:7` selbst fest.
 
-                Enthält das Formularelement das Team mit ID `7`, ist das Ergebnis **Wahr**. Zugeklappt und in der Vorschau lesen Sie: **Wert von „Zuständige Teams“ enthält alle Einträge aus „team:7“**.
+                Enthält das Formularelement das Team mit ID `7`, ist das Ergebnis `Wahr`. Zugeklappt und in der Vorschau lesen Sie: `Wert von „Zuständige Teams“ enthält alle Einträge aus „team:7“`.
 
                 # Was ist zu beachten?
+
                 Verglichen werden Art und ID eines Eintrags, nicht seine sichtbare Bezeichnung. Eine Organisationseinheit und ein Team mit derselben ID gelten als unterschiedliche Einträge. Die Reihenfolge und mehrfache Vorkommen desselben Eintrags sind für den Vergleich unerheblich.
 
-                Einträge ohne ID oder ohne unterstützte Art werden beim Vergleich ausgelassen. Enthält eine der beiden Auswahlen dadurch keinen gültigen Eintrag, erhalten Sie **Falsch**.
+                Einträge ohne ID oder ohne unterstützte Art werden beim Vergleich ausgelassen. Enthält eine der beiden Auswahlen dadurch keinen gültigen Eintrag, erhalten Sie `Falsch`.
 
                 Mit **„Nicht“** können Sie prüfen, ob nicht alle gesuchten Einträge enthalten sind. Bei mehreren gesuchten Einträgen bedeutet das nicht, dass keiner davon enthalten ist.
                 """;

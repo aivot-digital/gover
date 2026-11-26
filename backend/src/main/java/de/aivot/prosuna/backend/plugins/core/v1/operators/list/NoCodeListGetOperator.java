@@ -30,22 +30,29 @@ public class NoCodeListGetOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Lesen Sie einen bestimmten Eintrag aus einer Liste, beispielsweise die erste oder letzte ausgewählte Stadt.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Die Liste mit den Einträgen. **Position (ab 0):** Die Stelle des gesuchten Eintrags. `0` bezeichnet den ersten Eintrag, `1` den zweiten. Mit `-1` erhalten Sie den letzten und mit `-2` den vorletzten Eintrag.
+
+                - **Liste:** Die Liste mit den Einträgen.
+                - **Position (ab 0):** Die Stelle des gesuchten Eintrags. `0` bezeichnet den ersten Eintrag, `1` den zweiten. Mit `-1` erhalten Sie den letzten und mit `-2` den vorletzten Eintrag.
 
                 Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert. Die Position geben Sie frei als ganze Zahl ein oder übernehmen sie aus einer anderen Wertquelle beziehungsweise Funktion.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Der Eintrag an der angegebenen Position. Liegt die Position außerhalb der Liste, erhalten Sie keinen Wert.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Eintrag aus Liste“**. Verwenden Sie für **Liste** die Variable „Städte“ mit `["Berlin", "Hamburg", "München"]` und geben Sie unter **Position (ab 0)** `2` ein.
+
+                1. Wählen Sie **„Eintrag aus Liste“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Städte“** mit `["Berlin", "Hamburg", "München"]` und geben Sie unter **„Position (ab 0)“** `2` ein.
 
                 Zugeklappt und in der Vorschau lesen Sie: `Eintrag an Position 2 aus „Städte“ (Zählung ab 0)`. Das Ergebnis ist der Text `München`. Verwenden Sie die Funktion beispielsweise als Text einer weiteren Textfunktion.
 
                 # Was ist zu beachten?
+
                 Die Zählung beginnt bei `0`, nicht bei `1`. Negative Positionen zählen vom Ende der Liste aus. Eine leere Liste liefert keinen Eintrag. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }

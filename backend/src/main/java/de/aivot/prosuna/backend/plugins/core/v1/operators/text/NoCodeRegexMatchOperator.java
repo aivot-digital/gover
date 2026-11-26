@@ -34,22 +34,29 @@ public class NoCodeRegexMatchOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob der gesamte Text einer Regel entspricht, beispielsweise ob eine Postleitzahl genau fünf Ziffern enthält.
 
                 # Welche Werte werden benötigt?
-                **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten. **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
+
+                - **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten.
+                - **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
 
                 Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn der gesamte Text zum Suchmuster passt; andernfalls **Falsch**.
+
+                `Wahr`, wenn der gesamte Text zum Suchmuster passt; andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie in einer Bedingung **„Text passt vollständig zu Muster“**. Verwenden Sie für **Text** die Variable „Postleitzahl“, die `10115` liefert, und geben Sie als **Suchmuster** `[0-9]{5}` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `„Postleitzahl“ passt vollständig zum Muster „[0-9]{5}“`. Das Ergebnis ist **Wahr**. Der Text `PLZ 10115` ergibt dagegen **Falsch**.
+                1. Wählen Sie in einer Bedingung **„Text passt vollständig zu Muster“**.
+                2. Verwenden Sie für **„Text“** die Variable **„Postleitzahl“**, die `10115` liefert, und geben Sie als **„Suchmuster“** `[0-9]{5}` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Postleitzahl“ passt vollständig zum Muster „[0-9]{5}“`. Das Ergebnis ist `Wahr`. Der Text `PLZ 10115` ergibt dagegen `Falsch`.
 
                 # Was ist zu beachten?
+
                 Das Suchmuster ist ein regulärer Ausdruck nach Java-Syntax. Es muss den gesamten Text erfassen. Ein leeres Suchmuster passt nur zu einem leeren Text. Möchten Sie nur nach einer passenden Textstelle suchen, verwenden Sie **„Text enthält Muster“**.
                 """;
     }

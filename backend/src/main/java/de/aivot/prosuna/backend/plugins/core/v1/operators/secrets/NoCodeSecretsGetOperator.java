@@ -45,24 +45,29 @@ public class NoCodeSecretsGetOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Verwenden Sie den gespeicherten Wert eines Geheimnisses in einem Ausdruck, beispielsweise einen API-Schlüssel für eine Anbindung.
 
                 # Welche Werte werden benötigt?
-                **Geheimnis-Schlüssel:** Die ID des gespeicherten Geheimnisses. Sie können den Schlüssel im Bereich **„Geheimnisse“** kopieren und hier frei eintragen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Eine Auswahl von Geheimnissen wird hier nicht angeboten.
+
+                - **Geheimnis-Schlüssel:** Die ID des gespeicherten Geheimnisses. Sie können den Schlüssel im Bereich **„Geheimnisse“** kopieren und hier frei eintragen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Eine Auswahl von Geheimnissen wird hier nicht angeboten.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Den entschlüsselten Wert des Geheimnisses als Text. Ist der Schlüssel leer oder kein Geheimnis dazu vorhanden, erhalten Sie keinen Wert (`null`).
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie **„Geheimnis abrufen“**.
                 2. Kopieren Sie den Schlüssel eines vorhandenen Geheimnisses aus **„Geheimnisse“**.
                 3. Legen Sie diesen Schlüssel bei **„Geheimnis-Schlüssel“** selbst fest.
 
                 Für ein Geheimnis mit dem Schlüssel `8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1` und dem beispielhaften Inhalt `test-token` erhalten Sie bei der Ausführung den Text `test-token`.
 
-                Zugeklappt und in der Vorschau lesen Sie: **Wert des Geheimnisses mit Schlüssel „8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1“**.
+                Zugeklappt und in der Vorschau lesen Sie: `Wert des Geheimnisses mit Schlüssel „8b4a1a1e-4a7d-4cf7-b6f8-2f99a2d7c7e1“`.
 
                 # Was ist zu beachten?
+
                 Geben Sie den Schlüssel ein, nicht den Namen oder den Inhalt des Geheimnisses. Ein ungültiger Schlüssel oder ein Fehler beim Entschlüsseln führt zu einer Fehlermeldung. Die Vorschau zeigt den zusammengestellten Ausdruck und ruft den geheimen Wert nicht ab.
                 """;
     }

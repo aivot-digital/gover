@@ -38,7 +38,7 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
         return """
                 # Wofür verwenden Sie diese Funktion?
 
-                Mit „Heutiges Datum“ verwenden Sie das Datum des heutigen Tages in Berechnungen und Vergleichen, beispielsweise um einen Stichtag zu bestimmen.
+                Mit **„Heutiges Datum“** verwenden Sie das Datum des heutigen Tages in Berechnungen und Vergleichen, beispielsweise um einen Stichtag zu bestimmen.
 
                 # Welche Werte werden benötigt?
 
@@ -50,22 +50,22 @@ public class NoCodeCreateTodayOperator extends NoCodeOperator {
 
                 # Beispiel im No-Code-Editor
 
-                Sie möchten den Stichtag ermitteln, der 18 Jahre vor heute liegt.
+                Sie möchten den Stichtag ermitteln, der `18` Jahre vor heute liegt.
 
-                1. Wählen Sie die Funktion „Vom Datum abziehen“.
-                2. Wählen Sie für „Ausgangsdatum“ die Option „Mit Funktion ermitteln“ und anschließend „Heutiges Datum“.
-                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `18` ein.
-                4. Wählen Sie für „Einheit“ die Option „Jahre“.
+                1. Wählen Sie die Funktion **„Vom Datum abziehen“**.
+                2. Wählen Sie für **„Ausgangsdatum“** die Option **„Mit Funktion ermitteln“** und anschließend **„Heutiges Datum“**.
+                3. Wählen Sie für **„Anzahl“** die Option **„Wert selbst festlegen“** und geben Sie `18` ein.
+                4. Wählen Sie für **„Einheit“** die Option **„Jahre“**.
 
                 Der fertige Ausdruck liest sich so:
 
-                **(heutiges Datum) minus 18 Jahre**
+                `(heutiges Datum) minus 18 Jahre`
 
-                Bei einer Auswertung am 22.11.2026 ist das Ergebnis **22.11.2008**.
+                Bei einer Auswertung am `22.11.2026` ist das Ergebnis `22.11.2008`.
 
                 # Was ist zu beachten?
 
-                Das Datum wird bei jeder Auswertung neu ermittelt. Innerhalb einer Auswertung liefern alle Vorkommen von „Heutiges Datum“ dasselbe Datum; zwei Vorkommen in einem Ausdruck sind deshalb immer gleich. Welcher Tag als heute gilt, richtet sich nach der für Prosuna eingestellten Zeitzone.
+                Das Datum wird bei jeder Auswertung neu ermittelt. Innerhalb einer Auswertung liefern alle Vorkommen von **„Heutiges Datum“** dasselbe Datum; zwei Vorkommen in einem Ausdruck sind deshalb immer gleich. Welcher Tag als heute gilt, richtet sich nach der für Prosuna eingestellten Zeitzone.
                 """;
     }
 

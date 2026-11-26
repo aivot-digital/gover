@@ -36,7 +36,7 @@ public class NoCodeCreateNowOperator extends NoCodeOperator {
         return """
                 # Wofür verwenden Sie diese Funktion?
 
-                Mit „Aktueller Zeitpunkt“ verwenden Sie das aktuelle Datum mit Uhrzeit, beispielsweise um zu prüfen, ob ein geplanter Termin bereits erreicht ist.
+                Mit **„Aktueller Zeitpunkt“** verwenden Sie das aktuelle Datum mit Uhrzeit, beispielsweise um zu prüfen, ob ein geplanter Termin bereits erreicht ist.
 
                 # Welche Werte werden benötigt?
 
@@ -50,19 +50,19 @@ public class NoCodeCreateNowOperator extends NoCodeOperator {
 
                 Sie möchten prüfen, ob ein Termin bereits erreicht oder überschritten ist.
 
-                1. Wählen Sie die Funktion „Zeitpunkte vergleichen“.
-                2. Wählen Sie für „Zeitpunkt“ die Option „Aus Formularelement übernehmen“ und anschließend ein Datums- und Zeitfeld, beispielsweise „Termin“.
-                3. Wählen Sie für „Vergleichsart“ die Option „früher als oder gleich“.
-                4. Wählen Sie für „Vergleichszeitpunkt“ die Option „Mit Funktion ermitteln“ und anschließend „Aktueller Zeitpunkt“.
+                1. Wählen Sie die Funktion **„Zeitpunkte vergleichen“**.
+                2. Wählen Sie für **„Zeitpunkt“** die Option **„Aus Formularelement übernehmen“** und anschließend ein Datums- und Zeitfeld, beispielsweise **„Termin“**.
+                3. Wählen Sie für **„Vergleichsart“** die Option **„früher als oder gleich“**.
+                4. Wählen Sie für **„Vergleichszeitpunkt“** die Option **„Mit Funktion ermitteln“** und anschließend **„Aktueller Zeitpunkt“**.
 
-                Angenommen, der Ausdruck wird am 22.11.2026 um 13:30 Uhr ausgewertet:
+                Angenommen, der Ausdruck wird am `22.11.2026 um 13:30 Uhr` ausgewertet:
 
-                - Ein Termin am selben Tag um **13:00 Uhr** ergibt **Wahr**.
-                - Ein Termin am selben Tag um **14:00 Uhr** ergibt **Falsch**.
+                - Ein Termin am selben Tag um `13:00 Uhr` ergibt `Wahr`.
+                - Ein Termin am selben Tag um `14:00 Uhr` ergibt `Falsch`.
 
                 # Was ist zu beachten?
 
-                Der Zeitpunkt wird bei jeder Auswertung neu ermittelt. Innerhalb einer Auswertung liefern alle Vorkommen von „Aktueller Zeitpunkt“ denselben Zeitpunkt; zwei Vorkommen in einem Ausdruck sind deshalb immer gleich. Die Darstellung von Datum und Uhrzeit richtet sich nach der für Prosuna eingestellten Zeitzone.
+                Der Zeitpunkt wird bei jeder Auswertung neu ermittelt. Innerhalb einer Auswertung liefern alle Vorkommen von **„Aktueller Zeitpunkt“** denselben Zeitpunkt; zwei Vorkommen in einem Ausdruck sind deshalb immer gleich. Die Darstellung von Datum und Uhrzeit richtet sich nach der für Prosuna eingestellten Zeitzone.
                 """;
     }
 

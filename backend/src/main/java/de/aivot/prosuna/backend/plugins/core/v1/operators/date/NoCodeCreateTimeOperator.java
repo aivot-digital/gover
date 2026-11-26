@@ -31,9 +31,11 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Bilden Sie eine Uhrzeit, wenn Stunde, Minute und Sekunde einzeln vorliegen, zum Beispiel für die tägliche Öffnungszeit.
 
                 # Welche Werte werden benötigt?
+
                 - **Stunde:** Die Stunde im 24-Stunden-Format.
                 - **Minute:** Die Minute innerhalb der Stunde.
                 - **Sekunde:** Die Sekunde innerhalb der Minute.
@@ -41,19 +43,22 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
                 Sie können ganze Zahlen selbst eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine Uhrzeit auf die Sekunde genau, ohne Datum und ohne Zeitzone. Diese können Sie beispielsweise mit **„Uhrzeiten vergleichen“** prüfen.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie im Eingabefeld **„Uhrzeit“** von **„Uhrzeiten vergleichen“** die Funktion **„Uhrzeit bilden“**.
-                2. Geben Sie als **„Stunde“** **14**, als **„Minute“** **30** und als **„Sekunde“** **0** ein.
+                2. Geben Sie als **„Stunde“** `14`, als **„Minute“** `30` und als **„Sekunde“** `0` ein.
                 3. Vergleichen Sie das Ergebnis beispielsweise mit der Uhrzeit aus einem Formularelement.
 
-                Das Ergebnis ist **14:30:00 Uhr**. Die zugeklappte Darstellung nennt alle eingegebenen Bestandteile: **„Uhrzeit bilden: Stunde: 14; Minute: 30; Sekunde: 0“**.
+                Das Ergebnis ist `14:30:00 Uhr`. Die zugeklappte Darstellung nennt alle eingegebenen Bestandteile: `Uhrzeit bilden: Stunde: 14; Minute: 30; Sekunde: 0`.
 
                 # Was ist zu beachten?
+
                 Die Funktion bildet eine Uhrzeit und keinen Zeitpunkt. Wenn Sie zusätzlich ein Datum berücksichtigen möchten, verwenden Sie **„Datum und Uhrzeit verbinden“**.
 
-                Ältere Ausdrücke können nur Stunde und Minute enthalten. Dort wird die Sekunde als **0** ergänzt.
+                Ältere Ausdrücke können nur Stunde und Minute enthalten. Dort wird die Sekunde als `0` ergänzt.
                 """;
     }
 

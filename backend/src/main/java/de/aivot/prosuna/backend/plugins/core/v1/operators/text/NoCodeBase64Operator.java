@@ -33,22 +33,28 @@ public class NoCodeBase64Operator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Wandeln Sie einen Text in Base64 um, wenn eine Anbindung dieses Textformat erwartet.
 
                 # Welche Werte werden benötigt?
-                **Text:** Der zu kodierende Text.
+
+                - **Text:** Der zu kodierende Text.
 
                 Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Ein Text mit der Base64-Kodierung des Eingabetextes.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Text als Base64 kodieren“** und geben Sie unter **Text** `Hallo` ein.
+
+                1. Wählen Sie **„Text als Base64 kodieren“**.
+                2. Geben Sie unter **„Text“** `Hallo` ein.
 
                 Zugeklappt und in der Vorschau lesen Sie: `„Hallo“ als Base64`. Das Ergebnis ist `SGFsbG8=`. Verwenden Sie den Ergebnistext dort, wo die Anbindung einen Base64-kodierten Text benötigt.
 
                 # Was ist zu beachten?
+
                 Der Text wird mit der Zeichenkodierung UTF-8 verarbeitet, auch bei Umlauten. Ein fehlender oder leerer Text ergibt einen leeren Text. Base64 ist eine Kodierung, keine Verschlüsselung. Diese Funktion dekodiert keine Base64-Texte.
                 """;
     }
