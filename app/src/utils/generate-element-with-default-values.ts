@@ -329,7 +329,7 @@ const elementConstructors: {
     }),
     [ElementType.Text]: (id) => ({
         ...makeInputBase(ElementType.Text, id),
-        label: 'Text',
+        label: 'Texteingabe',
         autocomplete: undefined,
         placeholder: undefined,
         isMultiline: false,
@@ -403,7 +403,7 @@ const elementConstructors: {
     }),
     [ElementType.RichTextInput]: (id) => ({
         ...makeInputBase(ElementType.RichTextInput, id),
-        label: 'Markdown-Eingabe',
+        label: 'Texteingabe mit Formatierung',
         reducedMode: false,
         maxCharacters: 5000,
     }),

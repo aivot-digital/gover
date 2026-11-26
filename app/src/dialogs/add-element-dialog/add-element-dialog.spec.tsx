@@ -62,7 +62,7 @@ describe('AddElementDialog', () => {
             );
 
             const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
-            expect(within(dialog).getByText('Text', {exact: true})).toBeInTheDocument();
+            expect(within(dialog).getByText('Texteingabe', {exact: true})).toBeInTheDocument();
             expect(within(dialog).queryByText('Geheimnis-Auswahl')).not.toBeInTheDocument();
 
             await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Geheimnis');
@@ -104,7 +104,7 @@ describe('AddElementDialog', () => {
         ['repeating sections', ElementType.ReplicatingContainer],
         ['the introduction', ElementType.IntroductionStep],
         ['summaries', ElementType.SummaryLayout],
-    ])('offers the Markdown field in customer forms inside %s', async (_, parentType) => {
+    ])('offers formatted text input in customer forms inside %s', async (_, parentType) => {
         const user = userEvent.setup();
         render(
             <AddElementDialog
@@ -118,8 +118,8 @@ describe('AddElementDialog', () => {
         );
 
         const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
-        await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Markdown');
-        expect(await within(dialog).findByText('Markdown-Eingabe', {exact: true})).toBeInTheDocument();
+        await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Formatierung');
+        expect(await within(dialog).findByText('Texteingabe mit Formatierung', {exact: true})).toBeInTheDocument();
     });
 
     it('focuses search on every opening and restores focus after closing with Escape', async () => {

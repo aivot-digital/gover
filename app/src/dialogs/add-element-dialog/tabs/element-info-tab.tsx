@@ -649,7 +649,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
 
             <AlertComponent color={'info'}>
                 Für Zahlenfolgen ohne rechnerische Bedeutung – wie Postleitzahlen, Steuernummern oder Kundennummern –
-                verwenden Sie bitte das Text-Element. In diesem bleiben z. B. führende Nullen erhalten und es findet
+                verwenden Sie bitte das Element „Texteingabe“. In diesem bleiben z. B. führende Nullen erhalten und es findet
                 keine automatische
                 Formatierung statt.
             </AlertComponent>
@@ -960,8 +960,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Text]: (
         <Box>
             <Typography>
-                Das Text-Element ermöglicht Ihnen, Texteingaben von Nutzer:innen entgegenzunehmen.
-                Es beinhaltet zudem vielfältige Möglichkeiten für die Validierung der getätigten Eingaben.
+                Das Element „Texteingabe“ erfasst Texte ohne Formatierung in einer oder mehreren Zeilen.
+                Sie können zum Beispiel die minimale und maximale Zeichenanzahl festlegen und weitere Regeln
+                zur Prüfung der Eingaben hinterlegen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -974,7 +975,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     value="Das ist eine einfache Texteingabe"
                     onChange={() => {
                     }}
-                    hint="Hinweis des Text-Elements"
+                    hint="Hinweis zur Texteingabe"
                 />
             </Box>
 
@@ -1006,7 +1007,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     value="Das ist eine fehlerhafte Texteingabe"
                     onChange={() => {
                     }}
-                    error="Fehler des Text-Elements"
+                    error="Bitte prüfen Sie Ihre Eingabe."
                 />
             </Box>
         </Box>
@@ -1462,10 +1463,15 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.RichTextInput]: (
         <Box>
             <Typography>
-                Das Element „Markdown-Eingabe“ erlaubt die Erfassung formatierter Texte und speichert sie als
-                Markdown. Antragstellende Personen können Text fett oder kursiv setzen und Listen anlegen, in der
-                Sachbearbeitung stehen zusätzlich unter anderem Überschriften und Links zur Verfügung. E-Mails und
-                PDF-Dokumente zeigen den Text formatiert an.
+                Das Element „Texteingabe mit Formatierung“ erfasst Texte, die direkt bei der Eingabe gestaltet werden
+                können. Ausfüllende Personen können Text fett oder kursiv setzen und Listen anlegen.
+                In der Bearbeitungsoberfläche stehen zusätzlich unter anderem Überschriften und Links zur Verfügung.
+                E-Mails und PDF-Dokumente zeigen den Text formatiert an.
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                Bei bearbeitbaren Feldern in der Bearbeitungsoberfläche können Sie über „Markdown-Quelle“ auch direkt
+                Markdown eingeben. In Formularen für Beteiligte und deren Vorschau steht dieser Modus nicht zur Verfügung.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1478,7 +1484,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     value={'## Beispiel\n\n- Erster Punkt\n- Zweiter Punkt'}
                     onChange={() => {
                     }}
-                    hint="Die Eingabe wird als Markdown gespeichert."
+                    hint="Gestalten Sie Ihren Text zum Beispiel mit Fettschrift oder Listen."
                 />
             </Box>
         </Box>

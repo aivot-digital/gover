@@ -198,7 +198,7 @@ describe('createProcessNodeMergeSpec', () => {
         });
         expect(spec.describeConflict!(['configuration', 'formLayout', 'value'], states)).toEqual({...root, propertyLabel: 'Gesamtes Formular'});
         expect(spec.describeConflict!(['configuration', 'formLayout', 'value', 'children', '[first]', 'placeholder'], states)).toEqual({
-            group: {id: '["process-node",1,"configuration","formLayout","first"]', label: 'Formular › Text „Vorname“'},
+            group: {id: '["process-node",1,"configuration","formLayout","first"]', label: 'Formular › Texteingabe „Vorname“'},
             propertyLabel: 'Platzhalter',
         });
     });

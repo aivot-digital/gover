@@ -37,7 +37,7 @@ describe('formLayoutMergeSpec', () => {
 
         expect(result.conflicts).toHaveLength(1);
         expect(formLayoutMergeSpec.label!(result.conflicts[0].path, {base, mine, theirs}))
-            .toBe('Text „Rufname“, Eigenschaft „Titel“');
+            .toBe('Texteingabe „Rufname“, Eigenschaft „Titel“');
     });
 
     it('decides for the whole form when one side moved an element that the other side changed', () => {
@@ -59,7 +59,7 @@ describe('formLayoutMergeSpec', () => {
         const title = formLayoutMergeSpec.describeConflict!(['children', '[g]', 'children', '[a]', 'label'], states);
         const placeholder = formLayoutMergeSpec.describeConflict!(['children', '[g]', 'children', '[a]', 'placeholder'], states);
 
-        expect(title).toEqual({group: {id: '["form","root","a"]', label: 'Text „Rufname“'}, propertyLabel: 'Titel'});
+        expect(title).toEqual({group: {id: '["form","root","a"]', label: 'Texteingabe „Rufname“'}, propertyLabel: 'Titel'});
         expect(placeholder).toEqual({...title, propertyLabel: 'Platzhalter'});
         expect(formLayoutMergeSpec.describeConflict!(['children', '[g]', 'children', '[a]', 'label'], {...states, mine: base}).group.id)
             .toBe(title.group.id);
@@ -72,7 +72,7 @@ describe('formLayoutMergeSpec', () => {
         const first = formLayoutMergeSpec.describeConflict!(['children', '[a]'], states);
         const second = formLayoutMergeSpec.describeConflict!(['children', '[b]'], states);
 
-        expect(first.group.label).toBe('Text „Name“');
+        expect(first.group.label).toBe('Texteingabe „Name“');
         expect(second.group.label).toBe(first.group.label);
         expect(second.group.id).not.toBe(first.group.id);
         expect(first.propertyLabel).toBe('Gesamtes Element');
@@ -92,14 +92,14 @@ describe('formLayoutMergeSpec', () => {
         const value = layout([{...text('a', 'Vorname'), options: [{id: 'b', label: 'Eine Option', value: 'x'}]}, text('b', 'Nachname')]);
         const description = describeElementConflict(['children', '[a]', 'options', '[b]', 'label'], [value], 'Formular');
 
-        expect(description.group).toEqual({id: '["form","root","a"]', label: 'Text „Vorname“'});
+        expect(description.group).toEqual({id: '["form","root","a"]', label: 'Texteingabe „Vorname“'});
         expect(description.propertyLabel).toBe('Optionen › Eintrag „Eine Option“ › Beschriftung');
     });
 
     it('falls back to an internal name or the element type when no title exists', () => {
         const value = layout([{id: 'a', type: ElementType.Text, label: ' ', name: 'intern'}, {id: 'b', type: ElementType.Text}]);
 
-        expect(describeElementConflict(['children', '[a]', 'placeholder'], [value], 'Formular').group.label).toBe('Text „intern“');
-        expect(describeElementConflict(['children', '[b]', 'placeholder'], [value], 'Formular').group.label).toBe('Text');
+        expect(describeElementConflict(['children', '[a]', 'placeholder'], [value], 'Formular').group.label).toBe('Texteingabe „intern“');
+        expect(describeElementConflict(['children', '[b]', 'placeholder'], [value], 'Formular').group.label).toBe('Texteingabe');
     });
 });

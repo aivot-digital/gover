@@ -45,7 +45,7 @@ public class TextJavascriptV1 implements JavascriptFunctionProvider {
         return """
                 Stellt JavaScript-Hilfsfunktionen für Texte bereit.
 
-                Werte aus Markdown-Eingaben lassen sich in einfachen Text umwandeln. Formatierungszeichen und Escape-Zeichen entfallen, Links werden als Text mit ihrer Adresse geschrieben, Links mit nicht erlaubter Adresse nur als Text. Die Variablenauswahl nutzt diese Funktion, wenn ein Wert aus einer Markdown-Eingabe als Text eingefügt wird.
+                Werte aus dem Element „Texteingabe mit Formatierung“ lassen sich in einfachen Text umwandeln. Formatierungszeichen und Escape-Zeichen entfallen, Links werden als Text mit ihrer Adresse geschrieben, Links mit nicht erlaubter Adresse nur als Text. Die Variablenauswahl nutzt diese Funktion, wenn ein Wert aus diesem Element als Text eingefügt wird.
                 """;
     }
 
