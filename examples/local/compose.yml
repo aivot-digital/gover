@@ -201,7 +201,7 @@ services:
   # Document renderer. It shares the API network namespace so Chromium can load the
   # local Prosuna URL while all other private and public addresses remain denied.
   gotenberg:
-    image: docker.io/gotenberg/gotenberg:8.40.0
+    image: docker.io/gotenberg/gotenberg:9.10.1
     restart: unless-stopped
     network_mode: "service:prosuna_api"
     depends_on:

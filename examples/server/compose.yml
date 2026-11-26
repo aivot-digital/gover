@@ -216,7 +216,7 @@ services:
   # Document renderer with Chromium network access denied by default. The allow-list only
   # permits the public Prosuna URL and temporary local files required for rendering.
   gotenberg:
-    image: docker.io/gotenberg/gotenberg:8.40.0
+    image: docker.io/gotenberg/gotenberg:9.10.1
     restart: unless-stopped
     depends_on:
       prosuna_api:
