@@ -29,7 +29,6 @@ The project contains the following modules and directories:
 * `./default-assets`: The directory that contains the default assets for the Prosuna service, such as default templates
   for PDFs
 * `./container`: The directory contains additional files for the container image
-* `./tools`: The directory contains additional tools for installing a prosuna instance
 
 ### 2.1 Getting started
 
