@@ -11,7 +11,6 @@ import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -134,7 +133,8 @@ public class NumberInputElement extends BaseInputElement<BigDecimal> implements 
             default -> null;
         };
 
-        return res == null ? null : res.setScale(scale, RoundingMode.HALF_UP);
+        // Numbers beyond the digit limit are invalid, like text that is not a number.
+        return res == null ? null : NumberUtils.roundHalfUp(res, scale);
     }
 
     /**
