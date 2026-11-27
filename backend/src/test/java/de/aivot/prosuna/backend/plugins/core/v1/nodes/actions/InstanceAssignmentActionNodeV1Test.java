@@ -62,7 +62,7 @@ class InstanceAssignmentActionNodeV1Test {
                 .thenReturn(List.of(option("recipient"), option("dispatcher")));
         when(resolver.resolveAssignee(anyInt(), anyInt(), anyLong(), anyInt(), anyLong(),
                 nullable(Integer.class), nullable(String.class), any(AssignmentContextInputElementValue.class),
-                anyList(), anySet())).thenReturn(Optional.of("recipient"));
+                anyList(), anySet(), anyBoolean())).thenReturn(Optional.of("recipient"));
     }
 
     @Test
@@ -87,14 +87,14 @@ class InstanceAssignmentActionNodeV1Test {
         verify(assignments).runtimeInstanceOptions(99L, List.of());
         verify(resolver).resolveAssignee(eq(42), eq(3), eq(99L), eq(12), eq(17L),
                 isNull(), eq("previous"), any(AssignmentContextInputElementValue.class),
-                eq(List.of("process_instance.read")), eq(Set.of("recipient", "dispatcher")));
+                eq(List.of("process_instance.read")), eq(Set.of("recipient", "dispatcher")), eq(false));
     }
 
     @Test
     void manualModeAssignsTaskToAuthorizedDispatcher() throws Exception {
         when(resolver.resolveAssignee(anyInt(), anyInt(), anyLong(), anyInt(), anyLong(),
                 nullable(Integer.class), nullable(String.class), any(AssignmentContextInputElementValue.class),
-                anyList(), anySet())).thenReturn(Optional.of("dispatcher"));
+                anyList(), anySet(), anyBoolean())).thenReturn(Optional.of("dispatcher"));
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class,
                 node.init(initContext(config("manual"))));
@@ -107,14 +107,14 @@ class InstanceAssignmentActionNodeV1Test {
         verify(resolver).resolveAssignee(anyInt(), anyInt(), anyLong(), anyInt(), anyLong(),
                 nullable(Integer.class), nullable(String.class), any(AssignmentContextInputElementValue.class),
                 eq(List.of("process_instance.read", "process_instance.edit_task", "process_instance.reassign")),
-                anySet());
+                anySet(), eq(true));
     }
 
     @Test
     void automaticModeFailsWhenNoCandidateCanBeResolved() throws Exception {
         when(resolver.resolveAssignee(anyInt(), anyInt(), anyLong(), anyInt(), anyLong(),
                 nullable(Integer.class), nullable(String.class), any(AssignmentContextInputElementValue.class),
-                anyList(), anySet())).thenReturn(Optional.empty());
+                anyList(), anySet(), anyBoolean())).thenReturn(Optional.empty());
 
         assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
                 () -> node.init(initContext(config("automatic"))));
@@ -358,7 +358,7 @@ class InstanceAssignmentActionNodeV1Test {
         assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, node.init(initContext(manual)));
 
         verify(resolver, times(2)).resolveAssignee(anyInt(), anyInt(), anyLong(), anyInt(), anyLong(),
-                nullable(Integer.class), nullable(String.class), eq(circle), anyList(), anySet());
+                nullable(Integer.class), nullable(String.class), eq(circle), anyList(), anySet(), anyBoolean());
     }
 
     private static ProcessNodeConfigurationValidationContext<InstanceAssignmentActionNodeV1.Config> validationContext(

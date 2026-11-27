@@ -339,7 +339,22 @@ public class ProcessAssignmentService {
      */
     public boolean canReceiveTaskAssignment(@Nonnull String userId, @Nonnull Long instanceId,
                                             @Nonnull List<String> requiredPermissions) {
-        var permissionsToCheck = Stream.concat(TASK_ASSIGNMENT_PERMISSIONS.stream(), requiredPermissions.stream())
+        return canReceiveRuntimeAssignment(userId, instanceId, TASK_ASSIGNMENT_PERMISSIONS, requiredPermissions);
+    }
+
+    /**
+     * Checks the same account and instance rights as {@link #requireRuntimeInstanceAssignee}: the person responsible
+     * for an instance needs only their own read access, not the task permissions, plus any permissions the node adds.
+     */
+    public boolean canReceiveInstanceAssignment(@Nonnull String userId, @Nonnull Long instanceId,
+                                                @Nonnull List<String> requiredPermissions) {
+        return canReceiveRuntimeAssignment(userId, instanceId, List.of(PROCESS_INSTANCE_READ), requiredPermissions);
+    }
+
+    private boolean canReceiveRuntimeAssignment(@Nonnull String userId, @Nonnull Long instanceId,
+                                                @Nonnull List<String> basePermissions,
+                                                @Nonnull List<String> requiredPermissions) {
+        var permissionsToCheck = Stream.concat(basePermissions.stream(), requiredPermissions.stream())
                 .distinct().toList();
         return users.findById(userId)
                 .map(user -> canReceiveAssignment(user, instanceId, permissionsToCheck))
