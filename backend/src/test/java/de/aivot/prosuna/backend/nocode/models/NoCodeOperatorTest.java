@@ -206,6 +206,8 @@ class NoCodeOperatorTest {
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             assertThrows(NoCodeException.class, () -> operator.castToNumber("1e999999999"));
             assertThrows(NoCodeException.class, () -> operator.castToNumber("1e-999999999"));
+            // Precision minus scale overflows int for this exponent.
+            assertThrows(NoCodeException.class, () -> operator.castToNumber("1e2147483647"));
         });
     }
 

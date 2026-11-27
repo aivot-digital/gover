@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
 import de.aivot.prosuna.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.utils.IsoTimestampUtils;
+import de.aivot.prosuna.backend.utils.NumberUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import tools.jackson.core.JacksonException;
@@ -28,8 +29,6 @@ public abstract class NoCodeOperator {
     private static final String NOT_A_BOOLEAN = "Der Wert ist weder wahr noch falsch. Verwenden Sie eine Bedingung oder einen Wahrheitswert.";
     private static final String NOT_A_LIST = "Der Wert ist keine Liste.";
     private static final Pattern DECIMAL_COMMA = Pattern.compile("^[+-]?\\d+,\\d+$");
-    // Numbers with more integer or decimal digits are rejected before calculating with them.
-    private static final int MAX_NUMBER_DIGITS = 100;
     private static final DateTimeFormatter LOCAL_TIME_SECONDS_FORMATTER =
             DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -333,7 +332,7 @@ public abstract class NoCodeOperator {
             throw new NoCodeException("Der Wert ist keine Zahl. Verwenden Sie eine Zahl wie 1.5 oder 1,5.");
         }
         // Security: calculations with enormous exponents, e.g. from the text "1e999999999", would exhaust the memory.
-        if (number.precision() - number.scale() > MAX_NUMBER_DIGITS || number.scale() > MAX_NUMBER_DIGITS) {
+        if (NumberUtils.exceedsDigitLimit(number)) {
             throw new NoCodeException("Die Zahl ist zu groß oder hat zu viele Nachkommastellen.");
         }
         return number;

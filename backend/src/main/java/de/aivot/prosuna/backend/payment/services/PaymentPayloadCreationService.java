@@ -475,6 +475,14 @@ public class PaymentPayloadCreationService {
         if (number == null) {
             throw new PaymentException("%s muss eine Zahl ergeben.", fieldName);
         }
+        // Security: amounts and quantities are rounded later, which never finishes for text such as "1e300000000".
+        if (NumberUtils.exceedsDigitLimit(number)) {
+            throw new PaymentException(
+                    "Der Wert für %s darf vor und nach dem Komma jeweils höchstens %d Stellen haben.",
+                    fieldName,
+                    NumberUtils.MAX_NUMBER_DIGITS
+            );
+        }
         return number;
     }
 
