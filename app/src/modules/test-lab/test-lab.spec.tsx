@@ -1,4 +1,6 @@
 import {fireEvent, render, screen, within} from '@testing-library/react';
+import {alertClasses} from '@mui/material';
+import {rgbToHex} from '@mui/material/styles';
 import {describe, expect, it, vi} from 'vitest';
 import {TestLab} from './test-lab';
 
@@ -59,5 +61,36 @@ describe('TestLab', () => {
         expect(within(systemStatesPanel).getByRole('heading', {name: 'Shell-Fortschritt'})).toBeInTheDocument();
         expect(within(systemStatesPanel).getByRole('heading', {name: 'Fehlerseiten'})).toBeInTheDocument();
         expect(within(systemStatesPanel).getByRole('heading', {name: 'Benachrichtigungen'})).toBeInTheDocument();
+    });
+
+    it('shows the active signal colors and their component variants in both modes', () => {
+        render(<TestLab/>);
+
+        fireEvent.click(screen.getByRole('tab', {name: 'Systemzustände'}));
+        const panel = screen.getByRole('tabpanel', {name: 'Systemzustände'});
+        const gallery = within(panel).getByRole('region', {name: 'Signalfarben'});
+
+        for (const [name, warningFill] of [['Hell', '#ffca79'], ['Dunkel', '#dfb354']]) {
+            const table = within(gallery).getByRole('table', {name});
+            expect(within(table).getAllByRole('columnheader').map((header) => header.textContent))
+                .toEqual(['Variante', 'Fehler', 'Warnung', 'Information', 'Erfolg']);
+            expect(within(table).getAllByRole('rowheader').map((header) => header.textContent))
+                .toEqual([
+                    'Meldung',
+                    'Meldung mit Kontur',
+                    'Gefüllte Meldung',
+                    'Textschaltfläche',
+                    'Schaltfläche mit Kontur',
+                    'Gefüllte Schaltfläche',
+                ]);
+            expect(within(table).getAllByRole('button', {name: 'Warnung'})).toHaveLength(3);
+
+            const filledAlerts = within(table).getByRole('row', {name: /^Gefüllte Meldung/});
+            const warning = within(filledAlerts).getByRole('cell', {name: 'Warnung'});
+            const alert = warning.querySelector(`.${alertClasses.filled}`)!;
+            expect(rgbToHex(getComputedStyle(alert).backgroundColor)).toBe(warningFill);
+        }
+
+        expect(within(gallery).queryByRole('alert')).not.toBeInTheDocument();
     });
 });

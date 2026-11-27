@@ -9,6 +9,7 @@ import {useState} from 'react';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
 import {FieldLayoutGallery} from './field-layout-gallery';
 import {InputModePrototype} from './input-mode-prototype';
+import {SeverityColorGallery} from './severity-color-gallery';
 
 type TestLabArea = 'components' | 'input-modes' | 'system-states';
 
@@ -204,6 +205,10 @@ export function TestLab() {
                             >
                                 Systemzustände
                             </Typography>
+
+                            {activeArea === 'system-states' && <SeverityColorGallery/>}
+
+                            <Divider sx={{my: 3}}/>
 
                             <TextFieldComponent
                                 label="Nachricht"
