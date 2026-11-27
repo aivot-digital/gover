@@ -7,7 +7,7 @@ import {
     type ProcessNodeProvider,
     ProcessNodeType,
 } from '../services/process-node-provider-api-service';
-import {getSearchedNodeProviders, SelectNodeProviderDialog} from './select-node-provider-dialog';
+import {createNodeProviderSearch, SelectNodeProviderDialog} from './select-node-provider-dialog';
 
 vi.mock('../../permissions/hooks/use-permissions', () => ({
     useHasSystemPermission: () => false,
@@ -17,12 +17,13 @@ vi.mock('../../../hooks/use-app-dispatch', () => ({
     useAppDispatch: () => vi.fn(),
 }));
 
-describe('getSearchedNodeProviders', () => {
+describe('createNodeProviderSearch', () => {
     it('searches both the abstract and detailed description', () => {
         const provider = createProvider();
+        const searchProviders = createNodeProviderSearch([provider]);
 
-        expect(getSearchedNodeProviders([provider], 'Kurzfassung')).toEqual([provider]);
-        expect(getSearchedNodeProviders([provider], 'Markdowninhalt')).toEqual([provider]);
+        expect(searchProviders('Kurzfassung')).toEqual([provider]);
+        expect(searchProviders('Markdowninhalt')).toEqual([provider]);
     });
 
     it('keeps renamed variants together with the newer major version first', () => {
@@ -31,7 +32,7 @@ describe('getSearchedNodeProviders', () => {
         const other = createProvider({name: 'Meldung', key: 'de.aivot.test.other'});
         const providers = [older, other, newer];
 
-        expect(getSearchedNodeProviders(providers, '')).toEqual([other, newer, older]);
+        expect(createNodeProviderSearch(providers)('')).toEqual([other, newer, older]);
         expect(providers).toEqual([older, other, newer]);
     });
 });

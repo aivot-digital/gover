@@ -1,4 +1,12 @@
-import {alpha, createTheme, type PaletteMode, type Theme as MuiTheme} from '@mui/material';
+import {
+    alertClasses,
+    type AlertProps,
+    alpha,
+    type ButtonProps,
+    createTheme,
+    type PaletteMode,
+    type Theme as MuiTheme,
+} from '@mui/material';
 import {deDE as datePickerLocale} from '@mui/x-date-pickers/locales';
 import {deDE as coreLocale} from '@mui/material/locale';
 import {grey as muiGrey} from '@mui/material/colors';
@@ -10,6 +18,7 @@ import {
     mixHexColors,
     resolveAppearanceColors,
 } from './resolve-appearance-colors';
+import {APP_SEVERITY_PALETTE} from './severity-palette';
 
 const softShadows = [
     'none',
@@ -196,6 +205,24 @@ export function createAppTheme(
         },
     };
     const baseCssBaselineStyles = baseTheme.components?.MuiCssBaseline?.styleOverrides;
+    const {shades, standardWarning, filled} = APP_SEVERITY_PALETTE[mode];
+    const severityFills = Object.entries(filled ?? {});
+    // MUI applies theme variant styles before a component's own sx styles.
+    const filledAlertVariants = severityFills.map(([severity, {backgroundColor, color}]) => ({
+        props: (props: AlertProps) => props.variant === 'filled' && (props.color ?? props.severity) === severity,
+        style: {backgroundColor, color},
+    }));
+    const containedButtonVariants = severityFills.map(([severity, {backgroundColor, color, hoverBackgroundColor}]) => ({
+        props: (props: ButtonProps) => (
+            props.variant === 'contained' && props.color === severity && !props.disabled && !props.loading
+        ),
+        style: {
+            backgroundColor,
+            color,
+            '@media (hover: hover)': {'&:hover': {backgroundColor: hoverBackgroundColor}},
+        },
+    }));
+    const contrastText = mode === 'dark' ? '#000000' : '#FFFFFF';
     const palette: PaletteOptions = {
         contrastThreshold: MINIMUM_THEME_CONTRAST,
         // Supplying the tinted scale globally keeps MUI and custom consumers of `palette.grey` consistent.
@@ -213,6 +240,10 @@ export function createAppTheme(
             main: resolvedColors.secondary,
             contrastText: resolvedColors.onSecondary,
         },
+        error: {...shades.error, contrastText},
+        warning: {...shades.warning, contrastText},
+        info: {...shades.info, contrastText},
+        success: {...shades.success, contrastText},
         mode,
         background,
     };
@@ -233,8 +264,29 @@ export function createAppTheme(
                     linkStyles,
                 ],
             },
+            MuiAlert: {
+                ...baseTheme.components?.MuiAlert,
+                variants: [
+                    ...(baseTheme.components?.MuiAlert?.variants ?? []),
+                    ...(standardWarning == null ? [] : [{
+                        props: (props: AlertProps) => (
+                            props.variant === 'standard' && (props.color ?? props.severity) === 'warning'
+                        ),
+                        style: {
+                            backgroundColor: standardWarning.backgroundColor,
+                            color: standardWarning.color,
+                            [`& .${alertClasses.icon}`]: {color: standardWarning.iconColor},
+                        },
+                    }]),
+                    ...filledAlertVariants,
+                ],
+            },
             MuiButton: {
                 ...baseTheme?.components?.MuiButton,
+                variants: [
+                    ...(baseTheme.components?.MuiButton?.variants ?? []),
+                    ...containedButtonVariants,
+                ],
                 styleOverrides: {
                     ...baseTheme?.components?.MuiButton?.styleOverrides,
                     // MUI v9 removed variant/color-specific override keys. Root variants preserve

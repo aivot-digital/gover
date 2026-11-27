@@ -46,9 +46,9 @@ on conflict (id) do update
 select setval('themes_id_seq',
               (select max(id) from themes));
 
--- assign the default system theme
+-- use the built-in system theme
 insert into system_configs (key,
                             value)
-values ('SystemTheme', '1')
+values ('SystemTheme', '')
 on conflict (key) do update
     set value = excluded.value;
