@@ -268,15 +268,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     disabled={props.isBusy}
                 />
             </Box>
-
-            <Typography
-                variant="caption"
-                sx={{
-                    color: 'text.secondary',
-                    mt: 4
-                }}>
-                Alle mit Stern (*) gekennzeichneten Felder sind Pflichtfelder.
-            </Typography>
         </>
     );
 }

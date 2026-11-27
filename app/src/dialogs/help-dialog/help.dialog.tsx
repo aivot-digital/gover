@@ -248,7 +248,7 @@ export function HelpDialog(props: HelpDialogProps) {
                         Um ein Formular online auszufüllen und zu übermitteln, folgen Sie diesen Schritten:
                     </Typography>
                     <ul>
-                        <li>Füllen Sie alle mit Stern (*) gekennzeichneten Pflichtfelder aus.</li>
+                        <li>Füllen Sie die Pflichtfelder aus. Felder mit dem Zusatz „optional“ können Sie freilassen.</li>
                         <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, um
                             durch die Abschnitte zu navigieren und Ihre Angaben zu prüfen.
                         </li>
