@@ -5,13 +5,7 @@ insert into themes (id,
                     secondary_color,
                     primary_color_dark,
                     secondary_color_dark)
-values (1,
-        'Verwaltungsgemeinschaft Bergwald',
-        '#235A45',
-        '#58729D',
-        '#78B69A',
-        '#9FB5D6'),
-       (2,
+values (2,
         'EDV',
         '#355F8A',
         '#6A5A9B',
@@ -64,9 +58,9 @@ on conflict (id) do update
 select setval('themes_id_seq',
               (select max(id) from themes));
 
--- assign the default system theme
+-- use the built-in system theme
 insert into system_configs (key,
                             value)
-values ('SystemTheme', '1')
+values ('SystemTheme', '')
 on conflict (key) do update
     set value = excluded.value;
