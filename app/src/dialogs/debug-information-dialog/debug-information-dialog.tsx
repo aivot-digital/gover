@@ -5,7 +5,8 @@ import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlin
 import {DateTime} from 'luxon';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HealthData, type HealthDataComponents} from '../../models/dtos/health-data';
-import {SystemApiService} from '../../modules/system/system-api-service';
+import {SystemApiService, type SystemBuildDTO} from '../../modules/system/system-api-service';
+import {isApiError} from '../../models/api-error';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {downloadTextFile} from '../../utils/download-utils';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -133,6 +134,44 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
         selfLoadingFailed,
         setSelfLoadingFailed,
     ] = useState(false);
+    const [
+        backendBuild,
+        setBackendBuild,
+    ] = useState<SystemBuildDTO>();
+    const [
+        backendBuildErrorStatus,
+        setBackendBuildErrorStatus,
+    ] = useState<number | 'unknown'>();
+
+    useEffect(() => {
+        if (!props.open) {
+            return;
+        }
+
+        let isCurrent = true;
+        setBackendBuild(undefined);
+        setBackendBuildErrorStatus(undefined);
+
+        new SystemApiService()
+            .getBuild()
+            .then((value) => {
+                if (isCurrent) {
+                    setBackendBuild(value);
+                }
+            })
+            .catch((err) => {
+                if (!isCurrent) {
+                    return;
+                }
+
+                console.error(err);
+                setBackendBuildErrorStatus(isApiError(err) ? err.status : 'unknown');
+            });
+
+        return () => {
+            isCurrent = false;
+        };
+    }, [props.open]);
 
     useEffect(() => {
         if (!props.open || props.healthData != null) {
@@ -277,8 +316,24 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             `- processNodeLimits: ${JSON.stringify(AppConfig.processNodeLimits)}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',
-            '## health',
+            '## backend',
         ];
+
+        if (backendBuildErrorStatus != null) {
+            // A 404 usually means the backend predates this endpoint and is therefore older than this frontend.
+            lines.push(`- status: error (HTTP ${backendBuildErrorStatus})`);
+        } else if (backendBuild == null) {
+            lines.push('- status: loading');
+        } else {
+            const matchesFrontendBuild = backendBuild.buildVersion === AppInfo.version &&
+                backendBuild.buildNumber === AppInfo.number;
+            lines.push(`- buildVersionRaw: ${backendBuild.buildVersion ?? 'unknown'}`);
+            lines.push(`- buildNumberRaw: ${backendBuild.buildNumber ?? 'unknown'}`);
+            lines.push(`- buildDateRaw: ${backendBuild.buildTimestamp ?? 'unknown'}`);
+            lines.push(`- matchesFrontendBuild: ${toDebugBooleanString(matchesFrontendBuild)}`);
+        }
+
+        lines.push('', '## health');
 
         if (healthData == null) {
             lines.push('- overallStatus: loading');
@@ -411,6 +466,8 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
 
         return lines.join('\n');
     }, [
+        backendBuild,
+        backendBuildErrorStatus,
         compileDate,
         canReadPlugins,
         hasBuildDate,
