@@ -107,4 +107,78 @@ describe('SearchInput', () => {
             vi.useRealTimers();
         }
     });
+
+    it('keeps a newer edit when the parent returns the previous debounced value', () => {
+        vi.useFakeTimers();
+        try {
+            const onChange = vi.fn();
+            const {rerender} = render(
+                <SearchInput label="Akten suchen" value="" onChange={onChange} debounce={120}/>,
+            );
+            const input = screen.getByRole('searchbox', {name: 'Akten suchen'});
+
+            fireEvent.change(input, {target: {value: 'Berl'}});
+            act(() => vi.advanceTimersByTime(120));
+            expect(onChange).toHaveBeenLastCalledWith('Berl');
+
+            fireEvent.change(input, {target: {value: 'Berlin'}});
+            rerender(<SearchInput label="Akten suchen" value="Berl" onChange={onChange} debounce={120}/>);
+
+            expect(input).toHaveValue('Berlin');
+            act(() => vi.advanceTimersByTime(120));
+            expect(onChange).toHaveBeenLastCalledWith('Berlin');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps typing responsive while multiple submitted queries are being applied', () => {
+        vi.useFakeTimers();
+        try {
+            const onChange = vi.fn();
+            const {rerender} = render(
+                <SearchInput label="Akten suchen" value="" onChange={onChange} debounce={120}/>,
+            );
+            const input = screen.getByRole('searchbox', {name: 'Akten suchen'});
+
+            fireEvent.change(input, {target: {value: 'Be'}});
+            act(() => vi.advanceTimersByTime(120));
+            fireEvent.change(input, {target: {value: 'Berl'}});
+            act(() => vi.advanceTimersByTime(120));
+            fireEvent.change(input, {target: {value: 'Berlin'}});
+
+            rerender(<SearchInput label="Akten suchen" value="Be" onChange={onChange} debounce={120}/>);
+            rerender(<SearchInput label="Akten suchen" value="Berl" onChange={onChange} debounce={120}/>);
+
+            expect(input).toHaveValue('Berlin');
+            act(() => vi.advanceTimersByTime(120));
+            expect(onChange).toHaveBeenLastCalledWith('Berlin');
+
+            rerender(<SearchInput label="Akten suchen" value="Berlin" onChange={onChange} debounce={120}/>);
+            rerender(<SearchInput label="Akten suchen" value="Be" onChange={onChange} debounce={120}/>);
+            expect(input).toHaveValue('Be');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('cancels a pending edit when the parent changes the search externally', () => {
+        vi.useFakeTimers();
+        try {
+            const onChange = vi.fn();
+            const {rerender} = render(
+                <SearchInput label="Akten suchen" value="Hamburg" onChange={onChange} debounce={120}/>,
+            );
+            const input = screen.getByRole('searchbox', {name: 'Akten suchen'});
+
+            fireEvent.change(input, {target: {value: 'Berlin'}});
+            rerender(<SearchInput label="Akten suchen" value="" onChange={onChange} debounce={120}/>);
+
+            expect(input).toHaveValue('');
+            act(() => vi.advanceTimersByTime(120));
+            expect(onChange).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });

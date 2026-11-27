@@ -38,10 +38,20 @@ export function SearchInput(props: SearchInputProps) {
     const clearable = props.clearable ?? true;
     const debounce = props.debounce ?? 0;
     const debounceTimeoutRef = React.useRef<number | null>(null);
+    const pendingChangesRef = React.useRef<string[]>([]);
     // Keep typing responsive while parent state may update debounced.
     const [localValue, setLocalValue] = React.useState(props.value);
 
     React.useEffect(() => {
+        const pendingChanges = pendingChangesRef.current;
+        const acknowledgedIndex = pendingChanges.lastIndexOf(props.value);
+        // The parent may apply several submitted queries while the user keeps typing.
+        if (acknowledgedIndex >= 0) {
+            pendingChanges.splice(0, acknowledgedIndex + 1);
+            return;
+        }
+
+        pendingChanges.length = 0;
         if (debounceTimeoutRef.current != null) {
             window.clearTimeout(debounceTimeoutRef.current);
             debounceTimeoutRef.current = null;
@@ -57,9 +67,17 @@ export function SearchInput(props: SearchInputProps) {
         };
     }, []);
 
+    const commitChange = (nextValue: string): void => {
+        const pendingChanges = pendingChangesRef.current;
+        if (nextValue !== props.value || pendingChanges.length > 0) {
+            pendingChanges.push(nextValue);
+        }
+        props.onChange(nextValue);
+    };
+
     const emitChange = (nextValue: string): void => {
         if (debounce <= 0) {
-            props.onChange(nextValue);
+            commitChange(nextValue);
             return;
         }
 
@@ -69,7 +87,7 @@ export function SearchInput(props: SearchInputProps) {
 
         debounceTimeoutRef.current = window.setTimeout(() => {
             debounceTimeoutRef.current = null;
-            props.onChange(nextValue);
+            commitChange(nextValue);
         }, debounce);
     };
 
@@ -85,26 +103,23 @@ export function SearchInput(props: SearchInputProps) {
         }
 
         setLocalValue('');
-        props.onChange('');
+        commitChange('');
     };
 
     const handleBlur = (): void => {
         // Align with TextFieldComponent: commit pending debounced change immediately on blur.
-        if (debounceTimeoutRef.current != null) {
-            window.clearTimeout(debounceTimeoutRef.current);
+        const pendingTimeout = debounceTimeoutRef.current;
+        if (pendingTimeout != null) {
+            window.clearTimeout(pendingTimeout);
             debounceTimeoutRef.current = null;
-            const cleaned = localValue.trim();
-            props.onChange(cleaned);
-            if (cleaned !== localValue) {
-                setLocalValue(cleaned);
-            }
-            return;
         }
 
         const cleaned = localValue.trim();
         if (cleaned !== localValue) {
             setLocalValue(cleaned);
-            props.onChange(cleaned);
+        }
+        if (pendingTimeout != null || cleaned !== localValue) {
+            commitChange(cleaned);
         }
     };
 

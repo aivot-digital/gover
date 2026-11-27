@@ -77,43 +77,46 @@ function getFilteredNodeProviders(
     return filter == null ? nodeProviders : nodeProviders.filter(filter);
 }
 
-export function getSearchedNodeProviders(
+export function createNodeProviderSearch(
     nodeProviders: ProcessNodeProvider[],
-    search: string,
-): ProcessNodeProvider[] {
-    const trimmedSearch = search.trim();
-    if (trimmedSearch.length === 0) {
-        const providersByKey = new Map<string, ProcessNodeProvider[]>();
+): (search: string) => ProcessNodeProvider[] {
+    const providersByKey = new Map<string, ProcessNodeProvider[]>();
 
-        for (const provider of nodeProviders) {
-            const versions = providersByKey.get(provider.key) ?? [];
-            versions.push(provider);
-            providersByKey.set(provider.key, versions);
-        }
-
-        // Keep variants together even when an element is renamed in a newer version.
-        return [...providersByKey.values()]
-            .map((versions) => versions.sort((left, right) => right.majorVersion - left.majorVersion))
-            .sort((left, right) => (
-                left[0].name.localeCompare(right[0].name, 'de') || left[0].key.localeCompare(right[0].key)
-            ))
-            .flat();
+    for (const provider of nodeProviders) {
+        const versions = providersByKey.get(provider.key) ?? [];
+        versions.push(provider);
+        providersByKey.set(provider.key, versions);
     }
 
-    const fuse = new Fuse(nodeProviders, {
-        threshold: 0.32,
-        ignoreLocation: true,
-        keys: [
-            {name: 'name', weight: 0.4},
-            {name: 'abstractDescription', weight: 0.25},
-            {name: 'description', weight: 0.15},
-            {name: 'key', weight: 0.075},
-            {name: 'componentKey', weight: 0.075},
-            {name: 'parentPluginKey', weight: 0.05},
-        ],
-    });
+    // Keep variants together even when an element is renamed in a newer version.
+    const sortedProviders = [...providersByKey.values()]
+        .map((versions) => versions.sort((left, right) => right.majorVersion - left.majorVersion))
+        .sort((left, right) => (
+            left[0].name.localeCompare(right[0].name, 'de') || left[0].key.localeCompare(right[0].key)
+        ))
+        .flat();
 
-    return fuse.search(trimmedSearch).map((entry) => entry.item);
+    let searchIndex: Fuse<ProcessNodeProvider> | undefined;
+    return (search) => {
+        const trimmedSearch = search.trim();
+        if (trimmedSearch.length === 0) {
+            return sortedProviders;
+        }
+
+        searchIndex ??= new Fuse(nodeProviders, {
+            threshold: 0.32,
+            ignoreLocation: true,
+            keys: [
+                {name: 'name', weight: 0.4},
+                {name: 'abstractDescription', weight: 0.25},
+                {name: 'description', weight: 0.15},
+                {name: 'key', weight: 0.075},
+                {name: 'componentKey', weight: 0.075},
+                {name: 'parentPluginKey', weight: 0.05},
+            ],
+        });
+        return searchIndex.search(trimmedSearch).map((entry) => entry.item);
+    };
 }
 
 function getProviderKeysWithMultipleVersions(nodeProviders: ProcessNodeProvider[]): Set<string> {
@@ -170,9 +173,11 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         getProviderKeysWithMultipleVersions(filteredNodeProviders)
     ), [filteredNodeProviders]);
 
-    const searchedNodeProviders = useMemo(() => (
-        getSearchedNodeProviders(filteredNodeProviders, search)
-    ), [filteredNodeProviders, search]);
+    const searchNodeProviders = useMemo(
+        () => createNodeProviderSearch(filteredNodeProviders),
+        [filteredNodeProviders],
+    );
+    const searchedNodeProviders = useMemo(() => searchNodeProviders(search), [searchNodeProviders, search]);
 
     const groupedNodeProviders = useMemo(() => {
         const groupedProviders = new Map<ProcessNodeType, ProcessNodeProvider[]>();

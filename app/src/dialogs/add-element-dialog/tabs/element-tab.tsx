@@ -80,7 +80,7 @@ export function ElementTab({
                                showElementInfo,
                                highlightedElement,
                                limitElementTypes,
-                               recentElementTypes = [],
+                               recentElementTypes,
                                displayContext,
                                searchInputRef,
                            }: BaseTabProps & {
@@ -131,25 +131,28 @@ export function ElementTab({
             });
     }, [allParents, displayContext, limitElementTypes, parentType]);
 
-    const filteredOptions = useMemo(() => {
-        const trimmedSearch = search.trim();
-        if (trimmedSearch.length === 0) {
-            return [...options].sort(compareElementOptions);
-        }
-
-        const fuse = new Fuse(options, {
+    const searchIndex = useMemo(() => (
+        new Fuse(options, {
             threshold: 0.32,
             ignoreLocation: true,
             keys: [
                 {name: 'name', weight: 0.6},
                 {name: 'description', weight: 0.4},
             ],
-        });
+        })
+    ), [options]);
 
-        return fuse.search(trimmedSearch).map((entry) => entry.item);
-    }, [options, search]);
+    const query = search.trim();
+    const hasQuery = query.length > 0;
+    const sortedOptions = useMemo(() => [...options].sort(compareElementOptions), [options]);
+    const filteredOptions = useMemo(() => (
+        hasQuery ? searchIndex.search(query).map((entry) => entry.item) : sortedOptions
+    ), [hasQuery, query, searchIndex, sortedOptions]);
 
     const recentOptions = useMemo(() => {
+        if (!recentElementTypes?.length) {
+            return [];
+        }
         const optionsMap = new Map(options.map((option) => [option.type, option]));
 
         return recentElementTypes.flatMap((type) => {
@@ -272,7 +275,7 @@ export function ElementTab({
                 }
 
                 {
-                    search.trim().length === 0 && recentOptions.length > 0 &&
+                    !hasQuery && recentOptions.length > 0 &&
                     <Box
                         sx={{
                             borderBottom: '1px solid',
@@ -310,9 +313,9 @@ export function ElementTab({
                         <Accordion
                             key={group}
                             disableGutters
-                            expanded={search.trim().length > 0 ? true : expandedGroups[group]}
+                            expanded={hasQuery || expandedGroups[group]}
                             onChange={(_, expanded) => {
-                                if (search.trim().length > 0) {
+                                if (hasQuery) {
                                     return;
                                 }
 
@@ -334,7 +337,7 @@ export function ElementTab({
                             }}
                         >
                             <AccordionSummary
-                                expandIcon={search.trim().length === 0 ? <ExpandMore/> : undefined}
+                                expandIcon={!hasQuery ? <ExpandMore/> : undefined}
                                 sx={{
                                     px: 2,
                                     minHeight: 56,
