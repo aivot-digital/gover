@@ -57,7 +57,7 @@ describe('ProcessAssignmentButton', () => {
         await user.click(screen.getByRole('button', {name: isTask ? 'Aufgabe zuweisen' : 'Vorgang zuweisen'}));
         expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
             isTask
-                ? 'Wählen Sie, wer diese Aufgabe bearbeiten soll. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang einsehen und Aufgaben bearbeiten dürfen. Diese Rechte müssen auch ohne Stellvertretung bestehen.'
+                ? 'Wählen Sie, wer diese Aufgabe bearbeiten soll. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang einsehen und Aufgaben bearbeiten dürfen. Diese Rechte müssen auch ohne Stellvertretung bestehen. Legt das Prozesselement einen Personenkreis fest, können Sie nur Personen aus diesem Personenkreis auswählen, es sei denn, Sie dürfen den Vorgang neu zuweisen.'
                 : 'Wählen Sie, wer für diesen Vorgang zuständig sein soll. Aufgaben werden separat zugewiesen. Sie können Mitarbeiter:innen mit aktivem Konto auswählen, die den Vorgang auch ohne Stellvertretung einsehen dürfen.',
         );
         const input = screen.getByRole('combobox', {name: /Zugewiesen an/});

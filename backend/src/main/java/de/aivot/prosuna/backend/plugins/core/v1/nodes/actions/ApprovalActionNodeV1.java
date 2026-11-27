@@ -323,6 +323,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setAssignmentPool(ProcessTaskAssignmentPool.of(config.assignmentContext, List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)))
                 .setNewDeadlineKey(APPROVAL_DEADLINE.key())
                 .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());

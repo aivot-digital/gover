@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.models.ProcessTaskAssignmentPool;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
@@ -63,7 +64,7 @@ class AssignmentContextAssigneeResolverServiceTest {
         var tasks = createProcessInstanceTaskRepository();
         var assignments = new ProcessAssignmentService(permissions, users, mock(ProcessInstanceRepository.class),
                 tasks, mock(AuditService.class), mock(ProcessNodeExecutionLoggerFactory.class), mock(UserService.class),
-                mock(AbstractConfigurableTemplateResolver.class));
+                mock(AbstractConfigurableTemplateResolver.class), mock(AssignmentContextAssigneeResolverService.class));
         service = new AssignmentContextAssigneeResolverService(
                 createPotentialAccessRepository(),
                 tasks,
@@ -234,6 +235,31 @@ class AssignmentContextAssigneeResolverServiceTest {
 
         assertEquals(Optional.of("eligible-member"), result);
         verify(permissions, never()).hasProcessInstancePermissionWithoutDeputies(eq("cross-member"), anyLong(), anyString());
+    }
+
+    @Test
+    void filterToAssignmentPool_KeepsOnlyEligibleUsersInTheStoredSelection() {
+        accessRows = List.of(
+                userRow("team-member", null, 20, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("other-team-member", null, 30, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("deputy-only", null, 20, false, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        var pool = new ProcessTaskAssignmentPool(List.of(team("20"), user("selected-user")), List.of(REQUIRED_PERMISSION));
+
+        var result = service.filterToAssignmentPool(PROCESS_ID, PROCESS_VERSION, pool,
+                Set.of("team-member", "other-team-member", "deputy-only", "selected-user", "outsider"));
+
+        assertEquals(Set.of("team-member", "selected-user"), result);
+    }
+
+    @Test
+    void filterToAssignmentPool_ExcludesMembersWhoAreNotCurrentlyEligible() {
+        accessRows = List.<Object[]>of(
+                userRow("team-member", null, 20, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        var pool = new ProcessTaskAssignmentPool(List.of(team("20")), List.of(REQUIRED_PERMISSION));
+
+        assertEquals(Set.of(), service.filterToAssignmentPool(PROCESS_ID, PROCESS_VERSION, pool, Set.of("outsider")));
     }
 
     @Test

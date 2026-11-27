@@ -30,6 +30,7 @@ import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnav
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.models.ProcessTaskAssignmentPool;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -342,6 +343,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
 
         if (MODE_MANUAL.equals(mode)) {
             return ProcessNodeExecutionResultTaskAssigned.of(selectedUserId)
+                    .setAssignmentPool(ProcessTaskAssignmentPool.of(assignmentContext, permissions))
                     .setNewDeadlineKey(ASSIGNMENT_DEADLINE.key())
                     .setProcessData(context.getCurrentProcessExecutionData().getProcessData())
                     .setRuntimeData(Map.of());

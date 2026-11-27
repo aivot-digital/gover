@@ -4,6 +4,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentCo
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.models.ProcessTaskAssignmentPool;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import jakarta.annotation.Nonnull;
@@ -84,39 +85,8 @@ public class AssignmentContextAssigneeResolverService {
         }
 
         var normalizedRequiredPermissions = normalizePermissions(requiredPermissions);
-        var accessRows = potentialProcessInstanceAccessRepository
-                .findRowsByProcessIdAndProcessVersion(processId, processVersion)
-                .stream()
-                .map(AssignmentContextAssigneeResolverService::toAccessRow)
-                .filter(Objects::nonNull)
-                .toList();
-
-        var eligibleUserRows = accessRows
-                .stream()
-                .filter(PotentialAccessRow::isUserRow)
-                .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
-                .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
-                .filter(row -> hasRequiredPermissions(row.userDirectPermissions(), normalizedRequiredPermissions))
-                .filter(row -> currentlyEligibleUserIds != null
-                        ? currentlyEligibleUserIds.contains(row.userId())
-                        : hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
-                .toList();
-
-        if (eligibleUserRows.isEmpty() && currentlyEligibleUserIds == null) {
-            return java.util.Optional.empty();
-        }
-
-        var eligibleUserIds = eligibleUserRows
-                .stream()
-                .map(PotentialAccessRow::userId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (currentlyEligibleUserIds != null) {
-            // Explicitly selected users can have system-level or instance-specific access without a view row.
-            eligibleUserIds.addAll(currentlyEligibleUserIds);
-        }
-
-        var candidateUserIds = collectCandidateUserIds(selection, eligibleUserRows, eligibleUserIds);
+        var candidateUserIds = collectPoolCandidates(
+                processId, processVersion, selection, normalizedRequiredPermissions, currentlyEligibleUserIds);
         // Preserve the configured candidate pool, including permissions through the selected membership.
         // Current instance rights only narrow that pool: rights through another team must not expand it.
         // Filter before preferences/load balancing so an ineligible preferred user cannot hide a valid alternative.
@@ -144,6 +114,66 @@ public class AssignmentContextAssigneeResolverService {
                         .comparingLong((String userId) -> activeTaskCounts.getOrDefault(userId, 0L))
                         .thenComparing(Function.identity()))
                 .findFirst();
+    }
+
+    /**
+     * Narrows currently eligible users to the Personenkreis stored on a task, with the same membership rules as
+     * {@link #resolveAssignee} but without preferences or load balancing. The caller must pass only users who have
+     * the pool's required permissions for the instance.
+     */
+    @Nonnull
+    public Set<String> filterToAssignmentPool(
+            @Nonnull Integer processId,
+            @Nonnull Integer processVersion,
+            @Nonnull ProcessTaskAssignmentPool pool,
+            @Nonnull Set<String> currentlyEligibleUserIds
+    ) {
+        return collectPoolCandidates(
+                processId,
+                processVersion,
+                pool.selection(),
+                normalizePermissions(pool.requiredPermissions()),
+                currentlyEligibleUserIds
+        );
+    }
+
+    @Nonnull
+    private LinkedHashSet<String> collectPoolCandidates(
+            @Nonnull Integer processId,
+            @Nonnull Integer processVersion,
+            @Nonnull List<DomainAndUserSelectInputElementValue> selection,
+            @Nonnull List<String> normalizedRequiredPermissions,
+            @Nullable Set<String> currentlyEligibleUserIds
+    ) {
+        var accessRows = potentialProcessInstanceAccessRepository
+                .findRowsByProcessIdAndProcessVersion(processId, processVersion)
+                .stream()
+                .map(AssignmentContextAssigneeResolverService::toAccessRow)
+                .filter(Objects::nonNull)
+                .toList();
+
+        var eligibleUserRows = accessRows
+                .stream()
+                .filter(PotentialAccessRow::isUserRow)
+                .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
+                .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
+                .filter(row -> hasRequiredPermissions(row.userDirectPermissions(), normalizedRequiredPermissions))
+                .filter(row -> currentlyEligibleUserIds != null
+                        ? currentlyEligibleUserIds.contains(row.userId())
+                        : hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
+                .toList();
+
+        var eligibleUserIds = eligibleUserRows
+                .stream()
+                .map(PotentialAccessRow::userId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (currentlyEligibleUserIds != null) {
+            // Explicitly selected users can have system-level or instance-specific access without a view row.
+            eligibleUserIds.addAll(currentlyEligibleUserIds);
+        }
+
+        return collectCandidateUserIds(selection, eligibleUserRows, eligibleUserIds);
     }
 
     @Nonnull

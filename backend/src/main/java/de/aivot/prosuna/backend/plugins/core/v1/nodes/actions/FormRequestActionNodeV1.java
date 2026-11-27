@@ -459,6 +459,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setAssignmentPool(ProcessTaskAssignmentPool.of(manualContent.assignmentContext, List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)))
                 .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(runtimeData)
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());

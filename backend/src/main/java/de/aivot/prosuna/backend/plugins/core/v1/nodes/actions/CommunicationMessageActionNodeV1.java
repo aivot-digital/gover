@@ -302,6 +302,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setAssignmentPool(ProcessTaskAssignmentPool.of(manualContent.assignmentContext, List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)))
                 .setNewDeadlineKey(MESSAGE_DISPATCH_DEADLINE.key())
                 .setRuntimeData(new LinkedHashMap<>(context.getThisTask().getRuntimeData()))
                 .setProcessData(context.getCurrentProcessExecutionData().getProcessData());

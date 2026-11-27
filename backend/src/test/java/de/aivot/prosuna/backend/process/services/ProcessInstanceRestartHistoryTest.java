@@ -68,7 +68,7 @@ public class ProcessInstanceRestartHistoryTest {
                     process_data text default '{}', process_data_diff text default '{}', assigned_user_id varchar(36),
                     assigned_customer_identity_id varchar(36), deadline timestamp with time zone, deadline_key varchar(32),
                     deadline_strict boolean not null default false,
-                    postponed_until timestamp with time zone, retry_count int, next_retry_at timestamp with time zone,
+                    postponed_until timestamp with time zone, retry_count int, next_retry_at timestamp with time zone, assignment_pool text,
                     foreign key (process_instance_id) references process_instances(id) on delete cascade,
                     constraint process_instance_tasks_restart_for_task_fk
                         foreign key (restart_for_task_id) references process_instance_tasks(id),

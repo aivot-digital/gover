@@ -298,6 +298,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setAssignmentPool(ProcessTaskAssignmentPool.of(config.assignmentContext(), List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)))
                 .setNewDeadlineKey(PROCESSING_DEADLINE.key())
                 .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());
