@@ -1,0 +1,559 @@
+import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
+import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import {Box} from '@mui/material';
+import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectMemberships, selectPermissions} from '../../../../slices/user-slice';
+import {Permission} from '../../../../data/permissions/permission';
+import {
+    formatMissingPermissionTooltip,
+    hasAnyDepartmentPermission,
+    hasProcessPermission,
+} from '../../../permissions/utils/permission-utils';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+import {listCellSecondaryTextSx} from '../../../../components/generic-list/generic-list-cell-styles';
+import Typography from '@mui/material/Typography';
+import {GridColDef} from '@mui/x-data-grid';
+import {Link} from 'react-router-dom';
+import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
+import NewWindow from '@aivot/mui-material-symbols-400-n25-outlined/NewWindow';
+import {
+    GenericListPropsFetchOptions,
+    ListControlRef,
+    type FetchListFilterCounts,
+} from '../../../../components/generic-list/generic-list-props';
+import {Page} from '../../../../models/dtos/page';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import {ProcessEntity} from '../../entities/process-entity';
+import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
+import {NewProcessDialog} from '../../dialogs/new-process-dialog';
+import Route from '@aivot/mui-material-symbols-400-n25-outlined/Route';
+import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
+import {getFormStatus, ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
+import {MoveProcessToDepartmentDialog} from '../../dialogs/move-process-to-department-dialog';
+import {ProcessListRowMenu} from '../../components/process-list-row-menu';
+import {useDeleteProcess} from '../../hooks/use-delete-process';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
+
+import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
+import {SelectFieldPresentation} from '../../../../models/elements/form/input/select-field-presentation';
+import {useListFilter} from '../../../../components/generic-list/use-list-filter';
+import {type ProcessDepartmentOptionDTO} from '../../dtos/process-department-option-dto';
+
+const availableFilter = [
+    {
+        label: 'Alle Prozesse',
+        value: 'all',
+        showCount: false,
+    },
+    {
+        label: 'Entwürfe',
+        value: 'drafted',
+    },
+    {
+        label: 'Veröffentlicht',
+        value: 'published',
+    },
+    {
+        label: 'Zurückgezogen',
+        value: 'revoked',
+        showCount: false,
+    },
+];
+
+interface ProcessListEntry extends ProcessEntity {
+    managingDepartmentName?: string;
+    lastEditorName?: string;
+}
+
+const columns: GridColDef<ProcessListEntry>[] = [
+    {
+        field: 'icon',
+        headerName: '',
+        renderCell: () => <CellContentWrapper
+            sx={{alignItems: 'start', py: 2}}
+        ><Route/></CellContentWrapper>,
+        disableColumnMenu: true,
+        width: 24,
+        sortable: false,
+    },
+    {
+        field: 'internalTitle',
+        headerName: 'Prozesse',
+        flex: 2,
+        renderCell: (params) => {
+            const {
+                isDrafted,
+                isPublished,
+                isRevoked,
+            } = getFormStatus(params.row);
+
+            return (
+                <Box
+                    sx={{
+                        py: 2,
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        component="h5"
+                        sx={{mb: 0.5}}
+                    >
+                        <Link
+                            style={{
+                                color: 'inherit',
+                                textDecoration: 'none',
+                            }}
+                            to={`/processes/${params.row.id}/versions/latest`}
+                            title={params.row.internalTitle}
+                        >
+                            {params.row.internalTitle}
+                        </Link>
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            ...listCellSecondaryTextSx,
+                            mt: -0.5,
+                            lineHeight: '1.5rem',
+                        }}
+                    >
+                        {
+                            isPublished ?
+                                <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
+                                <span>{isRevoked ? 'Zurückgezogen' : 'Noch nicht veröffentlicht'}</span>
+                        }
+                        {
+                            isDrafted &&
+                            <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
+                        }
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        title={`Verwaltet von: ${params.row.managingDepartmentName ?? 'Unbekannt'}`}
+                        sx={{
+                            ...listCellSecondaryTextSx,
+                            mt: -0.5,
+                            lineHeight: '1.5rem',
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        Verwaltet von: {params.row.managingDepartmentName ?? 'Unbekannt'}
+                    </Typography>
+                </Box>
+            );
+        },
+    },
+    {
+        field: 'updated',
+        headerName: 'Zuletzt bearbeitet',
+        flex: 1,
+        renderCell: (params) => {
+            const formatted = formatInstantInApplicationTimeZone(params.row.updated, 'dd.MM.yyyy – HH:mm');
+            return (
+                <Box
+                    sx={{
+                        py: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
+                >
+                    <Typography
+                        title={formatted != null ? `${formatted} Uhr` : undefined}
+                    >
+                        {formatted != null ? `${formatted} Uhr` : '—'}
+                    </Typography>
+                    <Typography
+                        sx={listCellSecondaryTextSx}
+                        title={params.row.lastEditorName ?? 'Unbekannte Person'}
+                    >
+                        {params.row.lastEditorName ?? 'Unbekannte Person'}
+                    </Typography>
+                </Box>
+            );
+        },
+    },
+    {
+        field: 'publishedVersion',
+        headerName: 'Status',
+        flex: 0.75,
+        sortable: false,
+        renderCell: (params) => (
+            <Box
+                sx={{
+                    py: 2,
+                }}
+            >
+                <ProcessStatusChipGroup process={params.row}/>
+            </Box>
+        ),
+    },
+];
+
+export function ProcessListPage() {
+    const dispatch = useAppDispatch();
+    const memberships = useAppSelector(selectMemberships);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateProcess = hasAnyDepartmentPermission(permissions, Permission.PROCESS_DEFINITION_CREATE);
+    const missingCreateTooltip = formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE);
+    const listControlRef = useRef<ListControlRef>(null);
+    const deleteProcess = useDeleteProcess();
+    const {value: departmentFilter, setValue: setDepartmentFilter} = useListFilter('departmentId');
+    const parsedDepartmentId = Number(departmentFilter);
+    const departmentId = Number.isSafeInteger(parsedDepartmentId) && parsedDepartmentId > 0 ? parsedDepartmentId : undefined;
+    const [departments, setDepartments] = useState<ProcessDepartmentOptionDTO[]>([]);
+    const [departmentsLoading, setDepartmentsLoading] = useState(true);
+    const [departmentsError, setDepartmentsError] = useState<string>();
+    const [departmentOptionsRevision, setDepartmentOptionsRevision] = useState(0);
+
+    const [showAddDialog, setShowAddDialog] = useState(false);
+    const [showVersionsDialogForProcess, setShowVersionsDialogForProcess] = useState<ProcessEntity | null>(null);
+    const [processToMove, setProcessToMove] = useState<ProcessEntity>();
+    const [rowMenu, setRowMenu] = useState<{
+        target: HTMLElement;
+        process: ProcessListEntry;
+    }>();
+
+    useEffect(() => {
+        let cancelled = false;
+        setDepartmentsLoading(true);
+        setDepartmentsError(undefined);
+        new ProcessDefinitionApiService().listDepartmentOptions()
+            .then(options => {
+                if (!cancelled) setDepartments(options);
+            })
+            .catch(() => {
+                if (!cancelled) setDepartmentsError('Die Organisationseinheiten konnten nicht geladen werden.');
+            })
+            .finally(() => {
+                if (!cancelled) setDepartmentsLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [departmentOptionsRevision]);
+
+    const departmentOptions = useMemo(() => [
+        {value: 'all', label: 'Alle Organisationseinheiten'},
+        ...departments.map(department => ({
+            value: String(department.id),
+            label: department.name,
+        })),
+    ], [departments]);
+    const preSearchElements = useMemo(() => [
+        <SelectFieldComponent
+            key="managing-department"
+            label="Verwaltende Organisationseinheit"
+            presentation={SelectFieldPresentation.Combobox}
+            options={departmentOptions}
+            value={departmentId == null ? 'all' : String(departmentId)}
+            onChange={id => setDepartmentFilter(id === 'all' ? null : id)}
+            includeEmptyOption={false}
+            showOptionalIndicator={false}
+            margin="none"
+            busy={departmentsLoading}
+            error={departmentsError}
+            emptyStatePlaceholder={departmentsLoading ? 'Organisationseinheiten werden geladen …' : 'Keine Organisationseinheiten verfügbar'}
+        />,
+    ], [departmentOptions, departmentId, setDepartmentFilter, departmentsLoading, departmentsError]);
+
+    const handleAddDraft = useCallback((process: number, version?: number) => {
+        dispatch(setLoadingMessage({
+            message: 'Neue Version wird erzeugt',
+            estimatedTime: 2000,
+            blocking: true,
+        }));
+
+        return new ProcessDefinitionApiService()
+            .addNewVersion(process, version)
+            .then((createdVersion) => {
+                if (listControlRef.current) {
+                    listControlRef.current.refresh();
+                }
+                return createdVersion;
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Anlegen einer neuen Version'));
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            });
+    }, [dispatch]);
+
+    const handleDeleteProcess = useCallback((process: ProcessEntity) => {
+        void deleteProcess(process, {
+            onDeleted: () => {
+                setDepartmentOptionsRevision(revision => revision + 1);
+                listControlRef.current?.refresh();
+            },
+        });
+    }, [deleteProcess]);
+
+    const header: GenericPageHeaderProps = useMemo(() => ({
+        icon: <Route/>,
+        title: 'Prozesse',
+        actions: [
+            {
+                label: 'Neuer Prozess',
+                icon: <AddOutlinedIcon/>,
+                onClick: () => {
+                    setShowAddDialog(true);
+                },
+                variant: 'contained',
+                disabled: !canCreateProcess,
+                disabledTooltip: missingCreateTooltip,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Prozessen',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography sx={{
+                        mb: 2
+                    }}>
+                        Ein Prozess bündelt alle Prozessversionen eines Ablaufs innerhalb Ihrer Organisation.
+                        Jede Prozessversion enthält einen festen Stand der Prozessdefinition mit ihren Prozesselementen,
+                        Verbindungen und Einstellungen.
+                        In dieser Übersicht sehen Sie die Prozesse, für die Sie Leseberechtigungen haben.
+                        Diese können sich aus Domänenrollen in Organisationseinheiten oder Teams, direkten
+                        Prozessberechtigungen oder Systemberechtigungen ergeben.
+                    </Typography>
+                    <Typography sx={{
+                        mb: 2
+                    }}>
+                        Sie können neue Prozesse anlegen, bestehende Prozesse bearbeiten oder veröffentlichte Versionen
+                        einsehen.
+                        Der Status einer Prozessversion zeigt an, ob sie sich im Entwurf befindet, veröffentlicht
+                        oder zurückgezogen ist. Ein konkreter Durchlauf einer Prozessversion heißt Vorgang.
+                    </Typography>
+                    <Typography>
+                        Um einen neuen Prozess anzulegen, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
+                        in den Aktionen neben jedem Prozess.
+                        Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration.
+                        Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden.
+                    </Typography>
+                </>
+            ),
+        },
+    }), [canCreateProcess, missingCreateTooltip]);
+
+    const fetchFilterCounts = useCallback<FetchListFilterCounts>(
+        ({signal}) => new ProcessDefinitionApiService().counts(signal),
+        [],
+    );
+
+    const fetch = useCallback(async (options: GenericListPropsFetchOptions<ProcessListEntry>) => {
+        const processesPage = await new ProcessDefinitionApiService()
+            .list(options.page, options.size, options.sort as any, options.order, {
+                internalTitle: options.search,
+                departmentId,
+                isPublished: options.filter === 'published',
+                isDrafted: options.filter === 'drafted',
+                isRevoked: options.filter === 'revoked',
+            });
+
+        const extendedProcessesPage: Page<ProcessListEntry> = {
+            ...processesPage,
+            content: processesPage.content.map(process => ({
+                ...process,
+                managingDepartmentName: departments.find(dep => dep.id === process.departmentId)?.name,
+                lastEditorName: '',
+            })),
+        };
+
+        return extendedProcessesPage;
+    }, [departmentId, departments]);
+
+    const noDataPlaceholder = useMemo(() => (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                p: 4,
+            }}
+        >
+            {
+                (memberships == null ||
+                    memberships.length === 0) &&
+                <>
+                    <Typography
+                        variant="h5"
+                        component="h2"
+                    >
+                        Keine Prozesse in diesem Bereich
+                    </Typography>
+                    <Typography>
+                        Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt,
+                        wenden Sie sich an die Administration.
+                        Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden.
+                    </Typography>
+                </>
+            }
+            {
+                memberships != null &&
+                memberships.length > 0 &&
+                <EmptyDataListPlaceholder
+                    title="Keine Prozesse in diesem Bereich"
+                    description="Hier erscheinen Prozesse, für die Sie Leseberechtigungen haben. Wenn Ihnen Zugriff fehlt, wenden Sie sich an die Administration. Nach der Vergabe der Berechtigungen müssen Sie diese Seite gegebenenfalls neu laden."
+                    addText="Neuen Prozess anlegen"
+                    onAdd={() => setShowAddDialog(true)}
+                    addDisabled={!canCreateProcess}
+                    addDisabledTooltip={missingCreateTooltip}
+                />
+            }
+        </Box>
+    ), [canCreateProcess, memberships, missingCreateTooltip]);
+
+    const rowActions = useCallback((item: ProcessListEntry) => {
+        const canUpdate = hasProcessPermission(permissions, item.id, Permission.PROCESS_DEFINITION_UPDATE);
+
+        return [
+            {
+                icon: canUpdate ? <Edit/> : <Visibility/>,
+                to: `/processes/${item.id}/versions/${item.draftedVersion}`,
+                tooltip: canUpdate ? 'Prozess bearbeiten' : 'Prozess ansehen',
+                visible: item.draftedVersion != null,
+            },
+            {
+                icon: <Visibility/>,
+                to: `/processes/${item.id}/versions/latest`,
+                tooltip: 'Prozess ansehen',
+                visible: item.draftedVersion === null && item.versionCount > 0,
+            },
+            {
+                icon: <NewWindow/>,
+                onClick: () => {
+                    handleAddDraft(item.id);
+                },
+                tooltip: 'Neuen Entwurf anlegen',
+                visible: item.draftedVersion == null,
+                disabled: !canUpdate || (item.publishedVersion == null && item.draftedVersion != null),
+                disabledTooltip: canUpdate ? undefined : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE),
+            },
+            {
+                icon: <HomeStorage/>,
+                onClick: () => {
+                    setShowVersionsDialogForProcess(item);
+                },
+                tooltip: 'Versionen anzeigen',
+            },
+            {
+                icon: <MoreVertOutlinedIcon/>,
+                onClick: (event: React.MouseEvent<HTMLElement>) => {
+                    setRowMenu({
+                        target: event.currentTarget as HTMLElement,
+                        process: item,
+                    });
+                },
+                tooltip: 'Optionen',
+            },
+        ];
+    }, [handleAddDraft, permissions]);
+
+    return (
+        <>
+            <PageWrapper
+                title="Prozesse"
+                fullWidth
+                background
+            >
+                <GenericListPage<ProcessListEntry>
+                    controlRef={listControlRef}
+                    dynamicRowHeight={true}
+                    filters={availableFilter}
+                    defaultFilter="all"
+                    header={header}
+                    searchLabel="Prozess suchen"
+                    searchPlaceholder="Titel des Prozesses eingeben…"
+                    fetch={fetch}
+                    fetchFilterCounts={fetchFilterCounts}
+                    preSearchElements={preSearchElements}
+                    hasActiveAdditionalFilters={departmentId != null}
+                    columnDefinitions={columns}
+                    getRowIdentifier={getRowId}
+                    noDataPlaceholder={noDataPlaceholder}
+                    noSearchResultsPlaceholder="Keine Prozesse gefunden"
+                    rowActionsCount={5}
+                    rowActions={rowActions}
+                    defaultSortField="internalTitle"
+                    disableFullWidthToggle={true}
+                />
+            </PageWrapper>
+
+            <NewProcessDialog
+                open={showAddDialog}
+                onCancel={() => {
+                    setShowAddDialog(false);
+                }}
+            />
+
+            {
+                showVersionsDialogForProcess &&
+                <ProcessVersionsDialog
+                    open={true}
+                    process={showVersionsDialogForProcess}
+                    onClose={() => {
+                        setShowVersionsDialogForProcess(null);
+                    }}
+                    onNewDraft={({process, version}) => {
+                        return handleAddDraft(process.id, version.processVersion);
+                    }}
+                    onDeleteVersion={() => {
+                        if (listControlRef.current) {
+                            listControlRef.current.refresh();
+                        }
+                    }}
+                    onShouldReload={() => {
+                        listControlRef.current?.refresh();
+                    }}
+                />
+            }
+
+            {
+                rowMenu != null &&
+                <ProcessListRowMenu
+                    anchorEl={rowMenu.target}
+                    process={rowMenu.process}
+                    onClose={() => {
+                        setRowMenu(undefined);
+                    }}
+                    onMoveProcessToDepartment={setProcessToMove}
+                    onDeleteProcess={handleDeleteProcess}
+                />
+            }
+
+            {
+                processToMove != null &&
+                <MoveProcessToDepartmentDialog
+                    processId={processToMove.id}
+                    onClose={() => {
+                        setProcessToMove(undefined);
+                    }}
+                    onMoved={() => {
+                        setProcessToMove(undefined);
+                        // Moving the last visible process can change both filter options and row labels.
+                        setDepartmentOptionsRevision(revision => revision + 1);
+                        listControlRef.current?.refresh();
+                    }}
+                />
+            }
+        </>
+    );
+}
+
+function getRowId(row: ProcessListEntry) {
+    return row.id.toString();
+}

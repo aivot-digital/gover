@@ -1,0 +1,1253 @@
+package de.aivot.prosuna.backend.codeLists.services;
+
+import de.aivot.prosuna.backend.asset.entities.AssetEntity;
+import de.aivot.prosuna.backend.asset.services.AssetService;
+import de.aivot.prosuna.backend.codeLists.dtos.CodeListSourceColumnsDto;
+import de.aivot.prosuna.backend.codeLists.entities.CodeListEntity;
+import de.aivot.prosuna.backend.codeLists.entities.CodeListItemEntity;
+import de.aivot.prosuna.backend.codeLists.enums.CodeListSourceType;
+import de.aivot.prosuna.backend.codeLists.enums.CodeListStatus;
+import de.aivot.prosuna.backend.codeLists.models.CodeListColumnMapping;
+import de.aivot.prosuna.backend.codeLists.models.CodeListItemSnapshot;
+import de.aivot.prosuna.backend.codeLists.repositories.CodeListItemRepository;
+import de.aivot.prosuna.backend.codeLists.repositories.CodeListRepository;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.storage.services.StorageService;
+import de.aivot.prosuna.backend.xrepository.models.*;
+import de.aivot.prosuna.backend.xrepository.services.XRepositoryCodeListService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+class CodeListServiceTest {
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private static final Instant STALE_BEFORE = Instant.parse("2030-05-01T11:00:00Z");
+    private static final UUID ASSET_KEY = UUID.fromString("00000000-0000-0000-0000-000000000003");
+
+    private CodeListRepository codeListRepository;
+    private CodeListItemRepository codeListItemRepository;
+    private XRepositoryCodeListService xRepositoryCodeListService;
+    private AssetService assetService;
+    private StorageService storageService;
+    private CodeListService service;
+
+    @BeforeEach
+    void setUp() {
+        codeListRepository = mock(CodeListRepository.class);
+        codeListItemRepository = mock(CodeListItemRepository.class);
+        xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        assetService = mock(AssetService.class);
+        storageService = mock(StorageService.class);
+        service = new CodeListService(codeListRepository, codeListItemRepository, xRepositoryCodeListService,
+                assetService, storageService, transactionManager(), meterRegistry);
+        // Writes lock the list; unless a test claims a synchronization, the locked list is the stored one.
+        when(codeListRepository.findByKeyForUpdate(anyString()))
+                .thenAnswer(call -> codeListRepository.findById(call.getArgument(0)));
+    }
+
+    // region Items of manual lists
+
+    @ParameterizedTest
+    @MethodSource("invalidItemColumns")
+    void saveItemRejectsMissingKeyValueOrTooManyCells(boolean update, List<String> columns, String message) {
+        var existingItem = new CodeListItemEntity().setId(10L).setCodeListId(7).setColumns(List.of("Berlin", "BE", ""));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createStateList()));
+        if (update) {
+            when(codeListItemRepository.findByIdAndCodeListId(10L, 7)).thenReturn(Optional.of(existingItem));
+        }
+
+        var exception = assertThrows(ResponseException.class, () -> {
+            var item = new CodeListItemEntity().setColumns(columns);
+            if (update) {
+                service.updateItem("test", 10L, item);
+            } else {
+                service.createItem("test", item);
+            }
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(message, exception.getMessage());
+        assertEquals(List.of("Berlin", "BE", ""), existingItem.getColumns());
+        verify(codeListItemRepository, never()).save(any());
+    }
+
+    private static Stream<Arguments> invalidItemColumns() {
+        return Stream.of(false, true).flatMap(update -> Stream.of(
+                Arguments.of(update, List.of("Berlin", "", ""), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, Arrays.asList("Berlin", null, ""), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, List.of("Berlin", " \t\n", ""), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, List.of("Berlin"), "Bitte geben Sie für „Schlüssel“ einen Wert ein."),
+                Arguments.of(update, null, "Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste."),
+                Arguments.of(update, List.of("Berlin", "BE", "", "zu viel"), "Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste.")
+        ));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void saveItemAllowsEmptyOptionalCellsAndFillsMissingCells(boolean update) throws Exception {
+        var existingItem = new CodeListItemEntity().setId(10L).setCodeListId(7).setColumns(List.of("Alt", "ALT", ""));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createStateList()));
+        when(codeListItemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        if (update) {
+            when(codeListItemRepository.findByIdAndCodeListId(10L, 7)).thenReturn(Optional.of(existingItem));
+        }
+
+        var item = new CodeListItemEntity().setColumns(Arrays.asList(null, "BE"));
+        var saved = update ? service.updateItem("test", 10L, item) : service.createItem("test", item);
+
+        assertEquals(List.of("", "BE", ""), saved.getColumns());
+        assertEquals(7, saved.getCodeListId());
+        verify(codeListRepository).findByKeyForUpdate("test");
+        // The updated row itself does not count as a duplicate.
+        verify(codeListItemRepository).existsByKeyValue(7, 2, "BE", update ? 10L : 0L);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void saveItemRejectsAKeyValueThatAnotherItemHas(boolean update) {
+        var existingItem = new CodeListItemEntity().setId(10L).setCodeListId(7).setColumns(List.of("Alt", "ALT", ""));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createStateList()));
+        when(codeListItemRepository.existsByKeyValue(eq(7), eq(2), eq("BE"), anyLong())).thenReturn(true);
+        if (update) {
+            when(codeListItemRepository.findByIdAndCodeListId(10L, 7)).thenReturn(Optional.of(existingItem));
+        }
+
+        var exception = assertThrows(ResponseException.class, () -> {
+            var item = new CodeListItemEntity().setColumns(List.of("Berlin", "BE"));
+            if (update) {
+                service.updateItem("test", 10L, item);
+            } else {
+                service.createItem("test", item);
+            }
+        });
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("Der Wert „BE“ ist in der Schlüsselspalte „Schlüssel“ bereits vergeben.", exception.getMessage());
+        assertEquals(List.of("Alt", "ALT", ""), existingItem.getColumns());
+        verify(codeListItemRepository, never()).save(any());
+    }
+
+    // endregion
+
+    // region Creating and updating lists
+
+    @Test
+    void createClearsClientProvidedId() throws Exception {
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var created = service.create(createManualCodeList().setId(0));
+
+        assertNull(created.getId());
+    }
+
+    @Test
+    void createRejectsReservedKey() {
+        assertThrows(ResponseException.class, () -> service.create(createManualCodeList().setKey("new")));
+
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void createRejectsKeyWithSlash() {
+        assertThrows(ResponseException.class, () -> service.create(createManualCodeList().setKey("a/b")));
+
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void createManualListStoresItsCellsUnderTheColumnKeys() throws Exception {
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var created = service.create(createManualCodeList()
+                .setColumns(List.of())
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping(" Wert ", " Wert ", 2),
+                        new CodeListColumnMapping("Beschriftung", "Beschriftung", 1)
+                ))
+                .setKeyColumnKey(" Wert "));
+
+        assertEquals(List.of("Beschriftung", "Wert"), created.getColumns());
+        assertEquals(new CodeListColumnMapping("Wert", "Wert", 2), created.getColumnMappings().getFirst());
+        assertEquals("Wert", created.getKeyColumnKey());
+    }
+
+    @Test
+    void updateOfAManualListAppendsNewColumnsAndKeepsTheSourceColumnsOfRenamedKeys() throws Exception {
+        var existing = createManualCodeList();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(existing));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var updated = service.update("test", createManualCodeList()
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("code", "Code", 1),
+                        new CodeListColumnMapping("label", "Bezeichnung", 2),
+                        new CodeListColumnMapping("extra", "Zusatz", 3)
+                ))
+                .setKeyColumnKey("code"));
+
+        assertEquals(List.of("code", "name", "extra"), updated.getColumns());
+        assertEquals("Bezeichnung", updated.getColumnMappings().get(1).name());
+        // The key column stays at the same position, so the stored rows need no check.
+        verify(codeListItemRepository, never()).findAllByCodeListIdOrderByIdAsc(any());
+    }
+
+    @Test
+    void updateOfAManualListGivesANewColumnAUniqueSourceColumn() throws Exception {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // The key "name" moves to a new column, while the stored cells of the second column keep their identifier.
+        var updated = service.update("test", createManualCodeList().setColumnMappings(List.of(
+                new CodeListColumnMapping("code", "Code", 1),
+                new CodeListColumnMapping("label", "Bezeichnung", 2),
+                new CodeListColumnMapping("name", "Name", 3)
+        )));
+
+        assertEquals(List.of("code", "name", "name_2"), updated.getColumns());
+    }
+
+    @Test
+    void updateOfAManualListPreservesHiddenColumnIdentifiersForLaterCsvImports() throws Exception {
+        var current = createManualCodeList();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        when(codeListRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        var updated = service.update("test", createManualCodeList().setColumnMappings(List.of(
+                new CodeListColumnMapping("code", "Code", 1)
+        )));
+
+        assertEquals(List.of("code", "name"), updated.getColumns());
+        assertEquals(1, updated.getColumnMappings().size());
+    }
+
+    @Test
+    void savingAManualListKeepsTheMappingsOfItsNextCsvImport() throws Exception {
+        var codeList = createManualCodeList();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var content = """
+                code, name
+                001,Berlin
+                """;
+
+        var imported = service.importCSV("test", csv(content));
+        var mappings = imported.getColumnMappings();
+        service.update("test", createManualCodeList()
+                .setDescription("Neue Beschreibung")
+                .setColumnMappings(mappings)
+                .setKeyColumnKey(imported.getKeyColumnKey()));
+        var importedAgain = service.importCSV("test", csv(content));
+
+        assertEquals(List.of("code", " name"), importedAgain.getColumns());
+        assertEquals(mappings, importedAgain.getColumnMappings());
+    }
+
+    @Test
+    void updateOfAManualListRejectsAKeyColumnWhoseValuesRepeat() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        when(codeListItemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
+                new CodeListItemEntity().setId(1L).setCodeListId(7).setColumns(List.of("001", "Berlin")),
+                new CodeListItemEntity().setId(2L).setCodeListId(7).setColumns(List.of("002", "Berlin"))
+        ));
+
+        var exception = assertThrows(ResponseException.class,
+                () -> service.update("test", createManualCodeList().setKeyColumnKey("name")));
+
+        assertEquals("Die Schlüsselspalte „Name“ enthält den Wert „Berlin“ mehrfach.", exception.getMessage());
+        verify(codeListRepository).findByKeyForUpdate("test");
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void ordinaryExternalUpdatesRejectAKeyAssignmentThatInvalidatesStoredRows() {
+        var current = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("id", "Code", 1),
+                        new CodeListColumnMapping("name", "Name", 2)
+                ))
+                .setKeyColumnKey("id");
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        when(codeListItemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
+                new CodeListItemEntity().setColumns(List.of("1", "Same")),
+                new CodeListItemEntity().setColumns(List.of("2", "Same"))
+        ));
+        var update = createAssetCodeList()
+                .setColumnMappings(current.getColumnMappings())
+                .setKeyColumnKey("name");
+
+        var failure = assertThrows(ResponseException.class, () -> service.update("test", update));
+
+        assertEquals(HttpStatus.CONFLICT, failure.getStatus());
+        assertEquals("Die Schlüsselspalte „Name“ enthält den Wert „Same“ mehrfach.", failure.getMessage());
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void updateRejectsAStaleLockVersion() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList().setLockVersion(1L)));
+
+        var exception = assertThrows(ResponseException.class,
+                () -> service.update("test", createManualCodeList().setName("Veraltet").setLockVersion(0L)));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        verify(codeListRepository).findByKeyForUpdate("test");
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void updateOfAManualListKeepsTheFormerSourceColumnOfAMissingColumn() throws Exception {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        // A CSV import without the name column left its mapping without a position.
+        var missingName = new CodeListColumnMapping("name", "Name", null, "name");
+
+        var updated = service.update("test", createManualCodeList().setColumnMappings(List.of(
+                new CodeListColumnMapping("code", "Code", 1),
+                missingName
+        )));
+
+        assertEquals(missingName, updated.getColumnMappings().get(1));
+    }
+
+    @Test
+    void updateOfASynchronizedListKeepsTheStoredColumns() throws Exception {
+        var existing = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("id", "id", 1),
+                        new CodeListColumnMapping("name", "name", 2)
+                ))
+                .setKeyColumnKey("id");
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(existing));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var updated = service.update("test", createAssetCodeList()
+                .setColumns(List.of("manipulated"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("identifier", "Kennung", 1),
+                        new CodeListColumnMapping("name", "Name", 2)
+                ))
+                .setKeyColumnKey("identifier"));
+
+        assertEquals(List.of("id", "name"), updated.getColumns());
+        assertEquals(new CodeListColumnMapping("identifier", "Kennung", 1), updated.getColumnMappings().getFirst());
+        assertEquals("identifier", updated.getKeyColumnKey());
+        assertEquals(CodeListStatus.SyncPending, updated.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidColumnMappings")
+    void updateRejectsInvalidColumnMappings(List<CodeListColumnMapping> mappings, String keyColumnKey, String message) {
+        var existing = createAssetCodeList().setColumns(List.of("id", "name"));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(existing));
+
+        var exception = assertThrows(ResponseException.class, () -> service.update("test", createAssetCodeList()
+                .setColumnMappings(mappings)
+                .setKeyColumnKey(keyColumnKey)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(message, exception.getMessage());
+        verify(codeListRepository, never()).save(any());
+    }
+
+    private static Stream<Arguments> invalidColumnMappings() {
+        var id = new CodeListColumnMapping("id", "id", 1);
+        return Stream.of(
+                Arguments.of(List.of(id, new CodeListColumnMapping(" ", "Name", 2)), "id", "Der Schlüssel einer Spalte darf nicht leer sein."),
+                Arguments.of(List.of(id, new CodeListColumnMapping(" id ", "Name", 2)), "id", "Der Spaltenschlüssel „id“ ist mehrfach vergeben."),
+                Arguments.of(List.of(id, new CodeListColumnMapping("name", "", 2)), "id", "Der Name der Spalte „name“ darf nicht leer sein."),
+                Arguments.of(List.of(id, new CodeListColumnMapping("name", "Name", 3)), "id", "Die Quellenzuordnung der Spalte „name“ ist ungültig."),
+                Arguments.of(List.of(id, new CodeListColumnMapping("name", "Name", 0)), "id", "Die Quellenzuordnung der Spalte „name“ ist ungültig."),
+                Arguments.of(List.of(id, new CodeListColumnMapping("name", "Name", 1)), "id", "Die Quellspalte an Position 1 ist mehreren Spalten zugeordnet."),
+                Arguments.of(List.of(id), "unknown", "Die Schlüsselspalte muss eine vorhandene Spalte der Codeliste sein."),
+                Arguments.of(List.of(id, new CodeListColumnMapping("removed", "Entfernt", null)), "removed", "Die Schlüsselspalte muss eine vorhandene Spalte der Codeliste sein.")
+        );
+    }
+
+    @Test
+    void manualListsNeedColumnsAndAKeyColumn() {
+        var withoutColumns = assertThrows(ResponseException.class, () -> service.create(createManualCodeList().setColumnMappings(List.of())));
+        var withoutKeyColumn = assertThrows(ResponseException.class, () -> service.create(createManualCodeList().setKeyColumnKey(" ")));
+
+        assertEquals("Manuelle Codelisten benötigen mindestens eine Spalte.", withoutColumns.getMessage());
+        assertEquals("Bitte wählen Sie eine Schlüsselspalte aus.", withoutKeyColumn.getMessage());
+    }
+
+    @Test
+    void initializedExternalListsNeedABoundKeyOnOrdinaryWrites() {
+        var initialized = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("id", "Code", 1)));
+
+        var failure = assertThrows(ResponseException.class, () -> service.create(initialized));
+
+        assertEquals("Bitte wählen Sie eine Schlüsselspalte aus.", failure.getMessage());
+    }
+
+    @Test
+    void uninitializedExternalAndPluginListsCanRemainWithoutAKey() throws Exception {
+        when(codeListRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        assertNull(service.create(createAssetCodeList()).getKeyColumnKey());
+        assertNull(service.create(createAssetCodeList().setSourceType(CodeListSourceType.Plugin)
+                .setColumns(List.of("id"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("id", "Code", 1)))).getKeyColumnKey());
+    }
+
+    // endregion
+
+    // region Saving assignments against refreshed source metadata
+
+    @Test
+    void savingRefreshedAssignmentsPreservesRetainedRowsAcrossARenamedKeySourceColumn() throws Exception {
+        var current = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("code", "Code", 1),
+                        new CodeListColumnMapping("label", "Bezeichnung", 2)
+                ))
+                .setKeyColumnKey("code")
+                .setLockVersion(3L);
+        var oldCurrentRow = new CodeListItemEntity().setId(1L).setColumns(List.of("1", "Old One"));
+        var outdatedRow = new CodeListItemEntity().setId(9L).setColumns(List.of("9", "Nine"));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        when(codeListRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(codeListItemRepository.findAllByCodeListId(7)).thenReturn(List.of(oldCurrentRow, outdatedRow));
+        useCsvAsset("name,new_id\nOne,1\nTwo,2\n");
+        var update = createAssetCodeList()
+                .setColumns(List.of("name", "new_id"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("code", "Code", 2),
+                        new CodeListColumnMapping("label", "Bezeichnung", 1)
+                ))
+                .setKeyColumnKey("code")
+                .setLockVersion(3L);
+
+        var saved = service.updateFromSource("test", update);
+
+        assertEquals(List.of("name", "new_id"), saved.getColumns());
+        assertEquals(update.getColumnMappings(), saved.getColumnMappings());
+        assertEquals(List.of(List.of("One", "1"), List.of("Nine", "9"), List.of("Two", "2")), savedItemColumns());
+        assertEquals(1L, oldCurrentRow.getId());
+        assertEquals(CodeListStatus.Synced, saved.getStatus());
+        assertNull(saved.getSyncRunId());
+        assertNull(saved.getSyncStarted());
+        var inOrder = inOrder(storageService, codeListRepository);
+        inOrder.verify(storageService).getDocumentContent(3, "/code-lists/test.csv");
+        inOrder.verify(codeListRepository).findByKeyForUpdate("test");
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+    }
+
+    @Test
+    void savingRefreshedAssignmentsUsesExistingTargetCellsWhenChangingTheKeyAssignment() throws Exception {
+        var current = createAssetCodeList()
+                .setColumns(List.of("old_id", "name", "new_id"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("code", "Code", 1)))
+                .setKeyColumnKey("code");
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        when(codeListRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(codeListItemRepository.findAllByCodeListId(7)).thenReturn(List.of(
+                new CodeListItemEntity().setId(1L).setColumns(List.of("1", "Old One", "A"))
+        ));
+        useCsvAsset("name,new_id\nOne,A\n");
+        var update = createAssetCodeList()
+                .setColumns(List.of("name", "new_id"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("code", "Code", 2)))
+                .setKeyColumnKey("code");
+
+        service.updateFromSource("test", update);
+
+        assertEquals(List.of(List.of("One", "A")), savedItemColumns());
+    }
+
+    @Test
+    void repairingAFailedSyncHonorsItsExplicitRequestToReplaceOutdatedRows() throws Exception {
+        var current = createSyncedGroupsList()
+                .setStatus(CodeListStatus.SyncFailed)
+                .setSyncKeepOutdated(false);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        when(codeListRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        useCsvAsset("name,new_id\nOne,A\n");
+        var update = createAssetCodeList()
+                .setColumns(List.of("name", "new_id"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("id", "Code", 2),
+                        new CodeListColumnMapping("name", "Bezeichnung", 1)
+                ))
+                .setKeyColumnKey("id");
+
+        var saved = service.updateFromSource("test", update);
+
+        assertEquals(CodeListStatus.Synced, saved.getStatus());
+        assertEquals(List.of(List.of("One", "A")), savedItemColumns());
+        verify(codeListItemRepository).deleteAllByCodeListId(7);
+        verify(codeListItemRepository, never()).findAllByCodeListId(any());
+    }
+
+    @Test
+    void savingRefreshedAssignmentsRejectsChangedPreviewMetadataBeforeTakingTheLock() throws Exception {
+        useCsvAsset("id,name\n1,One\n");
+        var update = createAssetCodeList().setColumns(List.of("name", "id"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("code", "Code", 2)))
+                .setKeyColumnKey("code");
+
+        var failure = assertThrows(ResponseException.class, () -> service.updateFromSource("test", update));
+
+        assertEquals(HttpStatus.CONFLICT, failure.getStatus());
+        assertEquals("Die Spalten der Quelle haben sich geändert. Rufen Sie die Metadaten erneut ab und prüfen Sie die Quellenzuordnung.", failure.getMessage());
+        verify(codeListRepository, never()).findByKeyForUpdate(anyString());
+        verify(codeListRepository, never()).save(any());
+        verifyNoInteractions(codeListItemRepository);
+    }
+
+    @Test
+    void savingRefreshedAssignmentsRejectsAStaleRecordWithoutTouchingItsRows() throws Exception {
+        var current = createAssetCodeList().setLockVersion(2L);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        useCsvAsset("id,name\n1,One\n");
+        var update = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("code", "Code", 1)))
+                .setKeyColumnKey("code")
+                .setLockVersion(1L);
+
+        var failure = assertThrows(ResponseException.class, () -> service.updateFromSource("test", update));
+
+        assertEquals(HttpStatus.CONFLICT, failure.getStatus());
+        assertEquals(Map.of("reason", "lock_version_conflict"), failure.getDetails());
+        verify(codeListRepository, never()).save(any());
+        verifyNoInteractions(codeListItemRepository);
+    }
+
+    @Test
+    void savingRefreshedAssignmentsRejectsInvalidSourceKeysBeforeChangingStoredRows() throws Exception {
+        var current = createSyncedGroupsList();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        useCsvAsset("id,name\n1,One\n1,Another\n");
+        var update = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("id", "Code", 1)))
+                .setKeyColumnKey("id");
+
+        var failure = assertThrows(ResponseException.class, () -> service.updateFromSource("test", update));
+
+        assertEquals(HttpStatus.CONFLICT, failure.getStatus());
+        assertEquals(List.of("id", "name", "alt_grouping"), current.getColumns());
+        verify(codeListRepository, never()).save(any());
+        verifyNoInteractions(codeListItemRepository);
+    }
+
+    @Test
+    void savingRefreshedAssignmentsRejectsAnUnboundKeyAndDuplicateSourceAssignments() throws Exception {
+        var update = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("id", "Code", null)))
+                .setKeyColumnKey("id");
+
+        assertThrows(ResponseException.class, () -> service.updateFromSource("test", update));
+        update.setColumnMappings(List.of(
+                new CodeListColumnMapping("id", "Code", 1),
+                new CodeListColumnMapping("label", "Bezeichnung", 1)
+        ));
+        assertThrows(ResponseException.class, () -> service.updateFromSource("test", update));
+        verify(codeListRepository, never()).save(any());
+        verifyNoInteractions(codeListItemRepository, storageService);
+    }
+
+    // endregion
+
+    // region Proposals for new lists
+
+    @Test
+    void getXRepositoryColumnsProposesMappingsWithTheSourceKeyColumn() throws Exception {
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList());
+
+        var proposal = service.getXRepositoryColumns("urn:test");
+
+        assertEquals(new CodeListSourceColumnsDto(
+                List.of("name", "code"),
+                List.of(
+                        new CodeListColumnMapping("name", "Bezeichnung", 1),
+                        new CodeListColumnMapping("code", "Schlüssel", 2)
+                ),
+                "code"
+        ), proposal);
+    }
+
+    @Test
+    void getAssetColumnsProposesTheFirstColumnThatIdentifiesEveryRow() throws Exception {
+        useCsvAsset("""
+                group,,id
+                1,x,a
+                1,y,b
+                """);
+
+        var proposal = service.getAssetColumns(ASSET_KEY);
+
+        assertEquals(List.of("group", "COL1", "id"), proposal.columns());
+        assertEquals(new CodeListColumnMapping("COL1", "COL1", 2), proposal.columnMappings().get(1));
+        assertEquals("COL1", proposal.keyColumnKey());
+    }
+
+    // endregion
+
+    // region Synchronization
+
+    @Test
+    void firstSyncOfAnXRepositoryListCreatesMappingsAndReplacesItems() throws Exception {
+        var current = createXRepositoryCodeList(List.of(), List.of());
+        var claimedRun = claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createXRepositoryCodeList(List.of(), List.of())));
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList(
+                row(value("code", "001"), value("name", "Berlin")),
+                row(value("code", "002"), value("name", "Hamburg"))
+        ));
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListRepository).claimSync(eq("test"), any(), any(), eq(STALE_BEFORE));
+        verify(codeListItemRepository).deleteAllByCodeListId(7);
+        verify(codeListRepository).save(current);
+        assertEquals(CodeListStatus.Synced, current.getStatus());
+        assertNull(current.getSyncRunId());
+        assertNull(current.getSyncStarted());
+        assertEquals(List.of("name", "code"), current.getColumns());
+        assertEquals(List.of(
+                new CodeListColumnMapping("name", "Bezeichnung", 1),
+                new CodeListColumnMapping("code", "Schlüssel", 2)
+        ), current.getColumnMappings());
+        assertEquals("code", current.getKeyColumnKey());
+        assertEquals(List.of(List.of("Berlin", "001"), List.of("Hamburg", "002")), savedItemColumns());
+        verify(codeListRepository, never()).releaseSync(any(), any());
+        assertEquals(1, claimedRun.size());
+    }
+
+    @Test
+    void firstSyncRespectsTheMappingsSelectedFromTheMetadataProposal() throws Exception {
+        var current = createAssetCodeList()
+                .setColumns(List.of("id", "name", "extra"))
+                .setColumnMappings(List.of(new CodeListColumnMapping("code", "Code", 1)))
+                .setKeyColumnKey("code");
+        claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        useCsvAsset("id,name,extra\n1,One,x\n");
+
+        service.syncCodeList("test", STALE_BEFORE);
+
+        assertEquals(List.of(new CodeListColumnMapping("code", "Code", 1)), current.getColumnMappings());
+        assertEquals(List.of("id", "name", "extra"), current.getColumns());
+    }
+
+    @Test
+    void syncKeepsDeletedAndExplicitlyUnboundMappingsAbsentWithoutSuffixEntries() throws Exception {
+        var current = createAssetCodeList()
+                .setColumns(List.of("id", "name", "extra"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("id", "Code", 1),
+                        new CodeListColumnMapping("label", "Bezeichnung", null)
+                ))
+                .setKeyColumnKey("id");
+        claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        useCsvAsset("extra,id,name,new\nx,1,One,y\n");
+
+        service.syncCodeList("test", STALE_BEFORE);
+
+        assertEquals(List.of(
+                new CodeListColumnMapping("id", "Code", 2),
+                new CodeListColumnMapping("label", "Bezeichnung", null)
+        ), current.getColumnMappings());
+    }
+
+    @Test
+    void syncDoesNotBootstrapAListWhoseMappingsWereDeliberatelyRemoved() throws Exception {
+        var current = createAssetCodeList().setColumns(List.of("id", "name"));
+        var runs = claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        useCsvAsset("id,name\n1,One\n");
+
+        service.syncCodeList("test", STALE_BEFORE);
+
+        assertEquals(List.of(), current.getColumnMappings());
+        verify(codeListRepository).failSync(eq("test"), eq(runs.getFirst()),
+                eq("Bitte ordnen Sie eine vorhandene Quellspalte als Schlüsselspalte zu."), any());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void syncMarksDuplicateKeysFailed() throws Exception {
+        var current = createXRepositoryCodeList(List.of(), List.of());
+        var claimedRun = claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createXRepositoryCodeList(List.of(), List.of())));
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList(
+                row(value("code", "001"), value("name", "Berlin")),
+                row(value("code", "001"), value("name", "Berlin duplicate"))
+        ));
+        when(codeListRepository.failSync(eq("test"), any(), any(), any())).thenReturn(1);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListItemRepository, never()).saveAll(any());
+        verify(codeListRepository).failSync(eq("test"), eq(claimedRun.getFirst()),
+                eq("Die Schlüsselspalte „Schlüssel“ enthält den Wert „001“ mehrfach."), any());
+        verify(codeListRepository, never()).save(any());
+        assertEquals(List.of(), current.getColumns());
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "failed").count());
+    }
+
+    @Test
+    void firstSyncOfACsvUsesFallbackNamesForMissingHeaderColumns() throws Exception {
+        var current = createAssetCodeList();
+        claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createAssetCodeList()));
+        useCsvAsset("""
+                code,,name
+                001,x,Berlin
+                002,x,Hamburg
+                """);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListRepository).save(current);
+        assertEquals(List.of("code", "COL1", "name"), current.getColumns());
+        assertEquals("code", current.getKeyColumnKey());
+        assertEquals(List.of(List.of("001", "x", "Berlin"), List.of("002", "x", "Hamburg")), savedItemColumns());
+        assertEquals(1, meterRegistry.counter("prosuna.sync.runs", "type", "code_list", "outcome", "success").count());
+    }
+
+    /** Test case 2 of OP#1265: the updated CSV adds the color column in front of the name column. */
+    @Test
+    void syncKeepsKeysAndNamesWhenTheSourceReordersItsColumns() throws Exception {
+        var current = createSyncedGroupsList();
+        claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createSyncedGroupsList()));
+        useCsvAsset("""
+                id,color,name,alt_grouping
+                1,red,Group 1,1
+                2,blue,Group 2,1
+                3,green,Group 3,2
+                4,magenta,Group 4,3
+                """);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        assertEquals(List.of("id", "color", "name", "alt_grouping"), current.getColumns());
+        assertEquals(List.of(
+                new CodeListColumnMapping("id", "id", 1),
+                new CodeListColumnMapping("name", "Bezeichnung", 3),
+                new CodeListColumnMapping("alt_grouping", "alt_grouping", 4)
+        ), current.getColumnMappings());
+        assertEquals("id", current.getKeyColumnKey());
+        assertEquals(4, savedItemColumns().size());
+    }
+
+    @Test
+    void syncKeepsOutdatedRowsInTheNewColumnOrder() throws Exception {
+        var current = createSyncedGroupsList().setSyncKeepOutdated(true);
+        claims(current);
+        var updatedRow = new CodeListItemEntity().setId(1L).setCodeListId(7).setColumns(List.of("1", "Group 1", "1"));
+        var outdatedRow = new CodeListItemEntity().setId(9L).setCodeListId(7).setColumns(List.of("9", "Group 9", "5"));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createSyncedGroupsList().setSyncKeepOutdated(true)));
+        when(codeListItemRepository.findAllByCodeListId(7)).thenReturn(List.of(updatedRow, outdatedRow));
+        useCsvAsset("""
+                id,color,name
+                1,red,Group One
+                4,magenta,Group 4
+                """);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        assertEquals(List.of(
+                List.of("1", "red", "Group One"),
+                List.of("9", "", "Group 9"),
+                List.of("4", "magenta", "Group 4")
+        ), savedItemColumns());
+        assertEquals(new CodeListColumnMapping("alt_grouping", "alt_grouping", null, "alt_grouping"), current.getColumnMappings().get(2));
+    }
+
+    @Test
+    void syncRestoresAReturningColumnWithoutAddingNewSourceColumns() throws Exception {
+        var current = createAssetCodeList()
+                .setColumns(List.of("id", "name"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("id", "id", 1),
+                        // Staff renamed the key of the name column to the name of a column that the source adds now.
+                        new CodeListColumnMapping("label", "name", 2),
+                        new CodeListColumnMapping("color", "Farbe", null, "color")
+                ))
+                .setKeyColumnKey("id");
+        claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createAssetCodeList()));
+        useCsvAsset("""
+                id,name,label,color
+                1,Group 1,G1,red
+                """);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        assertEquals(List.of(
+                new CodeListColumnMapping("id", "id", 1),
+                new CodeListColumnMapping("label", "name", 2),
+                new CodeListColumnMapping("color", "Farbe", 4)
+        ), current.getColumnMappings());
+    }
+
+    @Test
+    void mergeColumnMappingsRestoresARenamedMappingOnlyForItsFormerSourceColumn() {
+        var previousMappings = List.of(
+                new CodeListColumnMapping("id", "id", 1),
+                // Staff renamed the key of the name column.
+                new CodeListColumnMapping("label", "Bezeichnung", 2)
+        );
+
+        // The name column disappears, and the source adds a different column whose name is the renamed key.
+        var withoutName = CodeListService.mergeColumnMappings(
+                List.of("id", "name"), previousMappings, List.of("id", "label"));
+        assertEquals(List.of(
+                new CodeListColumnMapping("id", "id", 1),
+                new CodeListColumnMapping("label", "Bezeichnung", null, "name")
+        ), withoutName);
+
+        // The name column returns and gets the renamed mapping back.
+        var withName = CodeListService.mergeColumnMappings(
+                List.of("id", "label"), withoutName, List.of("id", "name", "label"));
+        assertEquals(List.of(
+                new CodeListColumnMapping("id", "id", 1),
+                new CodeListColumnMapping("label", "Bezeichnung", 2)
+        ), withName);
+    }
+
+    @Test
+    void returningColumnsKeepAnExplicitActiveAssignmentAheadOfAnOlderMissingMapping() {
+        var mappings = CodeListService.mergeColumnMappings(
+                List.of("id", "name"),
+                List.of(
+                        new CodeListColumnMapping("old", "Alt", null, "name"),
+                        new CodeListColumnMapping("current", "Aktuell", 2)
+                ),
+                List.of("name", "id"));
+
+        assertEquals(List.of(
+                new CodeListColumnMapping("old", "Alt", null, "name"),
+                new CodeListColumnMapping("current", "Aktuell", 1)
+        ), mappings);
+    }
+
+    @Test
+    void metadataProposalTrimsKeysAndAvoidsCollisionsWhileKeepingSourceHeaders() throws Exception {
+        useCsvAsset(" name ,name, code \nA,B,C\n");
+        var proposal = service.getAssetColumns(ASSET_KEY);
+
+        assertEquals(List.of(
+                new CodeListColumnMapping("name", "name", 1),
+                new CodeListColumnMapping("name_2", "name", 2),
+                new CodeListColumnMapping("code", "code", 3)
+        ), proposal.columnMappings());
+        assertEquals(List.of(" name ", "name", " code "), proposal.columns());
+    }
+
+    @Test
+    void syncRejectsAMissingConfiguredKeyBeforeChangingRows() throws Exception {
+        var current = createSyncedGroupsList().setSyncKeepOutdated(true);
+        var claimedRun = claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createSyncedGroupsList().setSyncKeepOutdated(true)));
+        when(codeListItemRepository.findAllByCodeListId(7)).thenReturn(List.of(
+                new CodeListItemEntity().setId(1L).setCodeListId(7).setColumns(List.of("1", "Group 1", "1"))
+        ));
+        when(codeListRepository.failSync(eq("test"), any(), any(), any())).thenReturn(1);
+        // The id column is gone, so the new code column becomes the key column, which the kept row has no value for.
+        useCsvAsset("""
+                code,name
+                G1,Group 1
+                """);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListRepository).failSync(eq("test"), eq(claimedRun.getFirst()),
+                eq("Die Schlüsselspalte „id“ ist keiner vorhandenen Quellspalte zugeordnet. Die bisherige Quellspalte „id“ ist in der Quelle nicht vorhanden. Rufen Sie die Metadaten ab und prüfen Sie die Quellenzuordnung."),
+                any());
+        verify(codeListItemRepository, never()).saveAll(any());
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void syncPreservesTheLastUsableColumnsWhenTheConfiguredKeyDisappears() throws Exception {
+        var current = createSyncedGroupsList();
+        claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createSyncedGroupsList()));
+        when(codeListRepository.failSync(anyString(), any(), any(), any())).thenReturn(1);
+        useCsvAsset("""
+                name,code
+                Group 1,G1
+                Group 1,G2
+                """);
+
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        assertEquals("id", current.getKeyColumnKey());
+        assertEquals(List.of("id", "name", "alt_grouping"), current.getColumns());
+        assertEquals(1, current.findColumnMapping("id").orElseThrow().index());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void syncThatIsNotPendingDoesNothing() throws Exception {
+        assertFalse(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListRepository, never()).findById(any());
+        verify(codeListRepository, never()).save(any());
+        verifyNoInteractions(xRepositoryCodeListService);
+    }
+
+    @Test
+    void changeDuringTheSyncIsKeptAndRequestedAgain() throws Exception {
+        var current = createXRepositoryCodeList(List.of(), List.of());
+        var claimedRun = claims(current);
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createXRepositoryCodeList(List.of(), List.of())));
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenAnswer(call -> {
+            // Staff change the source while it is read, which requests another synchronization.
+            current.setSourceRef("urn:changed").setStatus(CodeListStatus.SyncPending).setSyncKeepOutdated(true);
+            return createXRepositoryCodeList(row(value("code", "001"), value("name", "Berlin")));
+        });
+
+        assertTrue(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListItemRepository, never()).saveAll(any());
+        verify(codeListRepository, never()).save(any());
+        verify(codeListRepository, never()).failSync(any(), any(), any(), any());
+        verify(codeListRepository).releaseSync("test", claimedRun.getFirst());
+        assertEquals("urn:changed", current.getSourceRef());
+        assertEquals(CodeListStatus.SyncPending, current.getStatus());
+        assertTrue(current.getSyncKeepOutdated());
+    }
+
+    @Test
+    void runThatWasTakenOverDiscardsItsResult() throws Exception {
+        var current = createXRepositoryCodeList(List.of(), List.of());
+        claims(current);
+        var otherRun = UUID.randomUUID();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createXRepositoryCodeList(List.of(), List.of())));
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenAnswer(call -> {
+            // The run took longer than the stale threshold, so another run took the synchronization over.
+            current.setSyncRunId(otherRun);
+            return createXRepositoryCodeList(row(value("code", "001"), value("name", "Berlin")));
+        });
+
+        service.syncCodeList("test", STALE_BEFORE);
+
+        verify(codeListItemRepository, never()).saveAll(any());
+        verify(codeListRepository, never()).save(any());
+        assertEquals(otherRun, current.getSyncRunId());
+        assertEquals(CodeListStatus.Syncing, current.getStatus());
+    }
+
+    @Test
+    void failureOfASupersededRunIsNotRecorded() throws Exception {
+        var claimedRun = claims(createXRepositoryCodeList(List.of(), List.of()));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createXRepositoryCodeList(List.of(), List.of())));
+        when(xRepositoryCodeListService.getCodeList("urn:test")).thenThrow(ResponseException.internalServerError("XRepository nicht erreichbar"));
+
+        assertTrue(service.syncCodeList("test", STALE_BEFORE));
+
+        verify(codeListRepository).failSync(eq("test"), eq(claimedRun.getFirst()), any(), any());
+        verify(codeListRepository).releaseSync("test", claimedRun.getFirst());
+    }
+
+    @Test
+    void requestSyncStoresTheRequestWithTheCodeList() {
+        when(codeListRepository.requestSync(eq("test"), eq(true), any())).thenReturn(1);
+
+        assertTrue(service.requestSync("test", true));
+        assertFalse(service.requestSync("manual", false));
+    }
+
+    @Test
+    void mergeColumnMappingsIgnoresMappingsThatPointBehindTheStoredColumns() {
+        var mappings = CodeListService.mergeColumnMappings(
+                List.of("id"),
+                List.of(new CodeListColumnMapping("ghost", "Ghost", 5)),
+                List.of("id")
+        );
+
+        assertEquals(List.of(
+                new CodeListColumnMapping("ghost", "Ghost", null)
+        ), mappings);
+    }
+
+    // endregion
+
+    // region CSV export and import of manual lists
+
+    @Test
+    void exportCsvWritesColumnsAndAllCellsOfEveryItem() throws Exception {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        when(codeListItemRepository.findSnapshotsByCodeListId(7)).thenReturn(List.of(
+                snapshot(1L, List.of("001", "Berlin"), List.of("code", "name")),
+                snapshot(2L, List.of("00,2", "Ham\"burg"), List.of("code", "name")),
+                // The row was stored before the name column was added.
+                snapshot(3L, List.of("003"), List.of("code", "name")),
+                // A synchronization reordered the columns after the list was read.
+                snapshot(4L, List.of("Bremen", "004"), List.of("name", "code"))
+        ));
+
+        var csv = new String(service.exportCSV("test"), StandardCharsets.UTF_8);
+
+        assertEquals("code,name\r\n001,Berlin\r\n\"00,2\",\"Ham\"\"burg\"\r\n003,\r\n004,Bremen\r\n", csv);
+    }
+
+    @Test
+    void exportCsvUsesOnlyBoundMappingsInTheirAuthoredOrderWithOriginalHeaders() throws Exception {
+        var current = createManualCodeList()
+                .setColumns(List.of(" code ", "name", "hidden"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("label", "Bezeichnung", 2),
+                        new CodeListColumnMapping("absent", "Fehlend", null),
+                        new CodeListColumnMapping("value", "Wert", 1)
+                ));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(current));
+        when(codeListItemRepository.findSnapshotsByCodeListId(7)).thenReturn(List.of(
+                snapshot(1L, List.of("001", "Berlin", "x"), current.getColumns())
+        ));
+
+        assertEquals("name, code \r\nBerlin,001\r\n", new String(service.exportCSV("test"), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void importManualCsvReplacesItemsAndKeepsTheMappingsOfKnownColumns() throws Exception {
+        var codeList = createManualCodeList();
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var imported = service.importCSV("test", csv("""
+                name,code,extra
+                Berlin,001,x
+                Hamburg,002,y
+                """));
+
+        verify(codeListItemRepository).deleteAllByCodeListId(7);
+        assertEquals(List.of("name", "code", "extra"), imported.getColumns());
+        assertEquals(List.of(
+                new CodeListColumnMapping("code", "Code", 2),
+                new CodeListColumnMapping("name", "Name", 1),
+                new CodeListColumnMapping("extra", "extra", 3)
+        ), imported.getColumnMappings());
+        assertEquals("code", imported.getKeyColumnKey());
+        assertEquals(List.of(List.of("Berlin", "001", "x"), List.of("Hamburg", "002", "y")), savedItemColumns());
+    }
+
+    @Test
+    void importManualCsvRejectsDuplicateKeysBeforeDeletingItems() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+
+        assertThrows(ResponseException.class, () -> service.importCSV("test", csv("""
+                code,name
+                001,Berlin
+                001,Hamburg
+                """)));
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void importManualCsvRejectsBlankKeysBeforeDeletingItems() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+
+        var exception = assertThrows(ResponseException.class, () -> service.importCSV("test", csv("""
+                code,name
+                001,Berlin
+                " ",Hamburg
+                """)));
+
+        assertEquals("Die Schlüsselspalte „Code“ enthält leere Werte.", exception.getMessage());
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void importCsvRejectsNonManualCodeLists() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createAssetCodeList()));
+
+        assertThrows(ResponseException.class, () -> service.importCSV("test", csv("""
+                code,name
+                001,Berlin
+                """)));
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    // endregion
+
+    private List<List<String>> savedItemColumns() {
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        var itemsCaptor = (ArgumentCaptor<Iterable<CodeListItemEntity>>) (ArgumentCaptor) ArgumentCaptor.forClass(Iterable.class);
+        verify(codeListItemRepository).saveAll(itemsCaptor.capture());
+        return StreamSupport
+                .stream(itemsCaptor.getValue().spliterator(), false)
+                .map(CodeListItemEntity::getColumns)
+                .toList();
+    }
+
+    /** Claims the synchronization of the given list as the locked current state. Returns the claimed runs. */
+    private List<UUID> claims(CodeListEntity current) {
+        var runs = new ArrayList<UUID>();
+        when(codeListRepository.claimSync(eq("test"), any(), any(), any())).thenAnswer(call -> {
+            UUID runId = call.getArgument(1);
+            runs.add(runId);
+            current.setStatus(CodeListStatus.Syncing).setSyncRunId(runId).setSyncStarted(call.getArgument(2));
+            return 1;
+        });
+        // doReturn does not call the mock, whose default answer for the lock would otherwise be stubbed instead.
+        doReturn(Optional.of(current)).when(codeListRepository).findByKeyForUpdate("test");
+        return runs;
+    }
+
+    private void useCsvAsset(String content) throws Exception {
+        var asset = new AssetEntity()
+                .setKey(ASSET_KEY)
+                .setPrivate(true)
+                .setStorageProviderId(3)
+                .setStoragePathFromRoot("/code-lists/test.csv");
+        when(assetService.retrieve(ASSET_KEY)).thenReturn(Optional.of(asset));
+        when(storageService.getDocumentContent(3, "/code-lists/test.csv")).thenReturn(csv(content));
+    }
+
+    private static CodeListItemSnapshot snapshot(Long id, List<String> cells, List<String> listColumns) {
+        return new CodeListItemSnapshot(id, 7, cells, Instant.EPOCH, Instant.EPOCH, listColumns);
+    }
+
+    private static ByteArrayInputStream csv(String content) {
+        return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static PlatformTransactionManager transactionManager() {
+        var transactionManager = mock(PlatformTransactionManager.class);
+        when(transactionManager.getTransaction(any())).thenAnswer(call -> new SimpleTransactionStatus());
+        return transactionManager;
+    }
+
+    private static CodeListEntity createManualCodeList() {
+        return new CodeListEntity()
+                .setKey("test")
+                .setId(7)
+                .setSourceType(CodeListSourceType.Manual)
+                .setSourceRef("")
+                .setName("Test")
+                .setDescription("")
+                .setColumns(List.of("code", "name"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("code", "Code", 1),
+                        new CodeListColumnMapping("name", "Name", 2)
+                ))
+                .setKeyColumnKey("code")
+                .setStatus(CodeListStatus.Synced);
+    }
+
+    /** A manual list whose key column is the second of three columns. */
+    private static CodeListEntity createStateList() {
+        return createManualCodeList()
+                .setColumns(List.of("name", "code", "extra"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("name", "Anzeigename", 1),
+                        new CodeListColumnMapping("code", "Schlüssel", 2),
+                        new CodeListColumnMapping("extra", "Zusatz", 3)
+                ));
+    }
+
+    private static CodeListEntity createXRepositoryCodeList(List<String> columns, List<CodeListColumnMapping> mappings) {
+        return new CodeListEntity()
+                .setKey("test")
+                .setId(7)
+                .setSourceType(CodeListSourceType.XRepository)
+                .setSourceRef("urn:test")
+                .setName("Test")
+                .setDescription("")
+                .setColumns(columns)
+                .setColumnMappings(mappings)
+                .setStatus(CodeListStatus.Syncing)
+                .setSyncKeepOutdated(false);
+    }
+
+    private static CodeListEntity createAssetCodeList() {
+        return new CodeListEntity()
+                .setKey("test")
+                .setId(7)
+                .setSourceType(CodeListSourceType.Asset)
+                .setSourceRef(ASSET_KEY.toString())
+                .setName("Test")
+                .setDescription("")
+                .setColumns(List.of())
+                .setColumnMappings(List.of())
+                .setStatus(CodeListStatus.Syncing)
+                .setSyncKeepOutdated(false);
+    }
+
+    /** The "Groups" list of OP#1265 after its initial synchronization; staff renamed the name column. */
+    private static CodeListEntity createSyncedGroupsList() {
+        return createAssetCodeList()
+                .setColumns(List.of("id", "name", "alt_grouping"))
+                .setColumnMappings(List.of(
+                        new CodeListColumnMapping("id", "id", 1),
+                        new CodeListColumnMapping("name", "Bezeichnung", 2),
+                        new CodeListColumnMapping("alt_grouping", "alt_grouping", 3)
+                ))
+                .setKeyColumnKey("id");
+    }
+
+    private static XRepositoryCodeList createXRepositoryCodeList(XRepositoryCodeListSimpleCodeListRow... rows) {
+        return new XRepositoryCodeList()
+                .setColumnSet(new XRepositoryCodeListColumnSet()
+                        .setColumn(List.of(
+                                new XRepositoryCodeListColumnSetColumn().setId("name").setShortName("Bezeichnung"),
+                                new XRepositoryCodeListColumnSetColumn().setId("code").setShortName("code").setLongName("Schlüssel")
+                        ))
+                        .setKey(new XRepositoryCodeListColumnSetKey()
+                                .setColumnRef(new XRepositoryCodeListColumnSetKeyRef().setRef("code"))))
+                .setCodeList(new XRepositoryCodeListSimpleCodeList()
+                        .setRow(List.of(rows)));
+    }
+
+    private static XRepositoryCodeListSimpleCodeListRow row(XRepositoryCodeListSimpleCodeListRowValue... values) {
+        return new XRepositoryCodeListSimpleCodeListRow().setValue(List.of(values));
+    }
+
+    private static XRepositoryCodeListSimpleCodeListRowValue value(String columnRef, String value) {
+        return new XRepositoryCodeListSimpleCodeListRowValue()
+                .setColumnRef(columnRef)
+                .setSimpleValue(value);
+    }
+}

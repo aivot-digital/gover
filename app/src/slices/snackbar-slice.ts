@@ -1,80 +1,94 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AlertColor } from '@mui/material';
+import {addSnackbarMessage, removeSnackbarMessage, SnackbarAction, SnackbarSeverity, SnackbarType} from './shell-slice';
+import {isApiError, isLockVersionConflictError} from '../models/api-error';
 
-interface SnackbarMessage {
-    key: string; // Einzigartiger Schlüssel für jede Nachricht
-    message: string;
-    severity: AlertColor;
-}
-
-interface SnackbarState {
-    messages: SnackbarMessage[];
-}
-
-const initialState: SnackbarState = {
-    messages: [],
+export const showSuccessSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Success,
+        type: SnackbarType.AutoHiding,
+    });
 };
 
-const snackbarSlice = createSlice({
-    name: 'snackbar',
-    initialState,
-    reducers: {
-        showSuccessSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'success',
-            });
-        },
-        showErrorSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'error',
-            });
-        },
-        showInfoSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'info',
-            });
-        },
-        showWarningSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages.unshift({
-                key: new Date().getTime().toString(),
-                message: action.payload,
-                severity: 'warning',
-            });
-        },
-        removeSnackbar: (state, action: PayloadAction<string>) => {
-            state.messages = state.messages.filter(msg => msg.key !== action.payload);
-        },
-        showLoadingSnackbar: (state, action: PayloadAction<string>) => {
-            const key = 'loading-toast';
-            const alreadyExists = state.messages.find(msg => msg.key === key);
-            if (!alreadyExists) {
-                state.messages.unshift({
-                    key,
-                    message: action.payload,
-                    severity: 'info',
-                });
-            }
-        },
-        removeLoadingSnackbar: (state) => {
-            state.messages = state.messages.filter(msg => msg.key !== 'loading-toast');
-        },
-    },
-});
+export const showWarningSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Warning,
+        type: SnackbarType.AutoHiding,
+    });
+};
 
-export const {
-    showSuccessSnackbar,
-    showErrorSnackbar,
-    showInfoSnackbar,
-    showWarningSnackbar,
-    removeSnackbar,
-    showLoadingSnackbar,
-    removeLoadingSnackbar,
-} = snackbarSlice.actions;
+export const showErrorSnackbar = (message: string, persist: boolean = false) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Error,
+        type: persist ? SnackbarType.Dismissable : SnackbarType.AutoHiding,
+    });
+};
 
-export const snackbarReducer = snackbarSlice.reducer;
+/**
+ * Shows a conflict with a newer saved state and offers to reload the page. Reloading is the one recovery that works on
+ * every page: the edited copies of pages, dialogs and editors keep the outdated lock version until they are reloaded.
+ */
+export const showLockConflictSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message: `${message} Beim Neuladen gehen nicht gespeicherte Änderungen auf dieser Seite verloren.`,
+        severity: SnackbarSeverity.Error,
+        type: SnackbarType.Dismissable,
+        action: SnackbarAction.ReloadPage,
+    });
+};
+
+/**
+ * Shows a failed save after a newer saved state in an editor whose current changes are stored in this browser. After the
+ * reload, the editor offers to restore them and merge them with the newer state.
+ */
+export const showDraftLockConflictSnackbar = () => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message: 'Ihre Änderungen konnten nicht gespeichert werden, da zwischenzeitlich ein neuerer Stand gespeichert wurde. ' +
+            'Laden Sie die Seite neu. Ihre Änderungen sind in diesem Browser zwischengespeichert und können anschließend ' +
+            'wiederhergestellt und mit dem neueren Stand zusammengeführt werden.',
+        severity: SnackbarSeverity.Error,
+        type: SnackbarType.Dismissable,
+        action: SnackbarAction.ReloadPage,
+    });
+};
+
+/** Promises draft recovery for a lock conflict only once `backUpDraft` has stored the current changes. */
+export const showEditorSaveErrorSnackbar = async (error: unknown, defaultMessage: string, backUpDraft: () => Promise<boolean>) => {
+    return isLockVersionConflictError(error) && await backUpDraft() ?
+        showDraftLockConflictSnackbar() :
+        showApiErrorSnackbar(error, defaultMessage);
+};
+
+export const showApiErrorSnackbar = (error: any, defaultMessage: string, persist: boolean = false) => {
+    if (isLockVersionConflictError(error)) {
+        return showLockConflictSnackbar(error.message);
+    }
+    if (isApiError(error) && error.displayableToUser) {
+        return showErrorSnackbar(error.message, persist);
+    }
+    console.error(error);
+    return showErrorSnackbar(defaultMessage, persist);
+};
+
+export const LOADING_TOAST_SNACKBAR_KEY = 'loading-toast';
+
+export const showLoadingSnackbar = (message: string) => {
+    return addSnackbarMessage({
+        key: LOADING_TOAST_SNACKBAR_KEY,
+        message: message,
+        severity: SnackbarSeverity.Info,
+        type: SnackbarType.Loading,
+    });
+};
+
+export const removeSnackbar = removeSnackbarMessage;
+
+export const removeLoadingSnackbar = () => {
+    return removeSnackbarMessage(LOADING_TOAST_SNACKBAR_KEY);
+};

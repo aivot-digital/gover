@@ -13,7 +13,6 @@ export function HeadlineComponent({
             component={'h3'} // we set h3 explicitly to avoid a user creating a wrong headline hierarchy (A11y)
             className={"headline-component-content"}
             sx={{
-                color: small ? "#16191F" : theme.palette.primary.dark,
                 fontSize: small ? "1.125rem" : "1.25rem",
                 textTransform: uppercase ? "uppercase" : "none",
                 margin: small ? '0.5rem 0 0.5rem 0' : '1.25rem 0 0.5rem 0',

@@ -1,58 +1,26 @@
-import {ConditionOperator} from "../data/condition-operator";
-import {BaseEvaluator} from "./base-evaluator";
-import {addDays, addMonths, addYears, isAfter, isBefore, isSameDay, isValid, parse, parseISO, subDays, subMonths, subYears} from "date-fns";
+import {DateTime} from 'luxon';
+import {ConditionOperator} from '../data/condition-operator';
+import {BaseEvaluator} from './base-evaluator';
+import {
+    dateValueToDateTime,
+    getCurrentApplicationDate,
+    isLocalDateIso,
+    isYearIso,
+    isYearMonthIso,
+} from '../utils/temporal-utils';
 
-const dayRegex = /^\d\d\.\d\d\.\d\d\d\d$/;
-const dayAnyMonthAnyYearRegex = /^\d\d\.$/;
-const monthRegex = /^\d\d\.\d\d\d\d$/;
-const monthAnyYearRegex = /^\d\d\.\d\d\.$/;
-const yearRegex = /^\d\d\d\d$/;
-
-const germanDateFormat = 'dd.MM.yyyy';
+const dayPattern = /^\d{2}\.\d{2}\.\d{4}$/;
+const dayAnyMonthAnyYearPattern = /^\d{2}\.$/;
+const monthPattern = /^\d{2}\.\d{4}$/;
+const dayAndMonthAnyYearPattern = /^\d{2}\.\d{2}\.$/;
+const comparisonAnchorYear = 2000;
 
 enum Precision {
-    day,
-    dayAnyMonthAnyYear,
-    month,
-    dayAndMonthAnyYear,
-    year,
-    iso,
-}
-
-function transformValue(val: any): [Date, Precision] | [null, null] {
-    if (typeof val !== 'string') {
-        return [null, null];
-    }
-
-    const today = new Date();
-
-    let date: Date | null = null;
-    let precision: Precision | null = null;
-    try {
-        if (val.match(dayRegex)) {
-            date = parse(val, germanDateFormat, new Date());
-            precision = Precision.day;
-        } else if (val.match(dayAnyMonthAnyYearRegex)) {
-            date = parse(val + today.getMonth() + '.' + today.getFullYear(), germanDateFormat, new Date());
-            precision = Precision.dayAnyMonthAnyYear;
-        } else if (val.match(monthRegex)) {
-            date = parse('01.' + val, germanDateFormat, new Date());
-            precision = Precision.month;
-        } else if (val.match(monthAnyYearRegex)) {
-            date = parse(val + today.getFullYear(), germanDateFormat, new Date());
-            precision = Precision.dayAndMonthAnyYear;
-        } else if (val.match(yearRegex)) {
-            date = parse('01.01.' + val, germanDateFormat, new Date());
-            precision = Precision.year;
-        } else {
-            date = parseISO(val);
-            precision = Precision.iso;
-        }
-    } catch (_) {
-        return [null, null];
-    }
-
-    return isValid(date) ? [date, precision] : [null, null];
+    Day,
+    DayAnyMonthAnyYear,
+    Month,
+    DayAndMonthAnyYear,
+    Year,
 }
 
 enum DateDiff {
@@ -61,358 +29,224 @@ enum DateDiff {
     Greater,
 }
 
-function compareDate(d1: Date, d2: Date): [DateDiff, DateDiff, DateDiff] {
+function currentDate(): DateTime<true> {
+    return dateValueToDateTime(getCurrentApplicationDate(), 'day')!;
+}
+
+function validDate(date: DateTime): DateTime<true> | null {
+    return date.isValid ? date as DateTime<true> : null;
+}
+
+function transformRuntimeValue(value: unknown): [DateTime<true>, Precision] | [null, null] {
+    if (typeof value !== 'string') {
+        return [null, null];
+    }
+
+    if (isLocalDateIso(value)) {
+        return [dateValueToDateTime(value, 'day')!, Precision.Day];
+    }
+
+    if (isYearMonthIso(value)) {
+        return [dateValueToDateTime(value, 'month')!, Precision.Month];
+    }
+
+    if (isYearIso(value)) {
+        return [dateValueToDateTime(value, 'year')!, Precision.Year];
+    }
+
+    return [null, null];
+}
+
+function transformComparisonValue(value: unknown): [DateTime<true>, Precision] | [null, null] {
+    const runtimeValue = transformRuntimeValue(value);
+    if (runtimeValue[0] != null || typeof value !== 'string') {
+        return runtimeValue;
+    }
+
+    if (dayPattern.test(value)) {
+        const date = validDate(DateTime.fromFormat(value, 'dd.MM.yyyy', {zone: 'UTC'}));
+        return date != null ? [date, Precision.Day] : [null, null];
+    }
+
+    if (dayAnyMonthAnyYearPattern.test(value)) {
+        // January accepts day 31 and the leap year 2000 accepts February 29.
+        // This keeps partial authored condition values independent of today's date.
+        const date = validDate(DateTime.fromObject({
+            year: comparisonAnchorYear,
+            month: 1,
+            day: Number.parseInt(value, 10),
+        }, {zone: 'UTC'}));
+        return date != null ? [date, Precision.DayAnyMonthAnyYear] : [null, null];
+    }
+
+    if (monthPattern.test(value)) {
+        const date = validDate(DateTime.fromFormat(`01.${value}`, 'dd.MM.yyyy', {zone: 'UTC'}));
+        return date != null ? [date, Precision.Month] : [null, null];
+    }
+
+    if (dayAndMonthAnyYearPattern.test(value)) {
+        const [day, month] = value.split('.').map(Number);
+        const date = validDate(DateTime.fromObject({
+            year: comparisonAnchorYear,
+            month,
+            day,
+        }, {zone: 'UTC'}));
+        return date != null ? [date, Precision.DayAndMonthAnyYear] : [null, null];
+    }
+
+    return [null, null];
+}
+
+function comparePart(left: number, right: number): DateDiff {
+    if (left === right) {
+        return DateDiff.Equal;
+    }
+    return left < right ? DateDiff.Less : DateDiff.Greater;
+}
+
+function compareDate(left: DateTime, right: DateTime): [DateDiff, DateDiff, DateDiff] {
     return [
-        d1.getDate() === d2.getDate() ? DateDiff.Equal : (d1.getDate() < d2.getDate() ? DateDiff.Less : DateDiff.Greater),
-        d1.getMonth() === d2.getMonth() ? DateDiff.Equal : (d1.getMonth() < d2.getMonth() ? DateDiff.Less : DateDiff.Greater),
-        d1.getFullYear() === d2.getFullYear() ? DateDiff.Equal : (d1.getFullYear() < d2.getFullYear() ? DateDiff.Less : DateDiff.Greater),
+        comparePart(left.day, right.day),
+        comparePart(left.month, right.month),
+        comparePart(left.year, right.year),
     ];
 }
 
+function compareByPrecision(
+    valueA: unknown,
+    valueB: unknown,
+    relation: DateDiff,
+    includeEqual: boolean,
+): boolean {
+    const [dateA] = transformRuntimeValue(valueA);
+    const [dateB, precisionB] = transformComparisonValue(valueB);
+
+    if (dateA == null || dateB == null || precisionB == null) {
+        return false;
+    }
+
+    const [dayDiff, monthDiff, yearDiff] = compareDate(dateA, dateB);
+    const matches = (diff: DateDiff) => diff === relation || (includeEqual && diff === DateDiff.Equal);
+
+    switch (precisionB) {
+        case Precision.Day:
+            if (yearDiff !== DateDiff.Equal) {
+                return matches(yearDiff);
+            }
+            if (monthDiff !== DateDiff.Equal) {
+                return matches(monthDiff);
+            }
+            return matches(dayDiff);
+        case Precision.DayAnyMonthAnyYear:
+            return matches(dayDiff);
+        case Precision.Month:
+            if (yearDiff !== DateDiff.Equal) {
+                return matches(yearDiff);
+            }
+            return matches(monthDiff);
+        case Precision.DayAndMonthAnyYear:
+            if (monthDiff !== DateDiff.Equal) {
+                return matches(monthDiff);
+            }
+            return matches(dayDiff);
+        case Precision.Year:
+            return matches(yearDiff);
+    }
+}
+
+function equalsByPrecision(valueA: unknown, valueB: unknown): boolean | null {
+    const [dateA] = transformRuntimeValue(valueA);
+    const [dateB, precisionB] = transformComparisonValue(valueB);
+
+    if (dateA == null || dateB == null || precisionB == null) {
+        return null;
+    }
+
+    const [dayDiff, monthDiff, yearDiff] = compareDate(dateA, dateB);
+
+    switch (precisionB) {
+        case Precision.Day:
+            return dayDiff === DateDiff.Equal
+                && monthDiff === DateDiff.Equal
+                && yearDiff === DateDiff.Equal;
+        case Precision.DayAnyMonthAnyYear:
+            return dayDiff === DateDiff.Equal;
+        case Precision.Month:
+            return monthDiff === DateDiff.Equal && yearDiff === DateDiff.Equal;
+        case Precision.DayAndMonthAnyYear:
+            return dayDiff === DateDiff.Equal && monthDiff === DateDiff.Equal;
+        case Precision.Year:
+            return yearDiff === DateDiff.Equal;
+    }
+}
+
+function parseAmount(value: unknown): number | null {
+    if (typeof value !== 'string' && typeof value !== 'number') {
+        return null;
+    }
+
+    const amountString = String(value);
+    if (!/^-?\d+$/.test(amountString)) {
+        return null;
+    }
+
+    const amount = Number(amountString);
+    return Number.isInteger(amount)
+        && amount >= -2_147_483_648
+        && amount <= 2_147_483_647
+        ? amount
+        : null;
+}
+
+function compareRelative(
+    value: unknown,
+    amountValue: unknown,
+    unit: 'years' | 'months' | 'days',
+    direction: 'past' | 'future',
+): boolean {
+    const [date] = transformRuntimeValue(value);
+    const amount = parseAmount(amountValue);
+
+    if (date == null || amount == null) {
+        return false;
+    }
+
+    const target = direction === 'past'
+        ? currentDate().minus({[unit]: amount})
+        : currentDate().plus({[unit]: amount});
+
+    return direction === 'past'
+        ? date.toMillis() <= target.toMillis()
+        : date.toMillis() >= target.toMillis();
+}
+
 export const DateEvaluator: BaseEvaluator<string> = {
-    [ConditionOperator.Equals]: (valueA, valueB) => {
-        const [tValA, pValA] = transformValue(valueA);
-        const [tValB, pValB] = transformValue(valueB);
-
-        if (tValA == null || tValB == null) {
-            return false;
-        }
-
-        const [
-            dayEq,
-            monthEq,
-            yearEq,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
-
-        switch (pValB) {
-            case Precision.day:
-            case Precision.iso:
-                return dayEq && monthEq && yearEq;
-            case Precision.dayAnyMonthAnyYear:
-                return dayEq;
-            case Precision.month:
-                return monthEq && yearEq;
-            case Precision.dayAndMonthAnyYear:
-                return dayEq && monthEq;
-            case Precision.year:
-                return yearEq;
-        }
-    },
+    [ConditionOperator.Equals]: (valueA, valueB) =>
+        equalsByPrecision(valueA, valueB) ?? false,
     [ConditionOperator.NotEquals]: (valueA, valueB) => {
-        const [tValA, pValA] = transformValue(valueA);
-        const [tValB, pValB] = transformValue(valueB);
-
-        if (tValA == null || tValB == null) {
-            return false;
-        }
-
-        const [
-            dayNeq,
-            monthNeq,
-            yearNeq,
-        ] = compareDate(tValA, tValB).map(d => d !== DateDiff.Equal);
-
-        switch (pValB) {
-            case Precision.day:
-            case Precision.iso:
-                return dayNeq || monthNeq || yearNeq;
-            case Precision.dayAnyMonthAnyYear:
-                return dayNeq;
-            case Precision.month:
-                return monthNeq || yearNeq;
-            case Precision.dayAndMonthAnyYear:
-                return dayNeq || monthNeq;
-            case Precision.year:
-                return yearNeq;
-        }
+        const equals = equalsByPrecision(valueA, valueB);
+        return equals != null ? !equals : false;
     },
-
-    [ConditionOperator.LessThan]: (valueA, valueB) => {
-        const [tValA, pValA] = transformValue(valueA);
-        const [tValB, pValB] = transformValue(valueB);
-
-        if (tValA == null || tValB == null) {
-            return false;
-        }
-
-        const [
-            _,
-            monthEqual,
-            yearEqual,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
-
-        const [
-            dayLess,
-            monthLess,
-            yearLess,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Less);
-
-        switch (pValB) {
-            case Precision.day:
-            case Precision.iso:
-                return (
-                    yearLess ||
-                    (yearEqual && monthLess) ||
-                    (yearEqual && monthEqual && dayLess)
-                );
-            case Precision.dayAnyMonthAnyYear:
-                return dayLess;
-            case Precision.month:
-                return (
-                    yearLess ||
-                    (yearEqual && monthLess)
-                );
-            case Precision.dayAndMonthAnyYear:
-                return monthLess || (monthEqual && dayLess);
-            case Precision.year:
-                return yearLess;
-        }
-    },
-
-    [ConditionOperator.LessThanOrEqual]: (valueA, valueB) => {
-        const [tValA, pValA] = transformValue(valueA);
-        const [tValB, pValB] = transformValue(valueB);
-
-        if (tValA == null || tValB == null) {
-            return false;
-        }
-
-        const [
-            dayEqual,
-            monthEqual,
-            yearEqual,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
-
-        const [
-            dayLess,
-            monthLess,
-            yearLess,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Less);
-
-        switch (pValB) {
-            case Precision.day:
-            case Precision.iso:
-                return (
-                    yearLess ||
-                    (yearEqual && monthLess) ||
-                    (yearEqual && monthEqual && (dayLess || dayEqual))
-                );
-            case Precision.dayAnyMonthAnyYear:
-                return dayLess || dayEqual;
-            case Precision.month:
-                return (
-                    yearLess ||
-                    (yearEqual && (monthLess || monthEqual))
-                );
-            case Precision.dayAndMonthAnyYear:
-                return monthLess || (monthEqual && (dayLess || dayEqual));
-            case Precision.year:
-                return yearLess || yearEqual;
-        }
-    },
-
-    [ConditionOperator.GreaterThan]: (valueA, valueB) => {
-        const [tValA, pValA] = transformValue(valueA);
-        const [tValB, pValB] = transformValue(valueB);
-
-        if (tValA == null || tValB == null) {
-            return false;
-        }
-
-        const [
-            _,
-            monthEqual,
-            yearEqual,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
-
-        const [
-            dayGreater,
-            monthGreater,
-            yearGreater,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Greater);
-
-        switch (pValB) {
-            case Precision.day:
-            case Precision.iso:
-                return (
-                    yearGreater ||
-                    (yearEqual && monthGreater) ||
-                    (yearEqual && monthEqual && dayGreater)
-                );
-            case Precision.dayAnyMonthAnyYear:
-                return dayGreater;
-            case Precision.month:
-                return (
-                    yearGreater ||
-                    (yearEqual && monthGreater)
-                );
-            case Precision.dayAndMonthAnyYear:
-                return monthGreater || (monthEqual && dayGreater);
-            case Precision.year:
-                return yearGreater;
-        }
-    },
-
-    [ConditionOperator.GreaterThanOrEqual]: (valueA, valueB) => {
-        const [tValA, pValA] = transformValue(valueA);
-        const [tValB, pValB] = transformValue(valueB);
-
-        if (tValA == null || tValB == null) {
-            return false;
-        }
-
-        const [
-            dayEqual,
-            monthEqual,
-            yearEqual,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Equal);
-
-        const [
-            dayGreater,
-            monthGreater,
-            yearGreater,
-        ] = compareDate(tValA, tValB).map(d => d === DateDiff.Greater);
-
-        switch (pValB) {
-            case Precision.day:
-            case Precision.iso:
-                return (
-                    yearGreater ||
-                    (yearEqual && monthGreater) ||
-                    (yearEqual && monthEqual && (dayGreater || dayEqual))
-                );
-            case Precision.dayAnyMonthAnyYear:
-                return dayGreater || dayEqual;
-            case Precision.month:
-                return (
-                    yearGreater ||
-                    (yearEqual && (monthGreater || monthEqual))
-                );
-            case Precision.dayAndMonthAnyYear:
-                return monthGreater || (monthEqual && (dayGreater || dayEqual));
-            case Precision.year:
-                return yearGreater || yearEqual;
-        }
-    },
-
-    [ConditionOperator.Empty]: (valueA, _) => {
-        return valueA == null;
-    },
-    [ConditionOperator.NotEmpty]: (valueA, _) => {
-        return valueA != null;
-    },
-
-    [ConditionOperator.YearsInPast]: (valueA, valueB) => {
-        if (valueA == null || valueB == null) {
-            return false;
-        }
-
-        const years = parseInt(valueB);
-        if (isNaN(years)) {
-            return false;
-        }
-
-        const [valueADate, _] = transformValue(valueA);
-        if (valueADate == null) {
-            return false;
-        }
-
-        const target = subYears(new Date(), years);
-        return isBefore(valueADate, target) || isSameDay(valueADate, target);
-    },
-
-    [ConditionOperator.MonthsInPast]: (valueA, valueB) => {
-        if (valueA == null || valueB == null) {
-            return false;
-        }
-
-        const months = parseInt(valueB);
-        if (isNaN(months)) {
-            return false;
-        }
-
-        const [valueADate, _] = transformValue(valueA);
-        if (valueADate == null) {
-            return false;
-        }
-
-        const target = subMonths(new Date(), months);
-        return isBefore(valueADate, target) || isSameDay(valueADate, target);
-    },
-
-    [ConditionOperator.DaysInPast]: (valueA, valueB) => {
-        if (valueA == null || valueB == null) {
-            return false;
-        }
-
-        const days = parseInt(valueB);
-        if (isNaN(days)) {
-            return false;
-        }
-
-        const [valueADate, _] = transformValue(valueA);
-        if (valueADate == null) {
-            return false;
-        }
-
-        const target = subDays(new Date(), days);
-        return isBefore(valueADate, target) || isSameDay(valueADate, target);
-    },
-
-    [ConditionOperator.YearsInFuture]: (valueA, valueB) => {
-        if (valueA == null || valueB == null) {
-            return false;
-        }
-
-        const years = parseInt(valueB);
-        if (isNaN(years)) {
-            return false;
-        }
-
-        const [valueADate, _] = transformValue(valueA);
-        if (valueADate == null) {
-            return false;
-        }
-
-        const target = addYears(new Date(), years);
-        return isAfter(valueADate, target) || isSameDay(valueADate, target);
-    },
-
-    [ConditionOperator.MonthsInFuture]: (valueA, valueB) => {
-        if (valueA == null || valueB == null) {
-            return false;
-        }
-
-        const months = parseInt(valueB);
-        if (isNaN(months)) {
-            return false;
-        }
-
-        const [valueADate, _] = transformValue(valueA);
-        if (valueADate == null) {
-            return false;
-        }
-
-        const target = addMonths(new Date(), months);
-        return isAfter(valueADate, target) || isSameDay(valueADate, target);
-    },
-
-    [ConditionOperator.DaysInFuture]: (valueA, valueB) => {
-        if (valueA == null || valueB == null) {
-            return false;
-        }
-
-        const days = parseInt(valueB);
-        if (isNaN(days)) {
-            return false;
-        }
-
-        const [valueADate, _] = transformValue(valueA);
-        if (valueADate == null) {
-            return false;
-        }
-
-        const target = addDays(new Date(), days);
-        return isAfter(valueADate, target) || isSameDay(valueADate, target);
-    },
+    [ConditionOperator.LessThan]: (valueA, valueB) =>
+        compareByPrecision(valueA, valueB, DateDiff.Less, false),
+    [ConditionOperator.LessThanOrEqual]: (valueA, valueB) =>
+        compareByPrecision(valueA, valueB, DateDiff.Less, true),
+    [ConditionOperator.GreaterThan]: (valueA, valueB) =>
+        compareByPrecision(valueA, valueB, DateDiff.Greater, false),
+    [ConditionOperator.GreaterThanOrEqual]: (valueA, valueB) =>
+        compareByPrecision(valueA, valueB, DateDiff.Greater, true),
+    [ConditionOperator.Empty]: (valueA) => valueA == null,
+    [ConditionOperator.NotEmpty]: (valueA) => valueA != null,
+    [ConditionOperator.YearsInPast]: (valueA, valueB) =>
+        compareRelative(valueA, valueB, 'years', 'past'),
+    [ConditionOperator.MonthsInPast]: (valueA, valueB) =>
+        compareRelative(valueA, valueB, 'months', 'past'),
+    [ConditionOperator.DaysInPast]: (valueA, valueB) =>
+        compareRelative(valueA, valueB, 'days', 'past'),
+    [ConditionOperator.YearsInFuture]: (valueA, valueB) =>
+        compareRelative(valueA, valueB, 'years', 'future'),
+    [ConditionOperator.MonthsInFuture]: (valueA, valueB) =>
+        compareRelative(valueA, valueB, 'months', 'future'),
+    [ConditionOperator.DaysInFuture]: (valueA, valueB) =>
+        compareRelative(valueA, valueB, 'days', 'future'),
 };

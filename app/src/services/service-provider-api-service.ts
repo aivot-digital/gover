@@ -1,16 +1,8 @@
-import {Api} from '../hooks/use-api';
-import {NoCodeOperatorDetailsDTO} from '../models/dtos/no-code-operator-details-dto';
-import {NoCodeDataType} from '../data/no-code-data-type';
 import {ServiceProviderDTO} from '../models/dtos/service-provider-dto';
+import {BaseApiService} from './base-api-service';
 
-export class ServiceProviderApiService {
-    private readonly api: Api;
-
-    constructor(api: Api) {
-        this.api = api;
-    }
-
+export class ServiceProviderApiService extends BaseApiService {
     public async getServiceProviders(): Promise<ServiceProviderDTO[]> {
-        return this.api.get('service-providers');
+        return this.get('/api/plugins');
     }
 }

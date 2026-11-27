@@ -1,0 +1,814 @@
+package de.aivot.prosuna.backend.plugins.core.v1.communication;
+
+import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
+import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
+import de.aivot.prosuna.backend.communication.exceptions.CommunicationException;
+import de.aivot.prosuna.backend.communication.models.CommunicationMessage;
+import de.aivot.prosuna.backend.communication.models.CommunicationProviderContext;
+import de.aivot.prosuna.backend.communication.models.CommunicationProviderDefinition;
+import de.aivot.prosuna.backend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.prosuna.backend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
+import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
+import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.ElementValidationFunctions;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.AlertContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.AssetSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.enums.AlertType;
+import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.identity.entities.IdentityProviderEntity;
+import de.aivot.prosuna.backend.identity.enums.IdentityProviderType;
+import de.aivot.prosuna.backend.identity.enums.IdentityType;
+import de.aivot.prosuna.backend.identity.models.IdentityData;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
+import de.aivot.prosuna.backend.nocode.models.NoCodeExpression;
+import de.aivot.prosuna.backend.nocode.models.NoCodeReference;
+import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.prosuna.backend.plugins.core.CorePlugin;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
+import de.aivot.prosuna.backend.secrets.services.SecretService;
+import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
+import dev.fitko.fitconnect.rest.model.event.EventState;
+import dev.fitko.fitconnect.rest.model.event.problems.Problem;
+import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
+import dev.fitko.fitconnect.sdk.FitConnectSdk;
+import dev.fitko.fitconnect.sdk.api.*;
+import dev.fitko.fitconnect.sdk.api.event.CaseEvent;
+import dev.fitko.fitconnect.sdk.clients.Cases;
+import dev.fitko.fitconnect.sdk.clients.OnlineService;
+import dev.fitko.fitconnect.sdk.clients.Organisation;
+import dev.fitko.fitconnect.zbp.ZBPEnvelopeBuilder;
+import dev.fitko.fitconnect.zbp.model.AuthenticationLevel;
+import dev.fitko.fitconnect.zbp.model.AuthorKeyPair;
+import dev.fitko.fitconnect.zbp.model.CreateMessage;
+import dev.fitko.fitconnect.zbp.model.ZBPAttachmentMetadata;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Sends identity-bound messages and attachments to ZBP through the FIT-Connect bridge service.
+ */
+@Component
+public class FitConnectZbpCommunicationProviderV1 implements CommunicationProviderDefinition<FitConnectZbpCommunicationProviderV1.Config, FitConnectZbpCommunicationProviderV1.IdentityBinding> {
+    public static final String COMPONENT_KEY = "fit_connect_zbp_communication_provider";
+    public static final String TEST_POSTFACH_ID_FIELD_ID = "postfachId";
+    private static final String TESTING_LAYOUT_ID = "fit-connect-zbp-testing-config";
+    private static final String TEST_CONTEXT_ID = "communication-provider-test";
+    private static final int TEST_BINDING_ID = -1;
+    private static final String UUID_REGEX = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
+    private static final String MESSAGE_SENDING_IDENTIFIER = "urn:schema-fitko-de:fit-connect:id.bund.de:message_v6";
+    private static final String PROSUNA_NAME = "Prosuna";
+    private static final URI ZBP_MESSAGE_SCHEMA_URI = URI.create(
+            "https://schema.fitko.de/fit-connect/id.bund.de/message_v6/1.0.0/zbp-message.schema.json"
+    );
+
+    private static final String KEY_MIME_TYPE = "application/pkcs8";
+    private static final String CERT_MIME_TYPE = "application/x-x509-ca-cert";
+
+    private final AssetContentResolverService assetContentResolverService;
+    private final SecretService secretService;
+
+    public FitConnectZbpCommunicationProviderV1(AssetContentResolverService assetContentResolverService,
+                                                SecretService secretService) {
+        this.assetContentResolverService = assetContentResolverService;
+        this.secretService = secretService;
+    }
+
+    @Nonnull
+    @Override
+    public String getParentPluginKey() {
+        return CorePlugin.PLUGIN_KEY;
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentKey() {
+        return COMPONENT_KEY;
+    }
+
+    @Nonnull
+    @Override
+    public String getComponentVersion() {
+        return "1.0.0";
+    }
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "FIT-Connect-ZBP-Kommunikation";
+    }
+
+    @Nonnull
+    @Override
+    public String getAbstract() {
+        return "Versendet Nachrichten und Anlagen über FIT-Connect an das zentrale Bürgerpostfach.";
+    }
+
+    @Nonnull
+    @Override
+    public String getDescription() {
+        return "Versendet Nachrichten einschließlich Anlagen über einen konfigurierten FIT-Connect-Zustellpunkt an das zentrale Bürgerpostfach einer Identität.";
+    }
+
+
+    @Nonnull
+    @Override
+    public Class<Config> getConfigClass() {
+        return Config.class;
+    }
+
+    @Nonnull
+    @Override
+    public ConfigLayoutElement getConfigLayout() throws ResponseException {
+        ConfigLayoutElement config;
+        try {
+            config = ElementPOJOMapper.createFromPOJO(Config.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für den FIT-Connect-Kommunikationsanbieter konnte nicht erstellt werden.", e);
+        }
+
+        config
+                .findChild(Config.ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
+                .ifPresent(element -> {
+                    element.setAllowedMimeTypes(List.of(KEY_MIME_TYPE));
+                    element.setAssetVisibility(AssetVisibility.Private);
+                });
+
+        config
+                .findChild(Config.ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, AssetSelectInputElement.class)
+                .ifPresent(element -> {
+                    element.setAllowedMimeTypes(List.of(CERT_MIME_TYPE));
+                    element.setAssetVisibility(AssetVisibility.Private);
+                });
+
+        config
+                .findChild(Config.ENVIRONMENT_FIELD_ID, SelectInputElement.class)
+                .ifPresent(element -> element.setOptions(List.of(
+                        SelectInputElementOption.of(Config.ENVIRONMENT_TEST, "Test-Umgebung (TEST)"),
+                        SelectInputElementOption.of(Config.ENVIRONMENT_STAGE, "Stage-Umgebung (STAGE)"),
+                        SelectInputElementOption.of(Config.ENVIRONMENT_PROD, "Produktiv-Umgebung (PROD)")
+                )));
+
+        config
+                .findChild(Config.SENDER_DESTINATION_TYPE_FIELD_ID, SelectInputElement.class)
+                .ifPresent(element -> element.setOptions(List.of(
+                        SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ADMINISTRATION, "Verwaltung (Typ A)"),
+                        SelectInputElementOption.of(Config.SENDER_DESTINATION_TYPE_ONLINE_SERVICE, "Onlinedienst (Typ C)")
+                )));
+
+        return config;
+    }
+
+    @Nonnull
+    @Override
+    public List<IdentityProviderType> getSupportedIdentityProviderTypes() {
+        return List.of(
+                IdentityProviderType.BundId,
+                IdentityProviderType.BayernId,
+                IdentityProviderType.ShId,
+                IdentityProviderType.Custom
+        );
+    }
+
+    @Nonnull
+    @Override
+    public Class<IdentityBinding> getIdentityProviderBindingConfigClass() {
+        return IdentityBinding.class;
+    }
+
+    @Nonnull
+    @Override
+    public ConfigLayoutElement getIdentityProviderBindingConfigLayout(@Nonnull IdentityProviderEntity identityProviderEntity) throws ResponseException {
+        var attributeOptions = identityProviderEntity.getAttributes() == null
+                ? List.<SelectInputElementOption>of()
+                : identityProviderEntity.getAttributes()
+                .stream()
+                .filter(attribute -> attribute.getKeyInData() != null && !attribute.getKeyInData().isBlank())
+                .map(attribute -> SelectInputElementOption.of(
+                        attribute.getKeyInData(),
+                        attribute.getLabel() == null || attribute.getLabel().isBlank()
+                                ? attribute.getKeyInData()
+                                : attribute.getLabel()
+                ))
+                .toList();
+
+        ConfigLayoutElement config;
+        try {
+            config = ElementPOJOMapper.createFromPOJO(IdentityBinding.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für die Kommunikationsbindung des FIT-Connect-Anbieters konnte nicht erstellt werden.", e);
+        }
+
+        config
+                .findChild(IdentityBinding.BPK2_ATTRIBUTE_FIELD_ID, SelectInputElement.class)
+                .ifPresent(element -> {
+                    element.setOptions(attributeOptions);
+                });
+
+        config
+                .findChild(IdentityBinding.STORK_QAA_LEVEL_FIELD_ID, SelectInputElement.class)
+                .ifPresent(element -> {
+                    element.setOptions(attributeOptions);
+                });
+
+        return config;
+    }
+
+    @Nullable
+    @Override
+    public GroupLayoutElement getTestingLayout() throws ResponseException {
+        var postfachId = new TextInputElement();
+        postfachId.setId(TEST_POSTFACH_ID_FIELD_ID);
+        postfachId.setLabel("Postfach-ID");
+        postfachId.setHint("Postfach-ID für den Empfang der Testnachricht.");
+        postfachId.setRequired(true);
+        postfachId.setValidation(ElementValidationFunctions.of(
+                NoCodeExpression.of(
+                        NoCodeRegexMatchOperator.OPERATOR_ID,
+                        NoCodeReference.of(TEST_POSTFACH_ID_FIELD_ID),
+                        NoCodeStaticValue.of(UUID_REGEX)
+                ),
+                "Bitte geben Sie eine gültige UUID ein."
+        ));
+
+        var layout = new GroupLayoutElement();
+        layout.setId(TESTING_LAYOUT_ID);
+        layout.setChildren(List.of(postfachId));
+        return layout;
+    }
+
+    @Nonnull
+    @Override
+    public GroupLayoutElement handleTest(@Nonnull CommunicationProviderEntity providerEntity,
+                                         @Nonnull Config config,
+                                         @Nonnull AuthoredElementValues inputs) throws CommunicationException {
+        var input = inputs.getLiteral(TEST_POSTFACH_ID_FIELD_ID);
+        if (!(input instanceof String rawPostfachId) || rawPostfachId.isBlank()) {
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht ist erforderlich.");
+        }
+
+        var normalizedPostfachId = rawPostfachId.trim();
+        final UUID postfachId;
+        try {
+            postfachId = UUID.fromString(normalizedPostfachId);
+        } catch (IllegalArgumentException e) {
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.", e);
+        }
+        if (!postfachId.toString().equalsIgnoreCase(normalizedPostfachId)) {
+            throw new CommunicationException("Die Postfach-ID für den Empfang der Testnachricht muss eine gültige UUID sein.");
+        }
+
+        var identityProviderKey = UUID.randomUUID();
+        var testIdentityProvider = new IdentityProviderEntity()
+                .setKey(identityProviderKey)
+                .setMetadataIdentifier(TEST_CONTEXT_ID)
+                .setUniqueIdAttribute("id")
+                .setType(IdentityProviderType.Custom)
+                .setName("Kommunikationsanbieter-Test")
+                .setDescription("Temporärer Identitätsanbieter für einen Kommunikationstest.")
+                .setAuthorizationEndpoint("")
+                .setTokenEndpoint("")
+                .setClientId(TEST_CONTEXT_ID)
+                .setAttributes(List.of())
+                .setDefaultScopes(List.of())
+                .setAdditionalParams(List.of())
+                .setIsEnabled(true)
+                .setIsTestProvider(providerEntity.getTestProvider());
+        var testBinding = new CommunicationProviderBindingEntity()
+                .setId(TEST_BINDING_ID)
+                .setIdentityProviderKey(identityProviderKey)
+                .setCommunicationProviderId(providerEntity.getId())
+                .setName("Kommunikationsanbieter-Test")
+                .setDescription("Temporäre Anbindung für einen Kommunikationstest.")
+                .setEnabled(true)
+                .setPosition(0)
+                .setConfiguration(new AuthoredElementValues());
+        var testIdentityBinding = new IdentityBinding();
+        testIdentityBinding.bpk2Attribute = TEST_POSTFACH_ID_FIELD_ID;
+
+        var testContext = new CommunicationProviderContext<>(
+                providerEntity,
+                testIdentityProvider,
+                testBinding,
+                config,
+                testIdentityBinding
+        );
+        var testIdentity = new IdentityData(
+                TEST_CONTEXT_ID,
+                TEST_CONTEXT_ID,
+                IdentityType.IdentityProvider,
+                identityProviderKey,
+                TEST_CONTEXT_ID,
+                TEST_CONTEXT_ID,
+                null,
+                Map.of(TEST_POSTFACH_ID_FIELD_ID, postfachId.toString()),
+                TEST_BINDING_ID,
+                Map.of()
+        );
+        var testMessage = new CommunicationMessage.Builder()
+                .subject("Testnachricht")
+                .body("Dies ist eine Testnachricht.")
+                .markdownBody("Dies ist eine Testnachricht.")
+                .build();
+
+        var result = sendMessage(testContext, testIdentity, testMessage);
+
+        var alert = new AlertContentElement();
+        alert.setId("fit-connect-zbp-testing-result-alert");
+        alert.setAlertType(AlertType.Success);
+        alert.setTitle("Testnachricht erfolgreich übermittelt");
+        alert.setText("Postfach-ID: %s\nSubmission-ID: %s\nStatus: %s".formatted(
+                result.get("postfachId"),
+                result.get("submissionId"),
+                result.get("status")
+        ));
+
+        var layout = new GroupLayoutElement();
+        layout.setId("fit-connect-zbp-testing-result");
+        layout.setChildren(List.of(alert));
+        return layout;
+    }
+
+    @Override
+    public Map<String, Object> sendMessage(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context,
+                                           @Nonnull IdentityData identity,
+                                           @Nonnull CommunicationMessage message) throws CommunicationException {
+        final Config config = context.communicationProviderConfiguration();
+        final UUID destinationId = getDestinationId(config);
+        final UUID senderDestinationId = getSenderDestinationId(config);
+        final AuthorKeyPair authorKeyPair = getAuthorKeyPair(context.communicationProviderConfiguration());
+        final UUID postfachId = getPostfachId(context, identity);
+
+        final List<Attachment> fitConnectAttachments = new ArrayList<>();
+        final List<ZBPAttachmentMetadata> attachmentMetadata = new ArrayList<>();
+        if (message.attachments() != null) {
+            var attachmentIndex = 1;
+            for (var att : message.attachments()) {
+                var attachmentContent = att.getContent();
+                if (attachmentContent == null) {
+                    throw new CommunicationException("Der Inhalt der Anlage fehlt: " + att.getName());
+                }
+
+                final byte[] attachmentData;
+                try (attachmentContent) {
+                    attachmentData = attachmentContent.readAllBytes();
+                } catch (IOException e) {
+                    throw new CommunicationException("Die Anlage konnte nicht gelesen werden: " + att.getName(), e);
+                }
+
+                final String contentType = att.getContentType() != null ? att.getContentType() : "application/octet-stream";
+                final String fileName = att.getName() == null || att.getName().isBlank()
+                        ? "attachment-" + attachmentIndex
+                        : att.getName();
+
+                final Attachment fitConnectAttachment = Attachment
+                        .builder()
+                        .fromBytes(attachmentData)
+                        .mimeType(contentType)
+                        .fileName(fileName)
+                        .description(fileName)
+                        .build();
+
+                fitConnectAttachments.add(fitConnectAttachment);
+                attachmentMetadata.add(ZBPAttachmentMetadata.from(fileName, attachmentData));
+                attachmentIndex++;
+            }
+        }
+
+        final AuthenticationLevel mappedAuthenticationLevel = mapAuthenticationLevel(context, identity);
+
+        final CreateMessage zbpMessage = createZbpMessage(
+                message,
+                postfachId,
+                mappedAuthenticationLevel,
+                attachmentMetadata
+        );
+
+        final OutgoingSubmission submission = OutgoingSubmission
+                .to(Participant.of(
+                        destinationId,
+                        Addressing.toService(MESSAGE_SENDING_IDENTIFIER, "ZBP Message Forwarding")
+                ))
+                .setData(SubmissionData.json(
+                        ZBPEnvelopeBuilder.fromAuthorPayload(zbpMessage, authorKeyPair),
+                        ZBP_MESSAGE_SCHEMA_URI
+                ))
+                .addAttachments(fitConnectAttachments)
+                .build();
+
+        final Function<OutgoingSubmission, SentSubmission> send;
+        final Cases cases;
+        try {
+            final FitConnectSdk sdk = createSdk(
+                    config.senderClientId,
+                    resolveSenderClientSecret(config),
+                    resolveEnvironment(config.environment)
+            );
+            // The SDK only accepts a sender destination whose type matches the client; FIT-Connect fixes the type at creation.
+            if (Config.SENDER_DESTINATION_TYPE_ADMINISTRATION.equals(config.senderDestinationType)) {
+                final Organisation organisation = sdk.organisation(senderDestinationId);
+                send = organisation::send;
+                cases = organisation.cases();
+            } else {
+                // Configurations saved before the type was selectable always sent as an online service.
+                final OnlineService onlineService = sdk.onlineService(senderDestinationId);
+                send = onlineService::send;
+                cases = onlineService.cases();
+            }
+        } catch (CommunicationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CommunicationException(
+                    "Die FIT-Connect-Verbindung für den Zustellpunkt (Sender) „%s“ konnte nicht aufgebaut werden: %s"
+                            .formatted(senderDestinationId, describe(e)),
+                    e
+            );
+        }
+
+        final SentSubmission sentSubmission;
+        final CaseEvent status;
+        try {
+            sentSubmission = send.apply(submission);
+            status = cases.logOf(sentSubmission).latest();
+        } catch (Exception e) {
+            throw new CommunicationException(
+                    "Der Versand über FIT-Connect ist fehlgeschlagen: %s".formatted(describe(e)),
+                    e
+            );
+        }
+
+        if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
+            throw new CommunicationException(
+                    "FIT-Connect meldete für die Nachricht den Status „%s“. Probleme: %s"
+                            .formatted(status.state(), describeProblems(status.problems()))
+            );
+        }
+
+        return Map.of(
+                "postfachId", postfachId.toString(),
+                "submissionId", sentSubmission.submissionId().toString(),
+                "status", status.state().name()
+        );
+    }
+
+    @Nonnull
+    static CreateMessage createZbpMessage(
+            @Nonnull CommunicationMessage message,
+            @Nonnull UUID postfachId,
+            @Nonnull AuthenticationLevel authenticationLevel,
+            @Nonnull List<ZBPAttachmentMetadata> attachmentMetadata
+    ) throws CommunicationException {
+        var departmentName = message.sendingDepartment() == null
+                ? null
+                : message.sendingDepartment().getName();
+        var sender = departmentName == null || departmentName.isBlank()
+                ? PROSUNA_NAME
+                : departmentName.trim();
+
+        return CreateMessage
+                .builder()
+                .content(renderMessageHtml(message))
+                .sender(sender)
+                .reference(message.referenceId())
+                // The ZBP rejects messages without a service, e.g. test messages without a sending department.
+                .service(sender)
+                .title(message.subject())
+                //.retrievalConfirmationAddress("retrieval@mail.net")
+                //.replyAddress("reply@mail.net")
+                .mailboxUuid(postfachId)
+                .stork_qaa_level(authenticationLevel)
+                .attachmentMetadata(attachmentMetadata)
+                .build();
+    }
+
+    @Nonnull
+    static String renderMessageHtml(@Nonnull CommunicationMessage message) throws CommunicationException {
+        var content = new StringBuilder(MarkdownRenderer.renderHtml(message.markdownBody()).strip());
+        for (var callToAction : message.callToActions()) {
+            if (callToAction == null) {
+                throw new CommunicationException("Eine Aktion der Nachricht darf nicht leer sein.");
+            }
+            var title = callToAction.title() == null ? null : callToAction.title().trim();
+            if (title == null || title.isEmpty()) {
+                throw new CommunicationException("Der Titel einer Aktion darf nicht leer sein.");
+            }
+            var link = callToAction.link() == null ? null : callToAction.link().trim();
+            if (link == null || link.isEmpty()) {
+                throw new CommunicationException("Der Link einer Aktion darf nicht leer sein.");
+            }
+
+            if (content.length() > 0) {
+                content.append('\n');
+            }
+            content.append("<p><a href=\"")
+                    .append(HtmlUtils.htmlEscape(link))
+                    .append("\">")
+                    .append(HtmlUtils.htmlEscape(title))
+                    .append("</a></p>");
+        }
+
+        var signature = message.signatureDepartment() == null
+                ? null
+                : message.signatureDepartment().getDefaultMailSignature();
+        if (signature != null && !signature.isBlank()) {
+            if (content.length() > 0) {
+                content.append('\n');
+            }
+            var signatureHtml = HtmlUtils
+                    .htmlEscape(signature.strip())
+                    .replace("\r\n", "<br>")
+                    .replace("\r", "<br>")
+                    .replace("\n", "<br>");
+            content.append("<div>").append(signatureHtml).append("</div>");
+        }
+        return content.toString();
+    }
+
+    private AuthenticationLevel mapAuthenticationLevel(CommunicationProviderContext<Config, IdentityBinding> context,
+                                                       IdentityData identity) {
+        var attributeKey = context.identityProviderBindingConfiguration().storkQaaLevel;
+        if (attributeKey == null || attributeKey.isBlank()) {
+            return AuthenticationLevel.ONE;
+        }
+
+        var authenticationLevel = identity.attributes().get(attributeKey);
+        if (authenticationLevel == null) {
+            return AuthenticationLevel.ONE;
+        }
+
+        return switch (authenticationLevel) {
+            case "level2" -> AuthenticationLevel.TWO;
+            case "level3" -> AuthenticationLevel.THREE;
+            case "level4" -> AuthenticationLevel.FOUR;
+            default -> AuthenticationLevel.ONE;
+        };
+    }
+
+    @Nonnull
+    private static UUID getPostfachId(@Nonnull CommunicationProviderContext<Config, IdentityBinding> context, @Nonnull IdentityData identity) throws CommunicationException {
+        var postfachIdAttribute = context
+                .identityProviderBindingConfiguration()
+                .bpk2Attribute;
+        var postfachIdString = identity
+                .attributes()
+                .get(postfachIdAttribute);
+        UUID postfachId;
+        try {
+            postfachId = UUID.fromString(postfachIdString);
+        } catch (Exception e) {
+            throw new CommunicationException("Das BPK2-Attribut enthält keine gültige UUID: " + postfachIdString, e);
+        }
+        return postfachId;
+    }
+
+    @Nonnull
+    private static UUID getDestinationId(Config config) throws CommunicationException {
+        UUID destinationId;
+        try {
+            destinationId = UUID.fromString(config.destinationId);
+        } catch (Exception e) {
+            throw new CommunicationException("Die Zustellpunkt-ID ist keine gültige UUID: " + config.destinationId, e);
+        }
+        return destinationId;
+    }
+
+    @Nonnull
+    private static UUID getSenderDestinationId(Config config) throws CommunicationException {
+        try {
+            return UUID.fromString(config.senderDestinationId);
+        } catch (Exception e) {
+            throw new CommunicationException("Die Zustellpunkt-ID des Absenders ist keine gültige UUID: " + config.senderDestinationId, e);
+        }
+    }
+
+    @Nonnull
+    private String resolveSenderClientSecret(Config config) throws CommunicationException {
+        final UUID senderClientSecretKey;
+        try {
+            senderClientSecretKey = UUID.fromString(config.senderClientSecret);
+        } catch (Exception e) {
+            throw new CommunicationException("Die Kennung des Client-Geheimnisses des Absenders ist keine gültige UUID: " + config.senderClientSecret, e);
+        }
+
+        final var senderClientSecretEntity = secretService
+                .retrieve(senderClientSecretKey)
+                .orElseThrow(() -> new CommunicationException("Das Client-Geheimnis des Absenders wurde nicht gefunden: " + senderClientSecretKey));
+
+        final String senderClientSecret;
+        try {
+            senderClientSecret = secretService.decrypt(senderClientSecretEntity);
+        } catch (Exception e) {
+            throw new CommunicationException("Das Client-Geheimnis des Absenders konnte nicht entschlüsselt werden: " + senderClientSecretKey, e);
+        }
+
+        return senderClientSecret;
+    }
+
+    @Nonnull
+    FitConnectSdk createSdk(@Nonnull String clientId,
+                            @Nonnull String clientSecret,
+                            @Nonnull FitConnectEnvironment environment) {
+        return FitConnectSdk
+                .fromConfigBuilder()
+                .credentials(clientId, clientSecret)
+                .environment(environment)
+                .build();
+    }
+
+    @Nonnull
+    private static FitConnectEnvironment resolveEnvironment(@Nullable String environment) {
+        // Configurations saved before the environment was selectable always used the test environment.
+        return switch (Objects.requireNonNullElse(environment, Config.ENVIRONMENT_TEST)) {
+            case Config.ENVIRONMENT_TEST -> FitConnectEnvironment.TEST;
+            case Config.ENVIRONMENT_STAGE -> FitConnectEnvironment.STAGE;
+            case Config.ENVIRONMENT_PROD -> FitConnectEnvironment.PROD;
+            default -> throw new IllegalArgumentException(
+                    "Die FIT-Connect-Umgebung „%s“ wird nicht unterstützt.".formatted(environment)
+            );
+        };
+    }
+
+    @Nonnull
+    private static String describe(@Nonnull Exception e) {
+        return Objects.requireNonNullElse(e.getMessage(), e.getClass().getSimpleName());
+    }
+
+    // Problem does not override toString(), so its title and detail are joined explicitly for the event log.
+    @Nonnull
+    private static String describeProblems(@Nullable List<Problem> problems) {
+        if (problems == null || problems.isEmpty()) {
+            return "keine";
+        }
+        return problems.stream()
+                .map(problem -> Stream.of(problem.getTitle(), problem.getDetail())
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(": ")))
+                .collect(Collectors.joining("; "));
+    }
+
+    private AuthorKeyPair getAuthorKeyPair(Config config) throws CommunicationException {
+        String privateKeyPem;
+        try {
+            privateKeyPem = resolveFile(
+                    config.zbpCertificatePrivateKeyAssetKey,
+                    "Der private Schlüssel des FIT-Connect-Zertifikats"
+            );
+        } catch (ResponseException e) {
+            throw new CommunicationException("Der private Schlüssel für den FIT-Connect-Kommunikationsanbieter konnte nicht geladen werden.", e);
+        }
+
+        String clientCertPem;
+        try {
+            clientCertPem = resolveFile(
+                    config.zbpCertificateClientCertAssetKey,
+                    "Das Client-Zertifikat des FIT-Connect-Zertifikats"
+            );
+        } catch (ResponseException e) {
+            throw new CommunicationException("Das Client-Zertifikat für den FIT-Connect-Kommunikationsanbieter konnte nicht geladen werden.", e);
+        }
+
+        try {
+            return AuthorKeyPair
+                    .builder()
+                    .authorPrivateKeyAsPem(privateKeyPem)
+                    .authorCertificateAsPem(clientCertPem)
+                    .build();
+        } catch (RuntimeException e) {
+            throw new CommunicationException("Das ZBP-Autorenzertifikat oder der private Schlüssel konnte nicht verarbeitet werden.", e);
+        }
+    }
+
+    private String resolveFile(@Nullable String assetKey, @Nonnull String description) throws ResponseException {
+        return new String(
+                assetContentResolverService.resolveContent(assetKey, AssetVisibility.Private, description),
+                StandardCharsets.UTF_8
+        );
+    }
+
+    @LayoutElementPOJOBinding(id = "fit-connect-provider-config", type = ElementType.ConfigLayout)
+    public static class Config {
+        public static final String ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID = "zbpCertificatePrivateKeyAssetKey";
+        public static final String ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID = "zbpCertificateClientCertAssetKey";
+        public static final String ENVIRONMENT_FIELD_ID = "environment";
+        public static final String ENVIRONMENT_TEST = "TEST";
+        public static final String ENVIRONMENT_STAGE = "STAGE";
+        public static final String ENVIRONMENT_PROD = "PROD";
+        public static final String DESTINATION_ID_FIELD_ID = "destinationId";
+        public static final String SENDER_DESTINATION_ID_FIELD_ID = "senderDestinationId";
+        public static final String SENDER_DESTINATION_TYPE_FIELD_ID = "senderDestinationType";
+        public static final String SENDER_DESTINATION_TYPE_ADMINISTRATION = "ADMINISTRATION";
+        public static final String SENDER_DESTINATION_TYPE_ONLINE_SERVICE = "ONLINE_SERVICE";
+        public static final String SENDER_CLIENT_ID_FIELD_ID = "senderClientId";
+        public static final String SENDER_CLIENT_SECRET_KEY_FIELD_ID = "senderClientSecret";
+
+        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_CLIENT_CERT_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "BundID-Postfach-Zertifikat"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie das BundID-Postfach-Zertifikat aus, welches für diese Anbindung genutzt wird."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "BundID-Postfach-Zertifikat auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Kein BundID-Postfach-Zertifikat ausgewählt"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String zbpCertificateClientCertAssetKey;
+
+        @InputElementPOJOBinding(id = ZBP_CERTIFICATE_PRIVATE_KEY_ASSET_KEY_FIELD_ID, type = ElementType.AssetSelectInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Privater Schlüssel"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den privaten Schlüssel aus, welcher zu dem gewählten BundID-Postfach-Zertifikat passt."),
+                @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Privaten Schlüssel auswählen"),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Kein privater Schlüssel ausgewählt"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String zbpCertificatePrivateKeyAssetKey;
+
+        @InputElementPOJOBinding(id = ENVIRONMENT_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "FIT-Connect-Umgebung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Für FIT-Connect stehen derzeit mehrere Betriebsumgebungen bereit, die unterschiedliche Zwecke erfüllen. Wählen Sie die Umgebung aus, über die Nachrichten an das zentrale Bürgerpostfach versendet werden."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String environment;
+
+        @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Empfänger)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), welcher als ZBP-Adapter fungiert und die Nachricht empfängt."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String destinationId;
+
+        @InputElementPOJOBinding(id = SENDER_DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID (Sender)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die ID des Zustellpunktes (Destination), von welchem aus die Nachricht an den ZBP-Adapter versendet wird."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderDestinationId;
+
+        @InputElementPOJOBinding(id = SENDER_DESTINATION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Typ des Zustellpunktes (Sender)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den Typ aus, mit dem der Zustellpunkt (Sender) in FIT-Connect angelegt wurde."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderDestinationType;
+
+        @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Kennung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die Zugangs-Kennung (ID) der Zugangsdaten (Client) in FIT-Connect. Diesen Zugangsdaten (Client) muss die hier angegebene Zustellpunkt-ID (Sender) zugeordnet sein."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderClientId;
+
+        @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zugangs-Geheimnis"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Zugangs-Geheimnis (Secret) der Zugangsdaten (Client) in FIT-Connect. Diesen Zugangsdaten (Client) muss die hier angegebene Zustellpunkt-ID (Sender) zugeordnet sein."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
+        })
+        public String senderClientSecret;
+    }
+
+    @LayoutElementPOJOBinding(id = "fit-connect-identity-provider-binding-config", type = ElementType.ConfigLayout)
+    public static class IdentityBinding {
+        public static final String BPK2_ATTRIBUTE_FIELD_ID = "bpk2Attribute";
+        @InputElementPOJOBinding(id = BPK2_ATTRIBUTE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Postfach"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie hier das Attribut des Identitätsanbieters aus, welches die Kennung für das Postfach beinhaltet."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+        })
+        public String bpk2Attribute;
+
+        public static final String STORK_QAA_LEVEL_FIELD_ID = "storkQaaLevel";
+        @InputElementPOJOBinding(id = STORK_QAA_LEVEL_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Vertrauensniveau"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie hier das Attribut des Identitätsanbieters aus, welches die Kennung für das Vertrauensniveau beinhaltet."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+        })
+        public String storkQaaLevel;
+    }
+}

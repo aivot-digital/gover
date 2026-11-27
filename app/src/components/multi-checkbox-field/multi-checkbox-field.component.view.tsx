@@ -1,5 +1,8 @@
+import {Box} from '@mui/material';
+import {MultiChoiceCombobox} from './multi-choice-combobox';
+import {MultiChoicePresentation} from '../../models/elements/form/input/multi-choice-presentation';
 import React, {useMemo} from 'react';
-import {type MultiCheckboxFieldElement, type MultiCheckboxFieldElementOption} from '../../models/elements/form/input/multi-checkbox-field-element';
+import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseViewProps} from '../../views/base-view';
 import {MultiCheckboxComponent} from './multi-checkbox-component';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
@@ -9,33 +12,15 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
         element,
         setValue,
         value,
-        error,
+        errors,
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
 
     const {
         disabled,
-        options: baseOptions,
+        options,
     } = element;
-
-    const options = useMemo(() => {
-        if (baseOptions == null) {
-            return [];
-        }
-
-        return baseOptions
-            .map((option: string | MultiCheckboxFieldElementOption) => {
-                if (typeof option === 'string') {
-                    return {
-                        value: option,
-                        label: option,
-                    };
-                } else {
-                    return option;
-                }
-            });
-    }, [baseOptions]);
 
     const isDisabled = useMemo(() => {
         return disabled || isGloballyDisabled;
@@ -45,17 +30,44 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
+    const Component = element.presentation === MultiChoicePresentation.Combobox ? MultiChoiceCombobox : MultiCheckboxComponent;
+
+    const count = value?.length ?? 0;
+    const minimum = element.minimumRequiredOptions ?? 0;
+    const remaining = minimum - count;
+    const minimumHint = remaining > 0
+        ? count === 0
+            ? `${element.required ? 'Mindestens' : 'Bei Auswahl mindestens'} ${minimum} ${minimum === 1 ? 'Option' : 'Optionen'}`
+            : `Noch mindestens ${remaining} ${remaining === 1 ? 'Option' : 'Optionen'}`
+        : undefined;
+    const maximum = (element.maximumOptions ?? 0) > 0 ? element.maximumOptions! : undefined;
+    const indicator = minimumHint ?? (maximum != null
+        ? `${count}/${maximum} ${maximum === 1 ? 'Option' : 'Optionen'} ausgewählt`
+        : undefined);
+    const limitError = maximum != null && count > maximum
+        ? `Maximal ${maximum} ${maximum === 1 ? 'Option erlaubt' : 'Optionen erlaubt'}.`
+        : undefined;
+    const error = errors?.filter(Boolean).join(' ') || limitError;
+    const message = error || element.hint;
+    const helperContent = indicator ? (
+        <Box sx={{display: 'flex', justifyContent: 'space-between', flexWrap: {xs: 'wrap', sm: 'nowrap'}, columnGap: 2, rowGap: 0.5, width: '100%'}}>
+            {message && <><Box component="span" sx={{minWidth: 0}}>{message}</Box>{' '}</>}
+            <Box component="span" sx={{ml: 'auto', maxWidth: '100%'}}>{indicator}</Box>
+        </Box>
+    ) : message;
+
     return (
-        <MultiCheckboxComponent
+        <Component
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
-            options={options}
+            options={options ?? []}
+            maxItems={maximum}
             disabled={isDisabled}
-            required={element.required}
-            error={error}
-            hint={element.hint}
-            displayInline={element.displayInline}
+            required={element.required ?? undefined}
+            error={error ? helperContent : undefined}
+            hint={!error ? helperContent : undefined}
+            displayInline={element.displayInline ?? undefined}
             busy={isBusy}
         />
     );

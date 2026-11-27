@@ -1,0 +1,149 @@
+package de.aivot.prosuna.backend.dataObject.entities;
+
+import de.aivot.prosuna.backend.core.converters.JsonObjectConverter;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.util.Map;
+import java.util.Objects;
+
+@Entity
+@Table(name = "data_object_items")
+@IdClass(DataObjectItemEntityId.class)
+public class DataObjectItemEntity implements LockVersioned {
+    @Id
+    @Nonnull
+    @Column(length = 64)
+    private String schemaKey;
+
+    @Id
+    @Nonnull
+    @Column(length = 64)
+    private String id;
+
+    @Nonnull
+    @Convert(converter = JsonObjectConverter.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> data;
+
+    @Nonnull
+    private Instant created;
+
+    @Nonnull
+    private Instant updated;
+
+    @Nullable
+    private Instant deleted;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
+
+    @PrePersist
+    public void prePersist() {
+        created = Instant.now();
+        updated = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = Instant.now();
+    }
+
+    // region Equals & Hash
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        DataObjectItemEntity that = (DataObjectItemEntity) o;
+        return Objects.equals(schemaKey, that.schemaKey) && Objects.equals(id, that.id) && Objects.equals(data, that.data) && Objects.equals(created, that.created) &&
+                Objects.equals(updated, that.updated) && Objects.equals(deleted, that.deleted);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(schemaKey, id, data, created, updated, deleted);
+    }
+
+    // endregion
+
+    // region Getters & Setters
+
+    @Nonnull
+    public String getSchemaKey() {
+        return schemaKey;
+    }
+
+    public DataObjectItemEntity setSchemaKey(@Nonnull String schemaKey) {
+        this.schemaKey = schemaKey;
+        return this;
+    }
+
+    @Nonnull
+    public String getId() {
+        return id;
+    }
+
+    public DataObjectItemEntity setId(@Nonnull String id) {
+        this.id = id;
+        return this;
+    }
+
+    @Nonnull
+    public Map<String, Object> getData() {
+        return data;
+    }
+
+    public DataObjectItemEntity setData(@Nonnull Map<String, Object> data) {
+        this.data = data;
+        return this;
+    }
+
+    @Nonnull
+    public Instant getCreated() {
+        return created;
+    }
+
+    public DataObjectItemEntity setCreated(@Nonnull Instant created) {
+        this.created = created;
+        return this;
+    }
+
+    @Nonnull
+    public Instant getUpdated() {
+        return updated;
+    }
+
+    public DataObjectItemEntity setUpdated(@Nonnull Instant updated) {
+        this.updated = updated;
+        return this;
+    }
+
+    @Nullable
+    public Instant getDeleted() {
+        return deleted;
+    }
+
+    public DataObjectItemEntity setDeleted(@Nullable Instant deleted) {
+        this.deleted = deleted;
+        return this;
+    }
+
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public DataObjectItemEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
+        return this;
+    }
+
+    // endregion
+}

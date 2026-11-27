@@ -1,0 +1,228 @@
+package de.aivot.prosuna.backend.plugins.core.v1.operators.text;
+
+import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeOperator;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import java.time.Clock;
+import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static de.aivot.prosuna.backend.TestData.runtime;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class NoCodeTextOperatorsTest {
+    private static final NoCodeTextCompareOperator CONTAINS = new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.CONTAINS);
+    private static final NoCodeTextCompareOperator STARTS_WITH = new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.STARTS_WITH);
+    private static final NoCodeTextCompareOperator ENDS_WITH = new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.ENDS_WITH);
+    private static final NoCodeTextCompareOperator EQUALS_IGNORE_CASE = new NoCodeTextCompareOperator(NoCodeTextCompareOperator.Mode.EQUALS_IGNORE_CASE);
+    private static final NoCodeRegexFindOperator REGEX_FIND = new NoCodeRegexFindOperator();
+
+    @Test
+    void textComparisonsShouldTreatSearchTextLiterally() throws NoCodeException {
+        var data = runtime();
+
+        assertTrue(evaluate(CONTAINS, "Antrag (neu).pdf", "(neu)."));
+        assertFalse(evaluate(CONTAINS, "Antrag neu", "(neu)"));
+        // \E would end a \Q…\E quoted regex, which is why these operators do not use regex-match.
+        assertTrue(evaluate(CONTAINS, "a\\Eb", "\\E"));
+        assertTrue(evaluate(STARTS_WITH, "DE89 3704", "DE"));
+        assertFalse(evaluate(STARTS_WITH, "de89 3704", "DE"));
+        assertTrue(evaluate(ENDS_WITH, "bescheid.pdf", ".pdf"));
+        assertFalse(evaluate(ENDS_WITH, "bescheid.pdfx", ".pdf"));
+        assertTrue(evaluate(EQUALS_IGNORE_CASE, "Müller", "MÜLLER"));
+        assertFalse(evaluate(EQUALS_IGNORE_CASE, "Müller", "Mueller"));
+        assertThrows(NoCodeException.class, () -> CONTAINS.evaluate(data, "a"));
+    }
+
+    @Test
+    void textComparisonsShouldTreatMissingValuesAsEmptyText() throws NoCodeException {
+        assertFalse(evaluate(CONTAINS, null, "x"));
+        assertTrue(evaluate(CONTAINS, "abc", null));
+        assertTrue(evaluate(EQUALS_IGNORE_CASE, null, ""));
+    }
+
+    @Test
+    void literalTextComparisonsShouldCountWhitespaceInBothInputs() throws NoCodeException {
+        assertFalse(evaluate(CONTAINS, "Max", " Max "));
+        assertTrue(evaluate(CONTAINS, " Max ", " Max "));
+        assertFalse(evaluate(STARTS_WITH, " Max", "Max"));
+        assertTrue(evaluate(STARTS_WITH, " Max", " "));
+        assertFalse(evaluate(ENDS_WITH, "Max ", "Max"));
+        assertTrue(evaluate(ENDS_WITH, "Max ", " "));
+        assertFalse(evaluate(EQUALS_IGNORE_CASE, " Max", "MAX"));
+        assertTrue(evaluate(EQUALS_IGNORE_CASE, " Max ", " MAX "));
+    }
+
+    @Test
+    void bothOperandsOfLiteralTextFunctionsShouldPreserveAuthoredWhitespace() {
+        for (var operator : List.of(new NoCodeConcatOperator(), new NoCodeSplitOperator(), CONTAINS, STARTS_WITH, ENDS_WITH, EQUALS_IGNORE_CASE)) {
+            var parameters = operator.getSignatures()[0].parameters();
+            assertEquals(2, parameters.length);
+            for (var parameter : parameters) {
+                assertTrue(parameter.preserveWhitespace(), operator.getIdentifier() + " " + parameter.label());
+            }
+        }
+    }
+
+    @Test
+    void regexFindShouldMatchPartOfTheText() throws NoCodeException {
+        assertTrue(evaluate(REGEX_FIND, "Aktenzeichen AZ-2026-17", "AZ-\\d{4}"));
+        assertFalse(evaluate(REGEX_FIND, "Aktenzeichen fehlt", "AZ-\\d{4}"));
+        assertTrue(evaluate(REGEX_FIND, "zeile 1\nzeile 2", "(?m)^zeile 2$"));
+    }
+
+    @Test
+    void regexFindShouldRejectInvalidPatterns() {
+        assertThrows(NoCodeException.class, () -> REGEX_FIND.evaluate(runtime(), "abc", "("));
+    }
+
+    @Test
+    void base64ShouldEncodeUtf8TextAndTreatMissingTextAsEmpty() throws NoCodeException {
+        var operator = new NoCodeBase64Operator();
+
+        assertEquals("SGFsbG8=", operator.evaluate(runtime(), "Hallo").getValue());
+        assertEquals("R3LDvMOfZQ==", operator.evaluate(runtime(), "Grüße").getValue());
+        assertEquals("", operator.evaluate(runtime(), (Object) null).getValue());
+    }
+
+    @Test
+    void concatShouldCombinePrefixesAndPreserveProvidedTextWithoutAddingSeparators() throws NoCodeException {
+        var operator = new NoCodeConcatOperator();
+
+        assertEquals("AZ-2026-17", operator.evaluate(runtime(), "AZ-", "2026-17").getValue());
+        assertEquals("Guten Tag Müller", operator.evaluate(runtime(), "Guten Tag ", "Müller").getValue());
+        assertEquals(" Max Mustermann ", operator.evaluate(runtime(), " Max", " ", "Mustermann ").getValue());
+        assertEquals("AB", operator.evaluate(runtime(), "A", "B").getValue());
+        assertEquals("A2", operator.evaluate(runtime(), "A", null, 2).getValue());
+    }
+
+    @Test
+    void concatShouldDescribeItsThirdOperandAndProduceTheExampleText() throws NoCodeException {
+        var operator = new NoCodeConcatOperator();
+        var parameters = operator.getSignatures()[0].parameters();
+        assertEquals(2, parameters.length);
+        assertTrue(operator.hasVariableArgumentCount());
+        assertEquals("Wert 1", parameters[0].label());
+        assertEquals("Wert 2", parameters[1].label());
+        assertTrue(operator.getDescription().contains("„Weiteren Wert hinzufügen“"));
+        assertTrue(operator.getDescription().contains("„Wert 3“"));
+        assertTrue(operator.getDescription().contains("Text aus „AZ-“, „Kennung“ und „-A“"));
+        var result = operator.evaluate(runtime(), "AZ-", "2026-17", "-A").getValue();
+        assertEquals("AZ-2026-17-A", result);
+        assertTrue(operator.getDescription().contains("`" + result + "`"));
+    }
+
+    @Test
+    void splitShouldUseLiteralSeparatorsAndKeepOnlyInternalEmptyParts() throws NoCodeException {
+        var operator = new NoCodeSplitOperator();
+
+        assertTrue(operator.getDescription().contains("„Max Mustermann“ aufgeteilt an einem Leerzeichen"));
+        assertEquals(List.of("Max", "Mustermann"), operator.evaluate(runtime(), "Max Mustermann", " ").getValue());
+        assertEquals(List.of(" Max", "Mustermann "), operator.evaluate(runtime(), " Max, Mustermann ", ", ").getValue());
+        assertEquals(List.of("A", "B", "C"), operator.evaluate(runtime(), "A.B.C", ".").getValue());
+        assertEquals(List.of("A", "", "B"), operator.evaluate(runtime(), "A,,B,", ",").getValue());
+        assertEquals(List.of("A,B"), operator.evaluate(runtime(), "A,B", "").getValue());
+    }
+
+    @Test
+    void regexExtractionShouldReturnCompleteNonOverlappingMatches() throws NoCodeException {
+        var operator = new NoCodeRegexExtractOperator();
+
+        assertEquals(List.of("12", "34"), operator.evaluate(runtime(), "Position 12 und 34", "[0-9]+").getValue());
+        assertEquals(List.of("AB-12", "CD-34"), operator.evaluate(runtime(), "AB-12 CD-34", "([A-Z]+)-([0-9]+)").getValue());
+        assertEquals(List.of("aa"), operator.evaluate(runtime(), "aaa", "aa").getValue());
+        assertEquals(List.of(), operator.evaluate(runtime(), "keine Zahl", "[0-9]+").getValue());
+    }
+
+    @Test
+    void regexWholeTextMatchShouldRejectPartialMatches() throws NoCodeException {
+        var operator = new NoCodeRegexMatchOperator();
+
+        assertTrue(operator.evaluate(runtime(), "10115", "[0-9]{5}").getValueAsBoolean());
+        assertFalse(operator.evaluate(runtime(), "PLZ 10115", "[0-9]{5}").getValueAsBoolean());
+        assertTrue(operator.evaluate(runtime(), "", "").getValueAsBoolean());
+        assertFalse(operator.evaluate(runtime(), "A", "").getValueAsBoolean());
+    }
+
+    /**
+     * Every legacy text condition must be expressible with a single no-code operator, optionally negated.
+     */
+    @ParameterizedTest
+    @CsvSource({
+            "Antrag auf Förderung, Förderung",
+            "Antrag auf Förderung, förderung",
+            "Antrag auf Förderung, Antrag",
+            "Antrag auf Förderung, rung",
+            "Müller, MÜLLER",
+            "Müller, Müller",
+            "abc, ''",
+            "'', abc",
+            "a.b, .",
+            "AZ-2026-17, AZ-\\d{4}",
+            "AZ-2026-17, AZ-\\d{4}-\\d+",
+            "AZ-2026-17, [a-z]+",
+    })
+    void shouldMatchLegacyTextConditions(String value, String compared) throws NoCodeException {
+        var element = new TextInputElement();
+
+        assertParity(element, ConditionOperator.Includes, CONTAINS, false, value, compared);
+        assertParity(element, ConditionOperator.NotIncludes, CONTAINS, true, value, compared);
+        assertParity(element, ConditionOperator.StartsWith, STARTS_WITH, false, value, compared);
+        assertParity(element, ConditionOperator.NotStartsWith, STARTS_WITH, true, value, compared);
+        assertParity(element, ConditionOperator.EndsWith, ENDS_WITH, false, value, compared);
+        assertParity(element, ConditionOperator.NotEndsWith, ENDS_WITH, true, value, compared);
+        assertParity(element, ConditionOperator.EqualsIgnoreCase, EQUALS_IGNORE_CASE, false, value, compared);
+        assertParity(element, ConditionOperator.NotEqualsIgnoreCase, EQUALS_IGNORE_CASE, true, value, compared);
+        assertParity(element, ConditionOperator.IncludesPattern, REGEX_FIND, false, value, compared);
+        assertParity(element, ConditionOperator.NotIncludesPattern, REGEX_FIND, true, value, compared);
+        assertParity(element, ConditionOperator.MatchesPattern, new NoCodeRegexMatchOperator(), false, value, compared);
+        assertParity(element, ConditionOperator.NotMatchesPattern, new NoCodeRegexMatchOperator(), true, value, compared);
+    }
+
+    @Test
+    void commonProviderShouldRegisterTheTextOperators() {
+        var businessTime = new BusinessTime(ZoneId.of("Europe/Berlin"), Clock.systemUTC());
+        var identifiers = Arrays.stream(new CommonOperatorsV1(null, null, businessTime).getOperators())
+                .map(NoCodeOperator::getIdentifier)
+                .collect(Collectors.toSet());
+
+        assertTrue(identifiers.containsAll(Set.of(
+                "text-contains",
+                "text-starts-with",
+                "text-ends-with",
+                "text-equals-ignore-case",
+                "regex-find"
+        )));
+    }
+
+    private static void assertParity(
+            TextInputElement element,
+            ConditionOperator legacyOperator,
+            NoCodeOperator operator,
+            boolean negated,
+            String value,
+            String compared
+    ) throws NoCodeException {
+        var legacy = element.evaluate(legacyOperator, value, compared);
+        var noCode = evaluate(operator, value, compared) != negated;
+
+        assertEquals(legacy, noCode, legacyOperator + " for „" + value + "“ and „" + compared + "“");
+    }
+
+    private static boolean evaluate(NoCodeOperator operator, Object... args) throws NoCodeException {
+        return operator.evaluate(runtime(), args).getValueAsBoolean();
+    }
+}

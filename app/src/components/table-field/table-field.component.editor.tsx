@@ -1,19 +1,17 @@
 import {Box, Button, Checkbox, FormControlLabel, Grid, TextField, Typography} from '@mui/material';
 import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/elements/form/input/table-field-element';
-import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import {generateId} from '../../utils/id-utils';
 
-export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, ElementTreeEntity>) {
-    const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
-    const minRequiredError = (
-        props.element.minimumRequiredRows != null &&
-        props.element.maximumRows != null &&
-        props.element.maximumRows > 0 &&
-        props.element.minimumRequiredRows > props.element.maximumRows
-    );
+export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement>) {
+    const {
+        hasSummaryLayoutParent,
+    } = props;
+
+    const columnLabelWarnings = makeColumnLabelWarnings(props.element.fields);
+    const columnKeyWarnings = makeColumnKeyWarnings(props.element.fields);
 
     return (
         <>
@@ -21,55 +19,63 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 container
                 columnSpacing={4}
             >
-                {
-                    props.element.required &&
-                    <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
-                        <NumberFieldComponent
-                            value={props.element.minimumRequiredRows}
-                            label="Mindestanzahl der hinzuzufügenden Zeilen"
-                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern"
-                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
-                            onChange={(val) => {
-                                props.onPatch({
-                                    minimumRequiredRows: val,
-                                });
-                            }}
-                            disabled={!props.editable}
-                        />
-                    </Grid>
-                }
-
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
-                >
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}>
                     <NumberFieldComponent
-                        value={props.element.maximumRows}
-                        label="Maximalanzahl der hinzuzufügenden Zeilen"
-                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                        error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                        value={props.element.minimumRequiredRows ?? undefined}
+                        label="Mindestanzahl der hinzuzufügenden Zeilen"
+                        hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
+                        error={props.configurationErrors?.minimumRequiredRows?.join(' ')}
                         onChange={(val) => {
                             props.onPatch({
-                                maximumRows: val,
+                                minimumRequiredRows: val,
                             });
                         }}
                         disabled={!props.editable}
                     />
                 </Grid>
-            </Grid>
 
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}>
+                    {
+                        !hasSummaryLayoutParent &&
+                        <NumberFieldComponent
+                            value={props.element.maximumRows ?? undefined}
+                            label="Maximalanzahl der hinzuzufügenden Zeilen"
+                            hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                            error={props.configurationErrors?.maximumRows?.join(' ')}
+                            onChange={(val) => {
+                                props.onPatch({
+                                    maximumRows: val,
+                                });
+                            }}
+                            disabled={!props.editable}
+                        />
+                    }
+                </Grid>
+            </Grid>
             <Typography
                 variant="subtitle1"
                 sx={{mt: 4}}
             >
                 Spalten
             </Typography>
-
+            {
+                props.configurationErrors?.fields != null &&
+                <Typography
+                    variant="body2"
+                    color="error"
+                    role="alert"
+                >
+                    {props.configurationErrors.fields.join(' ')}
+                </Typography>
+            }
             {
                 (props.element.fields ?? []).map((column, index) => {
                     const onChange = (patch: Partial<TableFieldComponentColumnModel>) => {
@@ -82,6 +88,8 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                             fields: patchedList,
                         });
                     };
+                    const labelError = props.configurationErrors?.[`fields.${index}.label`]?.join(' ') ?? columnLabelWarnings[index];
+                    const keyError = props.configurationErrors?.[`fields.${index}.key`]?.join(' ') ?? columnKeyWarnings[index];
                     return (
                         <Box
                             sx={{mt: 2}}
@@ -91,10 +99,23 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                 container
                                 spacing={1}
                             >
-                                <Grid
-                                    item
-                                    xs={4}
-                                >
+                                <Grid size={3}>
+                                    <TextField
+                                        label="Schlüssel"
+                                        margin="normal"
+                                        value={column.key}
+                                        onChange={event => onChange({
+                                            key: event.target.value,
+                                        })}
+                                        onBlur={() => onChange({
+                                            key: (column.key ?? '').trim(),
+                                        })}
+                                        error={keyError != null}
+                                        helperText={keyError ?? undefined}
+                                        disabled={!props.editable}
+                                    />
+                                </Grid>
+                                <Grid size={3}>
                                     <TextField
                                         label="Titel"
                                         margin="normal"
@@ -105,35 +126,32 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             label: (column.label ?? '').trim(),
                                         })}
-                                        error={columnLabelErrors[index] != null}
-                                        helperText={columnLabelErrors[index]}
+                                        error={labelError != null}
+                                        helperText={labelError ?? undefined}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
-                                <Grid
-                                    item
-                                    xs={4}
-                                >
-                                    <TextField
-                                        label="Platzhalter"
-                                        margin="normal"
-                                        value={column.placeholder ?? ''}
-                                        onChange={event => onChange({
-                                            placeholder: event.target.value,
-                                        })}
-                                        onBlur={() => onChange({
-                                            placeholder: (column.placeholder ?? '').trim(),
-                                        })}
-                                        helperText={"Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse."}
-                                        disabled={!props.editable}
-                                    />
+                                <Grid size={3}>
+                                    {
+                                        !hasSummaryLayoutParent &&
+                                        <TextField
+                                            label="Platzhalter"
+                                            margin="normal"
+                                            value={column.placeholder ?? ''}
+                                            onChange={event => onChange({
+                                                placeholder: event.target.value,
+                                            })}
+                                            onBlur={() => onChange({
+                                                placeholder: (column.placeholder ?? '').trim(),
+                                            })}
+                                            helperText={'Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse.'}
+                                            disabled={!props.editable}
+                                        />
+                                    }
                                 </Grid>
                                 {
                                     column.datatype === 'number' &&
-                                    <Grid
-                                        item
-                                        xs={4}
-                                    >
+                                    <Grid size={3}>
                                         <TextField
                                             label="Dezimalstellen"
                                             margin="normal"
@@ -177,31 +195,38 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         }
                                         label="Zahl-Angabe"
                                     />
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={column.optional ?? false}
-                                                onChange={event => onChange({
-                                                    optional: event.target.checked,
-                                                })}
-                                                disabled={!props.editable}
-                                            />
-                                        }
-                                        label="Optionale Angabe"
-                                    />
 
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={column.disabled ?? false}
-                                                onChange={event => onChange({
-                                                    disabled: event.target.checked,
-                                                })}
-                                                disabled={!props.editable}
-                                            />
-                                        }
-                                        label="Eingabe deaktiviert"
-                                    />
+                                    {
+                                        !hasSummaryLayoutParent &&
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={column.optional ?? false}
+                                                    onChange={event => onChange({
+                                                        optional: event.target.checked,
+                                                    })}
+                                                    disabled={!props.editable}
+                                                />
+                                            }
+                                            label="Optionale Angabe"
+                                        />
+                                    }
+
+                                    {
+                                        !hasSummaryLayoutParent &&
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={column.disabled ?? false}
+                                                    onChange={event => onChange({
+                                                        disabled: event.target.checked,
+                                                    })}
+                                                    disabled={!props.editable}
+                                                />
+                                            }
+                                            label="Eingabe deaktiviert"
+                                        />
+                                    }
                                 </Box>
                                 <Button
                                     color="error"
@@ -230,35 +255,48 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                         fields: [
                             ...(props.element.fields ?? []),
                             {
+                                key: generateId(5),
                                 label: 'Neue Spalte',
                                 datatype: 'string',
+                                placeholder: undefined,
+                                optional: true,
+                                disabled: false,
+                                decimalPlaces: undefined,
                             },
                         ],
                     });
                 }}
                 disabled={!props.editable}
             >
-                Spalte Hinzufügen
+                Spalte hinzufügen
             </Button>
         </>
     );
 }
 
-function makeColumnLabelErrors(fields?: TableFieldComponentColumnModel[]): (string | null)[] {
-    if (fields == null) {
-        return [];
-    }
-    const errors: (string | null)[] = [];
+// Missing labels are reported by the server. Short and repeated labels still work, so they only get a hint.
+function makeColumnLabelWarnings(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
     const labelSet = new Set<string>();
-    for (const field of fields) {
-        if (isStringNullOrEmpty(field.label) || field.label.length < 3) {
-            errors.push('Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.');
-        } else if (labelSet.has(field.label)) {
-            errors.push('Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.');
-        } else {
-            errors.push(null);
+    return (fields ?? []).map((field) => {
+        const label = (field.label ?? '').trim();
+        if (label.length === 0) {
+            return null;
         }
-        labelSet.add(field.label);
-    }
-    return errors;
+        if (label.length < 3) {
+            return 'Bitte geben Sie einen Titel mit mindestens drei Zeichen ein.';
+        }
+        if (labelSet.has(label)) {
+            return 'Eine Spalte mit diesem Titel existiert bereits. Bitte geben Sie einen einzigartigen Titel ein.';
+        }
+        labelSet.add(label);
+        return null;
+    });
+}
+
+// Missing and repeated keys lose row data and are reported by the server. A short key still works, so it only gets a hint.
+function makeColumnKeyWarnings(fields?: TableFieldComponentColumnModel[] | null | undefined): (string | null)[] {
+    return (fields ?? []).map((field) => {
+        const key = (field.key ?? '').trim();
+        return key.length > 0 && key.length < 3 ? 'Bitte geben Sie einen Schlüssel mit mindestens drei Zeichen ein.' : null;
+    });
 }

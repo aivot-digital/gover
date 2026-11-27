@@ -1,0 +1,63 @@
+import {createContext, useContext} from 'react';
+import {ElementType} from '../../data/element-type/element-type';
+import {ElementWithParents} from '../../utils/flatten-elements';
+import {AnyElement} from '../../models/elements/any-element';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
+import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
+import {type ElementPanelDraft} from './element-panel-draft';
+import {type ElementConfigurationErrors} from '../../modules/elements/elements-api-service';
+
+export interface ElementTreeDragItem {
+    id: string;
+    type: ElementType;
+    path: string[];
+    parentPath: string[];
+}
+
+export interface ElementTreeExpandCommand {
+    type: 'expand-all' | 'collapse-all' | 'expand-to-path' | null;
+    version: number;
+    targetPath?: string[];
+}
+
+export const ELEMENT_TREE_DND_ITEM_TYPE = 'element-tree-item';
+
+export interface ElementTreeContextType {
+    root: AnyElement;
+    editable: boolean;
+    parentModalZIndex?: number;
+    scrollToElement: (elementPath: string) => void;
+    canDropElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => boolean;
+    moveElement: (dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => void;
+    expandCommand: ElementTreeExpandCommand;
+    /** Used only when items mount; later expansion choices stay in each item's local state. */
+    initiallyExpandedSectionIds: ReadonlySet<string>;
+    activeSearchResultPath?: string[];
+    highlightedElementId?: string | null;
+    highlightedElementSignal?: number;
+    onHoveredElementIdChange?: (elementId: string | null) => void;
+    allElements: ElementWithParents[];
+    displayContext: ElementDisplayContext;
+    allowElementIdEditing: boolean;
+    newElementIds?: ReadonlySet<string>;
+    registerNewElement?: (id: string) => void;
+    markElementApplied?: (id: string) => void;
+    panelDraft?: ElementPanelDraft | null;
+    onPanelDraftChange?: (draft: ElementPanelDraft | null, reason?: 'normalize' | 'structure') => void;
+    applyPanelDraft?: (draft: ElementPanelDraft, element: AnyElement) => boolean;
+    identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
+    /** Server-side configuration errors of {@link root}; null until validated or while not editable. */
+    configurationErrors?: ElementConfigurationErrors | null;
+}
+
+export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);
+
+export const ElementTreeContextProvider = ElementTreeContext.Provider;
+
+export function useElementTreeContext(): ElementTreeContextType {
+    const context = useContext(ElementTreeContext);
+    if (context == null) {
+        throw new Error('useElementTreeContext must be used within a ElementTreeContextProvider');
+    }
+    return context;
+}

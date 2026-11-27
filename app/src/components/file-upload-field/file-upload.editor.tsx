@@ -6,17 +6,20 @@ import {NumberFieldComponent} from '../number-field/number-field-component';
 import {MultiCheckboxComponent} from '../multi-checkbox-field/multi-checkbox-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {useApi} from "../../hooks/use-api";
-import {useSystemApi} from "../../hooks/use-system-api";
+import {SystemApiService} from '../../modules/system/system-api-service';
+import {TextFieldComponent} from '../text-field/text-field-component';
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>): JSX.Element {
-    const api = useApi();
+export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
+    const {
+        hasSummaryLayoutParent,
+        hasReplicatingContainerParent = false,
+    } = props;
+
     const dispatch = useAppDispatch();
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
 
     useEffect(() => {
-        useSystemApi(api)
+        new SystemApiService()
             .getFileExtensions()
             .then(setAllowedExtensions)
             .catch((err) => {
@@ -25,10 +28,16 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             });
     }, []);
 
-    const invalidMinMax =
-        props.element.minFiles != null && props.element.minFiles > 0 &&
-        props.element.maxFiles != null && props.element.maxFiles > 0 &&
-        props.element.minFiles > props.element.maxFiles;
+    const requiresSubmittedFileNameIndex = props.element.isMultifile === true || hasReplicatingContainerParent;
+    const submittedFileNameHint = !requiresSubmittedFileNameIndex
+        ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei.'
+        : hasReplicatingContainerParent
+            ? 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.'
+            : 'Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Mit "#" können Sie den Index angeben. Ist "#" nicht vorhanden, wird der Index automatisch am Ende angefügt, zum Beispiel DATEINAME-1.pdf.';
+
+    if (hasSummaryLayoutParent) {
+        return null;
+    }
 
     return (
         <Grid
@@ -36,9 +45,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
             columnSpacing={4}
         >
             <Grid
-                item
-                xs={12}
-                lg={4}
+                size={{
+                    xs: 12,
+                    lg: 4,
+                }}
             >
                 <FormControl>
                     <FormControlLabel
@@ -46,10 +56,14 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                             <Checkbox
                                 checked={props.element.isMultifile ?? false}
                                 onChange={(event) => {
+                                    const isMultifile = event.target.checked;
+                                    const hasDefaultLabel = props.element.label === 'Anlage' || props.element.label === 'Anlagen';
                                     props.onPatch({
-                                        isMultifile: event.target.checked,
+                                        isMultifile,
                                         minFiles: undefined,
                                         maxFiles: undefined,
+                                        // Follow the upload mode only while the generic default label is in use.
+                                        ...(hasDefaultLabel ? {label: isMultifile ? 'Anlagen' : 'Anlage'} : {}),
                                     });
                                 }}
                                 disabled={!props.editable}
@@ -57,69 +71,84 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                         }
                         label="Mehrere Anlagen zulässig"
                     />
-                    <FormHelperText sx={{ ml: 4 }}>
+                    <FormHelperText sx={{ml: 4}}>
                         Lässt das Hochladen von mehr als nur einer Anlage zu.
                     </FormHelperText>
                 </FormControl>
             </Grid>
-
             {
                 props.element.isMultifile === true &&
                 <>
                     <Grid
-                        item
-                        xs={12}
-                        lg={4}
+                        size={{
+                            xs: 12,
+                            lg: 4,
+                        }}
                     >
                         <NumberFieldComponent
-                            value={props.element.required === true && props.element.minFiles == null ? 1 : props.element.minFiles}
+                            value={props.element.minFiles ?? undefined}
                             label="Mindestanzahl an Anlagen"
-                            hint="Geben Sie 0 ein, um keine Mindestanzahl zu fordern."
+                            hint="Gilt, sobald Einträge vorhanden sind. Optionale Felder dürfen leer bleiben. 0 oder keine Angabe bedeutet keine Mindestanzahl."
                             onChange={(val) => {
                                 props.onPatch({
                                     minFiles: val,
                                 });
                             }}
-                            error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
+                            error={props.configurationErrors?.minFiles?.join(' ')}
                             disabled={!props.editable}
                         />
                     </Grid>
                     <Grid
-                        item
-                        xs={12}
-                        lg={4}
-                    >
-                    <NumberFieldComponent
-                        value={props.element.maxFiles}
-                        label="Maximalanzahl an Anlagen"
-                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                        onChange={(val) => {
-                            props.onPatch({
-                                maxFiles: val,
-                            });
+                        size={{
+                            xs: 12,
+                            lg: 4,
                         }}
-                        error={invalidMinMax ? 'Mehr minimale Anlagen als maximale Anlagen' : undefined}
-                        disabled={!props.editable}
-                    />
+                    >
+                        <NumberFieldComponent
+                            value={props.element.maxFiles ?? undefined}
+                            label="Maximalanzahl an Anlagen"
+                            hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                            onChange={(val) => {
+                                props.onPatch({
+                                    maxFiles: val,
+                                });
+                            }}
+                            error={props.configurationErrors?.maxFiles?.join(' ')}
+                            disabled={!props.editable}
+                        />
                     </Grid>
                 </>
             }
-
-            <Grid
-                item
-                xs={12}
-            >
+            <Grid size={12}>
+                <TextFieldComponent
+                    label="Dateiname bei Übermittlung"
+                    value={props.element.submittedFileName ?? undefined}
+                    onChange={(val) => {
+                        props.onPatch({
+                            submittedFileName: val,
+                        });
+                    }}
+                    hint={submittedFileNameHint}
+                    error={props.configurationErrors?.submittedFileName?.join(' ')}
+                    required
+                    disabled={!props.editable}
+                />
+            </Grid>
+            <Grid size={12}>
                 <MultiCheckboxComponent
                     label="Erlaubte Dateiendungen"
-                    value={props.element.extensions}
+                    value={props.element.extensions ?? undefined}
                     onChange={(val) => {
                         props.onPatch({
                             extensions: val,
                         });
                     }}
-                    hint="Die antragstellende Person kann nur Dateien mit diesen Endungen hochladen."
-                    error={props.element.extensions == null || props.element.extensions.length === 0 ? 'Sie müssen mindestens eine erlaubte Endung auswählen' : undefined}
-                    options={allowedExtensions ?? []}
+                    hint="Die ausfüllende Person kann nur Dateien mit diesen Endungen hochladen."
+                    error={props.configurationErrors?.extensions?.join(' ')}
+                    options={(allowedExtensions ?? []).map((ex) => ({
+                        label: ex,
+                        value: ex,
+                    }))}
                     required
                     disabled={!props.editable}
                     displayInline={true}

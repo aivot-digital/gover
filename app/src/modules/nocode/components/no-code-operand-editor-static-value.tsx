@@ -1,0 +1,447 @@
+import {NO_CODE_BOOLEAN_OPTIONS} from '../utils/no-code-options';
+import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
+import {Autocomplete, Box, createFilterOptions, FormHelperText} from '@mui/material';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
+import {NoCodeDateInput, NoCodeNumberConstraints, NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
+import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
+import {NoCodeDataType} from '../../../data/no-code-data-type';
+import {useEffect, useMemo, useState} from 'react';
+import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
+import {DateFieldComponent} from '../../../components/date-field/date-field-component';
+import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
+import {TimeFieldComponentModelMode} from '../../../models/elements/form/input/time-field-element';
+import Typography from '@mui/material/Typography';
+import {DateTimeFieldComponent} from '../../../components/date-time-field/date-time-field-component';
+import {TimeFieldComponent} from '../../../components/time-field/time-field-component';
+import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
+import {formFieldHelperTextSx} from '../../../theming/form-field-tokens';
+import {getNoCodeNumberValidationError} from '../utils/no-code-number-validation';
+import {isLocalDateIso, isYearIso, isYearMonthIso} from '../../../utils/temporal-utils';
+
+interface NoCodeOperandEditorStaticValueProps {
+    label: string;
+    autoFocus?: boolean;
+    hint?: string;
+    value: NoCodeStaticValue;
+    onChange: (value: NoCodeStaticValue | undefined) => void;
+    options?: NoCodeParameterOption[];
+    optionsAreSuggestions?: boolean;
+    desiredType: NoCodeDataType;
+    onAddEnclosingExpression: () => void;
+    operandError?: NoCodeOperandError;
+    numberConstraints?: NoCodeNumberConstraints | null;
+    dateInput?: NoCodeDateInput | null;
+    preserveWhitespace?: boolean;
+}
+
+export const BOOL_DEFAULT_OPTIONS = NO_CODE_BOOLEAN_OPTIONS;
+
+const staticValueOptionFilter = createFilterOptions<SelectFieldComponentOption>({
+    stringify: (option) => `${option.label} ${option.value}`,
+});
+
+// No-code types do not carry an originating field's precision. Expose seconds
+// so a static Time or DateTime operand can represent the complete public value.
+const noCodeTemporalMode = TimeFieldComponentModelMode.Second;
+
+export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    const {
+        options: originalOptions,
+        desiredType,
+        operandError,
+    } = props;
+
+    const suggestionOptions: SelectFieldComponentOption[] | undefined = useMemo(() => {
+        if (originalOptions && originalOptions.length > 0) {
+            return originalOptions.map((opt) => ({
+                label: opt.label,
+                value: opt.value,
+            }));
+        }
+
+        return undefined;
+    }, [originalOptions]);
+
+    if (suggestionOptions != null) {
+        return props.optionsAreSuggestions === false
+            ? <SelectStaticValue {...props} options={suggestionOptions}/>
+            : <SuggestedStaticValue {...props} options={suggestionOptions}/>;
+    }
+
+    if (desiredType === NoCodeDataType.Boolean) {
+        return <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS}/>;
+    }
+
+    if (desiredType === NoCodeDataType.Date) {
+        return (
+            <>
+                <DateStaticValue {...props} />
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
+        );
+    }
+
+    if (desiredType === NoCodeDataType.DateTime) {
+        return (
+            <>
+                <DateTimeStaticValue {...props}/>
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
+        );
+    }
+
+    if (desiredType === NoCodeDataType.Time) {
+        return (
+            <>
+                <TimeStaticValue {...props}/>
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
+        );
+    }
+
+    return <TextStaticValue {...props}/>;
+}
+
+function getStaticValueError(props: NoCodeOperandEditorStaticValueProps): string | undefined {
+    return props.operandError?.error ?? getNoCodeNumberValidationError(props.value.value, props.label, props.numberConstraints);
+}
+
+function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: string | null | undefined) {
+    props.onChange({
+        ...props.value,
+        value: value != null && value.length > 0 ? value : undefined,
+    });
+}
+
+function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
+    return [
+        {
+            color: 'error' as const,
+            icon: <Delete/>,
+            tooltip: 'Diesen Wert löschen',
+            onClick: () => {
+                props.onChange(undefined);
+            },
+        },
+        {
+            tooltip: 'Diesen Wert mit einer Funktion verknüpfen',
+            icon: <Functions/>,
+            onClick: props.onAddEnclosingExpression,
+        },
+    ];
+}
+
+function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    return (
+        <TextFieldComponent
+            preserveWhitespace={props.preserveWhitespace}
+            showOptionalIndicator={false}
+            label={props.label}
+            hint={props.hint}
+            error={getStaticValueError(props)}
+            value={props.value.value}
+            onChange={(val) => {
+                updateStaticValue(props, val);
+            }}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
+            muiPassTroughProps={{
+                autoFocus: props.autoFocus,
+                margin: 'none',
+            }}
+        />
+    );
+}
+
+function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { options: SelectFieldComponentOption[] }) {
+    const selectedValue = useMemo(() => {
+        const currentValue = props.value.value;
+
+        if (currentValue == null || currentValue.length === 0) {
+            // Keep the free-solo input controlled when its authored literal is cleared.
+            return '';
+        }
+
+        return props.options.find((option) => option.value === currentValue) ?? currentValue;
+    }, [props.options, props.value.value]);
+
+    const valueNoteId = `${useNormalizedReactId()}-value-note`;
+    const valueNote = useMemo(() => (
+        getSuggestedValueNote(props.options, props.value.value)
+    ), [props.options, props.value.value]);
+
+    return (
+        <>
+            <Autocomplete<SelectFieldComponentOption, false, true, true>
+                freeSolo
+                disableClearable
+                options={props.options}
+                filterOptions={staticValueOptionFilter}
+                value={selectedValue}
+                getOptionLabel={(option) => (
+                    typeof option === 'string' ? option : option.value
+                )}
+                isOptionEqualToValue={(option, value) => (
+                    typeof value !== 'string' && option.value === value.value
+                )}
+                onInputChange={(_, value, reason) => {
+                    if (reason === 'input' || reason === 'clear') {
+                        updateStaticValue(props, value);
+                    }
+                }}
+                onChange={(_, value) => {
+                    updateStaticValue(
+                        props,
+                        typeof value === 'string' ? value : value?.value,
+                    );
+                }}
+                renderOption={({
+                                   key,
+                                   ...renderProps
+                               }, option) => (
+                    <Box
+                        key={key}
+                        component="li"
+                        {...renderProps}
+                        sx={{display: 'block !important'}}
+                    >
+                        <Box
+                            component="span"
+                            sx={{fontWeight: 500}}
+                        >
+                            {option.label}
+                        </Box>
+                        {
+                            option.label !== option.value &&
+                            <Box
+                                component="span"
+                                sx={{
+                                    color: 'text.secondary',
+                                    ml: 1,
+                                }}
+                            >
+                                {option.value}
+                            </Box>
+                        }
+                    </Box>
+                )}
+                renderInput={(params) => (
+                    <TextFieldComponent
+                        preserveWhitespace={props.preserveWhitespace}
+                        showOptionalIndicator={false}
+                        muiPassTroughProps={{...params, autoFocus: props.autoFocus}}
+                        label={props.label}
+                        hint={props.hint}
+                        error={getStaticValueError(props)}
+                        value={props.value.value}
+                        onChange={(value) => updateStaticValue(props, value)}
+                        margin="none"
+                        startIcon={<Article/>}
+                        endAction={getStaticValueActions(props)}
+                        ariaDescribedBy={valueNote != null ? valueNoteId : undefined}
+                    />
+                )}
+            />
+
+            {
+                valueNote != null &&
+                <FormHelperText
+                    id={valueNoteId}
+                    sx={formFieldHelperTextSx}
+                >
+                    {valueNote}
+                </FormHelperText>
+            }
+        </>
+    );
+}
+
+/**
+ * Describes how the authored literal relates to the suggestions. The input keeps showing the literal because it is
+ * the stored value, so the label of a matching option is named in this note instead. Literals outside the suggestions
+ * remain valid, for example free chip input values or entries that were removed from a code list.
+ */
+function getSuggestedValueNote(options: SelectFieldComponentOption[], value: string | null | undefined): string | undefined {
+    if (value == null || value.length === 0) {
+        return undefined;
+    }
+
+    const matchingOption = options.find((option) => option.value === value);
+    if (matchingOption == null) {
+        return 'Der Wert entspricht keiner Auswahloption.';
+    }
+
+    return matchingOption.label !== matchingOption.value
+        ? `Der Wert entspricht der Auswahloption „${matchingOption.label}“.`
+        : 'Der Wert entspricht einer Auswahloption.';
+}
+
+function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { options: SelectFieldComponentOption[] }) {
+    return (
+        <SelectFieldComponent
+            showOptionalIndicator={false}
+            label={props.label}
+            hint={props.hint}
+            error={getStaticValueError(props)}
+            value={props.value.value ?? undefined}
+            onChange={(val) => {
+                updateStaticValue(props, val);
+            }}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
+            muiPassTroughProps={{
+                autoFocus: props.autoFocus,
+                margin: 'none',
+            }}
+            options={props.options}
+        />
+    );
+}
+
+
+const dateModeOptions = [
+    {value: DateFieldComponentModelMode.Day, label: 'Tag, Monat und Jahr'},
+    {value: DateFieldComponentModelMode.Month, label: 'Monat und Jahr'},
+    {value: DateFieldComponentModelMode.Year, label: 'Jahr'},
+];
+
+function getCalendarDateMode(value: unknown): DateFieldComponentModelMode | null {
+    if (isYearIso(value)) return DateFieldComponentModelMode.Year;
+    if (isYearMonthIso(value)) return DateFieldComponentModelMode.Month;
+    if (isLocalDateIso(value)) return DateFieldComponentModelMode.Day;
+    return null;
+}
+
+function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    const [draft, setDraft] = useState<{source: NoCodeStaticValue['value']; mode: DateFieldComponentModelMode}>();
+    const value = props.value.value;
+    const savedMode = getCalendarDateMode(value);
+    const draftMode = draft != null && draft.source === value ? draft.mode : null;
+    const mode = props.dateInput == null ? DateFieldComponentModelMode.Day
+        : draftMode ?? savedMode ?? DateFieldComponentModelMode.Day;
+
+    useEffect(() => {
+        setDraft(current => current?.source === value ? current : undefined);
+    }, [value]);
+
+    return <>
+        {props.dateInput != null && <SelectFieldComponent
+            label={`Datumsgenauigkeit für „${props.label}“`}
+            showOptionalIndicator={false}
+            includeEmptyOption={false}
+            margin="none"
+            options={dateModeOptions}
+            value={mode}
+            onChange={(nextMode) => {
+                if (nextMode == null) return;
+                setDraft({source: value, mode: nextMode});
+                if (value == null || savedMode == null || nextMode === savedMode) return;
+                // Coarser ISO dates are prefixes. A finer date stays a draft until its missing parts are entered.
+                if (nextMode === DateFieldComponentModelMode.Year) {
+                    updateStaticValue(props, value.slice(0, 4));
+                } else if (nextMode === DateFieldComponentModelMode.Month && savedMode === DateFieldComponentModelMode.Day) {
+                    updateStaticValue(props, value.slice(0, 7));
+                }
+            }}
+        />}
+        <DateFieldComponent
+            autoFocus={props.autoFocus}
+            showOptionalIndicator={false}
+            label={props.label}
+            hint={props.hint}
+            value={props.value.value ?? undefined}
+            onChange={(val) => {
+                if (val == null) {
+                    if (props.dateInput != null && savedMode != null && savedMode !== mode) return;
+                    setDraft({source: undefined, mode});
+                }
+                updateStaticValue(props, val);
+            }}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
+            muiPassTroughProps={{
+                margin: 'none',
+            }}
+            mode={mode}
+        />
+    </>;
+}
+
+function DateTimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    return (
+        <DateTimeFieldComponent
+            autoFocus={props.autoFocus}
+            showOptionalIndicator={false}
+            label={props.label}
+            hint={props.hint}
+            allowLegacyLocalValue
+            value={props.value.value}
+            onChange={(value) => {
+                updateStaticValue(props, value);
+            }}
+            mode={noCodeTemporalMode}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
+        />
+    );
+}
+
+function TimeStaticValue(props: NoCodeOperandEditorStaticValueProps) {
+    return (
+        <TimeFieldComponent
+            autoFocus={props.autoFocus}
+            showOptionalIndicator={false}
+            label={props.label}
+            hint={props.hint}
+            value={props.value.value ?? undefined}
+            onChange={(value) => {
+                updateStaticValue(props, value);
+            }}
+            mode={noCodeTemporalMode}
+            startIcon={<Article/>}
+            endAction={getStaticValueActions(props)}
+        />
+    );
+}

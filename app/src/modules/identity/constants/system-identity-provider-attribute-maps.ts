@@ -5,7 +5,6 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
     [BayernIdAttribute.Salutation]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.Title]: [
         ElementType.Text,
@@ -31,7 +30,6 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
     [BayernIdAttribute.Nationality]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.StreetAndBuilding]: [
         ElementType.Text,
@@ -39,27 +37,25 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
     [BayernIdAttribute.ZipCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.City]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.CommunityId]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.Country]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.Email]: [
+        ElementType.Email,
         ElementType.Text,
     ],
     [BayernIdAttribute.Telephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [BayernIdAttribute.BPk2]: [
@@ -71,17 +67,14 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
     [BayernIdAttribute.TrustLevelAuthentication]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.DocumentType]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.EIdasIssuingCountry]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.Pseudonym]: [
         ElementType.Text,
@@ -89,12 +82,10 @@ export const BayernIdAttributes: Record<BayernIdAttribute, ElementType[]> = {
     [BayernIdAttribute.AssertionProvedBy]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.ApiVersion]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BayernIdAttribute.ApplicationId]: [
         ElementType.Text,
@@ -105,7 +96,6 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
     [BundIdAttribute.Salutation]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.Title]: [
         ElementType.Text,
@@ -131,7 +121,6 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
     [BundIdAttribute.Nationality]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.StreetAndBuilding]: [
         ElementType.Text,
@@ -139,27 +128,25 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
     [BundIdAttribute.ZipCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.City]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.CommunityId]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.Country]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.Email]: [
+        ElementType.Email,
         ElementType.Text,
     ],
     [BundIdAttribute.Telephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [BundIdAttribute.BPk2]: [
@@ -171,17 +158,14 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
     [BundIdAttribute.TrustLevelAuthentication]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.DocumentType]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.EIdasIssuingCountry]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.Pseudonym]: [
         ElementType.Text,
@@ -189,12 +173,10 @@ export const BundIdAttributes: Record<BundIdAttribute, ElementType[]> = {
     [BundIdAttribute.AssertionProvedBy]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.ApiVersion]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [BundIdAttribute.ApplicationId]: [
         ElementType.Text,
@@ -205,7 +187,6 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.ElsterIdentitaetstyp]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgCompanyName]: [
         ElementType.Text,
@@ -216,7 +197,6 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.OrgLegalFormCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgOccupationText]: [
         ElementType.Text,
@@ -224,7 +204,6 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.OrgOccupationCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgRegisterNumber]: [
         ElementType.Text,
@@ -232,12 +211,10 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.OrgRegisterType]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgRegisterCourt]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.Salutation]: [
         ElementType.Text,
@@ -263,7 +240,6 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.OrgAddressType]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgStreet]: [
         ElementType.Text,
@@ -274,17 +250,14 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.OrgZipCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgCity]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgCityDistrict]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.OrgAddressAddition]: [
         ElementType.Text,
@@ -292,7 +265,6 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.OrgCountry]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.PreferredUsername]: [
         ElementType.Text,
@@ -303,17 +275,14 @@ export const MukAttributes: Record<MukAttribute, ElementType[]> = {
     [MukAttribute.ElsterDatenkranzTyp]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.TrustLevelIdentification]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [MukAttribute.TrustLevelAuthentication]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
 };
 
@@ -321,12 +290,10 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.DataportIdentitaetstyp]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.Salutation]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.Title]: [
         ElementType.Text,
@@ -352,7 +319,6 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.Gender]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.StreetAndBuilding]: [
         ElementType.Text,
@@ -360,31 +326,30 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.ZipCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.City]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.Country]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.Email]: [
+        ElementType.Email,
         ElementType.Text,
     ],
     [ShIdAttribute.Telephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [ShIdAttribute.Mobilephone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [ShIdAttribute.PreferredLanguage]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.OrgCompanyName]: [
         ElementType.Text,
@@ -398,12 +363,12 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.OrgRegisterCourt]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.OrgContactMail]: [
         ElementType.Text,
     ],
     [ShIdAttribute.OrgContactPhone]: [
+        ElementType.PhoneNumber,
         ElementType.Text,
     ],
     [ShIdAttribute.OrgStreetAndBuilding]: [
@@ -412,17 +377,14 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.OrgZipCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.OrgCity]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.OrgCountry]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.OrgPostboxNumber]: [
         ElementType.Text,
@@ -430,12 +392,10 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.OrgPostboxZipCode]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.OrgPostboxCountry]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.ElsterDatenuebermittler]: [
         ElementType.Text,
@@ -443,7 +403,6 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.TrustLevelAuthentication]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
     [ShIdAttribute.PreferredUsername]: [
         ElementType.Text,
@@ -454,6 +413,5 @@ export const ShIdAttributes: Record<ShIdAttribute, ElementType[]> = {
     [ShIdAttribute.DataportServicekontoType]: [
         ElementType.Text,
         ElementType.Select,
-        ElementType.Radio,
     ],
 }

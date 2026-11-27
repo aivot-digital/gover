@@ -1,0 +1,30 @@
+import {RouteObject} from 'react-router-dom';
+import {ThemeListPage} from './pages/list/theme-list-page';
+import {ThemeDetailsPage} from './pages/details/theme-details-page';
+import {ThemeDetailsPageIndex} from './pages/details/theme-details-page-index';
+import {ThemeDetailsPageDepartments} from './pages/details/theme-details-page-departments';
+import {
+    duplicatePageWarningRouteHandle,
+} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
+
+export const themesRoutes: RouteObject[] = [
+    {
+        path: '/themes',
+        element: <ThemeListPage/>,
+    },
+    {
+        path: '/themes/:id',
+        element: <ThemeDetailsPage/>,
+        handle: duplicatePageWarningRouteHandle,
+        children: [
+            {
+                index: true,
+                element: <ThemeDetailsPageIndex/>,
+            },
+            {
+                path: '/themes/:id/departments',
+                element: <ThemeDetailsPageDepartments/>,
+            },
+        ],
+    },
+];

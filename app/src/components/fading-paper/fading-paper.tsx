@@ -1,4 +1,5 @@
 import {Box, useTheme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import React from 'react';
 import {FadingPaperProps} from './fading-paper-props';
 
@@ -12,7 +13,11 @@ export function FadingPaper(props: FadingPaperProps) {
                 overflow: 'hidden',
                 p: 3,
                 mt: 3,
-                background: 'linear-gradient(270deg, #FCFCFC 7.88%, #EEF2EE 100%, #EEF2EE 100%)',
+                background: (theme) => `linear-gradient(
+                    270deg,
+                    ${alpha(theme.palette.text.primary, 0.02)} 7.88%,
+                    ${alpha(theme.palette.text.primary, 0.06)} 100%
+                )`,
                 [theme.breakpoints.up('md')]: {
                     p: 6,
                     mt: 5,

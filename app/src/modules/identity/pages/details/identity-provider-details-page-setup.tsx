@@ -3,10 +3,29 @@ import React, {useContext, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
-import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
-import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
-import {SettingsSuggestOutlined} from '@mui/icons-material';
+import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
+import SettingsApplicationsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsApplications';
 import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
+import {IdentityProvidersApiService} from '../../identity-providers-api-service';
+
+/**
+ * System identity providers are brokered by a Keycloak realm that differs from the staff realm in the AppConfig.
+ * Its URL is therefore taken from the provider's own authorization endpoint, so the metadata link always points to
+ * the Keycloak host and realm the login flow actually uses.
+ */
+export function createSamlMetadataUrl(identityProvider: IdentityProviderDetailsDTO): string | undefined {
+    const realmUrl = identityProvider.authorizationEndpoint.match(/^(.*\/realms\/[^/?#]+)\//)?.[1];
+    const alias = identityProvider.additionalParams.find((param) => param.key === 'kc_idp_hint')?.value;
+    if (realmUrl == null || !alias) {
+        return undefined;
+    }
+
+    const encodedAlias = encodeURIComponent(alias);
+    return identityProvider.type === IdentityProviderType.BayernID
+        ? `${realmUrl}/bayernid/${encodedAlias}/metadata`
+        : `${realmUrl}/broker/${encodedAlias}/endpoint/descriptor`;
+}
 
 interface SetupInfoBlockProps {
     title: string;
@@ -28,14 +47,10 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
     const handleFetchMetadata = async () => {
         if (!identityProvider) return;
 
-        const metadataLink = links.find(l => l.label.includes('SAML Metadaten'))?.url;
-        if (!metadataLink) return;
-
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(metadataLink);
-            const text = await response.text();
+            const text = await new IdentityProvidersApiService().getSamlMetadata(identityProvider.key);
             const parser = new DOMParser();
             const xml = parser.parseFromString(text, "application/xml");
 
@@ -62,15 +77,15 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
             if (identityProvider.type === IdentityProviderType.BundID) {
                 fieldsToShow.push(
                     { label: 'EntityID', value: entityID },
-                    { label: 'Primäres X509 Zertifikat (signing)', value: signingCert },
-                    { label: 'X509 Zertifikat (encryption)', value: encryptionCert },
+                    { label: 'Primäres X.509-Zertifikat (Signatur)', value: signingCert },
+                    { label: 'X.509-Zertifikat (Verschlüsselung)', value: encryptionCert },
                     { label: 'Assertion Consumer Service URL', value: assertionConsumerServiceURL },
                 );
             } else if (identityProvider.type === IdentityProviderType.MUK) {
                 fieldsToShow.push(
                     { label: 'EntityID', value: entityID },
-                    { label: 'Primäres X509 Zertifikat (signing)', value: signingCert },
-                    { label: 'X509 Zertifikat (encryption)', value: encryptionCert },
+                    { label: 'Primäres X.509-Zertifikat (Signatur)', value: signingCert },
+                    { label: 'X.509-Zertifikat (Verschlüsselung)', value: encryptionCert },
                     { label: 'Assertion Consumer Service URL', value: assertionConsumerServiceURL },
                     { label: 'Single Logout Service URL', value: singleLogoutServiceURL || 'Nicht angegeben' },
                 );
@@ -123,7 +138,7 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
                         variant="contained"
                         color="primary"
                         onClick={handleFetchMetadata}
-                        startIcon={<SettingsSuggestOutlined />}
+                        startIcon={<SettingsApplicationsOutlined />}
                     >
                         Metadaten für Einrichtung auslesen
                     </Button>
@@ -148,14 +163,13 @@ export function IdentityProviderDetailsPageSetup() {
         item: identityProvider,
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
-    const idpHint = useMemo(() => {
-        if (identityProvider == null) {
-            return undefined;
-        }
-
-        return identityProvider
-            .additionalParams
-            .find((param) => param.key === 'kc_idp_hint')
+    const samlMetadataLinks = useMemo(() => {
+        const url = identityProvider == null ? undefined : createSamlMetadataUrl(identityProvider);
+        return url == null ? [] : [{
+            icon: <CodeOutlinedIcon />,
+            label: 'SAML-Metadaten',
+            url,
+        }];
     }, [identityProvider]);
 
 
@@ -164,13 +178,12 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BundID && (
                 <SetupInfoBlock
                     title="Einrichtung der BundID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP)
-                    des Bundesministerium des Innern und für Heimat bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BundID einer technischen Anbindung im Self Service Portal (SSP) des Bundesministeriums für Digitales und Staatsmodernisierung bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung der BundID',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/bund-id',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -182,11 +195,7 @@ export function IdentityProviderDetailsPageSetup() {
                             label: 'Self Service Portal (SSP)',
                             url: 'https://ssp.id.bund.de/',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
@@ -194,63 +203,52 @@ export function IdentityProviderDetailsPageSetup() {
             {identityProvider?.type === IdentityProviderType.BayernID && (
                 <SetupInfoBlock
                     title="Einrichtung der BayernID"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BayernID einer technischen Anbindung bei der AKDB bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit der BayernID einer technischen Anbindung bei der AKDB bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung der BayernID',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/bayern-id',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'BayernID Portal',
                             url: 'https://id.bayernportal.de',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/bayernid/${idpHint?.value}/metadata`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
 
             {identityProvider?.type === IdentityProviderType.SHID && (
                 <SetupInfoBlock
-                    title="Einrichtung des Servicekonto Schleswig-Holstein"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei der Dataport bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    title="Einrichtung des Servicekontos Schleswig-Holstein"
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Servicekontos Schleswig-Holstein einer technischen Anbindung bei Dataport bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Leitfaden zur Anbindung des Servicekontos Schleswig-Holstein',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/servicekonto-sh',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
                             label: 'Serviceportal Schleswig-Holstein',
                             url: 'https://serviceportal.schleswig-holstein.de',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}
 
             {identityProvider?.type === IdentityProviderType.MUK && (
                 <SetupInfoBlock
-                    title="Einrichtung des Mein Unternehmenskonto (MUK)"
-                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit des Mein Unternehmenskontos einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf.
-                    Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
+                    title="Einrichtung von Mein Unternehmenskonto (MUK)"
+                    description="Bitte beachten Sie, dass es für die Funktionsfähigkeit von Mein Unternehmenskonto einer technischen Anbindung im Self Service Portal (SSP) des Bayerischen Staatsministeriums für Digitales bedarf. Nützliche Informationen sowie die technischen Anbindungsdaten finden Sie nachstehend."
                     links={[
                         {
                             icon: <LinkOutlinedIcon />,
-                            label: 'Leitfaden zur Anbindung des Mein Unternehmenskontos',
-                            url: 'https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/einrichten/mein-unternehmenskonto',
+                            label: 'Leitfaden zur Anbindung von Mein Unternehmenskonto',
+                            url: 'https://docs.prosuna.de',
                         },
                         {
                             icon: <LinkOutlinedIcon />,
@@ -262,11 +260,7 @@ export function IdentityProviderDetailsPageSetup() {
                             label: 'Self Service Portal (SSP)',
                             url: 'https://service.mein-unternehmenskonto.de',
                         },
-                        {
-                            icon: <CodeOutlinedIcon />,
-                            label: 'SAML Metadaten',
-                            url: `/idp/realms/customer/broker/${idpHint?.value}/endpoint/descriptor`,
-                        },
+                        ...samlMetadataLinks,
                     ]}
                 />
             )}

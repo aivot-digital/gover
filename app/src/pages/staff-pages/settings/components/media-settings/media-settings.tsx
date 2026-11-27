@@ -7,9 +7,10 @@ import {SelectAssetDialog} from '../../../../../dialogs/select-asset-dialog/sele
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../../slices/snackbar-slice';
 import {useApi} from '../../../../../hooks/use-api';
-import ImageSearchOutlinedIcon from '@mui/icons-material/ImageSearchOutlined';
+import ImageSearchOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ImageSearch';
 import {AssetsApiService} from '../../../../../modules/assets/assets-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
+import {AssetVisibility} from '../../../../../modules/assets/models/asset-visibility';
 
 export function MediaSettings() {
     const api = useApi();
@@ -127,7 +128,7 @@ export function MediaSettings() {
                         title="Eine digitale Grafikdatei, die geometrische Formeln verwendet, um Bilder darzustellen, die ohne Qualitätsverlust skaliert werden können"
                     >
                         Vektordatei
-                    </abbr> (z.B. SVG) um eine optimale Darstellung zu gewährleisten.
+                    </abbr> (z. B. SVG), um eine optimale Darstellung zu gewährleisten.
                 </Typography>
 
                 {
@@ -171,7 +172,7 @@ export function MediaSettings() {
                 onSelect={handleSetFavicon}
                 onCancel={toggleFaviconSelect}
                 mimetype="image"
-                mode="public"
+                visibility={AssetVisibility.Public}
             />
 
             <SelectAssetDialog
@@ -180,7 +181,7 @@ export function MediaSettings() {
                 onSelect={handleSetLogo}
                 onCancel={toggleLogoSelect}
                 mimetype="image"
-                mode="public"
+                visibility={AssetVisibility.Public}
             />
         </>
     );

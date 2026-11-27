@@ -1,0 +1,1 @@
+export const LEGACY_NO_CODE_NOTICE = 'Stellen Sie diese Regel auf den neuen No-Code um. Der bisherige No-Code ist seit Prosuna 5.0 veraltet. Ab Prosuna 5.1 ist die Umstellung Voraussetzung für jede neue oder erneute Veröffentlichung dieser Prozessversion. Die Ausführung bereits veröffentlichter Versionen und laufender Vorgänge bleibt möglich.';

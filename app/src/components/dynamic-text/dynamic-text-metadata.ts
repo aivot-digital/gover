@@ -1,0 +1,101 @@
+import {useEffect} from 'react';
+import {getDynamicTextSyntaxSegments} from './dynamic-text-syntax';
+
+export interface DynamicTextVariableMetadata {
+    category?: string;
+    description?: string;
+    label: string;
+    origin?: string;
+    reference: string;
+}
+
+/**
+ * How a variable reference is inserted into Markdown: as literal `text` with `{{ }}` or as `markdown` with `{! !}`,
+ * which keeps the value's formatting. Fields that are not Markdown always insert text.
+ */
+export type DynamicTextInsertion = 'text' | 'markdown';
+
+/**
+ * Wraps a reference to a Markdown value so it is inserted as the text a reader sees, without formatting characters
+ * and the escapes the editor stores. The backend provides `_text_v1.fromMarkdown` to templates.
+ */
+export function getDynamicTextInsertionReference(
+    reference: string,
+    markdownValue: boolean | undefined,
+    insertion: DynamicTextInsertion,
+): string {
+    return markdownValue === true && insertion === 'text'
+        ? `_text_v1.fromMarkdown(${reference})`
+        : reference;
+}
+
+export interface DynamicTextInputMethods {
+    focus: () => void;
+    insertVariableReference: (reference: string, insertion?: DynamicTextInsertion) => void;
+}
+
+export function getDynamicTextVariableReferences(value: string): string[] {
+    return Array.from(new Set(
+        getDynamicTextSyntaxSegments(value)
+            .filter((segment) => segment.role === 'property')
+            .map((segment) => segment.value),
+    ));
+}
+
+export function getDynamicTextTokenTitle(
+    value: string,
+    metadata: readonly DynamicTextVariableMetadata[],
+): string {
+    const references = getDynamicTextVariableReferences(value);
+    const metadataByReference = new Map(metadata.map((entry) => [entry.reference, entry]));
+    const referenceDetails = references.map((reference) => {
+        const entry = metadataByReference.get(reference);
+        if (entry == null) {
+            return reference;
+        }
+
+        return [
+            entry.label,
+            [entry.category, entry.origin == null ? null : `Erzeugt von ${entry.origin}`]
+                .filter((part): part is string => part != null)
+                .join(' · '),
+            entry.description,
+            entry.reference,
+        ].filter((part): part is string => part != null && part.length > 0).join('\n');
+    });
+
+    return referenceDetails.length > 0
+        ? referenceDetails.join('\n\n')
+        : value.replaceAll(/\s+/g, ' ').trim();
+}
+
+export function useDynamicTextTokenTitles(
+    container: HTMLElement | null,
+    metadata: readonly DynamicTextVariableMetadata[] | null | undefined,
+) {
+    // TODO(input-modes): Keep title as pointer enhancement, but expose metadata through a keyboard- and
+    // touch-accessible action for the dynamic-text token at the current caret position.
+    useEffect(() => {
+        if (container == null) {
+            return;
+        }
+
+        const updateTitles = () => {
+            for (const token of Array.from(
+                container.querySelectorAll<HTMLElement>('.dynamic-text-token'),
+            )) {
+                token.title = getDynamicTextTokenTitle(token.textContent ?? '', metadata ?? []);
+            }
+        };
+
+        updateTitles();
+        const observer = new MutationObserver(updateTitles);
+        observer.observe(container, {
+            childList: true,
+            characterData: true,
+            subtree: true,
+        });
+
+        return () => observer.disconnect();
+    }, [container, metadata]);
+}

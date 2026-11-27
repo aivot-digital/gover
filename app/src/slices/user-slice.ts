@@ -1,18 +1,22 @@
 import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
-import {type RootState} from '../store';
-import {type DepartmentMembership} from '../modules/departments/models/department-membership';
-import {User} from '../modules/users/models/user';
+import {type RootState} from '../store.staff';
+import {type User} from '../modules/users/models/user';
+import {
+    type VDepartmentMembershipWithDetailsEntity,
+} from '../modules/departments/entities/v-department-membership-with-details-entity';
+import {type PermissionSet} from '../modules/permissions/models/permission-set';
 
 interface UserState {
     user: User | undefined;
-    memberships: DepartmentMembership[] | undefined;
+    memberships: VDepartmentMembershipWithDetailsEntity[] | undefined;
+    permissions: PermissionSet | undefined;
 }
 
 const initialState: UserState = {
     user: undefined,
     memberships: undefined,
+    permissions: undefined,
 };
-
 
 const userSlice = createSlice({
     name: 'user',
@@ -24,8 +28,11 @@ const userSlice = createSlice({
                 state.memberships = [];
             }
         },
-        setMemberships: (state, action: PayloadAction<DepartmentMembership[]>) => {
+        setMemberships: (state, action: PayloadAction<VDepartmentMembershipWithDetailsEntity[]>) => {
             state.memberships = action.payload;
+        },
+        setPermissions: (state, action: PayloadAction<PermissionSet | undefined>) => {
+            state.permissions = action.payload;
         },
     },
 });
@@ -33,9 +40,11 @@ const userSlice = createSlice({
 export const {
     setUser,
     setMemberships,
+    setPermissions,
 } = userSlice.actions;
 
 export const selectUser = (state: RootState): User | undefined => state.user.user;
-export const selectMemberships = (state: RootState): DepartmentMembership[] | undefined => state.user.memberships;
+export const selectMemberships = (state: RootState): VDepartmentMembershipWithDetailsEntity[] | undefined => state.user.memberships;
+export const selectPermissions = (state: RootState): PermissionSet | undefined => state.user.permissions;
 
 export const userReducer = userSlice.reducer;

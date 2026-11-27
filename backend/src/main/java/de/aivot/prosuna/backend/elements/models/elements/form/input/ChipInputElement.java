@@ -1,0 +1,291 @@
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
+
+import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public class ChipInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
+    @Nullable
+    private String placeholder;
+
+    @Nullable
+    private List<String> suggestions;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private String codeListKey;
+
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    @Nullable
+    private String codeListLabelColumnKey;
+
+    @Nullable
+    private Integer minItems;
+
+    @Nullable
+    private Integer maxItems;
+
+    @Nullable
+    private Integer maxItemLength;
+
+    @Nullable
+    private List<String> pasteSeparators;
+
+    @Nullable
+    private Boolean allowDuplicates;
+
+    public ChipInputElement() {
+        super(ElementType.ChipInput);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        addMinimumExceedsMaximumError(errors, "minItems", minItems, "maxItems", maxItems,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        // Suggestions are optional, but resolving code list suggestions fails without a key.
+        if (optionsSource == OptionsSourceType.CodeList && StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        return errors;
+    }
+
+    @Nullable
+    @Override
+    public List<String> formatValue(@Nullable Object value) {
+        return _formatValue(value);
+    }
+
+    @Override
+    public void performValidation(@Nullable List<String> value) throws ValidationException {
+        if (value == null) {
+            return;
+        }
+
+        if (minItems != null && minItems > 0 && value.size() < minItems) {
+            throw new ValidationException(this, "Mindestens " + minItems + " Einträge erforderlich.");
+        }
+
+        if (maxItems != null && maxItems > 0 && value.size() > maxItems) {
+            throw new ValidationException(this, "Maximal " + maxItems + " Einträge erlaubt.");
+        }
+
+        if (maxItemLength != null && maxItemLength > 0 && value.stream().anyMatch(entry -> entry.length() > maxItemLength)) {
+            throw new ValidationException(this, "Jeder Eintrag darf höchstens " + maxItemLength + " Zeichen enthalten.");
+        }
+
+        if (!Boolean.TRUE.equals(allowDuplicates) && value.stream().distinct().count() != value.size()) {
+            throw new ValidationException(this, "Mehrfach vorhandene Einträge sind nicht erlaubt.");
+        }
+    }
+
+    @Nonnull
+    @Override
+    public String toDisplayValue(@Nullable List<String> value) {
+        if (value == null || value.isEmpty()) {
+            return "Keine Angabe";
+        }
+
+        return value.stream()
+                .filter(Objects::nonNull)
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("Keine Angabe");
+    }
+
+    @Nonnull
+    @Override
+    public Boolean evaluate(ConditionOperator operator, @Nullable Object referencedValue, @Nullable Object comparedValue) {
+        var formatted = formatValue(referencedValue);
+        var entries = formatted == null ? List.<String>of() : formatted;
+        if (operator == ConditionOperator.Empty) {
+            return entries.isEmpty();
+        }
+
+        if (operator == ConditionOperator.NotEmpty) {
+            return !entries.isEmpty();
+        }
+
+        if (comparedValue instanceof String entry) {
+            return switch (operator) {
+                case Includes -> entries.contains(entry);
+                case NotIncludes -> !entries.contains(entry);
+                default -> false;
+            };
+        }
+        if (comparedValue instanceof Collection<?> comparedEntries) {
+            return switch (operator) {
+                case Includes -> comparedEntries.stream().allMatch(entries::contains);
+                case NotIncludes -> comparedEntries.stream().noneMatch(entries::contains);
+                default -> false;
+            };
+        }
+
+        return false;
+    }
+
+    @Nullable
+    public static List<String> _formatValue(@Nullable Object value) {
+        var res = switch (value) {
+            case null -> null;
+            case String sValue -> sValue.trim().isEmpty() ? null : List.of(sValue.trim());
+            case Collection<?> cValue -> cValue.stream()
+                    .filter(Objects::nonNull)
+                    .map(v -> v.toString().trim())
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+            default -> null;
+        };
+
+        return res == null || res.isEmpty() ? null : res;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        ChipInputElement that = (ChipInputElement) o;
+        return Objects.equals(placeholder, that.placeholder)
+                && Objects.equals(suggestions, that.suggestions)
+                && optionsSource == that.optionsSource
+                && Objects.equals(codeListKey, that.codeListKey)
+                && Objects.equals(codeListLabelColumnKey, that.codeListLabelColumnKey)
+                && Objects.equals(minItems, that.minItems)
+                && Objects.equals(maxItems, that.maxItems)
+                && Objects.equals(maxItemLength, that.maxItemLength)
+                && Objects.equals(pasteSeparators, that.pasteSeparators)
+                && Objects.equals(allowDuplicates, that.allowDuplicates);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Objects.hashCode(placeholder);
+        result = 31 * result + Objects.hashCode(suggestions);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
+        result = 31 * result + Objects.hashCode(minItems);
+        result = 31 * result + Objects.hashCode(maxItems);
+        result = 31 * result + Objects.hashCode(maxItemLength);
+        result = 31 * result + Objects.hashCode(pasteSeparators);
+        result = 31 * result + Objects.hashCode(allowDuplicates);
+        return result;
+    }
+
+    @Nullable
+    public String getPlaceholder() {
+        return placeholder;
+    }
+
+    public ChipInputElement setPlaceholder(@Nullable String placeholder) {
+        this.placeholder = placeholder;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getSuggestions() {
+        return suggestions;
+    }
+
+    public ChipInputElement setSuggestions(@Nullable List<String> suggestions) {
+        this.suggestions = suggestions;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    public ChipInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListKey() {
+        return codeListKey;
+    }
+
+    public ChipInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    public ChipInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMinItems() {
+        return minItems;
+    }
+
+    public ChipInputElement setMinItems(@Nullable Integer minItems) {
+        this.minItems = minItems;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMaxItems() {
+        return maxItems;
+    }
+
+    public ChipInputElement setMaxItems(@Nullable Integer maxItems) {
+        this.maxItems = maxItems;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMaxItemLength() {
+        return maxItemLength;
+    }
+
+    @Nonnull
+    public ChipInputElement setMaxItemLength(@Nullable Integer maxItemLength) {
+        this.maxItemLength = maxItemLength;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getPasteSeparators() {
+        return pasteSeparators;
+    }
+
+    @Nonnull
+    public ChipInputElement setPasteSeparators(@Nullable List<String> pasteSeparators) {
+        this.pasteSeparators = pasteSeparators;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getAllowDuplicates() {
+        return allowDuplicates;
+    }
+
+    public ChipInputElement setAllowDuplicates(@Nullable Boolean allowDuplicates) {
+        this.allowDuplicates = allowDuplicates;
+        return this;
+    }
+}

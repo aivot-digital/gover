@@ -3,6 +3,7 @@ import {SecretsListPage} from './pages/list/secrets-list-page';
 import {SecretsDetailsPage} from './pages/details/secrets-details-page';
 import {SecretsDetailsPageIndex} from './pages/details/secrets-details-page-index';
 import React from 'react';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const secretsRoutes: RouteObject[] = [
     {
@@ -12,6 +13,7 @@ export const secretsRoutes: RouteObject[] = [
     {
         path: '/secrets/:id',
         element: <SecretsDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

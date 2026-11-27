@@ -1,5 +1,34 @@
 # Changelog
 
+## [5.0.0](https://github.com/aivot-digital/gover/compare/v4.5.3...v5.0.0) (TBD)
+
+### Features
+
+* **App:** Upgrade frontend dependencies, including React 19, MUI 9 and MUI X 9.
+* **App:** Introduce Vite as the new build tool for the frontend, replacing CRA, to improve the development experience and build performance.
+* **System:** Decoupled the frontend, backend and oidc-provider by introducing new configuration variables
+* **System:** Added SBOM generation to the build process, providing a Software Bill of Materials for better transparency and security.
+* **System:** Implemented a license compliance check in the build process to ensure all dependencies comply with licensing requirements.
+* **Backend:** Upgraded most backend maven dependencies to the latest versions
+* **Frontend:** Replace JSX.Element type with ReactNode in the frontend codebase.
+* **Frontend:** Introduce new app shells with an improved UI/UX for both the customer and staff applications.
+* **System:** Replaced Puppet PDF generator with a new generator based on Gotenberg, which supports more engines and is easier to maintain.
+* **System:** Reworked the data structure for holding and processing form data.
+* **System:** Reworked form versioning system for ease of use.
+* **System:** Added data object management to the backend and app.
+* **Build-System:** Pre-Release builds are now published to a separate 'gover-next' package.
+* **Build-System:** Create separate workflow to build "next" images.
+* **System:** Add new prototype for processes.
+* **System:** Improve plugin system for better extensibility and maintainability.
+* **System:** Add generic storage provider functionality.
+* **System:** Render Markdown with one shared policy in the app, mails and PDFs. Raw HTML is shown as text, link targets are limited to web, e-mail, phone and SMS addresses and relative URLs, images are reduced to their alternative text. Tables and footnotes are not supported and appear as text.
+* **System:** Insert process data into templates according to how each field is used. In Markdown fields, `{{ }}` shows values as typed and `{! !}` keeps their formatting but shows link targets. Text fields insert values as single lines, AI prompts and payment descriptions as plain text, so names such as `O'Brien & Söhne` are no longer HTML-escaped. Values of Markdown fields arrive as the text readers see, without formatting characters or the backslashes the editor stores, wherever a field only shows text or a variable is inserted „Als Text“; Low-Code can use `_text_v1.fromMarkdown` for the same.
+* **System:** Send readable plain text in the text part of mails and to OZG-Cloud instead of Markdown. The mail element outputs its content as Markdown instead of HTML.
+* **System:** Escape untrusted text in form PDFs, staff payment tasks, the payment page, AI answers in execution summaries and the HTML error page.
+* **System:** Fill only the slots of an HTML template that the template uses.
+* **App:** Let customers enter formatted text in forms and form requests with the Markdown field. Customers get a short toolbar with bold, italic and lists and cannot create links. New Markdown fields are limited to 5,000 characters.
+* **App:** Limit the rich text editor to what mails, PDFs and the app can show. Underline, superscript, subscript and highlight are no longer available, Markdown the editor cannot edit is shown as a protected part, and opening a field no longer changes its value.
+* **App:** Let authors choose whether a variable is inserted into a Markdown field as text or with its formatting. Payment texts and text slots of HTML templates offer the variable picker as well. Identity descriptions no longer offer variables, as they were never filled in.
 
 ## [4.6.3](https://github.com/aivot-digital/gover/compare/v4.6.2...v4.6.3) (2026-11-20)
 
@@ -60,7 +89,7 @@
 ## [4.5.4](https://github.com/aivot-digital/gover/compare/v4.5.3...v4.5.4) (2025-11-13)
 
 ### Features
-* **Server:** Add uptime check for IDP and API to container entrypoint.
+* **Server:** Add uptime check for IdP and API to container entrypoint.
 * **Server:** Add support for ePay21 payment provider.
 
 ### Bug Fixes
@@ -115,7 +144,7 @@
 ## [4.4.0](https://github.com/aivot-digital/gover/compare/v4.3.2...v4.4.0) (2025-05-14)
 
 ### Features
-* **App:** Revamped user account integration with UI management, supporting OpenID Connect and parallel pre-production/production setups for existing providers (Bund ID, Bayern ID, Mein Unternehmenskonto, Servicekonto SH). Enables integration of custom IDPs via Keycloak User Federation.
+* **App:** Revamped user account integration with UI management, supporting OpenID Connect and parallel pre-production/production setups for existing providers (Bund ID, Bayern ID, Mein Unternehmenskonto, Servicekonto SH). Enables integration of custom IdPs via Keycloak User Federation.
 * **App:** Implemented Altcha Captcha, an open-source, accessible Proof-of-Work solution for bot protection, integrated centrally without external dependencies.
 * **Forms:** Expanded section icon library and introduced a searchable selection component for easier icon discovery.
 
@@ -126,7 +155,7 @@
 * **App:** Users can now customize the number of entries displayed per page in application processing.
 * **App:** Redis in-memory cache status is now displayed in the system status.
 * **App:** Authenticated user account in forms is now included in the PDF export.
-* **Export:** Gover form exports now indicate which information is excluded for technical or data privacy reasons.
+* **Export:** Prosuna form exports now indicate which information is excluded for technical or data privacy reasons.
 
 ### Important Notes
 #### User Account Migration Required
@@ -187,7 +216,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 **App:** Fix min height for code editor
 **App:** Fix path for element select
-**Server:** Removed test protocol from gover export
+**Server:** Removed test protocol from prosuna export
 **Server:** Prevents presets with duplicate names
 **Server:** Fix export of payment data
 **Server:** Fix typo in department delete message
@@ -220,7 +249,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 * **App:** Fix broken error page when the clamav service is not available
 * **App:** Removed payment details from public form endpoints
 * **App:** Removed unnecessary console log when navigating between segments
-* **App:** Fix naming of children of duplicated store elements
+* **App:** Fix naming of children of duplicated marketplace elements
 * **App:** Fix length limits for title and slug when creating forms
 * **App:** Fix broken imports when theme is not present in target system
 * **App:** Fix title changing in form editor
@@ -255,7 +284,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 * **Server:** giropay is integrated
 * **Server:** S3 storage compatibility
 * **App:** Autocomplete attributes for browsers can be selected in elements (e.g. the browser can automatically fill in the first name)
-* **App:** Improvement of the accessibility of Gover forms and support for compliance with accessibility, e.g. through contrast checkers in the themes, references to alt attributes, etc.
+* **App:** Improvement of the accessibility of Prosuna forms and support for compliance with accessibility, e.g. through contrast checkers in the themes, references to alt attributes, etc.
 
 ## [4.1.1](https://github.com/aivot-digital/gover/compare/v4.1.0...v4.1.1) (2024-05-15)
 
@@ -368,7 +397,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 ### Bug Fixes
 
-* **App:** Removed unnecessary Gover from dashboard tab title
+* **App:** Removed unnecessary Prosuna from dashboard tab title
 
 
 ## [2.1.1](https://github.com/aivot-digital/gover/compare/v2.1.0...v2.1.1) (2023-04-08)
@@ -383,7 +412,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 ### Features
 
 * **Project:** Added different ports for customer and staff app in the dev environment
-* **Project:** Bump the version for the gover jar file
+* **Project:** Bump the version for the prosuna jar file
 * **App:** Add new element for file uploads
 
 ### Bug Fixes
@@ -420,7 +449,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 ### Bug Fixes
 
-* **Project:** Fix CORS settings for local development
+* **Project:** Fix local development settings
 
 
 ## [2.0.0](https://github.com/aivot-digital/gover/compare/v1.0.6...v2.0.0) (2023-01-05)

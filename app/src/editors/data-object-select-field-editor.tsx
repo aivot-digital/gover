@@ -1,0 +1,76 @@
+import {BaseEditorProps} from './base-editor';
+import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
+import {Grid} from '@mui/material';
+import {TextFieldComponent} from '../components/text-field/text-field-component';
+import {DataModelSelectFieldComponent} from '../components/data-model-select-field/data-model-select-field-component';
+
+export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSelectFieldElement>) {
+    const {
+        element,
+        editable,
+        onPatch,
+        configurationErrors,
+    } = props;
+
+    return (
+        <Grid
+            container
+            columnSpacing={4}
+            rowSpacing={2}
+        >
+            <Grid size={{xs: 12}}>
+                <DataModelSelectFieldComponent
+                    label="Datenmodell"
+                    error={configurationErrors?.dataModelKey?.join(' ')}
+                    required
+                    value={element.dataModelKey ?? undefined}
+                    onChange={(value) => {
+                        onPatch({
+                            dataModelKey: value,
+                        });
+                    }}
+                    hint="Definiert das Datenmodell, aus dem die auswählbaren Datenobjekte geladen werden."
+                    disabled={!editable}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <TextFieldComponent
+                    label="Attribut für die Hauptbezeichnung"
+                    value={element.dataLabelAttributeKey}
+                    onChange={(value) => {
+                        onPatch({
+                            dataLabelAttributeKey: value,
+                        });
+                    }}
+                    hint="Datenschlüssel des Attributs, dessen Wert als Hauptbezeichnung angezeigt wird, zum Beispiel name."
+                    disabled={!editable}
+                />
+            </Grid>
+
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <TextFieldComponent
+                    label="Platzhalter"
+                    value={element.placeholder}
+                    onChange={(value) => {
+                        onPatch({
+                            placeholder: value,
+                        });
+                    }}
+                    hint="Der Platzhalter wird angezeigt, solange noch kein Datenobjekt ausgewählt wurde."
+                    disabled={!editable}
+                />
+            </Grid>
+        </Grid>
+    );
+}

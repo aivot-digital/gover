@@ -1,0 +1,310 @@
+package de.aivot.prosuna.backend.plugins.core.v1.operators.list;
+
+import de.aivot.prosuna.backend.core.services.BusinessTime;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ChipInputElement;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.nocode.enums.NoCodeDataType;
+import de.aivot.prosuna.backend.nocode.exceptions.NoCodeException;
+import de.aivot.prosuna.backend.nocode.models.NoCodeNumberConstraints;
+import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import static de.aivot.prosuna.backend.TestData.runtime;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class NoCodeListOperatorsTest {
+    @Test
+    void listAvgShouldReturnAverageOrZeroForEmptyList() throws NoCodeException {
+        var operator = new NoCodeListAvgOperator();
+        var data = runtime();
+
+        var result = (BigDecimal) operator.evaluate(data, List.of(1, 2, 3)).getValue();
+        var emptyResult = (BigDecimal) operator.evaluate(data, List.of()).getValue();
+
+        assertEquals(0, result.compareTo(new BigDecimal("2.00000000")));
+        assertEquals(0, emptyResult.compareTo(BigDecimal.ZERO));
+    }
+
+    @Test
+    void listAvgShouldRetainFractionalResultsToEightDecimalPlaces() throws NoCodeException {
+        var operator = new NoCodeListAvgOperator();
+
+        assertEquals(new BigDecimal("0.33333333"), operator.evaluate(runtime(), List.of(1, 0, 0)).getValue());
+        assertEquals(new BigDecimal("1.50000000"), operator.evaluate(runtime(), List.of(1, 2)).getValue());
+    }
+
+    @Test
+    void listConcatShouldMergeInOrderWithoutMutatingSourceLists() throws NoCodeException {
+        var operator = new NoCodeListConcatOperator();
+        var data = runtime();
+        var left = Arrays.asList("a", "b");
+        var right = Arrays.asList("c", "d");
+
+        var result = operator.evaluate(data, left, right).getValue();
+
+        assertEquals(List.of("a", "b", "c", "d"), result);
+        assertEquals(List.of("a", "b"), left);
+        assertEquals(List.of("c", "d"), right);
+    }
+
+    @Test
+    void listSumShouldSumAllValuesAndValidateArgumentCount() throws NoCodeException {
+        var operator = new NoCodeListSumOperator();
+        var data = runtime();
+
+        var sum = (BigDecimal) operator.evaluate(data, List.of(1, 2, 3)).getValue();
+        var emptySum = (BigDecimal) operator.evaluate(data, List.of()).getValue();
+
+        assertEquals(0, sum.compareTo(new BigDecimal("6.00000000")));
+        assertEquals(0, emptySum.compareTo(BigDecimal.ZERO));
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, List.of(1), List.of(2)));
+    }
+
+    @Test
+    void listSelectShouldProjectFieldValues() throws NoCodeException {
+        var operator = new NoCodeListSelectOperator();
+        var data = runtime();
+        var list = Arrays.asList(
+                Map.of("name", "A", "age", 20),
+                null,
+                Map.of("name", "B", "age", 30)
+        );
+
+        var selected = operator.evaluate(data, list, "name").getValue();
+
+        assertEquals(Arrays.asList("A", null, "B"), selected);
+        assertEquals(NoCodeDataType.List, operator.getSignatures()[0].returnType());
+        var error = assertThrows(NoCodeException.class, () -> operator.evaluate(data, List.of(Map.of("name", "A"), "not-an-object"), "name"));
+        assertEquals("Der Wert ist kein Objekt.", error.getMessage());
+    }
+
+    @Test
+    void listFunctionsShouldRejectValuesThatAreNotLists() throws NoCodeException {
+        var operator = new NoCodeListContainsOperator();
+        assertFalse((Boolean) operator.evaluate(runtime(), null, "a").getValue());
+        assertFalse((Boolean) operator.evaluate(runtime(), "null", "a").getValue());
+        for (var invalid : List.of("kein JSON", "{}", 1, Map.of())) {
+            var error = assertThrows(NoCodeException.class, () -> operator.evaluate(runtime(), invalid, "a"), String.valueOf(invalid));
+            assertEquals("Der Wert ist keine Liste.", error.getMessage());
+        }
+    }
+
+    @Test
+    void listSelectShouldReadDirectFieldNamesAndPreserveMissingValues() throws NoCodeException {
+        var operator = new NoCodeListSelectOperator();
+        var rows = List.of(Map.of("person.name", "Direktes Feld", "person", Map.of("name", "Verschachtelt")), Map.of("other", "B"));
+
+        assertEquals(Arrays.asList("Direktes Feld", null), operator.evaluate(runtime(), rows, "person.name").getValue());
+        assertEquals(Arrays.asList(null, "A", null), operator.evaluate(runtime(), "[null,{\"name\":\"A\"},\"null\"]", "name").getValue());
+    }
+
+    @Test
+    void listGetShouldSupportPositiveNegativeAndOutOfRangeIndexes() throws NoCodeException {
+        var operator = new NoCodeListGetOperator();
+        var data = runtime();
+        var list = List.of("A", "B", "C");
+
+        assertEquals("A", operator.evaluate(data, list, 0).getValue());
+        assertEquals("C", operator.evaluate(data, list, -1).getValue());
+        assertEquals("B", operator.evaluate(data, list, -2).getValue());
+        assertNull(operator.evaluate(data, list, 5).getValue());
+        assertNull(operator.evaluate(data, list, Integer.MIN_VALUE).getValue());
+        assertNull(operator.evaluate(data, list, Integer.MAX_VALUE).getValue());
+        assertEquals("B", operator.evaluate(data, list, "1.0").getValue());
+    }
+
+    @Test
+    void listGetShouldReturnMissingEntriesAndRejectInvalidPositions() throws NoCodeException {
+        var operator = new NoCodeListGetOperator();
+        var data = runtime();
+        var list = Arrays.asList(null, "B", null);
+
+        assertEquals(new NoCodeNumberConstraints(true, (double) Integer.MIN_VALUE, (double) Integer.MAX_VALUE),
+                operator.getSignatures()[0].parameters()[1].numberConstraints());
+        assertNull(operator.evaluate(data, list, 0).getValue());
+        assertNull(operator.evaluate(data, list, -1).getValue());
+        for (var position : Arrays.asList(null, "abc", List.of(1), 0.5, 4294967296L)) {
+            var error = assertThrows(NoCodeException.class, () -> operator.evaluate(data, list, position));
+            assertTrue(error.getMessage().contains("Position"));
+        }
+    }
+
+    @Test
+    void listContainsShouldHandleCastingAndNullMembership() throws NoCodeException {
+        var operator = new NoCodeListContainsOperator();
+        var data = runtime();
+
+        assertTrue(operator.evaluate(data, List.of(1, 2, 3), "2").getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of(1, 2, 3), "9").getValueAsBoolean());
+        assertTrue(operator.evaluate(data, Arrays.asList("a", null), null).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("a", "b"), null).getValueAsBoolean());
+    }
+
+    @Test
+    void listCountShouldCountMatchesWithCastingAndNulls() throws NoCodeException {
+        var operator = new NoCodeListCountOperator();
+        var data = runtime();
+
+        assertEquals(3, operator.evaluate(data, Arrays.asList(1, "2", 2, null, "2"), "2").getValue());
+        assertEquals(0, operator.evaluate(data, List.of(1, 2, 3), "9").getValue());
+        assertEquals(2, operator.evaluate(data, Arrays.asList("a", null, null), null).getValue());
+        assertEquals(0, operator.evaluate(data, List.of(), "a").getValue());
+    }
+
+    @Test
+    void listIntersectionShouldReturnSharedValuesOnceInLeftOrder() throws NoCodeException {
+        var operator = new NoCodeListIntersectionOperator();
+        var data = runtime();
+        var left = Arrays.asList(1, 2, 2, 3, null, "4");
+        var right = Arrays.asList("2", 4, null, 1, 5);
+
+        var result = operator.evaluate(data, left, right).getValue();
+
+        assertEquals(Arrays.asList(1, 2, null, "4"), result);
+        assertEquals(Arrays.asList(1, 2, 2, 3, null, "4"), left);
+        assertEquals(Arrays.asList("2", 4, null, 1, 5), right);
+    }
+
+    @Test
+    void listOverlapsShouldDetectSharedValuesWithCastingAndNulls() throws NoCodeException {
+        var operator = new NoCodeListOverlapsOperator();
+        var data = runtime();
+
+        assertTrue(operator.evaluate(data, Arrays.asList(1, 2, null), List.of("2", 5)).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, Arrays.asList("a", null), Arrays.asList(1, null)).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("aa", "bbb"), List.of(1, 4)).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of(), List.of("x")).getValueAsBoolean());
+    }
+
+    @Test
+    void listOperatorsShouldCompareNumberFieldValuesByValue() throws NoCodeException {
+        var data = runtime();
+        var numberFieldValue = new BigDecimal("5.50");
+
+        assertTrue(new NoCodeListContainsOperator().evaluate(data, List.of("5.5", "6"), numberFieldValue).getValueAsBoolean());
+        assertTrue(new NoCodeListContainsOperator().evaluate(data, List.of(numberFieldValue), "5.5").getValueAsBoolean());
+        assertEquals(1, new NoCodeListCountOperator().evaluate(data, List.of(numberFieldValue, "6"), "5.5").getValue());
+        assertEquals(2, new NoCodeListCountOperator().evaluate(data, List.of("5.5", 5.5, "6"), numberFieldValue).getValue());
+        assertTrue(new NoCodeListOverlapsOperator().evaluate(data, List.of(numberFieldValue), List.of("5.5")).getValueAsBoolean());
+        assertEquals(
+                List.of(numberFieldValue),
+                new NoCodeListIntersectionOperator().evaluate(data, List.of(numberFieldValue), List.of(5.5)).getValue()
+        );
+    }
+
+    @Test
+    void listLengthShouldReturnListSize() throws NoCodeException {
+        var operator = new NoCodeListLengthOperator();
+        var data = runtime();
+
+        assertEquals(3, operator.evaluate(data, List.of("a", "b", "c")).getValue());
+        assertEquals(0, operator.evaluate(data, List.of()).getValue());
+        assertEquals(0, operator.evaluate(data, (Object) null).getValue());
+        assertEquals(0, operator.evaluate(data, " null ").getValue());
+    }
+
+    @Test
+    void listEvaluationAndReferenceComparisonsShouldUsePluginCasts() throws NoCodeException {
+        var operator = new NoCodeListLengthOperator() {
+            @Override
+            public List<Object> castToList(Object value) {
+                return List.of(value);
+            }
+
+            @Override
+            public Map<String, Object> castToMap(Object value) {
+                return Map.of("name", value);
+            }
+        };
+
+        assertEquals(1, operator.evaluate(runtime(), "A").getValue());
+        assertTrue(operator.isEqualToReference(List.of("A"), "A"));
+        assertTrue(operator.isEqualToReference(Map.of("name", "A"), "A"));
+    }
+
+    @Test
+    void commonOperatorsShouldIncludeListCount() {
+        var businessTime = new BusinessTime(ZoneId.of("Europe/Berlin"), Clock.systemUTC());
+        var operators = new CommonOperatorsV1(null, null, businessTime).getOperators();
+
+        assertTrue(Arrays.stream(operators).anyMatch(NoCodeListCountOperator.class::isInstance));
+    }
+
+    @Test
+    void listContainsAllShouldRequireEverySearchedValue() throws NoCodeException {
+        var operator = new NoCodeListContainsAllOperator();
+        var data = runtime();
+
+        assertTrue(operator.evaluate(data, List.of("A", "B", "C"), List.of("C", "A")).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("A", "B"), List.of("A", "D")).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, List.of("A"), List.of()).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of(), List.of("A")).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, List.of(new BigDecimal("1.0"), 2), List.of("1", 2)).getValueAsBoolean());
+        assertTrue(operator.evaluate(data, Arrays.asList("A", null), Arrays.asList((Object) null)).getValueAsBoolean());
+        assertFalse(operator.evaluate(data, List.of("A"), Arrays.asList((Object) null)).getValueAsBoolean());
+    }
+
+    @Test
+    void listContainsAllShouldCheckMembershipWithoutRequiringDuplicateOccurrences() throws NoCodeException {
+        assertTrue(new NoCodeListContainsAllOperator().evaluate(runtime(), List.of("A"), List.of("A", "A")).getValueAsBoolean());
+    }
+
+    /**
+     * Legacy chip and attachment-set conditions: Includes with a list means "contains all", NotIncludes with a list
+     * means "contains none", and a single compared value means membership.
+     */
+    @Test
+    void listOperatorsShouldMatchLegacyChipConditions() throws NoCodeException {
+        var element = new ChipInputElement();
+        var data = runtime();
+        var containsAll = new NoCodeListContainsAllOperator();
+        var overlaps = new NoCodeListOverlapsOperator();
+        var contains = new NoCodeListContainsOperator();
+        var selected = List.of("rot", "grün", "blau");
+
+        for (var compared : List.of(List.of("rot"), List.of("rot", "blau"), List.of("rot", "gelb"), List.of("gelb"), List.<String>of())) {
+            assertEquals(
+                    element.evaluate(ConditionOperator.Includes, selected, compared),
+                    containsAll.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "Includes " + compared
+            );
+            assertEquals(
+                    element.evaluate(ConditionOperator.NotIncludes, selected, compared),
+                    !overlaps.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "NotIncludes " + compared
+            );
+        }
+
+        for (var compared : List.of("rot", "gelb")) {
+            assertEquals(
+                    element.evaluate(ConditionOperator.Includes, selected, compared),
+                    contains.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "Includes " + compared
+            );
+            assertEquals(
+                    element.evaluate(ConditionOperator.NotIncludes, selected, compared),
+                    !contains.evaluate(data, selected, compared).getValueAsBoolean(),
+                    "NotIncludes " + compared
+            );
+        }
+    }
+
+    @Test
+    void commonOperatorsShouldIncludeListContainsAll() {
+        var businessTime = new BusinessTime(ZoneId.of("Europe/Berlin"), Clock.systemUTC());
+        var operators = new CommonOperatorsV1(null, null, businessTime).getOperators();
+
+        assertTrue(Arrays.stream(operators).anyMatch(NoCodeListContainsAllOperator.class::isInstance));
+    }
+}

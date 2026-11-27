@@ -1,12 +1,15 @@
 import {type AnyElement} from '../models/elements/any-element';
-import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
+import {ElementTreeScope} from '../components/element-tree/element-tree-scope';
 
-export interface BaseEditorProps<T extends AnyElement, E extends ElementTreeEntity> {
+export interface BaseEditorProps<T extends AnyElement> {
     element: T;
     onPatch: (patch: Partial<T>) => void;
-    entity: E;
-    onPatchEntity: (update: Partial<E>) => void;
     editable: boolean;
+    hasSummaryLayoutParent: boolean;
+    hasReplicatingContainerParent?: boolean;
+    scope: ElementTreeScope;
+    /** Server-side configuration errors of {@link element}, keyed by property name. */
+    configurationErrors?: Record<string, string[]>;
 }
 
-export type BaseEditor<M extends AnyElement, E extends ElementTreeEntity> = (props: BaseEditorProps<M, E>) => JSX.Element;
+export type BaseEditor<M extends AnyElement> = (props: BaseEditorProps<M>) => React.ReactNode;

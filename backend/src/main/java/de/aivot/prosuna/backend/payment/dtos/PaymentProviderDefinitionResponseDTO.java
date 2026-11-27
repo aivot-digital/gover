@@ -1,0 +1,37 @@
+package de.aivot.prosuna.backend.payment.dtos;
+
+import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+public record PaymentProviderDefinitionResponseDTO(
+        @Nonnull
+        String key,
+        @Nonnull
+        Integer version,
+        @Nonnull
+        String name,
+        @Nonnull
+        String description,
+        @Nullable
+        String documentationUrl,
+        @Nullable
+        GroupLayoutElement configLayout
+) {
+    @Nonnull
+    public static PaymentProviderDefinitionResponseDTO from(
+            @Nonnull
+            PaymentProviderDefinition definition
+    ) throws ResponseException {
+        return new PaymentProviderDefinitionResponseDTO(
+                definition.getKey(),
+                definition.getMajorVersion(),
+                definition.getProviderName(),
+                definition.getProviderDescription(),
+                definition.getDocumentationUrl(),
+                definition.getPaymentConfigLayout()
+        );
+    }
+}

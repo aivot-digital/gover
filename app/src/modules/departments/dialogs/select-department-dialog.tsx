@@ -1,0 +1,149 @@
+import {Dialog, DialogContent} from '@mui/material';
+import React, {useEffect, useState} from 'react';
+import CheckOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Check';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {DepartmentBrowser} from '../components/department-browser';
+import {type VDepartmentShadowedEntityWithChildren} from '../entities/v-department-shadowed-entity';
+import {VDepartmentShadowedApiService} from '../services/v-department-shadowed-api-service';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../slices/user-slice';
+import {Permission} from '../../../data/permissions/permission';
+import {hasDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
+
+interface SelectDepartmentDialogProps {
+    id?: string;
+    open: boolean;
+    onClose: () => void;
+    onSelect: (department: VDepartmentShadowedEntityWithChildren) => void;
+    isDepartmentSelectable?: (department: VDepartmentShadowedEntityWithChildren) => boolean;
+    getDepartmentDisabledTooltip?: (department: VDepartmentShadowedEntityWithChildren) => string | undefined;
+    selectedDepartmentId?: number | null;
+    title?: string;
+    departments?: VDepartmentShadowedEntityWithChildren[];
+}
+
+export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): React.ReactElement {
+    const permissions = useAppSelector(selectPermissions);
+    const {
+        open,
+        onClose,
+        onSelect,
+        isDepartmentSelectable,
+        getDepartmentDisabledTooltip,
+        selectedDepartmentId,
+        title = 'Organisationseinheit auswählen',
+        departments: providedDepartments,
+    } = props;
+
+    const [
+        departments,
+        setDepartments,
+    ] = useState<VDepartmentShadowedEntityWithChildren[]>();
+    const [
+        loadError,
+        setLoadError,
+    ] = useState(false);
+
+    useEffect(() => {
+        if (!open || providedDepartments != null) {
+            return;
+        }
+
+        let active = true;
+
+        setDepartments(undefined);
+        setLoadError(false);
+
+        void new VDepartmentShadowedApiService()
+            .retrieveOrgTree()
+            .then((items) => {
+                if (!active) {
+                    return;
+                }
+
+                setDepartments(items);
+            })
+            .catch((err) => {
+                if (!active) {
+                    return;
+                }
+
+                console.error(err);
+                setDepartments([]);
+                setLoadError(true);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [open, providedDepartments]);
+
+    useEffect(() => {
+        if (providedDepartments != null) {
+            setDepartments(providedDepartments);
+            setLoadError(false);
+        }
+    }, [providedDepartments]);
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullWidth
+            maxWidth="lg"
+            slotProps={{
+                paper: {
+                    id: props.id,
+                },
+            }}
+        >
+            <DialogTitleWithClose onClose={onClose}>
+                {title}
+            </DialogTitleWithClose>
+
+            <DialogContent
+                sx={{
+                    p: 2,
+                    height: 'min(74vh, 820px)',
+                    overflowY: 'auto',
+                }}
+            >
+                <DepartmentBrowser
+                    departments={departments}
+                    loadError={loadError}
+                    selectedDepartmentId={selectedDepartmentId}
+                    emptyState={(
+                        <AlertComponent
+                            color="info"
+                            sx={{my: 1}}
+                        >
+                            Es sind keine Organisationseinheiten vorhanden.
+                        </AlertComponent>
+                    )}
+                    getActions={(department) => {
+                        const canSelectDepartment = isDepartmentSelectable?.(department) ??
+                            hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
+                        const disabledTooltip = canSelectDepartment ?
+                            undefined :
+                            getDepartmentDisabledTooltip?.(department) ?? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ);
+
+                        return [
+                            {
+                                label: 'Auswählen',
+                                icon: <CheckOutlined />,
+                                variant: 'contained',
+                                disabled: !canSelectDepartment,
+                                disabledTooltip,
+                                onClick: () => {
+                                    onSelect(department);
+                                    onClose();
+                                },
+                            },
+                        ];
+                    }}
+                />
+            </DialogContent>
+        </Dialog>
+    );
+}

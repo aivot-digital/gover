@@ -1,0 +1,219 @@
+package de.aivot.prosuna.backend.user.services;
+
+import de.aivot.prosuna.backend.audit.services.AuditService;
+import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
+import de.aivot.prosuna.backend.user.entities.UserEntity;
+import de.aivot.prosuna.backend.user.models.KeycloakUser;
+import de.aivot.prosuna.backend.user.repositories.UserRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+
+@Service
+@EnableScheduling
+public class UserSyncService {
+    private final static int delayInMS = 1000 * 60 * 5; // 5 minutes
+
+    private final ScopedAuditService auditService;
+
+    private final UserRepository userRepository;
+    private final KeyCloakApiService keycloakApiService;
+    private final ImportedUserSystemRoleService importedUserSystemRoleService;
+    private final MeterRegistry meterRegistry;
+
+    @Autowired
+    public UserSyncService(AuditService auditService,
+                           UserRepository userRepository,
+                           KeyCloakApiService keycloakApiService,
+                           ImportedUserSystemRoleService importedUserSystemRoleService,
+                           MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        this.auditService = auditService.createScopedAuditService(UserSyncService.class, "Mitarbeiter:innen");
+
+        this.userRepository = userRepository;
+        this.keycloakApiService = keycloakApiService;
+        this.importedUserSystemRoleService = importedUserSystemRoleService;
+    }
+
+    @Scheduled(fixedDelay = delayInMS)
+    public void syncUsers() {
+        var startedAt = Instant.now();
+        var syncedUsers = new ArrayList<Map<String, Object>>();
+
+        var totalUsersFromIdp = 0;
+        var importedOrUpdatedCount = 0;
+        var deletedInIdpCount = 0;
+        var promotedToMostPrivilegedRoleCount = 0;
+
+        var success = true;
+        String failureMessage = null;
+        Exception syncFailure = null;
+
+        try {
+            var defaultSystemRoleId = importedUserSystemRoleService.getDefaultSystemRoleId();
+            var mostPrivilegedSystemRoleId = importedUserSystemRoleService.getMostPrivilegedSystemRoleId();
+            var hasActiveUserWithMostPrivilegedRole = importedUserSystemRoleService
+                    .hasActiveUserWithMostPrivilegedRole(mostPrivilegedSystemRoleId);
+
+            var alreadyImportedUsers = userRepository
+                    .findAll();
+
+            Collection<KeycloakUser> keycloakUsersToImport = keycloakApiService
+                    .listUsers();
+
+            totalUsersFromIdp = keycloakUsersToImport.size();
+
+            var seenUserIds = new HashSet<String>();
+
+            // Iterate over all keycloak users and import/update only if data has changed.
+            for (var keycloakUser : keycloakUsersToImport) {
+                var existingUser = userRepository
+                        .findById(keycloakUser.getId())
+                        .orElse(null);
+
+                var isCreate = existingUser == null;
+                var userEntity = existingUser != null
+                        ? existingUser
+                        : new UserEntity().setId(keycloakUser.getId());
+
+                var newDeletedInIdp = false;
+                var newEnabled = keycloakUser.getEnabled();
+                var newVerified = keycloakUser.getEmailVerified();
+                var newEmail = keycloakUser.getEmail();
+                var newFirstName = keycloakUser.getFirstName();
+                var newLastName = keycloakUser.getLastName();
+
+                var dataChanged =
+                        !Objects.equals(userEntity.getDeletedInIdp(), newDeletedInIdp) ||
+                        !Objects.equals(userEntity.getEnabled(), newEnabled) ||
+                        !Objects.equals(userEntity.getVerified(), newVerified) ||
+                        !Objects.equals(userEntity.getEmail(), newEmail) ||
+                        !Objects.equals(userEntity.getFirstName(), newFirstName) ||
+                        !Objects.equals(userEntity.getLastName(), newLastName);
+
+                userEntity
+                        .setDeletedInIdp(newDeletedInIdp)
+                        .setEnabled(newEnabled)
+                        .setVerified(newVerified)
+                        .setEmail(newEmail)
+                        .setFirstName(newFirstName)
+                        .setLastName(newLastName);
+
+                var roleResolution = importedUserSystemRoleService.resolveSystemRoleId(
+                        userEntity.getEmail(),
+                        userEntity.getSystemRoleId(),
+                        defaultSystemRoleId,
+                        mostPrivilegedSystemRoleId,
+                        hasActiveUserWithMostPrivilegedRole
+                );
+                var systemRoleChanged = !Objects.equals(userEntity.getSystemRoleId(), roleResolution.systemRoleId());
+                userEntity.setSystemRoleId(roleResolution.systemRoleId());
+
+                if (roleResolution.promotedToMostPrivilegedRole()) {
+                    promotedToMostPrivilegedRoleCount++;
+                    hasActiveUserWithMostPrivilegedRole = true;
+                }
+
+                var hasChanged = isCreate || dataChanged || systemRoleChanged;
+                if (hasChanged) {
+                    userRepository
+                            .save(userEntity);
+
+                    importedOrUpdatedCount++;
+
+                    syncedUsers.add(Map.of(
+                            "userId", userEntity.getId(),
+                            "email", userEntity.getEmail() != null ? userEntity.getEmail() : "",
+                            "enabled", userEntity.getEnabled(),
+                            "verified", userEntity.getVerified(),
+                            "deletedInIdp", userEntity.getDeletedInIdp(),
+                            "action", isCreate ? "imported" : "updated",
+                            "promotedToMostPrivilegedRole", roleResolution.promotedToMostPrivilegedRole()
+                    ));
+                }
+
+                seenUserIds.add(userEntity.getId());
+            }
+
+            for (var localUser : alreadyImportedUsers) {
+                if (seenUserIds.contains(localUser.getId())) {
+                    continue;
+                }
+
+                if (localUser.isArtificialUser()) {
+                    continue;
+                }
+
+                var formerEmail = localUser.getEmail();
+
+                localUser.clearPersonalData();
+                localUser.setDeletedInIdp(true);
+                localUser.setEnabled(false);
+
+                userRepository
+                        .save(localUser);
+
+                deletedInIdpCount++;
+
+                syncedUsers.add(Map.of(
+                        "userId", localUser.getId(),
+                        "email", formerEmail != null ? formerEmail : "",
+                        "enabled", false,
+                        "verified", false,
+                        "deletedInIdp", true,
+                        "action", "deleted_in_idp",
+                        "promotedToMostPrivilegedRole", false
+                ));
+            }
+        } catch (Exception e) {
+            success = false;
+            failureMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
+            syncFailure = e;
+        } finally {
+            meterRegistry.counter("prosuna.sync.runs", "type", "user", "outcome", success ? "success" : "failed").increment();
+            if (failureMessage != null || !syncedUsers.isEmpty()) {
+                var metadata = new LinkedHashMap<String, Object>();
+                metadata.put("startedAt", startedAt);
+                metadata.put("finishedAt", Instant.now());
+                metadata.put("success", success);
+                metadata.put("totalUsersFromIdp", totalUsersFromIdp);
+                metadata.put("importedOrUpdatedCount", importedOrUpdatedCount);
+                metadata.put("deletedInIdpCount", deletedInIdpCount);
+                metadata.put("promotedToMostPrivilegedRoleCount", promotedToMostPrivilegedRoleCount);
+                metadata.put("failureMessage", failureMessage != null ? failureMessage : "");
+                metadata.put("syncedUsers", syncedUsers);
+
+                auditService.create()
+                        .withSystem()
+                        .setTriggerType("UserSync")
+                        .setMessage(success
+                                ? String.format(
+                                "Die Synchronisierung der Konten wurde abgeschlossen: %d von %d Konten importiert oder aktualisiert, %d im Identitätsanbieter gelöschte Konten markiert und %d Konten der Systemrolle mit der höchsten Berechtigungsstufe zugeordnet.",
+                                importedOrUpdatedCount,
+                                totalUsersFromIdp,
+                                deletedInIdpCount,
+                                promotedToMostPrivilegedRoleCount
+                        )
+                                : String.format(
+                                "Die Synchronisierung der Konten ist fehlgeschlagen: %s",
+                                failureMessage != null ? failureMessage : "Unbekannter Fehler"
+                        ))
+                        .setMetadata(metadata).log();
+            }
+        }
+
+        if (syncFailure != null) {
+            throw new RuntimeException(syncFailure.getMessage(), syncFailure);
+        }
+    }
+}

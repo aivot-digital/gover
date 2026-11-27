@@ -1,0 +1,105 @@
+package de.aivot.prosuna.backend.user.entities;
+
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
+import de.aivot.prosuna.backend.lib.models.LockVersioned;
+
+@Entity
+@Table(name = "user_deputies")
+public class UserDeputyEntity implements LockVersioned {
+    private static final String ID_SEQUENCE_NAME = "user_deputies_id_seq";
+
+    @Id
+    @Nonnull
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = ID_SEQUENCE_NAME)
+    @SequenceGenerator(name = ID_SEQUENCE_NAME, allocationSize = 1)
+    private Integer id;
+
+    @Nonnull
+    @NotNull(message = "Die vertretene Person fehlt.")
+    @Size(min = 36, max = 36, message = "Die Angabe zur vertretenen Person ist ungültig.")
+    private String originalUserId;
+
+    @Nonnull
+    @NotNull(message = "Wählen Sie eine Person als Stellvertreter:in aus.")
+    @Size(min = 36, max = 36, message = "Die Auswahl im Feld „Stellvertreter:in“ ist ungültig.")
+    private String deputyUserId;
+
+    @Nonnull
+    @NotNull(message = "Geben Sie den Beginn der Stellvertretung an.")
+    private LocalDate fromDate;
+
+    @Nullable
+    private LocalDate untilDate;
+
+    @Nullable
+    @Version
+    @Column(nullable = false)
+    private Long lockVersion;
+
+    @Nonnull
+    public Integer getId() {
+        return id;
+    }
+
+    public UserDeputyEntity setId(@Nonnull Integer id) {
+        this.id = id;
+        return this;
+    }
+
+    @Nonnull
+    public String getOriginalUserId() {
+        return originalUserId;
+    }
+
+    public UserDeputyEntity setOriginalUserId(@Nonnull String originalUserId) {
+        this.originalUserId = originalUserId;
+        return this;
+    }
+
+    @Nonnull
+    public String getDeputyUserId() {
+        return deputyUserId;
+    }
+
+    public UserDeputyEntity setDeputyUserId(@Nonnull String deputyUserId) {
+        this.deputyUserId = deputyUserId;
+        return this;
+    }
+
+    @Nonnull
+    public LocalDate getFromDate() {
+        return fromDate;
+    }
+
+    public UserDeputyEntity setFromDate(@Nonnull LocalDate fromDate) {
+        this.fromDate = fromDate;
+        return this;
+    }
+
+    @Nullable
+    public LocalDate getUntilDate() {
+        return untilDate;
+    }
+
+    public UserDeputyEntity setUntilDate(@Nullable LocalDate untilDate) {
+        this.untilDate = untilDate;
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public Long getLockVersion() {
+        return lockVersion;
+    }
+
+    public UserDeputyEntity setLockVersion(@Nullable Long lockVersion) {
+        this.lockVersion = lockVersion;
+        return this;
+    }
+}

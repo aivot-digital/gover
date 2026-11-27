@@ -1,18 +1,24 @@
-import {type AnyElement} from '../models/elements/any-element';
 import {type Condition} from '../models/functions/conditions/condition';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
-import {type ConditionOperator, ConditionOperatorIsUnary, ConditionOperatorLabel, getConditionOperatorHint} from '../data/condition-operator';
-import React from 'react';
+import {
+    type ConditionOperator,
+    ConditionOperatorIsUnary,
+    ConditionOperatorLabel,
+    getConditionOperatorHint,
+} from '../data/condition-operator';
+import React, {useMemo} from 'react';
 import {ElementType} from '../data/element-type/element-type';
-import Evaluators from '../evaluators';
+import {evaluators as Evaluators} from '../evaluators';
 import {SelectFieldComponent} from './select-field/select-field-component';
 import {generateComponentTitle} from '../utils/generate-component-title';
 import {TextFieldComponent} from './text-field/text-field-component';
 import {NumberFieldComponent} from './number-field/number-field-component';
-import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import CachedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cached';
 import {isStringArray} from '../utils/is-string-array';
 import {ElementWithParents, generateElementNameWithParent} from '../utils/flatten-elements';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {useCodeListElementOptions} from '../modules/code-lists/hooks/use-code-list-element-options';
 
 interface CodeTabConditionProps {
     allElements: ElementWithParents[];
@@ -21,6 +27,7 @@ interface CodeTabConditionProps {
     onDelete: () => void;
     onChange: (cond: Condition) => void;
     editable: boolean;
+    presentation?: 'reference';
 }
 
 export function CodeTabCondition({
@@ -30,8 +37,14 @@ export function CodeTabCondition({
                                      onDelete,
                                      onChange,
                                      editable,
-                                 }: CodeTabConditionProps): JSX.Element {
+                                     presentation,
+                                 }: CodeTabConditionProps) {
     const referencedElement = allElements.find((e) => e.element.id === cond.reference);
+    const referencedElements = useMemo(
+        () => referencedElement != null && cond.value != null ? [referencedElement.element] : [],
+        [referencedElement, cond.value],
+    );
+    const codeListOptions = useCodeListElementOptions(referencedElements);
 
     const evaluator = referencedElement != null ? Evaluators[referencedElement.element.type] : null;
     const availableOperators: ConditionOperator[] = (evaluator != null) ? Object.keys(evaluator) as unknown as ConditionOperator[] : [];
@@ -39,10 +52,20 @@ export function CodeTabCondition({
     let availableValueOptions = null;
     if (referencedElement != null && cond.value != null) {
         switch (referencedElement.element.type) {
-            case ElementType.Radio:
             case ElementType.Select:
             case ElementType.MultiCheckbox:
-                availableValueOptions = [...(referencedElement.element.options ?? [])];
+                if ((referencedElement.element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {
+                    availableValueOptions = [...(referencedElement.element.options ?? [])];
+                } else {
+                    availableValueOptions = [...(codeListOptions.get(referencedElement.element.id) ?? [])];
+                }
+                break;
+            case ElementType.ChipInput:
+                if ((referencedElement.element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {
+                    availableValueOptions = [...(referencedElement.element.suggestions ?? [])];
+                } else {
+                    availableValueOptions = [...(codeListOptions.get(referencedElement.element.id) ?? [])];
+                }
                 break;
             case ElementType.Checkbox:
                 availableValueOptions = ['Ja (True)', 'Nein (False)'];
@@ -52,6 +75,75 @@ export function CodeTabCondition({
 
     const isUnaryOperator = cond.operator != null ? ConditionOperatorIsUnary[cond.operator] : true;
     const valueHelperText = getConditionOperatorHint(referencedElement?.element.type, cond.operator);
+
+    if (presentation === 'reference') {
+        const referenceLabel = (id: string) => {
+            const found = allElements.find(({element}) => element.id === id);
+            return <>
+                <Typography>{found != null ? generateComponentTitle(found.element) : 'Nicht gefundenes Element'}</Typography>
+                <Typography variant="caption"
+                            color="text.secondary"
+                            sx={{
+                                display: 'block',
+                                fontFamily: 'monospace',
+                            }}>
+                    {id ? `ID: ${id}` : 'Keine Referenz hinterlegt'}
+                </Typography>
+            </>;
+        };
+        const option = availableValueOptions?.find((item) => typeof item === 'string' ? item === cond.value : item.value === cond.value);
+        const optionLabel = typeof option === 'string' ? option : option?.label;
+        const hasDistinctOptionLabel = Boolean(optionLabel && optionLabel !== cond.value);
+        const value = cond.value == null ? 'Kein Vergleichswert hinterlegt' : cond.value === '' ? 'Leerer Text ("")' : cond.value;
+        return <Box sx={{
+            containerType: 'inline-size',
+            minWidth: 0,
+            overflowWrap: 'anywhere',
+        }}>
+            <Box component="dl"
+                 sx={{
+                     m: 0,
+                     display: 'grid',
+                     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                     gap: 2,
+                     '@container (max-width: 500px)': {
+                         gridTemplateColumns: 'minmax(0, 1fr)',
+                         gap: 1,
+                     },
+                     '& dt': {
+                         typography: 'body2',
+                         color: 'text.secondary',
+                         mb: 0.5,
+                     },
+                     '& dd': {m: 0},
+                 }}>
+                <Box>
+                    <Box component="dt">Element</Box>
+                    <Box component="dd">{referenceLabel(cond.reference)}</Box>
+                </Box>
+                <Box>
+                    <Box component="dt">Vergleich</Box>
+                    <Box component="dd">
+                        {cond.operator == null ? 'Kein Operator hinterlegt' : ConditionOperatorLabel[cond.operator] ?? `Unbekannter Operator (${cond.operator})`}
+                    </Box>
+                </Box>
+                {!isUnaryOperator && <Box>
+                    <Box component="dt">{cond.target != null ? 'Vergleichselement' : 'Wert'}</Box>
+                    <Box component="dd"
+                         sx={{whiteSpace: 'pre-wrap'}}>
+                        {cond.target != null ? referenceLabel(cond.target) : <>
+                            <Typography sx={{whiteSpace: 'pre-wrap'}}>{hasDistinctOptionLabel ? optionLabel : value}</Typography>
+                            {hasDistinctOptionLabel && <Typography variant="caption"
+                                                                   color="text.secondary"
+                                                                   sx={{display: 'block'}}>
+                                Gespeicherter Wert: {value}
+                            </Typography>}
+                        </>}
+                    </Box>
+                </Box>}
+            </Box>
+        </Box>;
+    }
 
     return (
         <Box>
@@ -68,7 +160,7 @@ export function CodeTabCondition({
                         color="error"
                         onClick={onDelete}
                     >
-                        <DeleteForeverOutlinedIcon
+                        <Delete
                             fontSize="small"
                         />
                     </IconButton>
@@ -105,9 +197,15 @@ export function CodeTabCondition({
                                 reference: val ?? '',
                             });
                         }}
-                        options={allElements.map(({element, parents}) => ({
+                        options={allElements.map(({
+                                                      element,
+                                                      parents,
+                                                  }) => ({
                             label: generateComponentTitle(element),
-                            subLabel: generateElementNameWithParent({element, parents}),
+                            subLabel: generateElementNameWithParent({
+                                element,
+                                parents,
+                            }),
                             value: element.id,
                         }))}
                         disabled={!editable}
@@ -155,7 +253,10 @@ export function CodeTabCondition({
                             availableOperators != null &&
                             availableOperators.length > 0 &&
                             <>
-                                <Box sx={{flex: 1, maxWidth: '300px'}}>
+                                <Box sx={{
+                                    flex: 1,
+                                    maxWidth: '300px',
+                                }}>
                                     {
                                         cond.value != null &&
                                         (
@@ -165,6 +266,7 @@ export function CodeTabCondition({
                                         referencedElement != null &&
                                         (
                                             referencedElement.element.type === ElementType.Number ||
+                                            referencedElement.element.type === ElementType.Duration ||
                                             referencedElement.element.type === ElementType.ReplicatingContainer ?
                                                 (
                                                     <NumberFieldComponent
@@ -177,7 +279,7 @@ export function CodeTabCondition({
                                                                 value: val != null ? val.toString() : '',
                                                             });
                                                         }}
-                                                        decimalPlaces={referencedElement.element.type === ElementType.Number ? referencedElement.element.decimalPlaces : 0}
+                                                        decimalPlaces={referencedElement.element.type === ElementType.Number ? (referencedElement.element.decimalPlaces ?? 0) : 0}
                                                         hint={valueHelperText ?? undefined}
                                                         disabled={!editable}
                                                     />

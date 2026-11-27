@@ -1,5 +1,5 @@
-import {Condition} from "./condition";
-import {ConditionSetOperator} from "../../../data/condition-set-operator";
+import {Condition} from './condition';
+import {ConditionSetOperator} from '../../../data/condition-set-operator';
 
 export interface ConditionSet {
     operator: ConditionSetOperator;

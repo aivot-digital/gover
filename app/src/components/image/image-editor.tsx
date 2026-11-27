@@ -1,34 +1,48 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {type ImageElement} from '../../models/elements/form/content/image-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from "../../utils/string-utils";
+import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {Alert, AlertTitle, Grid, Typography} from '@mui/material';
-import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+import AccessibilityNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccessibilityNew';
+import ImageSearchOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ImageSearch';
+import {SelectAssetDialog} from '../../dialogs/select-asset-dialog/select-asset-dialog';
+import {AssetsApiService} from '../../modules/assets/assets-api-service';
+import {AssetVisibility} from '../../modules/assets/models/asset-visibility';
 
-export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>): JSX.Element {
+export function ImageEditor(props: BaseEditorProps<ImageElement>) {
+    const [showImageSearch, setShowImageSearch] = useState(false);
+
     return (
         <>
             <TextFieldComponent
                 value={props.element.src ?? ''}
                 label="URL (Link zur Grafikdatei)"
+                hint="Wählen Sie ein Bild aus Dateien und Medien oder geben Sie eine erreichbare Bild-URL an."
+                error={props.configurationErrors?.src?.join(' ')}
                 onChange={(val) => {
                     props.onPatch({
                         src: val,
                     });
                 }}
                 disabled={!props.editable}
+                endAction={{
+                    icon: <ImageSearchOutlinedIcon />,
+                    tooltip: 'Bild aus Dateien und Medien auswählen',
+                    onClick: () => {
+                        setShowImageSearch(true);
+                    },
+                }}
             />
-
             <Grid
                 container
                 columnSpacing={4}
             >
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <TextFieldComponent
                         value={props.element.caption ?? ''}
@@ -43,9 +57,10 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                     />
                 </Grid>
                 <Grid
-                    item
-                    xs={12}
-                    lg={6}
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
                 >
                     <TextFieldComponent
                         value={props.element.alt ?? ''}
@@ -55,23 +70,63 @@ export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEnti
                                 alt: val,
                             });
                         }}
-                        hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
-                        error={isStringNullOrEmpty(props.element.alt) && isStringNotNullOrEmpty(props.element.src) ? 'Im Sinne der Barrierefreiheit sollten Sie immer einen Alternativtext für das Bild angeben.' : undefined}
+                        hint="Beschreiben Sie den relevanten Bildinhalt kurz und aussagekräftig. Der Alternativtext unterstützt die Nutzung mit Screenreadern."
+                        error={isStringNullOrEmpty(props.element.alt) && isStringNotNullOrEmpty(props.element.src) ? 'Bitte geben Sie einen aussagekräftigen Alternativtext für das Bild an.' : undefined}
                         disabled={!props.editable}
                     />
                 </Grid>
             </Grid>
-
-            <Alert severity="info" sx={{mt: 4}} icon={<AccessibilityNewIcon/>}>
-                <AlertTitle>Hinweis zur Barrierefreiheit von eingebundenen Bildern</AlertTitle>
+            <Alert
+                severity="info"
+                sx={{mt: 4}}
+                icon={<AccessibilityNewIcon />}
+            >
+                <AlertTitle>Hinweise zu Darstellung und Barrierefreiheit</AlertTitle>
+                <Typography
+                    component="h3"
+                    variant="subtitle2"
+                    sx={{mt: 1.5, mb: 0.5}}
+                >
+                    Darstellung auf hellen und dunklen Hintergründen
+                </Typography>
                 <Typography sx={{maxWidth: 860}}>
-                    Bitte beachten Sie, dass eingebundene Bilder ein Kontrastverhältnis von mindestens 3:1 aufweisen
-                    müssen, um den Anforderungen der Barrierefreiheit gemäß
-                    der <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1 (AA) zu entsprechen. Dies
-                    gilt für die Unterscheidung von grafischen Objekten in den Bildern (wie z.B. Symbole und Teile von
-                    Diagrammen oder anderen Grafiken).
+                    Bilder werden in der hellen und dunklen Darstellung unverändert verwendet. Verwenden Sie
+                    insbesondere für Grafiken und Diagramme möglichst eine Bilddatei mit eigenem, deckendem
+                    Hintergrund. Stellen Sie bei transparenten Bildern sicher, dass alle wichtigen Inhalte auf hellen
+                    wie dunklen Flächen gut erkennbar bleiben.
+                </Typography>
+
+                <Typography
+                    component="h3"
+                    variant="subtitle2"
+                    sx={{mt: 2, mb: 0.5}}
+                >
+                    Barrierefreiheit
+                </Typography>
+                <Typography sx={{maxWidth: 860}}>
+                    Grafische Elemente, die für das Verständnis erforderlich sind, müssen nach den
+                    {' '}<abbr title="Web Content Accessibility Guidelines">WCAG</abbr> 2.2 in der Regel mit
+                    mindestens 3:1 zu angrenzenden Farben kontrastieren. Verwenden Sie für wichtige Informationen
+                    möglichst echten Text statt Schrift in Bildern und hinterlegen Sie einen aussagekräftigen
+                    Alternativtext.
                 </Typography>
             </Alert>
+
+            <SelectAssetDialog
+                title="Bild auswählen"
+                show={showImageSearch}
+                mimetype="image/"
+                onSelect={(assetKey) => {
+                    props.onPatch({
+                        src: AssetsApiService.useAssetLink(assetKey),
+                    });
+                    setShowImageSearch(false);
+                }}
+                onCancel={() => {
+                    setShowImageSearch(false);
+                }}
+                visibility={AssetVisibility.Public}
+            />
         </>
     );
 }

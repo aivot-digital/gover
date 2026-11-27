@@ -1,0 +1,332 @@
+package de.aivot.prosuna.backend.elements.models.elements.form.input;
+
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.PrintableElement;
+import de.aivot.prosuna.backend.elements.enums.OptionsSourceType;
+import de.aivot.prosuna.backend.elements.enums.MultiChoicePresentation;
+import de.aivot.prosuna.backend.enums.ConditionOperator;
+import de.aivot.prosuna.backend.enums.ElementType;
+import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
+import de.aivot.prosuna.backend.exceptions.ValidationException;
+import de.aivot.prosuna.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public class MultiCheckboxInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
+    @Nullable
+    private List<MultiCheckboxInputElementOption> options;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private String codeListKey;
+
+    // Keys of the code list columns that provide the values and labels.
+    @Nullable
+    private String codeListValueColumnKey;
+
+    @Nullable
+    private String codeListLabelColumnKey;
+
+    @Nullable
+    private Integer minimumRequiredOptions;
+
+    @Nullable
+    private Integer maximumOptions;
+
+    @Nullable
+    private Boolean displayInline;
+
+    @Nullable
+    private MultiChoicePresentation presentation;
+
+    public MultiCheckboxInputElement() {
+        super(ElementType.MultiCheckbox);
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, List<String>> validateConfiguration() {
+        var errors = super.validateConfiguration();
+        // Only manually defined options are known while authoring; code lists are resolved at runtime.
+        var usesManualOptions = optionsSource != OptionsSourceType.CodeList;
+        var optionCount = options == null ? 0 : options.size();
+        // performValidation rejects every value while the options are missing or incomplete.
+        if (usesManualOptions) {
+            addOptionErrors(errors, "options", options, MultiCheckboxInputElementOption::getValue, MultiCheckboxInputElementOption::getLabel);
+        } else if (StringUtils.isNullOrEmpty(codeListKey)) {
+            addConfigurationError(errors, "codeListKey", "Wählen Sie eine Codeliste aus.");
+        }
+        // An override can supply further options, so only the authored count is known.
+        if (usesManualOptions && !hasOverride() && minimumRequiredOptions != null && minimumRequiredOptions > optionCount) {
+            addConfigurationError(errors, "minimumRequiredOptions", "Sie fordern mehr Optionen, als Sie definiert haben.");
+        }
+        addMinimumExceedsMaximumError(errors, "minimumRequiredOptions", minimumRequiredOptions, "maximumOptions", maximumOptions,
+                "Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.");
+        return errors;
+    }
+
+    @Nullable
+    @Override
+    public List<String> formatValue(@Nullable Object value) {
+        return _formatValue(value);
+    }
+
+    @Override
+    public void performValidation(@Nullable List<String> value) throws ValidationException {
+        if (value == null && Boolean.TRUE.equals(getRequired())) {
+            throw new RequiredValidationException(this);
+        }
+
+        if (value != null) {
+            testValuesInOptions(value);
+            testRequiredOptionsMet(value);
+            if (maximumOptions != null && maximumOptions > 0 && value.size() > maximumOptions) {
+                throw new ValidationException(this, "Maximal " + maximumOptions + " "
+                        + (maximumOptions == 1 ? "Option darf" : "Optionen dürfen") + " ausgewählt werden.");
+            }
+        }
+    }
+
+    @Nonnull
+    @Override
+    public String toDisplayValue(@Nullable List<String> value) {
+        if (value == null || value.isEmpty()) {
+            return "Keine Auswahl getroffen";
+        }
+
+        return value.stream()
+                .filter(Objects::nonNull)
+                .map(this::toOptionLabel)
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("Keine Auswahl getroffen");
+    }
+
+    @Nonnull
+    private String toOptionLabel(@Nonnull String value) {
+        if (options == null) {
+            return value;
+        }
+
+        for (var option : options) {
+            if (Objects.equals(option.getValue(), value) && StringUtils.isNotNullOrEmpty(option.getLabel())) {
+                return option.getLabel();
+            }
+        }
+
+        return value;
+    }
+
+    private void testValuesInOptions(@Nonnull List<String> values) throws ValidationException {
+        if (options == null) {
+            throw new ValidationException(this, "Dieses Element hat keine Optionen definiert.");
+        }
+
+        var hasInvalidOption = options
+                .stream()
+                .anyMatch(opt -> (
+                        StringUtils.isNullOrEmpty(opt.getValue()) ||
+                                StringUtils.isNullOrEmpty(opt.getLabel()))
+                );
+
+        if (hasInvalidOption) {
+            throw new ValidationException(this, "Eine oder mehrere Optionen sind ungültig (leerer Wert oder leere Beschriftung).");
+        }
+
+        for (String val : values) {
+            boolean valueFound = false;
+            for (var opt : options) {
+                if (Objects.equals(opt.getValue(), val)) {
+                    valueFound = true;
+                    break;
+                }
+            }
+
+            if (!valueFound) {
+                throw new ValidationException(this, "Ungültige Auswahl: " + val);
+            }
+        }
+    }
+
+    private void testRequiredOptionsMet(@Nonnull List<String> values) throws ValidationException {
+        if (minimumRequiredOptions != null && values.size() < minimumRequiredOptions) {
+            throw new ValidationException(this, "Mindestens " + minimumRequiredOptions + " Optionen müssen ausgewählt werden.");
+        }
+    }
+
+    @Nonnull
+    @Override
+    public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
+        if (referencedValue == null) {
+            return operator == ConditionOperator.Empty;
+        }
+
+        if (operator == ConditionOperator.NotEmpty) {
+            return true;
+        }
+
+        if (referencedValue instanceof Collection<?> cValA) {
+            if (comparedValue instanceof String sValueB) {
+                return switch (operator) {
+                    case Includes -> cValA.stream().anyMatch(sValueB::equals);
+                    case NotIncludes -> cValA.stream().noneMatch(sValueB::equals);
+                    default -> false;
+                };
+            }
+        }
+
+        return false;
+    }
+
+    @Nullable
+    public static List<String> _formatValue(@Nullable Object value) {
+        var res = switch (value) {
+            case null -> null;
+            case String sValue -> List.of(sValue);
+            case Collection<?> cValue -> cValue.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .toList();
+            default -> null;
+        };
+
+        return res == null || res.isEmpty() ? null : res;
+    }
+
+    // region Hash & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        MultiCheckboxInputElement that = (MultiCheckboxInputElement) o;
+        return Objects.equals(presentation, that.presentation) && Objects.equals(options, that.options)
+                && optionsSource == that.optionsSource
+                && Objects.equals(codeListKey, that.codeListKey)
+                && Objects.equals(codeListValueColumnKey, that.codeListValueColumnKey)
+                && Objects.equals(codeListLabelColumnKey, that.codeListLabelColumnKey)
+                && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
+                && Objects.equals(maximumOptions, that.maximumOptions)
+                && Objects.equals(displayInline, that.displayInline);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + Objects.hashCode(options);
+        result = 31 * result + Objects.hashCode(presentation);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListKey);
+        result = 31 * result + Objects.hashCode(codeListValueColumnKey);
+        result = 31 * result + Objects.hashCode(codeListLabelColumnKey);
+        result = 31 * result + Objects.hashCode(minimumRequiredOptions);
+        result = 31 * result + Objects.hashCode(maximumOptions);
+        result = 31 * result + Objects.hashCode(displayInline);
+        return result;
+    }
+
+    // endregion
+
+    // region Getters & Setters
+
+    @Nullable
+    public List<MultiCheckboxInputElementOption> getOptions() {
+        return options;
+    }
+
+    public MultiCheckboxInputElement setOptions(@Nullable List<MultiCheckboxInputElementOption> options) {
+        this.options = options;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    public MultiCheckboxInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListKey() {
+        return codeListKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListValueColumnKey() {
+        return codeListValueColumnKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListValueColumnKey(@Nullable String codeListValueColumnKey) {
+        this.codeListValueColumnKey = codeListValueColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public String getCodeListLabelColumnKey() {
+        return codeListLabelColumnKey;
+    }
+
+    public MultiCheckboxInputElement setCodeListLabelColumnKey(@Nullable String codeListLabelColumnKey) {
+        this.codeListLabelColumnKey = codeListLabelColumnKey;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMinimumRequiredOptions() {
+        return minimumRequiredOptions;
+    }
+
+    public MultiCheckboxInputElement setMinimumRequiredOptions(@Nullable Integer minimumRequiredOptions) {
+        this.minimumRequiredOptions = minimumRequiredOptions;
+        return this;
+    }
+
+    @Nullable
+    public Integer getMaximumOptions() {
+        return maximumOptions;
+    }
+
+    @Nonnull
+    public MultiCheckboxInputElement setMaximumOptions(@Nullable Integer maximumOptions) {
+        this.maximumOptions = maximumOptions;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getDisplayInline() {
+        return displayInline;
+    }
+
+    public MultiCheckboxInputElement setDisplayInline(@Nullable Boolean displayInline) {
+        this.displayInline = displayInline;
+        return this;
+    }
+
+    @Nullable
+    public MultiChoicePresentation getPresentation() {
+        return presentation;
+    }
+
+    @Nonnull
+    public MultiCheckboxInputElement setPresentation(@Nullable MultiChoicePresentation presentation) {
+        this.presentation = presentation;
+        return this;
+    }
+
+    // endregion
+}

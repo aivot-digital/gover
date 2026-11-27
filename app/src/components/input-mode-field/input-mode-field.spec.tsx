@@ -1,0 +1,656 @@
+import {ElementType} from '../../data/element-type/element-type';
+import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
+import {useState} from 'react';
+import {render, screen, waitFor, within} from '@testing-library/react';
+import {ThemeProvider} from '@mui/material';
+import userEvent from '@testing-library/user-event';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {
+    InputModeField,
+    type InputModeValue,
+    type InputModeVariable,
+    type EmptyNoCodeInputDraft,
+} from './input-mode-field';
+import {TextFieldComponent} from '../text-field/text-field-component';
+import {InputMode, InputVariableSource, TemplateOutputFormat} from '../../models/input-mode';
+import {type DynamicTextInsertion} from '../dynamic-text/dynamic-text-metadata';
+import {BaseTheme} from '../../theming/base-theme';
+import {createDefaultAppTheme} from '../../theming/themes';
+import {FormFieldTokens} from '../../theming/form-field-tokens';
+import {NoCodeDataType} from '../../data/no-code-data-type';
+import {type NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-details-dto';
+import {type NoCodeOperand} from '../../models/functions/no-code-expression';
+import {createDerivedRuntimeElementData} from '../../models/element-data';
+import {ViewDispatcherContextProvider, ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
+
+const noCodeApi = vi.hoisted(() => ({getNoCodeOperators: vi.fn()}));
+
+vi.mock('../../services/no-code-api-service', () => ({
+    NoCodeApiService: class {
+        getNoCodeOperators = noCodeApi.getNoCodeOperators;
+    },
+}));
+
+vi.mock('../../hooks/use-api', () => {
+    const api = {};
+    return {useApi: () => api};
+});
+
+vi.mock('../../hooks/use-app-dispatch', () => ({useAppDispatch: () => vi.fn()}));
+
+vi.mock('../code-editor/code-editor', () => ({
+    CodeEditor: ({
+                     ariaLabel,
+                     value,
+                     readOnly,
+                     onChange,
+                 }: {
+        ariaLabel: string;
+        value: string;
+        readOnly: boolean;
+        onChange: (value: string) => void;
+    }) => <textarea aria-label={ariaLabel}
+                    value={value}
+                    readOnly={readOnly}
+                    onChange={(event) => onChange(event.target.value)}/>,
+}));
+
+const variables: InputModeVariable[] = [
+    {
+        id: 'count',
+        label: 'Anzahl der Positionen',
+        path: 'warenkorb.anzahl',
+        origin: 'Warenkorb laden',
+        source: InputVariableSource.ProcessData,
+    },
+    {
+        id: 'total',
+        label: 'Gesamtbetrag',
+        path: 'warenkorb.gesamtbetrag',
+        origin: 'Warenkorb laden',
+        source: InputVariableSource.ProcessData,
+    },
+    {
+        id: 'case-number',
+        label: 'Aktenzeichen des Vorgangs',
+        path: 'caseNumber',
+        origin: 'Vorgang',
+        source: InputVariableSource.ProtectedProcessData,
+    },
+    {
+        id: 'message',
+        label: 'Nachricht',
+        path: 'nachricht',
+        origin: 'Formulareingang',
+        source: InputVariableSource.ProcessData,
+        markdown: true,
+    },
+];
+
+function createInitialValue(): InputModeValue<string> {
+    return {
+        type: InputMode.Literal,
+        value: '42',
+    };
+}
+
+function Harness(props: {
+    initialValue?: InputModeValue<string> | EmptyNoCodeInputDraft;
+    onChange?: (value: InputModeValue<string>) => void;
+    onInsertVariable?: (variable: InputModeVariable, insertion: DynamicTextInsertion) => void;
+    dynamicTextOutputFormat?: TemplateOutputFormat;
+    error?: string;
+    required?: boolean;
+    disabled?: boolean;
+    readOnly?: boolean;
+    busy?: boolean;
+    allowedModes?: InputMode[];
+    allowedVariableSources?: InputVariableSource[];
+    dynamicTextVariableSources?: InputVariableSource[];
+}) {
+    const [value, setValue] = useState(props.initialValue ?? createInitialValue);
+
+    return (
+        <InputModeField
+            label="Inkrement"
+            rootElement={generateElementWithDefaultValues(ElementType.FormLayout)}
+            variables={variables}
+            value={value}
+            onChange={(next) => {
+                setValue(next);
+                props.onChange?.(next);
+            }}
+            onInsertVariable={props.onInsertVariable}
+            error={props.error}
+            required={props.required}
+            disabled={props.disabled}
+            readOnly={props.readOnly}
+            busy={props.busy}
+            allowedModes={props.allowedModes}
+            allowedVariableSources={props.allowedVariableSources}
+            dynamicTextVariableSources={props.dynamicTextVariableSources}
+            dynamicTextOutputFormat={props.dynamicTextOutputFormat}
+            renderLiteral={({
+                                value: literal,
+                                onChange,
+                                variableInsertAction,
+                                fieldProps,
+                            }) => (
+                <>
+                    <TextFieldComponent
+                        {...fieldProps}
+                        readonly={fieldProps.readOnly}
+                        value={literal}
+                        onChange={onChange}
+                    />
+                    {variableInsertAction != null && (
+                        <button onClick={variableInsertAction.onClick}>
+                            Platzhalter einfügen
+                        </button>
+                    )}
+                </>
+            )}
+        />
+    );
+}
+
+async function selectMode(user: ReturnType<typeof userEvent.setup>, mode: string) {
+    await user.click(screen.getByRole('button', {name: /Eingabemodus für Inkrement ändern/}));
+    const modeByLabel: Record<string, string> = {
+        Wert: 'Literal',
+        Variable: 'Variable',
+        'Ausdruck (No-Code)': 'NoCode',
+        'Skript (Low-Code)': 'LowCode',
+    };
+    await user.click(screen.getByTestId(`input-mode-option-${modeByLabel[mode]}`));
+}
+
+describe('InputModeField', () => {
+    beforeEach(() => {
+        noCodeApi.getNoCodeOperators.mockReset().mockResolvedValue([]);
+    });
+
+    it.each([
+        ['Variable', 'Keine Variable referenziert'],
+        ['Skript (Low-Code)', 'Kein Skript definiert'],
+    ])('shows a compact, unambiguous empty state for %s', async (mode, emptyText) => {
+        const user = userEvent.setup();
+        render(<Harness required
+                        error="Bitte ergänzen Sie die Eingabe."/>);
+
+        await selectMode(user, mode);
+
+        const summary = screen.getByRole('button', {name: new RegExp(`Inkrement: ${emptyText}`)});
+        expect(within(summary).getAllByText(emptyText)).toHaveLength(1);
+        expect(summary).toHaveAttribute('aria-haspopup', 'dialog');
+        expect(summary).toHaveAttribute('aria-invalid', 'true');
+        expect(summary).toHaveAccessibleDescription('Bitte ergänzen Sie die Eingabe.');
+        expect(summary).toHaveAccessibleName(/Pflichtfeld/);
+        expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlMinHeight}px`});
+        expect(summary.querySelectorAll('svg')).toHaveLength(2);
+        summary.querySelectorAll('svg').forEach((icon) => expect(icon).toHaveAttribute('aria-hidden', 'true'));
+    });
+
+    it('keeps an unconfigured default No-Code mode empty without emitting a fixed value', () => {
+        const onChange = vi.fn();
+        render(<Harness initialValue={{
+            type: InputMode.NoCode,
+            operand: null,
+        }}
+                        onChange={onChange}/>);
+        expect(screen.getByRole('button', {name: /Inkrement: Kein Ausdruck definiert/})).toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('switches to No-Code only after applying a configured expression', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness onChange={onChange}/>);
+        await selectMode(user, 'Ausdruck (No-Code)');
+        const dialog = await screen.findByRole('dialog', {name: 'Ausdruck für „Inkrement“'});
+        expect(onChange).not.toHaveBeenCalled();
+        await waitFor(() => expect(within(dialog).getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
+        await user.click(within(dialog).getByRole('button', {name: 'Übernehmen'}));
+        expect(onChange).not.toHaveBeenCalled();
+        expect(within(dialog).getByRole('treeitem')).toHaveFocus();
+        await user.click(await screen.findByRole('button', {name: 'Ausdruck hinzufügen'}));
+        await user.click(await screen.findByRole('button', {name: 'Wert selbst festlegen'}));
+        const input = await screen.findByRole('textbox', {name: /^Ausdruck/});
+        await user.click(input);
+        await user.keyboard('{Escape}');
+        await waitFor(() => expect(screen.queryByRole('textbox', {name: /^Ausdruck/})).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.getByRole('button', {name: 'Übernehmen'})).toBeEnabled());
+        await user.click(screen.getByRole('button', {name: 'Übernehmen'}));
+        expect(onChange).toHaveBeenCalledExactlyOnceWith({
+            type: InputMode.NoCode,
+            operand: {
+                type: 'NoCodeStaticValue',
+                value: '',
+            },
+        });
+    });
+
+    it.each(['light', 'dark'] as const)('distinguishes the script preview from its label in %s mode', (mode) => {
+        const theme = createDefaultAppTheme(BaseTheme, mode);
+        render(<ThemeProvider theme={theme}>
+            <Harness initialValue={{
+                type: InputMode.LowCode,
+                code: '\n  4 + 9\n',
+            }}/>
+        </ThemeProvider>);
+
+        const summary = screen.getByRole('button', {name: /Inkrement: Skript definiert/});
+        const primary = within(summary).getByText('Skript definiert');
+        const secondary = within(summary).getByText('4 + 9');
+        expect(primary).toHaveStyle({color: theme.palette.text.primary});
+        expect(secondary).toHaveStyle({color: theme.palette.text.secondary});
+        expect(summary).toHaveAccessibleDescription('4 + 9');
+        expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
+    });
+
+    it.each(['light', 'dark'] as const)('shows a humanized no-code preview on a secondary line in %s mode', (mode) => {
+        const theme = createDefaultAppTheme(BaseTheme, mode);
+        render(<ThemeProvider theme={theme}>
+            <Harness initialValue={{
+                type: InputMode.NoCode,
+                operand: {
+                    type: 'NoCodeProcessDataReference',
+                    path: 'warenkorb.anzahl',
+                },
+            }}/>
+        </ThemeProvider>);
+
+        const summary = screen.getByRole('button', {name: /Inkrement: Ausdruck definiert/});
+        const preview = within(summary).getByText('Vorgangsdaten → warenkorb.anzahl');
+        expect(preview).toHaveStyle({color: theme.palette.text.secondary});
+        expect(preview).toHaveAttribute('title', 'Vorgangsdaten → warenkorb.anzahl');
+        expect(summary).toHaveAccessibleDescription('Vorgangsdaten → warenkorb.anzahl');
+        expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
+    });
+
+    it('uses the readable nested sentence and context labels in its preview and accessible description', async () => {
+        const equals: NoCodeOperatorDetailsDTO = {
+            identifier: 'equals',
+            packageName: 'core',
+            label: 'Ist gleich',
+            abstractDescription: '',
+            description: '',
+            tags: [],
+            sentenceLead: 'ergibt wahr',
+            humanReadableTemplate: '„#0“ ist gleich „#1“',
+            signatures: [{
+                returnType: NoCodeDataType.Boolean,
+                parameters: [
+                    {label: 'Wert 1', type: NoCodeDataType.Runtime, description: null, options: []},
+                    {label: 'Wert 2', type: NoCodeDataType.Runtime, description: null, options: [{label: 'Ja', value: 'ja'}]},
+                ],
+            }],
+        };
+        noCodeApi.getNoCodeOperators.mockResolvedValue([equals, {
+            ...equals,
+            identifier: 'not',
+            label: 'Nicht',
+            humanReadableTemplate: 'nicht „#0“',
+            signatures: [{returnType: NoCodeDataType.Boolean, parameters: equals.signatures[0].parameters.slice(0, 1)}],
+        }]);
+        const operand: NoCodeOperand = {
+            type: 'NoCodeExpression',
+            operatorIdentifier: 'not',
+            operands: [{
+                type: 'NoCodeExpression',
+                operatorIdentifier: 'equals',
+                operands: [
+                    {type: 'NoCodeProcessDataReference', path: 'befreiung.beantragt'},
+                    {type: 'NoCodeStaticValue', value: 'ja'},
+                ],
+            }],
+        };
+        const rootElement = generateElementWithDefaultValues(ElementType.FormLayout);
+        const onChange = vi.fn();
+        render(<ViewDispatcherContextProvider value={{
+            mode: ViewDispatcherMode.Viewer,
+            rootElement,
+            allElements: [rootElement],
+            rootAuthoredElementValues: {},
+            rootDerivedData: createDerivedRuntimeElementData(),
+            inputModeVariables: [{source: InputVariableSource.ProcessData, path: 'befreiung.beantragt', label: 'Befreiung beantragt'}],
+        }}>
+            <Harness initialValue={{type: InputMode.NoCode, operand}} onChange={onChange}/>
+        </ViewDispatcherContextProvider>);
+
+        const text = 'nicht („Befreiung beantragt“ ist gleich „Ja“)';
+        const preview = await screen.findByText(text);
+        const summary = screen.getByRole('button', {name: /Inkrement: Ausdruck definiert/});
+        expect(summary).toContainElement(preview);
+        expect(preview).toHaveAttribute('title', text);
+        expect(summary).toHaveAccessibleDescription(text);
+        expect(summary).toHaveStyle({minHeight: `${FormFieldTokens.controlWithSecondaryTextMinHeight}px`});
+        expect(summary).not.toHaveTextContent('$.befreiung.beantragt');
+        expect(summary).not.toHaveTextContent('„ja“');
+        expect(summary).not.toHaveTextContent('ergibt wahr');
+        expect(screen.queryByRole('button', {name: 'Technische Details'})).not.toBeInTheDocument();
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('does not repeat a custom reference when no suggestion supplies a label', () => {
+        render(<Harness initialValue={{
+            type: InputMode.Variable,
+            reference: {
+                source: InputVariableSource.ProcessData,
+                path: 'neuerWert',
+            },
+        }}/>);
+
+        const summary = screen.getByRole('button', {name: /Inkrement: \$\.neuerWert/});
+        expect(within(summary).getAllByText('$.neuerWert')).toHaveLength(1);
+        expect(summary).toHaveAccessibleDescription('Vorgangsdaten');
+    });
+
+    it.each(['disabled', 'readOnly'] as const)('keeps %s scripts available for inspection', async (state) => {
+        const user = userEvent.setup();
+        render(<Harness {...{[state]: true}} initialValue={{
+            type: InputMode.LowCode,
+            code: '4 + 9',
+        }}/>);
+
+        const summary = screen.getByRole('button', {name: /Inkrement: Skript definiert. Skript ansehen/});
+        expect(summary).toBeEnabled();
+        await user.click(summary);
+
+        const dialog = screen.getByRole('dialog');
+        expect(within(dialog).getByRole('textbox', {name: 'JavaScript für Inkrement'})).toHaveAttribute('readonly');
+        expect(within(dialog).queryByRole('button', {name: 'Übernehmen'})).not.toBeInTheDocument();
+        const closeButtons = within(dialog).getAllByRole('button', {name: 'Schließen'});
+        expect(closeButtons).toHaveLength(2);
+        closeButtons.forEach((button) => expect(button).toBeEnabled());
+    });
+
+    it('prevents opening a script while the field is busy', () => {
+        render(<Harness busy
+                        initialValue={{
+                            type: InputMode.LowCode,
+                            code: '4 + 9',
+                        }}/>);
+
+        expect(screen.getByRole('button', {name: /Inkrement: Skript definiert/})).toBeDisabled();
+    });
+
+    it('associates the external label with the literal control', () => {
+        render(<Harness/>);
+
+        const input = screen.getByRole('textbox', {name: /^Inkrement/});
+        const label = screen.getByText('Inkrement', {selector: 'label'});
+        const modeSelector = screen.getByRole('button', {name: 'Wert: Eingabemodus für Inkrement ändern'});
+
+        expect(label).toHaveAttribute('for', input.id);
+        expect(label.parentElement).toContainElement(modeSelector);
+    });
+
+    it('switches to a variable and keeps the selected mapping', async () => {
+        const user = userEvent.setup();
+        render(<Harness/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+        expect(screen.getByText(/Die Vorschläge zeigen Variablen/)).toBeInTheDocument();
+        expect(screen.getByLabelText('Variablenvorschläge')).toBeInTheDocument();
+        const variableOption = await screen.findByLabelText(/Gesamtbetrag/);
+        await user.click(variableOption);
+        expect(variableOption).toBeChecked();
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        const summary = screen.getByLabelText(/Inkrement: Gesamtbetrag.*Variable referenzieren/);
+        expect(summary).toHaveTextContent('Gesamtbetrag');
+        expect(summary).toHaveTextContent('$.warenkorb.gesamtbetrag');
+    });
+
+    it('remembers that a referenced variable holds Markdown', async () => {
+        const user = userEvent.setup();
+        const handleChange = vi.fn();
+        render(<Harness onChange={handleChange}/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+        await user.click(await screen.findByLabelText(/^Nachricht/));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleChange.mock.lastCall?.[0]).toEqual({
+            type: InputMode.Variable,
+            reference: {
+                source: InputVariableSource.ProcessData,
+                path: 'nachricht',
+                markdown: true,
+            },
+        });
+    });
+
+    it('groups the primary and cancel actions before the clear action', async () => {
+        const user = userEvent.setup();
+        render(<Harness/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+
+        const primaryActions = screen.getByTestId('variable-dialog-primary-actions');
+        const primaryActionLabels = Array.from(primaryActions.querySelectorAll('button'))
+            .map((button) => button.textContent);
+        const dialogActions = primaryActions.parentElement;
+
+        expect(primaryActionLabels).toEqual([
+            'Referenz verwenden',
+            'Abbrechen',
+        ]);
+        expect(dialogActions?.children).toHaveLength(2);
+        expect(dialogActions?.children[0]).toBe(primaryActions);
+        expect(dialogActions?.children[1]).toHaveTextContent('Referenz entfernen');
+    });
+
+    it('returns a required field to an empty fixed value when its applied expression is removed', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Harness required
+                        initialValue={{type: InputMode.NoCode, operand: {type: 'NoCodeStaticValue', value: 'text'}}}
+                        onChange={onChange}/>);
+
+        await user.click(screen.getByRole('button', {name: /^Inkrement: Ausdruck definiert\. Ausdruck bearbeiten/}));
+        const dialog = await screen.findByRole('dialog', {name: 'Ausdruck für „Inkrement“'});
+        await user.click(await within(dialog).findByRole('button', {name: 'Wert „text“ löschen'}));
+        await user.click(within(dialog).getByRole('button', {name: 'Übernehmen'}));
+
+        expect(onChange).toHaveBeenCalledExactlyOnceWith({type: InputMode.Literal, value: null});
+        expect(screen.queryByRole('dialog', {name: 'Ausdruck für „Inkrement“'})).not.toBeInTheDocument();
+    });
+
+    it('keeps the literal value when starting and cancelling a new No-Code expression', async () => {
+        const user = userEvent.setup();
+        render(<Harness/>);
+
+        const input = screen.getByRole('textbox', {name: /^Inkrement/});
+        await user.clear(input);
+        await user.type(input, '7');
+
+        await selectMode(user, 'Ausdruck (No-Code)');
+        expect(screen.queryByRole('textbox', {name: /^Inkrement/})).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        expect(screen.getByRole('textbox', {name: /^Inkrement/})).toHaveValue('7');
+    });
+
+    it('offers the complete variable picker for dynamic text', async () => {
+        const user = userEvent.setup();
+        const handleInsertVariable = vi.fn();
+        render(<Harness onInsertVariable={handleInsertVariable}/>);
+
+        expect(screen.getByLabelText('Dieser dynamische Text unterstützt Variablen und Bedingungen.'))
+            .toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+        await user.click(await screen.findByText('Aktenzeichen des Vorgangs'));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[2], 'text');
+    });
+
+    it('offers formatted insertion only for Markdown fields', async () => {
+        const user = userEvent.setup();
+        const handleInsertVariable = vi.fn();
+        render(<Harness onInsertVariable={handleInsertVariable}
+                        dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+        await user.click(await screen.findByText('Aktenzeichen des Vorgangs'));
+        await user.click(screen.getByRole('radio', {name: 'Mit Formatierung'}));
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[2], 'markdown');
+    });
+
+    it('inserts suggested Markdown inputs with formatting by default', async () => {
+        const user = userEvent.setup();
+        const handleInsertVariable = vi.fn();
+        render(<Harness onInsertVariable={handleInsertVariable}
+                        dynamicTextOutputFormat={TemplateOutputFormat.Markdown}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+        await user.click(await screen.findByText('Nachricht'));
+        expect(screen.getByRole('radio', {name: 'Mit Formatierung'})).toBeChecked();
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(handleInsertVariable).toHaveBeenCalledWith(variables[3], 'markdown');
+    });
+
+    it.each([TemplateOutputFormat.Html, TemplateOutputFormat.SingleLineText, undefined])
+    ('inserts text without asking for %s fields', async (outputFormat) => {
+        const user = userEvent.setup();
+        render(<Harness onInsertVariable={vi.fn()}
+                        dynamicTextOutputFormat={outputFormat}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+
+        expect(await screen.findByText('Aktenzeichen des Vorgangs')).toBeInTheDocument();
+        expect(screen.queryByRole('radio', {name: 'Mit Formatierung'})).not.toBeInTheDocument();
+    });
+
+    it('applies dynamic-text source restrictions independently from variable mappings', async () => {
+        const user = userEvent.setup();
+        render(<Harness
+            onInsertVariable={vi.fn()}
+            allowedVariableSources={[InputVariableSource.ProcessData]}
+            dynamicTextVariableSources={[InputVariableSource.ProtectedProcessData]}
+        />);
+
+        await user.click(screen.getByRole('button', {name: 'Platzhalter einfügen'}));
+
+        expect(screen.getByText('Aktenzeichen des Vorgangs')).toBeInTheDocument();
+        expect(screen.queryByText('Gesamtbetrag')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('variable-category-ProcessData')).not.toBeInTheDocument();
+    });
+
+    it('filters variables by their fachliche category', async () => {
+        const user = userEvent.setup();
+        render(<Harness/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+        await user.click(screen.getByTestId('variable-category-ProtectedProcessData'));
+
+        expect(screen.getByText('Aktenzeichen des Vorgangs')).toBeInTheDocument();
+        expect(screen.queryByText('Gesamtbetrag')).not.toBeInTheDocument();
+        expect(screen.getByText(/\$\$\.caseNumber/)).toBeInTheDocument();
+    });
+
+    it.each(['previousNode.result.value', 'previousNode[0].value'])('creates an element-data reference from %s', async (path) => {
+        const user = userEvent.setup();
+        render(<Harness/>);
+
+        await selectMode(user, 'Variable');
+        await user.click(screen.getByRole('button', {name: /Inkrement: Keine Variable referenziert/}));
+        await user.click(screen.getByRole('combobox', {name: /^Variablenquelle/}));
+        await user.click(screen.getByRole('option', {name: 'Elementdaten'}));
+
+        const pathInput = screen.getByRole('textbox', {name: /^Variablenpfad/});
+        expect(pathInput.parentElement).toHaveTextContent('_.');
+        await user.click(pathInput);
+        await user.paste(path);
+        await user.click(screen.getByTestId('use-variable-reference'));
+
+        expect(screen.getByLabelText((label) => label.startsWith(`Inkrement: _.${path}`))).toBeInTheDocument();
+    });
+
+    it('propagates required, invalid and read-only state to the literal control', () => {
+        render(<Harness required
+                        error="Ungültiger Wert"
+                        readOnly/>);
+
+        const input = screen.getByRole('textbox', {name: /^Inkrement/});
+        expect(input).toHaveAttribute('aria-required', 'true');
+        expect(input).toHaveAttribute('aria-invalid', 'true');
+        expect(input).toHaveAttribute('aria-readonly', 'true');
+        expect(input).toHaveAttribute('readonly');
+        expect(screen.getByRole('button', {name: /Eingabemodus für Inkrement ändern/})).toBeDisabled();
+    });
+
+    it('omits the selector when the policy exposes only one mode', () => {
+        render(<Harness allowedModes={[InputMode.Literal]}/>);
+
+        expect(screen.queryByRole('button', {name: /Eingabemodus für Inkrement ändern/})).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: /^Inkrement/})).toBeInTheDocument();
+    });
+
+    it('preserves triggering element ids from the literal control', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<InputModeField
+            label="Inkrement"
+            variables={[]}
+            value={{
+                type: InputMode.Literal,
+                value: '1',
+            }}
+            onChange={onChange}
+            renderLiteral={({onChange: changeLiteral}) => (
+                <button onClick={() => changeLiteral('2', ['dependency'])}>Ändern</button>
+            )}
+        />);
+
+        await user.click(screen.getByRole('button', {name: 'Ändern'}));
+
+        expect(onChange).toHaveBeenCalledWith({
+            type: InputMode.Literal,
+            value: '2',
+        }, ['dependency']);
+    });
+
+    it('uses the first policy-approved source when entering variable mode', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<InputModeField
+            label="Inkrement"
+            variables={variables}
+            allowedModes={[InputMode.Literal, InputMode.Variable]}
+            allowedVariableSources={[InputVariableSource.ProtectedProcessData]}
+            value={{
+                type: InputMode.Literal,
+                value: '1',
+            }}
+            onChange={onChange}
+            renderLiteral={({
+                                value,
+                                fieldProps,
+                            }) => <TextFieldComponent
+                {...fieldProps}
+                value={value}
+                onChange={() => undefined}
+            />}
+        />);
+
+        await selectMode(user, 'Variable');
+
+        expect(onChange).toHaveBeenCalledWith({
+            type: InputMode.Variable,
+            reference: {
+                source: InputVariableSource.ProtectedProcessData,
+                path: '',
+            },
+        });
+    });
+});

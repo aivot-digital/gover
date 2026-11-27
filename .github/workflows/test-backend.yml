@@ -1,0 +1,44 @@
+name: Test Backend
+
+on:
+  workflow_call:
+    inputs:
+      build_version:
+        required: true
+        type: string
+
+jobs:
+  testBackend:
+    name: Run backend tests
+    runs-on: ubuntu-24.04
+    env:
+      BUILD_VERSION: ${{ inputs.build_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: temurin
+          architecture: x64
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: backend/mails/package-lock.json
+
+      - name: Install mail template dependencies
+        working-directory: backend/mails
+        run: npm ci
+
+      - name: Build mail templates
+        working-directory: backend/mails
+        run: npm run build:dev
+
+      - name: Run Maven tests
+        working-directory: backend
+        run: mvn --batch-mode --update-snapshots test

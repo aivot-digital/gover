@@ -1,0 +1,25 @@
+Hallo,
+
+auf dem folgenden Host ist ein Fehler aufgetreten: [(${base.config.prosunaHostname})].
+
+[# th:if="${additionalContext != null}"]
+Weitere Informationen:
+
+[# th:each="entry : ${additionalContext.entrySet()}"]
+[(${entry.key})]: [(${entry.value})]
+[/]
+
+[/]
+
+Die Fehlernachricht lautet:
+[(${message})]
+
+Stacktrace:
+[(${stackTrace})]
+
+[# th:if="${mailSignature != null}"]
+
+[(${mailSignature})]
+
+[/]
+Diese Nachricht wurde automatisch versendet. Bitte nicht auf diese E-Mail antworten.

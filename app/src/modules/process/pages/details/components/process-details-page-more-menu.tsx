@@ -1,0 +1,102 @@
+import React, {type ReactNode, useMemo} from 'react';
+import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
+import Comment from '@aivot/mui-material-symbols-400-n25-outlined/Comment';
+import FileExport from '@aivot/mui-material-symbols-400-n25-outlined/FileExport';
+import Science from '@aivot/mui-material-symbols-400-n25-outlined/Science';
+import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
+import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
+import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
+import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
+
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'notes';
+
+interface ProcessDetailsPageMoreMenuProps {
+    anchorEl: null | HTMLElement;
+    onClose: () => void;
+
+    onMenuEvent: (event: ProcessDetailsPageMoreMenuEvent) => void;
+    canStartTest: boolean;
+}
+
+export function ProcessDetailsPageMoreMenu(props: ProcessDetailsPageMoreMenuProps): ReactNode {
+    const {
+        anchorEl,
+        onClose,
+
+        onMenuEvent,
+        canStartTest,
+    } = props;
+
+    const notImplemented = useNotImplemented();
+
+    const dispatchEvent = (event: ProcessDetailsPageMoreMenuEvent | undefined): void => {
+        if (event != null) {
+            onMenuEvent(event);
+        } else {
+            notImplemented();
+        }
+        onClose();
+    };
+
+    const items = useMemo<ProcessActionMenuItem[]>(() => {
+        return entries.map((entry) => entry === 'separator' ? entry : ({
+            label: entry.label,
+            icon: entry.icon,
+            isDangerous: entry.isDangerous,
+            disabled: entry.event === 'test' && !canStartTest,
+            disabledTooltip: formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_PUBLISH_TEST),
+            onClick: () => {
+                dispatchEvent(entry.event);
+            },
+        }));
+    }, [canStartTest, dispatchEvent]);
+
+    return (
+        <ProcessActionMenu
+            anchorEl={anchorEl}
+            onClose={onClose}
+            items={items}
+        />
+    );
+}
+
+
+const entries: Array<{
+    icon: ReactNode;
+    label: string;
+    event?: ProcessDetailsPageMoreMenuEvent;
+    isDangerous?: boolean;
+} | 'separator'> = [
+    {
+        icon: <History/>,
+        label: 'Änderungsverlauf anzeigen',
+    },
+    {
+        icon: <Comment/>,
+        label: 'Übersicht der Notizen anzeigen',
+        event: 'notes',
+    },
+    'separator',
+    {
+        icon: <FileExport/>,
+        label: 'Prozess exportieren (.json)',
+        event: 'export',
+    },
+    'separator',
+    {
+        icon: ModuleIcons.submissions,
+        label: 'Vorgänge anzeigen',
+        event: 'instances',
+    },
+    {
+        icon: <Science/>,
+        label: 'Prozessmodellierung testen',
+        event: 'test',
+    },
+    {
+        icon: <BugReport/>,
+        label: 'Entwicklerwerkzeuge öffnen',
+    },
+];

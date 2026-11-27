@@ -1,17 +1,28 @@
-import {Box, Dialog, DialogContent, Grid, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
+import {
+    Box,
+    Dialog,
+    DialogContent,
+    Divider,
+    Grid,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Typography,
+} from '@mui/material';
 import React, {PropsWithChildren, useState} from 'react';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {FunctionSelector} from './components/function-selector/function-selector';
 import {BaseCodeTabProps} from './base-code-tab-props';
 import {Actions} from '../actions/actions';
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import SwapHorizOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
-export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Element {
+export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
     const [anchorEl, setAnchorEl] = useState<Element>();
     const [showFunctionSelector, setShowFunctionSelector] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -21,11 +32,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
 
     return (
         <>
-            <Box
-                sx={{
-                    m: 4,
-                }}
-            >
+            <Box>
                 <ElementEditorSectionHeader
                     title={props.label}
                     disableMarginTop
@@ -35,9 +42,11 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
 
                 <ElementEditorSectionHeader
                     title="Fachliche Anforderungen"
-                    variant={"h5"}
+                    variant={'h5'}
                 >
-                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden No-/Low-Code Funktion.
+                    Definieren Sie hier schriftlich, welche Anforderungen an die Logik gestellt werden. Diese
+                    Beschreibung hilft bei der technischen Umsetzung und späteren Nachvollziehbarkeit der entsprechenden
+                    No-/Low-Code-Funktion.
                 </ElementEditorSectionHeader>
 
                 <Grid
@@ -45,14 +54,14 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     columnSpacing={4}
                 >
                     <Grid
-                        item
-                        xs={12}
-                        lg={6}
-                    >
-                        <RichTextEditorComponentView
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}>
+                        <RichTextInputComponent
                             value={props.requirements ?? ''}
                             onChange={(req) => {
-                                props.onRequirementsChange(req);
+                                props.onRequirementsChange(req ?? undefined);
                             }}
                             disabled={notEditable}
                         />
@@ -85,32 +94,46 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                 {
                     props.hasFunction &&
                     <Box
+                        role="group"
+                        aria-label="Funktion"
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            mt: 4,
+                            mb: 2,
                         }}
                     >
                         <ElementEditorSectionHeader
-                            title={"Funktion"}
-                            variant={"h5"}
+                            title={'Funktion'}
+                            variant={'h5'}
+                            disableMarginTop
+                            disableMarginBottom
+                            maxWidth="none"
                             sx={{
                                 flexGrow: 1,
                             }}
-                        >
-                            Konfigurieren Sie die Logik, die zur Umsetzung der fachlichen Anforderungen erforderlich ist.
-                        </ElementEditorSectionHeader>
+                        />
+
+                        {props.functionToolbarRef != null && <Box ref={props.functionToolbarRef}
+                                                                  sx={{minWidth: 0}}/>}
 
                         {
-                            props.editable &&
+                            props.editable && !props.functionActionsDisabled &&
                             <Actions
                                 sx={{
-                                    ml: 'auto',
                                     flexShrink: 0,
+                                    ...(props.functionToolbarRef != null ? {
+                                        borderLeft: 1,
+                                        borderColor: 'divider',
+                                        pl: 1,
+                                    } : {}),
                                 }}
                                 actions={[
                                     {
                                         tooltip: 'Mehr',
-                                        icon: <MoreVertOutlinedIcon />,
+                                        icon: <MoreVertOutlinedIcon/>,
                                         onClick: (event) => {
                                             setAnchorEl(event.currentTarget);
                                         },
@@ -118,6 +141,10 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                                 ]}
                             />
                         }
+                        <Typography sx={{flexBasis: '100%'}}>
+                            Konfigurieren Sie die Logik, die zur Umsetzung der fachlichen Anforderungen erforderlich
+                            ist.
+                        </Typography>
                     </Box>
                 }
 
@@ -132,7 +159,6 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     </Box>
                 }
             </Box>
-
             <Menu
                 open={anchorEl != null}
                 anchorEl={anchorEl}
@@ -143,6 +169,20 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                 <MenuItem
                     onClick={() => {
                         setAnchorEl(undefined);
+                        setShowFunctionSelector(true);
+                    }}
+                >
+                    <ListItemIcon>
+                        <SwapHorizOutlinedIcon/>
+                    </ListItemIcon>
+                    <ListItemText>
+                        Anderen Funktionstyp auswählen
+                    </ListItemText>
+                </MenuItem>
+                <Divider/>
+                <MenuItem
+                    onClick={() => {
+                        setAnchorEl(undefined);
                         setConfirmDelete(() => () => {
                             props.onDeleteFunction();
                             setConfirmDelete(undefined);
@@ -150,28 +190,13 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     }}
                 >
                     <ListItemIcon>
-                        <DeleteForeverOutlinedIcon />
+                        <Delete color="error"/>
                     </ListItemIcon>
-                    <ListItemText>
+                    <ListItemText sx={{color: 'error.main'}}>
                         Funktion löschen
                     </ListItemText>
                 </MenuItem>
-
-                <MenuItem
-                    onClick={() => {
-                        setAnchorEl(undefined);
-                        setShowFunctionSelector(true);
-                    }}
-                >
-                    <ListItemIcon>
-                        <SwapHorizOutlinedIcon />
-                    </ListItemIcon>
-                    <ListItemText>
-                        Anderen Funktionstyp auswählen
-                    </ListItemText>
-                </MenuItem>
             </Menu>
-
             <Dialog
                 open={showFunctionSelector}
                 onClose={() => {
@@ -187,6 +212,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                 </DialogTitleWithClose>
                 <DialogContent>
                     <FunctionSelector
+                        mode="change"
                         fullWidth={true}
                         allowNoCode={props.allowsNoCode}
                         allowExpression={props.allowsExpression}
@@ -222,8 +248,8 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                     />
                 </DialogContent>
             </Dialog>
-
             <ConfirmDialog
+                isDestructive
                 title="Funktion löschen"
                 onConfirm={confirmDelete}
                 onCancel={() => {
@@ -231,11 +257,9 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                 }}
             >
                 <Typography>
-                    Möchten Sie die Funktion wirklich löschen?
-                    Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann.
+                    Die konfigurierte Funktion wird entfernt.
                 </Typography>
             </ConfirmDialog>
-
             <ConfirmDialog
                 title="Funktionstyp ändern"
                 onConfirm={confirmChangeFunction}
@@ -244,8 +268,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>): JSX.Ele
                 }}
             >
                 <Typography>
-                    Möchten Sie den Typ der Funktion wirklich ändern?
-                    Bitte beachten Sie, dass diese Aktion nicht rückgängig gemacht werden kann.
+                    Die bisherige Funktion wird durch eine neue Funktion des ausgewählten Typs ersetzt.
                 </Typography>
             </ConfirmDialog>
         </>

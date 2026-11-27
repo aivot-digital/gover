@@ -1,0 +1,17 @@
+import {type BaseInputElement} from '../base-input-element';
+import {type ElementType} from '../../../../data/element-type/element-type';
+import {OptionsSourceType} from './options-source-type';
+
+export interface ChipInputFieldElement extends BaseInputElement<ElementType.ChipInput> {
+    placeholder: string | null | undefined;
+    suggestions: string[] | null | undefined;
+    optionsSource: OptionsSourceType | null | undefined;
+    codeListKey: string | null | undefined;
+    // Key of the code list column whose cells are suggested; the text itself is stored.
+    codeListLabelColumnKey?: string | null;
+    minItems: number | null | undefined;
+    maxItems: number | null | undefined;
+    maxItemLength?: number | null;
+    pasteSeparators?: string[] | null;
+    allowDuplicates: boolean | null | undefined;
+}
