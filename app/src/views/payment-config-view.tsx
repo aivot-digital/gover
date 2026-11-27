@@ -165,7 +165,7 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                 if (isApiError(err) && err.displayableToUser) {
                     setProvidersError(err.message);
                 } else {
-                    setProvidersError('Beim Abruf der Zahlungsanbieter ist ein unbekannter Fehler aufgetreten.');
+                    setProvidersError('Die Zahlungsanbieter konnten nicht geladen werden.');
                 }
             })
             .finally(() => {
@@ -573,13 +573,13 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 }}
             >
                 <RichTextInputWithVariablePicker
-                    label="Erfolgsmeldung"
+                    label="Nachricht nach bestätigter Zahlung"
                     value={currentValue.successMessage}
                     onChange={(successMessage) => updateValue({
                         successMessage: isStringNullOrEmpty(successMessage) ? null : successMessage,
                     })}
                     disabled={isInteractionDisabled}
-                    hint="Diese Meldung wird in der Vorgangsansicht angezeigt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
+                    hint="Diese Nachricht erscheint in der Ansicht für Beteiligte, nachdem die Zahlung bestätigt wurde. Ohne eigene Nachricht wird eine Standardmeldung angezeigt."
                     error={getFieldError(errorDetails, 'successMessage')}
                     offerFormattedInsertion
                 />
@@ -591,13 +591,13 @@ function PaymentConfigDialogContent(props: PaymentConfigDialogContentProps) {
                 }}
             >
                 <RichTextInputWithVariablePicker
-                    label="Fehlermeldung"
+                    label="Nachricht bei Zahlungsfehler oder Abbruch"
                     value={currentValue.failureMessage}
                     onChange={(failureMessage) => updateValue({
                         failureMessage: isStringNullOrEmpty(failureMessage) ? null : failureMessage,
                     })}
                     disabled={isInteractionDisabled}
-                    hint="Diese Meldung wird in der Vorgangsansicht angezeigt, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde."
+                    hint="Diese Nachricht erscheint in der Ansicht für Beteiligte, wenn die Zahlung fehlgeschlagen ist oder abgebrochen wurde. Ohne eigene Nachricht wird eine Standardmeldung angezeigt."
                     error={getFieldError(errorDetails, 'failureMessage')}
                     offerFormattedInsertion
                 />
@@ -627,7 +627,7 @@ function RequestorMappingEditor(props: {
         >
             <Grid size={12}>
                 <RadioFieldComponent
-                    label="Art der Zuordnung"
+                    label="Zahlende Person oder Organisation"
                     required={true}
                     value={value.requestorSourceType}
                     onChange={(val) => {
@@ -636,15 +636,15 @@ function RequestorMappingEditor(props: {
                     error={getFieldError(errorDetails, 'requestorSourceType')}
                     options={[
                         {
-                            label: 'Es handelt sich um eine natürliche Person',
+                            label: 'Person',
                             value: 'fixPerson',
                         },
                         {
-                            label: 'Es handelt sich um eine Organisation',
+                            label: 'Organisation',
                             value: 'fixOrg',
                         },
                         {
-                            label: 'Die Art der zahlenden Person oder Organisation wird aus den Vorgangsdaten abgeleitet',
+                            label: 'Aus Vorgangsdaten bestimmen',
                             value: 'processDataKey',
                         },
                     ]}
@@ -655,8 +655,8 @@ function RequestorMappingEditor(props: {
                 value.requestorSourceType === 'processDataKey' &&
                 <>
                     <RequestorMappingField
-                        label="Datenfeld zur Kennzeichnung als Organisation"
-                        hint="Dieser Wert in den Vorgangsdaten muss einen Wahrheitswert enthalten, der angibt, ob es sich um eine Organisation handelt."
+                        label="Vorgangsdatenpfad: Organisation"
+                        hint="Wählen Sie einen Vorgangsdatenpfad mit einem Ja-/Nein-Wert: Ja steht für eine Organisation, Nein für eine Person."
                         value={value.isOrganizationDestinationKey}
                         onChange={(next) => onChange('isOrganizationDestinationKey', next)}
                         disabled={disabled}

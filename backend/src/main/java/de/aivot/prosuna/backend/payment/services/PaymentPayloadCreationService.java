@@ -465,7 +465,7 @@ public class PaymentPayloadCreationService {
         try {
             return templateRenderService.interpolate(processExecutionData, template, outputFormat);
         } catch (RuntimeException e) {
-            throw new PaymentException(e, "Die Vorlage %s konnte nicht gerendert werden.", StringUtils.quote(template));
+            throw new PaymentException(e, "Ein Zahlungstext mit Vorlagenausdrücken konnte nicht ausgewertet werden.");
         }
     }
 

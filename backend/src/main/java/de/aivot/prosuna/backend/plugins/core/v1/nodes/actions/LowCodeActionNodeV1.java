@@ -59,7 +59,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<LowCodeActionNodeV1.LowCodeActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die Low-Code-Logik wurde erfolgreich ausgeführt."
+        return "Die Low-Code-Verarbeitung wurde abgeschlossen."
                 + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
@@ -109,9 +109,54 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
     @Override
     public String getDescription() {
         return """
-                Führt ein Low-Code-Skript in JavaScript aus, das auf Vorgangsdaten (`$`), geschützte Vorgangsdaten (`$$`) und Elementdaten (`_`) zugreifen kann. Geben Sie als Ergebnis des letzten Ausdrucks ein Objekt mit den gewünschten Vorgangsdaten zurück. Dieses ersetzt die Vorgangsdaten vollständig; bei `null` oder `undefined` bleiben die Vorgangsdaten unverändert.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Standardausgabe und Fehlerausgabe werden in den Elementdaten festgehalten. Tritt bei der Ausführung ein Fehler auf, schlägt die Aufgabe fehl.
+                Verwenden Sie dieses Prozesselement, um Vorgangsdaten automatisch mit einem eigenen Low-Code-Skript in JavaScript zu verarbeiten. Es eignet sich für besondere Regeln oder Verarbeitungsschritte, die sich mit den vorhandenen Prozesselementen und No-Code-Ausdrücken nicht ausreichend abbilden lassen. Für die Einrichtung benötigen Sie JavaScript-Kenntnisse.
+
+                # Was richten Sie ein?
+
+                Hinterlegen Sie Ihr Skript im Feld „Low-Code-Skript (JavaScript)“. Es kann Daten aus drei Ebenen lesen:
+
+                - `$` ist der Zugriff auf die Vorgangsdatenebene, zum Beispiel `$.person.name`.
+                - `$$` ist der Zugriff auf die geschützte Vorgangsdatenebene, zum Beispiel `$$.caseNumber` für die Vorgangskennung.
+                - `_` ist der Zugriff auf die Elementdatenebene, zum Beispiel `_.pruefung.ergebnis` für das Ergebnis eines vorherigen Elements mit dem Datenschlüssel `pruefung`.
+
+                Wenn Sie einen neuen Vorgangsdatenstand übernehmen möchten, verwenden Sie ein Objekt als Ergebnis des letzten Ausdrucks. Der vorbelegte Code verwendet `...$`, um die bisherigen Vorgangsdaten in dieses Objekt zu übernehmen. Ergänzen oder überschreiben Sie darin die gewünschten Werte.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna führt das Skript automatisch auf dem Server aus. Das Ergebnisobjekt ersetzt die bisherigen Vorgangsdaten vollständig. Alle Werte, die weitere Schritte benötigen, müssen deshalb darin enthalten sein. Nicht enthaltene Felder werden aus den Vorgangsdaten entfernt.
+
+                Ergibt der letzte Ausdruck `null` oder `undefined`, bleiben die bisherigen Vorgangsdaten bestehen. Änderungen nur an der JavaScript-Variablen `$` reichen für die Übernahme nicht aus; maßgeblich ist das Ergebnis des letzten Ausdrucks.
+
+                Nach erfolgreicher Verarbeitung wird der Vorgang über den Ausgang „Low-Code-Verarbeitung abgeschlossen“ fortgesetzt. Tritt ein Fehler bei der Verarbeitung auf, schlägt die Aufgabe fehl.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Nachfolgende Schritte arbeiten mit dem übernommenen Vorgangsdatenstand. Im Vorgangsverlauf steht, dass die Low-Code-Verarbeitung abgeschlossen wurde, ergänzt um die Kurzbeschreibung des Elements. Hinterlegen Sie dort eine verständliche Erklärung der fachlichen Verarbeitung. Die Änderungen an den Vorgangsdaten können Sie mit dem vorherigen Datenstand vergleichen.
+
+                Bei erfolgreicher Verarbeitung werden außerdem die Skriptausgaben als Elementdaten gespeichert: `stdout` enthält die Standardausgabe, beispielsweise aus `console.log`, und `stderr` die Fehlerausgabe, beispielsweise aus `console.error`. Diese Ausgaben dienen der technischen Untersuchung.
+
+                # Wie sieht ein Beispiel aus?
+
+                Die Vorgangsdaten enthalten `anzahl: 3` und `einzelpreis: 10`. Dieses Skript ergänzt den Gesamtbetrag und übernimmt die übrigen Angaben:
+
+                ```js
+                ({
+                    ...$,
+                    gesamtbetrag: $.anzahl * $.einzelpreis
+                });
+                ```
+
+                Danach enthalten die Vorgangsdaten zusätzlich `gesamtbetrag: 30`. Für eine solche einfache Berechnung eignet sich auch „No-Code ausführen“; das Beispiel zeigt, wie Sie bisherige Angaben in einem Skript erhalten und ergänzen.
+
+                # Was ist zu beachten?
+
+                Mit `...$` übernehmen Sie die oberste Ebene der bisherigen Vorgangsdaten. Wenn Sie ein darin enthaltenes Objekt ersetzen, übernehmen Sie auch dessen bisherige Angaben ausdrücklich, sofern diese erhalten bleiben sollen. Ein leeres Ergebnisobjekt `({})` entfernt alle bisherigen Vorgangsdaten.
+
+                Das Skript wird unmittelbar ausgeführt. Ein alleinstehendes `return` auf der obersten Skriptebene ist deshalb nicht zulässig. Wenn Sie das Ergebnisobjekt unmittelbar wie im Beispiel im Skript notieren, umschließen Sie es mit runden Klammern. Nach diesem Ausdruck darf keine weitere Anweisung folgen, die das Skriptergebnis verändert; ein nachfolgendes `console.log` ergibt beispielsweise `undefined`.
+
+                Für die JavaScript-Ausführung stehen die Prosuna-Funktionen der Laufzeitumgebung bereit. Browser-Funktionen und externe JavaScript-Pakete sind nicht allgemein verfügbar. Prüfen Sie Ihr Skript mit passenden Beispieldaten in einem Testvorgang.
                 """;
     }
 
@@ -124,13 +169,13 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
 
             var processDataNotice = new AlertContentElement();
             processDataNotice.setId("process-data-replacement-notice");
-            processDataNotice.setText("Das zurückgegebene Objekt ersetzt die bisherigen Vorgangsdaten vollständig. Werte, die nicht zurückgegeben werden, stehen nachfolgenden Prozessschritten nicht mehr zur Verfügung.");
+            processDataNotice.setText("Das Ergebnisobjekt ersetzt die bisherigen Vorgangsdaten vollständig. Geben Sie alle Werte zurück, die weitere Schritte benötigen. Nicht enthaltene Felder werden aus den Vorgangsdaten entfernt.");
             processDataNotice.setAlertType(AlertType.Info);
             layout.insertChildAfter(processDataNotice, CODE_FIELD_KEY);
 
             return layout;
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
+            throw ResponseException.internalServerError(e, "Die Einstellungen für „Low-Code ausführen“ konnten nicht geladen werden.");
         }
     }
 
@@ -153,8 +198,8 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "JavaScript ausgeführt",
-                        "Der Vorgang wird hier fortgesetzt, nachdem der JavaScript-Code ausgeführt wurde."
+                        "Low-Code-Verarbeitung abgeschlossen",
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Verarbeitung mit dem Low-Code-Skript erfolgreich abgeschlossen wurde."
                 )
         );
     }
@@ -186,7 +231,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
             } catch (Exception e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Fehler bei der Ausführung des Low-Code-Skripts."
+                        "Die Verarbeitung mit dem Low-Code-Skript konnte nicht abgeschlossen werden."
                 );
             }
         } catch (ProcessNodeExecutionException e) {
@@ -194,7 +239,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Initialisieren der JavaScript-Engine."
+                    "Die Umgebung für die Low-Code-Ausführung konnte nicht verwendet werden."
             );
         }
     }
@@ -204,8 +249,8 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
         public static final String CODE = CODE_FIELD_KEY;
 
         @InputElementPOJOBinding(id = CODE, type = ElementType.CodeInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "JavaScript-Code"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Mit „...$“ übernehmen Sie die bisherigen Vorgangsdaten und können sie anschließend ergänzen oder überschreiben."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Low-Code-Skript (JavaScript)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Ergebnis des letzten Ausdrucks bestimmt den neuen Vorgangsdatenstand. Mit „...$“ im Ergebnisobjekt übernehmen Sie die bisherigen Vorgangsdaten und können sie ergänzen oder überschreiben."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String code;

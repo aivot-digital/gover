@@ -55,8 +55,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.safeUrl;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.safeUrl;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
 
 @Component
 public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTriggerConfigV1> {
@@ -98,8 +100,13 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 .map(entry -> entry.getValue() instanceof java.util.List<?> values ? values.isEmpty() ? "" : values.getFirst() : entry.getValue())
                 .findFirst().orElse(null);
         var source = safeUrl(referrer);
-        return "Der Vorgang wurde" + summary.eventAt("started") + " durch einen Aufruf über einen Webhook ausgelöst"
-                + (source.isEmpty() ? "" : " (Quelle: " + source + ")") + ".";
+        var receivedAt = summary.data(INITIAL_DATA_KEY_STARTED);
+        if (timestamp(receivedAt).isEmpty()) {
+            receivedAt = context.thisProcessInstance().getStarted();
+        }
+        return "Der Vorgang wurde" + summary.at(receivedAt) + " durch einen Aufruf über einen Webhook ausgelöst"
+                + (source.isEmpty() ? "" : " (angegebene Herkunft: " + source + ")") + "."
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -141,16 +148,48 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet einen neuen Vorgang, sobald eine gültige HTTP-Anfrage am bereitgestellten Webhook eingeht.";
+        return "Startet einen neuen Vorgang durch den Aufruf eines anderen Systems.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Startet für jede gültige HTTP-Anfrage an den bereitgestellten Webhook einen neuen Vorgang. Anfragemethode, Inhaltstyp und Authentifizierung werden anhand der Konfiguration geprüft; ungültige Anfragen werden abgelehnt und starten keinen Vorgang.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Die empfangenen Nutzdaten werden nur in die Vorgangsdaten übernommen, wenn „Daten in Vorgangsdaten kopieren“ aktiviert ist; andernfalls beginnt der Vorgang mit leeren Vorgangsdaten. Als Multipart übertragene Dateien werden als Anlagen gespeichert. Nutzdaten, Dateien und Anfragedetails stehen in den Elementdaten bereit.
+                Lassen Sie einen neuen Vorgang durch ein anderes System starten, beispielsweise nach einer Meldung aus einem Fachsystem. Dazu stellt Prosuna eine Webhook-Adresse bereit, an die das andere System seinen Aufruf sendet.
+
+                ### Was richten Sie ein?
+
+                Wählen Sie die HTTP-Methode und legen Sie ein URL-Segment für den Webhook fest. Bei POST, PUT oder PATCH wählen Sie außerdem unter „Datenformat“ JSON, XML oder Multipart für Felder und Dateien. Stimmen Sie diese Einstellungen mit dem aufrufenden System ab. Über das Kopiersymbol am URL-Segment erhalten Sie die vollständige passende Adresse.
+
+                Aktivieren Sie bei Bedarf „Authentifizierung erforderlich“ und legen Sie entweder Benutzername und Passwort oder ein Token fest. Das andere System muss diese Zugangsdaten beim Aufruf mitsenden. Ohne diese Option sind Aufrufe ohne Zugangsdaten möglich.
+
+                Mit „Daten in Vorgangsdaten übernehmen“ legen Sie fest, ob die empfangenen Angaben zusätzlich in die Vorgangsdaten übernommen werden. Ohne diese Option stehen sie ausschließlich in den Elementdaten bereit.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna prüft die HTTP-Methode, das Übertragungsformat und die gegebenenfalls erforderlichen Zugangsdaten. Anschließend wird ein Vorgang angelegt. Empfangene Angaben und Dateien werden übernommen; danach wird der Vorgang über „Webhook empfangen“ fortgesetzt.
+
+                Die Antwort auf den Aufruf bestätigt, dass der Webhook-Aufruf angenommen wurde. Die nachfolgenden Schritte werden anschließend ausgeführt.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten stehen die empfangenen Angaben, Anlageninformationen, Dateiverweise, Anfragedetails und der Eingangszeitpunkt bereit. Bei aktivierter Übernahme stehen die Angaben aus dem Anfrageinhalt zusätzlich in den Vorgangsdaten. Andernfalls bleiben die Vorgangsdaten leer.
+
+                Übermittelte Dateien werden als Anlagen beim Vorgang gespeichert. Im Vorgangsverlauf ist erkennbar, wann der Vorgang durch den Webhook ausgelöst wurde. Eine mitgesendete Herkunftsadresse kann ergänzend angezeigt werden.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Ein Fachsystem sendet per POST ein JSON-Objekt mit den Angaben `{"kontakt":{"name":"Ada"}}`. Sie wählen JSON als Datenformat und aktivieren „Daten in Vorgangsdaten übernehmen“. Danach steht der Name in den Vorgangsdaten unter `$.kontakt.name` für den nächsten Schritt bereit.
+
+                ### Was ist zu beachten?
+
+                Die kopierte Adresse enthält bei POST, PUT und PATCH den passenden Zusatz für das Datenformat. GET und DELETE verwenden die Adresse ohne diesen Zusatz und werten keinen Anfrageinhalt aus; ihre Anfrageparameter stehen unter „Anfragedetails“ bereit.
+
+                Für JSON wird ein Objekt mit Feldnamen und Werten erwartet. Die Übertragungsprüfung prüft keine fachlichen Vorgaben wie Pflichtfelder oder erlaubte Feldwerte. Richten Sie benötigte Prüfungen und Transformationen in nachfolgenden Prozesselementen ein.
+
+                Verwenden Sie zum Erproben die Testadresse aus dem Testmodus. Ihr Testschlüssel ordnet den Aufruf der Testsitzung zu; eine konfigurierte Webhook-Authentifizierung bleibt zusätzlich erforderlich. Jeder angenommene Aufruf kann einen neuen Vorgang erzeugen.
                 """;
     }
 
@@ -161,7 +200,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 new ProcessNodePort(
                         PORT_NAME,
                         "Webhook empfangen",
-                        "Der Vorgang wird mit den empfangenen Webhook-Daten gestartet."
+                        "Der Webhook-Aufruf wurde angenommen. Der Vorgang wird hier fortgesetzt."
                 )
         );
     }
@@ -172,32 +211,32 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         return List.of(
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_PAYLOAD,
-                        "Eingangsdaten",
-                        "Die Daten, die an den Auslöser übermittelt wurden",
+                        "Empfangene Daten",
+                        "Die Werte aus dem Anfrageinhalt als Objekt mit Feldnamen und Werten. Auf Wunsch werden sie zusätzlich in die Vorgangsdaten übernommen.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_ATTACHMENTS,
-                        "Liste der Anlagen",
-                        "Die Liste aller Anlagen, welche an den Auslöser übermittelt wurden",
+                        "Anlagen",
+                        "Informationen zu den Dateien, die über den Webhook als Anlagen gespeichert wurden.",
                         OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_FILES,
-                        "Dateien",
-                        "Die übermittelten Anlagen im Format des Datei-Anlagen-Feldes",
+                        "Dateiverweise",
+                        "Die übermittelten Dateien als Verweise zur Weiterverwendung in Anlagenfeldern.",
                         OUTPUT_FILES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_REQUEST,
                         "Anfragedetails",
-                        "Informationen über die HTTP-Anfrage an den Auslöser (HTTP-Methode, Headers, Query-Parameter)",
+                        "Die HTTP-Methode, gespeicherte Header (Kopfzeilen) und Anfrageparameter. Bei Multipart können auch die übertragenen Textfelder in den Parametern enthalten sein.",
                         OUTPUT_REQUEST_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         INITIAL_DATA_KEY_STARTED,
-                        "Eingangszeitstempel",
-                        "Der Zeitstempel des Dateneingangs an den Auslöser",
+                        "Eingegangen am",
+                        "Der beim Eingang des Webhook-Aufrufs festgehaltene Zeitpunkt im ISO-Format.",
                         "string"
                 )
         );
@@ -206,13 +245,13 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement configLayout;
         try {
             configLayout = ElementPOJOMapper
                     .createFromPOJO(WebhookTriggerConfigV1.class);
         } catch (ElementDataConversionException e) {
-            throw new RuntimeException(e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Einstellungen für den Webhook konnten nicht geladen werden.", null);
         }
 
         // Configure the slug input
@@ -225,7 +264,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                                     NoCodeReference.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
                                     NoCodeStaticValue.of("^[a-z0-9-]+$")
                             ),
-                            "Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                            "Das URL-Segment darf nur Kleinbuchstaben von a bis z, Zahlen und Bindestriche enthalten."
                     ));
 
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
@@ -254,10 +293,10 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 .findChild(WebhookTriggerConfigV1.AUTH_METHOD_CONFIG_KEY, SelectInputElement.class)
                 .ifPresent(field -> {
                     var options = List.of(
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC, "Basic Auth"),
+                            SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC, "Benutzername und Passwort (Basic Auth)"),
                             // Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
                             // SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM, "Query-Parameter")
+                            SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM, "Token als URL-Parameter")
                     );
 
                     field.setOptions(options);
@@ -269,7 +308,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 .ifPresent(field -> {
                     var options = List.of(
                             SelectInputElementOption.of(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON, "JSON"),
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, "Multipart/Form-Data"),
+                            SelectInputElementOption.of(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, "Multipart (Felder und Dateien)"),
                             SelectInputElementOption.of(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML, "XML")
                     );
 
@@ -472,7 +511,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 addValidationError(
                         errors,
                         WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
-                        "Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                        "Das URL-Segment darf nur Kleinbuchstaben von a bis z, Zahlen und Bindestriche enthalten."
                 );
             }
 
@@ -488,7 +527,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 addValidationError(
                         errors,
                         WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
-                        "Das URL-Segment des Webhooks wird in dieser Prozessversion bereits von einem anderen Webhook verwendet."
+                        "Das URL-Segment wird in dieser Prozessversion bereits von einem anderen Webhook verwendet. Wählen Sie ein anderes Segment."
                 );
             }
         }
@@ -538,49 +577,39 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
         var sb = new FormattedStringBuilder();
 
-        sb.appendLine("Um den Webhook-Auslöser zu testen, können Sie einen HTTP-Request an die folgende URL senden:");
+        sb.appendLine("Mit diesem Aufruf können Sie einen Testvorgang starten. Verwenden Sie die HTTP-Methode `%s` und die folgende Testadresse:", config.requestMethod);
         sb.appendLine("");
         sb.appendLine("<%s>", triggerUrl);
         sb.appendLine("");
         sb.appendLine(
-                "Stellen Sie sicher, dass Sie die HTTP-Methode `%s` verwenden und " +
-                        "fügen Sie den Test-Schlüssel `%s` als Query-Parameter " +
-                        "`%s` hinzu, damit der Request authentifiziert ist.",
-                config.requestMethod,
-                context.testClaim().getAccessKey(),
+                "Die Testadresse enthält den Parameter `%s`. Er ordnet den Aufruf Ihrer Testsitzung zu. " +
+                        "Eine für den Webhook eingerichtete Authentifizierung ist zusätzlich erforderlich.",
                 WebhookTriggerControllerV1.TEST_CLAIM_QUERY_PARAM
         );
 
         if (requestAllowsBody) {
             sb.appendLine("");
             sb.appendLine(
-                    "Da die HTTP-Methode `%s` verwendet wird, können Sie zusätzlich " +
-                            "einen Request-Body mit den Daten senden, die im Testprozess verwendet werden sollen. " +
-                            "Wenn Sie keinen Request-Body senden, wird der Testprozess mit einem leeren Payload gestartet. " +
-                            "Sie müssen die Daten als `%s` übertragen.",
-                    config.requestMethod,
+                    "Übertragen Sie die Daten im Anfrageinhalt mit dem Inhaltstyp `%s`.",
                     requestContentType
             );
+            if (config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType)) {
+                sb.appendLine("Für JSON ist ein Objekt erforderlich, zum Beispiel `{\"key\":\"value\"}`.");
+            }
         }
 
         if (Boolean.TRUE.equals(config.authRequired) && config.authConfig != null) {
             if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
-                        "Da in der Konfiguration des Prozesselements die Authentifizierung über einen Query-Parameter aktiviert ist, " +
-                                "müssen Sie zusätzlich den Authentifizierungs-Token als Query-Parameter " +
-                                "`%s` hinzufügen.",
+                        "Die Testadresse enthält bereits den für diesen Webhook eingerichteten Parameter `%s`.",
                         WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM
                 );
             } else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
-                        "Da in der Konfiguration des Prozesselements die Authentifizierung über Basic Auth aktiviert ist, " +
-                                "müssen Sie zusätzlich den Benutzernamen " +
-                                "`%s` und das Passwort " +
-                                "`%s` verwenden.",
-                        config.authConfig.authUsername,
-                        config.authConfig.authPassword
+                        "Senden Sie zusätzlich die für diesen Webhook eingerichteten Zugangsdaten als Basic Auth mit. " +
+                                "Das folgende Beispiel enthält den passenden Authorization-Header."
                 );
             }
             /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
@@ -625,7 +654,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         }
 
         sb.appendLine("");
-        sb.appendLine("Sie können den folgenden Shell-Befehl verwenden, um den Webhook-Auslöser mit einem Test-Request zu testen:");
+        sb.appendLine("Beispielaufruf mit curl:");
         sb.appendLine("");
         sb.appendLine("```sh");
         sb.appendLine("curl \\");
@@ -670,8 +699,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 } catch (ClassCastException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Die Daten, die über den Webhook empfangen wurden, haben nicht das erwartete Format und können daher nicht verarbeitet werden. Erwartet wurde ein Objekt, aber es wurde %s empfangen.",
-                            StringUtils.quote(payloadObj.getClass().getName())
+                            "Die empfangenen Webhook-Daten können nicht in die Vorgangsdaten übernommen werden. Erwartet wird ein Objekt mit Feldnamen und Werten."
                     );
                 }
                 result.setProcessData(payload);

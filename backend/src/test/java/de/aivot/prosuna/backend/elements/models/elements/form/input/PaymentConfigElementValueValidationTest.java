@@ -40,10 +40,22 @@ class PaymentConfigElementValueValidationTest {
                 UUID.randomUUID(), "Gebühr (Antrag) {{ $.nummer }}", "Kosten: 10\u00A0€ {% if $.eilig %}sofort!{% endif %}",
                 false, null, List.of(fixedItem()), null, null)));
 
-        assertEquals("Der Buchungstext enthält Zeichen, die nicht übertragen werden: „ü“, „(“, „)“. Erlaubt sind Buchstaben ohne Umlaute, ß und Akzente, Ziffern, Leerzeichen, Binde- und Unterstriche.",
+        assertEquals("Der Verwendungszweck enthält Zeichen, die nicht übertragen werden: „ü“, „(“, „)“. Erlaubt sind Buchstaben ohne Umlaute, ß und Akzente, Ziffern, Leerzeichen, Binde- und Unterstriche.",
                 ((Map<?, ?>) exception.getErrorDetails()).get("purpose"));
         assertEquals("Die Beschreibung enthält Zeichen, die nicht übertragen werden: „:“, U+00A0, „€“, „!“. Erlaubt sind Buchstaben, auch mit Umlaut oder Akzent, ß, Ziffern, Leerzeichen, Binde- und Unterstriche, Kommas und Punkte.",
                 ((Map<?, ?>) exception.getErrorDetails()).get("description"));
+    }
+
+    @Test
+    void shouldRequireAtLeastOnePaymentPosition() {
+        var exception = assertThrows(ValidationException.class, () -> new PaymentConfigElement().performValidation(
+                new PaymentConfigElementValue(UUID.randomUUID(), "Purpose", "Description", false, null, List.of(), null, null)
+        ));
+
+        assertEquals(Map.of(
+                "items", "Es muss mindestens eine Zahlungsposition angegeben werden.",
+                "messages", List.of("Es muss mindestens eine Zahlungsposition angegeben werden.")
+        ), exception.getErrorDetails());
     }
 
     @Test

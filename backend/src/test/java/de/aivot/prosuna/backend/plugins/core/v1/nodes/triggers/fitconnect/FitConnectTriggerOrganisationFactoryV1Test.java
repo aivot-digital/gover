@@ -1,16 +1,27 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.triggers.fitconnect;
 
 import de.aivot.prosuna.backend.asset.services.AssetContentResolverService;
+import de.aivot.prosuna.backend.elements.enums.AssetVisibility;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -48,6 +59,59 @@ class FitConnectTriggerOrganisationFactoryV1Test {
                 issue -> FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY.equals(issue.fieldId())
         ));
         verifyNoInteractions(assetContentResolverService);
+    }
+
+    @Test
+    void missingSecretsNameTheirConfigurationFields() throws Exception {
+        var config = validConfig();
+        config.subscriberClientSecret = null;
+        config.callbackSecret = null;
+
+        var issues = factory.validateConfiguration(config);
+
+        assertTrue(issues.contains(new FitConnectTriggerOrganisationFactoryV1.ValidationIssue(
+                FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_SECRET_CONFIG_KEY,
+                "Wählen Sie ein Geheimnis für „Client-Secret“ aus."
+        )));
+        assertTrue(issues.contains(new FitConnectTriggerOrganisationFactoryV1.ValidationIssue(
+                FitConnectTriggerConfigV1.CALLBACK_SECRET_KEY,
+                "Wählen Sie ein Geheimnis für „Callback-Secret“ aus."
+        )));
+        verifyNoInteractions(assetContentResolverService);
+    }
+
+    @Test
+    void clientSecretDecryptionFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        var config = validConfig();
+        config.destinationId = UUID.randomUUID().toString();
+        var secret = secretService.retrieve(UUID.fromString(config.subscriberClientSecret)).orElseThrow();
+        var cause = new Exception("Internal decryption details");
+        when(secretService.decrypt(secret)).thenThrow(cause);
+
+        var error = assertThrows(ResponseException.class, () -> factory.create(config));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertEquals("Das ausgewählte Client-Secret konnte nicht entschlüsselt werden.", error.getTitle());
+        assertNull(error.getDetails());
+        assertSame(cause, error.getCause());
+        verifyNoInteractions(assetContentResolverService);
+    }
+
+    @Test
+    void malformedSigningKeyKeepsItsParserCauseWithoutExposingInternalDetails() throws Exception {
+        var config = validConfig();
+        config.destinationId = UUID.randomUUID().toString();
+        config.privateSigningKey = UUID.randomUUID().toString();
+        when(assetContentResolverService.resolveContent(
+                eq(config.privateSigningKey), eq(AssetVisibility.Private), anyString()
+        )).thenReturn("not-json".getBytes(StandardCharsets.UTF_8));
+
+        var error = assertThrows(ResponseException.class, () -> factory.create(config));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertEquals("Der ausgewählte private Signaturschlüssel konnte nicht als JWK gelesen werden.", error.getTitle());
+        assertNull(error.getDetails());
+        assertInstanceOf(ParseException.class, error.getCause());
     }
 
     private FitConnectTriggerConfigV1 validConfig() throws Exception {

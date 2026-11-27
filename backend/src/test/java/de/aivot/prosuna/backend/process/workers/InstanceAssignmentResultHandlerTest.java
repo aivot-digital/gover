@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
@@ -176,6 +177,9 @@ class InstanceAssignmentResultHandlerTest {
 
         assertEquals("previous", instance.getAssignedUserId());
         assertEquals(ProcessTaskStatus.Completed, task.getStatus());
+        verify(logger).logf(ProcessNodeExecutionLogLevel.Info, false, true,
+                "Zuweisung zu Vorgang unverändert",
+                "Der Vorgang bleibt „previous“ zugewiesen. Die Aktion wurde automatisch ausgeführt.");
         verifyNoInteractions(instanceMail);
     }
 

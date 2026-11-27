@@ -16,6 +16,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -93,7 +94,7 @@ public class FitConnectTriggerControllerV1 {
         for (var submission : body.submissions()) {
             if (!configuredDestinationId.equals(submission.destinationId())) {
                 throw ResponseException.badRequest(
-                        "Der FIT-Connect-Callback enthält eine Einreichung für einen anderen Zustellpunkt."
+                        "Die FIT-Connect-Benachrichtigung enthält eine Einreichung für einen anderen Zustellpunkt."
                 );
             }
         }
@@ -110,18 +111,18 @@ public class FitConnectTriggerControllerV1 {
         try {
             body = jsonMapper.readValue(rawBody, FitConnectTriggerCallbackPayloadV1.class);
         } catch (RuntimeException e) {
-            throw ResponseException.badRequest("Der FIT-Connect-Callback enthält kein gültiges JSON.", e);
+            throw new ResponseException(HttpStatus.BAD_REQUEST, "Die FIT-Connect-Benachrichtigung enthält kein gültiges JSON.", null, e);
         }
 
         if (body == null || !NEW_SUBMISSIONS_CALLBACK_TYPE.equals(body.type())) {
-            throw ResponseException.badRequest("Der FIT-Connect-Callback hat einen nicht unterstützten Typ.");
+            throw ResponseException.badRequest("Erwartet wird eine FIT-Connect-Benachrichtigung über neue Einreichungen.");
         }
         if (body.submissions() == null || body.submissions().isEmpty() || body.submissions().contains(null)) {
-            throw ResponseException.badRequest("Der FIT-Connect-Callback enthält keine gültigen Einreichungen.");
+            throw ResponseException.badRequest("Die FIT-Connect-Benachrichtigung enthält keine gültigen Angaben zu Einreichungen.");
         }
         for (var submission : body.submissions()) {
             if (submission.destinationId() == null || submission.submissionId() == null || submission.caseId() == null) {
-                throw ResponseException.badRequest("Der FIT-Connect-Callback enthält unvollständige Einreichungsreferenzen.");
+                throw ResponseException.badRequest("In der FIT-Connect-Benachrichtigung fehlen Zustellpunkt-ID, Einreichungs-ID oder Fall-ID.");
             }
         }
         return body;
@@ -131,7 +132,7 @@ public class FitConnectTriggerControllerV1 {
     private ProcessEntity getProcess(@Nonnull String processSlug) throws ResponseException {
         return processService
                 .retrieveBySlugOrHistory(processSlug)
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen URL-Namespace gefunden."));
+                .orElseThrow(() -> ResponseException.notFound("Der Prozess mit dem angegebenen URL-Namespace wurde nicht gefunden."));
     }
 
     @Nullable
@@ -175,11 +176,11 @@ public class FitConnectTriggerControllerV1 {
 
         var matches = processNodeRepository.findAll(specBuilder.build());
         if (matches.isEmpty()) {
-            throw ResponseException.notFound("Kein FIT-Connect-Auslöser mit dem angegebenen URL-Segment gefunden.");
+            throw ResponseException.notFound("Für diese Callback-URL wurde kein FIT-Connect-Zustellpunkt gefunden.");
         }
         if (matches.size() > 1) {
             throw ResponseException.internalServerError(
-                    "Das URL-Segment ist mehreren FIT-Connect-Auslösern in derselben Prozessversion zugeordnet."
+                    "Das URL-Segment der Callback-URL ist mehreren FIT-Connect-Zustellpunkten in derselben Prozessversion zugeordnet."
             );
         }
         return matches.getFirst();
@@ -197,15 +198,16 @@ public class FitConnectTriggerControllerV1 {
         var destinationId = StringUtils.toNullableTrimmedString(rawDestinationId);
         if (destinationId == null) {
             throw ResponseException.internalServerError(
-                    "Die Zustellpunkt-ID des FIT-Connect-Auslösers ist nicht konfiguriert."
+                    "Hinterlegen Sie die Zustellpunkt-ID aus FIT-Connect."
             );
         }
         try {
             return UUID.fromString(destinationId);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.internalServerError(
-                    "Die Zustellpunkt-ID des FIT-Connect-Auslösers ist ungültig konfiguriert.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Zustellpunkt-ID muss eine gültige UUID sein.",
+                    null
             );
         }
     }

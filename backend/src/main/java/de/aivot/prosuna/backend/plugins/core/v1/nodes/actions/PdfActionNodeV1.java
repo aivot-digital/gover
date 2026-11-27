@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.document;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 
 @Component
 public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.PdfActionNodeConfig> {
@@ -101,10 +102,14 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         var summary = new ExecutionSummaryMarkdown(context);
         var configuration = context.configurationOfExecutingNode();
         var template = PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(configuration.contentHtmlSource)
-                ? htmlTemplateInputElementResolver.getTemplateName(configuration.contentHtmlTemplate) : "Direkt hinterlegter HTML-Inhalt";
-        return "Das Dokument „" + summary.value(OUTPUT_NAME_FILE_NAME) + "“ wurde" + summary.completedAt() + " erfolgreich erstellt."
+                ? htmlTemplateInputElementResolver.getTemplateName(configuration.contentHtmlTemplate) : "Direkt hinterlegte HTML-Dokumentvorlage";
+        var fileName = StringUtils.toNullableTrimmedString(summary.data(OUTPUT_NAME_FILE_NAME));
+        var attachmentKey = StringUtils.toNullableTrimmedString(summary.data(OUTPUT_NAME_ATTACHMENT_KEY));
+        return "Das PDF-Dokument" + (fileName == null ? "" : " „" + text(fileName) + "“")
+                + " wurde" + summary.completedAt() + " erstellt."
                 + detail("Dokumentvorlage", template)
-                + section("Dokument", document(summary.data(OUTPUT_NAME_ATTACHMENT_KEY), summary.data(OUTPUT_NAME_FILE_NAME)));
+                + (attachmentKey == null ? "" : section("Dokument", document(attachmentKey, fileName)))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -146,16 +151,48 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erstellt aus einer HTML-Dokumentvorlage ein PDF-Dokument und speichert es als Anlage.";
+        return "Erstellt ein PDF aus einer HTML-Dokumentvorlage und legt es als Anlage im Vorgang ab.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt ein PDF-Dokument aus einer Dokumentvorlage in HTML. Die Dokumentvorlage wird direkt am Prozesselement hinterlegt oder aus „Dateien und Medien“ ausgewählt und mit Werten aus Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten befüllt. Kopf- und Fußzeile werden mit `<!-- KOPFZEILE -->` und `<!-- FUSSZEILE -->` abgegrenzt.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Das PDF wird als Anlage in einem neuen Anlagensatz gespeichert; die Dateiendung `.pdf` wird automatisch ergänzt.
+                Erstellen Sie standardisierte Schreiben, Bestätigungen oder Nachweise mit Angaben aus dem Vorgang. Prosuna erzeugt daraus automatisch ein PDF und speichert es als Anlage. Für einen anschließenden Versand verbinden Sie zum Beispiel „E-Mail versenden“ oder „Nachricht an Identität senden“.
+
+                ### Was richten Sie ein?
+
+                Geben Sie einen Dateinamen an. Sie können ihn mit oder ohne `.pdf` hinterlegen; die Dateiendung wird bei Bedarf ergänzt. Angaben aus dem Vorgang können über Variablen in den Dateinamen eingefügt werden.
+
+                Wählen Sie unter „Quelle der Dokumentvorlage“ zwischen einer HTML-Datei aus „Dateien und Medien“ und direkt hinterlegtem HTML-Code. Bei einer gespeicherten HTML-Dokumentvorlage können Sie über „Inhalte anpassen“ die dafür vorbereiteten Bereiche befüllen. Text und formatierter Text können Angaben aus dem Vorgang enthalten; für Bildbereiche wählen Sie ein Bild aus. Die ursprüngliche HTML-Datei wird durch diese Anpassungen nicht verändert.
+
+                Bei direkt hinterlegtem HTML werden Angaben aus dem Vorgang über Vorlagenausdrücke eingefügt. Für das Erstellen oder Bearbeiten eigener HTML-Dokumentvorlagen sind HTML-Kenntnisse erforderlich.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna setzt die verfügbaren Werte in die Dokumentvorlage ein und bereitet gegebenenfalls Kopf- und Fußzeile vor. Anschließend wird das PDF erstellt und in einem neuen Anlagensatz des Vorgangs gespeichert. Der Anlagensatz trägt den finalen Dateinamen; sein Datenschlüssel entspricht dem des Prozesselements.
+
+                Erst nach der Erstellung und Speicherung wird der Vorgang über „Dokument erstellt“ fortgesetzt. Eine Mitarbeitendenaufgabe entsteht dabei nicht. Kann die Dokumentvorlage nicht verarbeitet, das PDF nicht erstellt oder die Anlage nicht gespeichert werden, schlägt die Aufgabe fehl.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Das PDF steht als Anlage im Vorgang bereit. In den Elementdaten finden Sie den Dateinamen, den Dateityp, die Größe, den Anlagenschlüssel, die Speicherangaben und eine Liste mit dem Dateiverweis auf die erzeugte Anlage.
+
+                Über die allgemeinen Ausgangsdatenzuweisungen können Sie „Dateiverweise“ zusätzlich in die Vorgangsdaten übernehmen, zum Beispiel nach `$.dokumente`. Ohne eine solche Zuordnung bleibt der Dateiverweis in den Elementdaten verfügbar.
+
+                Der Vorgangsverlauf nennt das erstellte Dokument, den Zeitpunkt und die verwendete Dokumentvorlage und bietet einen Link zum Öffnen der Anlage.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Sie wählen eine vorbereitete Briefvorlage mit dem Bereich „Name“ und fügen dort die Variable `$.kontakt.name` ein. Als Dateinamen hinterlegen Sie „Bestätigung“. Prosuna erstellt „Bestätigung.pdf“ und speichert die Datei als Anlage. Im nächsten Schritt kann der zugehörige Anlagensatz mit einer Nachricht versendet werden.
+
+                ### Was ist zu beachten?
+
+                Dieses Element verwendet HTML-Dokumentvorlagen. ODT-Dateien werden hier nicht unterstützt. Der Anpassungsdialog zeigt eine HTML-Vorschau; prüfen Sie das erzeugte PDF in einem Testvorgang, wenn Seitenumbrüche und das genaue Erscheinungsbild wichtig sind.
+
+                Für Kopf- und Fußzeilen verwenden Sie die technischen Trennzeichen `<!-- KOPFZEILE -->` und `<!-- FUSSZEILE -->`. Die Kopfzeile steht vor `<!-- KOPFZEILE -->`, danach folgt der Dokumentinhalt. `<!-- FUSSZEILE -->` steht zwischen Dokumentinhalt und Fußzeile. Beide Trennzeichen sind optional und dürfen jeweils höchstens einmal vorkommen. Wenn Sie beide verwenden, muss der Kopfzeilentrenner zuerst stehen. Ohne Trennzeichen wird die gesamte HTML-Dokumentvorlage als Dokumentinhalt verwendet.
                 """;
     }
 
@@ -168,16 +205,18 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
             layout = ElementPOJOMapper
                     .createFromPOJO(PdfActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Einstellungen für „Dokument erstellen (PDF)“ konnten nicht geladen werden.",
+                    null
             );
         }
 
         layout
                 .findChild(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
-                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Dokumentvorlage verwenden (Dateien und Medien)"),
-                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentvorlage als HTML hinterlegen")
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Aus „Dateien und Medien“ auswählen"),
+                        SelectInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "HTML direkt hinterlegen")
                 )));
 
         layout
@@ -223,7 +262,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 new ProcessNodePort(
                         PORT_NAME,
                         "Dokument erstellt",
-                        "Der Vorgang wird hier fortgesetzt, nachdem das PDF-Dokument erstellt wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem das PDF erstellt und als Anlage gespeichert wurde."
                 )
         );
     }
@@ -240,14 +279,14 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_MIME_TYPE,
-                        "MIME-Typ",
-                        "Der MIME-Typ des erzeugten Dokuments.",
+                        "Dateityp (MIME)",
+                        "Der technische Dateityp der erzeugten PDF-Datei: application/pdf.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_KEY,
                         "Anlagenschlüssel",
-                        "Der Schlüssel der erzeugten Anlage.",
+                        "Der Schlüssel der erzeugten PDF-Anlage im Vorgang.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -270,8 +309,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_FILES,
-                        "Dateien",
-                        "Die erzeugten Dateien im Format des Datei-Anlagen-Feldes.",
+                        "Dateiverweise",
+                        "Eine Liste mit dem Dateiverweis auf die erzeugte PDF-Anlage zur Weiterverwendung in Feldern für Datei-Anlagen.",
                         OUTPUT_FILES_TYPE_DEFINITION
                 )
         );
@@ -304,7 +343,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         var fileName = configuration.fileName;
         if (StringUtils.isNullOrEmpty(fileName)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Dateiname für das PDF wurde nicht angegeben."
+                    "Geben Sie einen Dateinamen für das PDF-Dokument an."
             );
         }
         if (!fileName.toLowerCase().endsWith(".pdf")) {
@@ -314,7 +353,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         var contentHtml = resolveContentHtml(context, configuration);
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der HTML-Inhalt für das PDF wurde nicht angegeben."
+                    "Der HTML-Inhalt für das PDF-Dokument ist leer."
             );
         }
 
@@ -338,8 +377,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         } catch (URISyntaxException | IOException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Erzeugen des PDFs mit Gotenberg: %s",
-                    e.getMessage()
+                    "Das PDF-Dokument konnte nicht erstellt werden."
             );
         }
 
@@ -365,8 +403,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Speichern des erzeugten PDFs als Anlage: %s",
-                    e.getMessage()
+                    "Das erstellte PDF-Dokument konnte nicht als Anlage zum Vorgang gespeichert werden."
             );
         }
 
@@ -382,8 +419,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Erstellen der Dateiliste für das erzeugte PDF: %s",
-                    e.getMessage()
+                    "Der Dateiverweis für das erstellte PDF-Dokument konnte nicht bereitgestellt werden."
             );
         }
 
@@ -405,7 +441,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                     .interpolate(context.getCurrentProcessExecutionData(), configuration.contentHtml);
             if (StringUtils.isNullOrEmpty(res)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der HTML-Inhalt für das PDF ist leer oder konnte nicht interpoliert werden."
+                        "Der HTML-Inhalt für das PDF-Dokument ist leer."
                 );
             }
             return res;
@@ -414,7 +450,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(contentSource)) {
             if (configuration.contentHtmlTemplate == null) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Es muss eine Datei für die Dokumentvorlage ausgewählt sein."
+                        "Wählen Sie eine HTML-Dokumentvorlage aus."
                 );
             }
 
@@ -425,7 +461,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Die HTML-Quellkonfiguration %s ist unbekannt.",
+                "Die ausgewählte Quelle für die Dokumentvorlage ist nicht verfügbar. Quelle: %s.",
                 StringUtils.quote(contentSource)
         );
     }
@@ -565,30 +601,30 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, dynamicText = true, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Sie können den Dateinamen ohne Dateiendung oder mit der Dateiendung .pdf angeben."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Namen der PDF-Datei an. Die Dateiendung .pdf wird bei Bedarf ergänzt. Angaben aus dem Vorgang können über Variablen eingefügt werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String fileName;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_SOURCE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
-                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentvorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentvorlage aus Dateien und Medien verwendet oder eine eigene Dokumentvorlage als HTML hinterlegt werden soll."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Quelle der Dokumentvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentvorlage aus „Dateien und Medien“ oder hinterlegen Sie den HTML-Code direkt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String contentHtmlSource;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_CODE_FIELD_ID, type = ElementType.CodeInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Eigene Dokumentvorlage als HTML"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Hinterlegen Sie das vollständige HTML für das PDF-Dokument."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Code der Dokumentvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Hinterlegen Sie den HTML-Code für das PDF-Dokument. Angaben aus dem Vorgang können über Vorlagenausdrücke eingefügt werden. Beachten Sie die Hinweise zu Kopf- und Fußzeile in der Elementbeschreibung."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "language", strValue = "html")
         })
         public String contentHtml;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_ASSET_KEY_FIELD_ID, type = ElementType.HtmlTemplateInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentvorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentvorlage aus Dateien und Medien aus."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Dokumentvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine HTML-Datei aus „Dateien und Medien“. Über „Inhalte anpassen“ bearbeiten Sie die dafür vorbereiteten Bereiche."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public HtmlTemplateInputElementValue contentHtmlTemplate;

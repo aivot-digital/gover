@@ -61,6 +61,7 @@ import java.util.*;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
 
 /**
  * Sends one synchronous message through the communication provider selected for an identity.
@@ -108,10 +109,14 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<CommunicationMessageActionNodeV1.Configuration> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die Nachricht wurde" + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT) != null
-                ? summary.metadata(ExecutionSummaryMarkdown.SENT_AT) : context.thisTask().getFinished()) + " erfolgreich versendet."
-                + section("Empfangende Identität", summary.identity(summary.data(OUTPUT_IDENTITY_ID)))
-                + detail("Zustellweg", summary.metadata(ExecutionSummaryMarkdown.DELIVERY_CHANNEL));
+        var sentAt = summary.metadata(ExecutionSummaryMarkdown.SENT_AT);
+        var identityId = StringUtils.toNullableTrimmedString(summary.data(OUTPUT_IDENTITY_ID));
+        return "Die Nachricht wurde" + summary.at(timestamp(sentAt).isEmpty() ? context.thisTask().getFinished() : sentAt) + " versendet."
+                + (identityId == null ? "" : section("Empfangende Identität", summary.identity(identityId)))
+                + detail("Zustellweg", summary.metadata(ExecutionSummaryMarkdown.DELIVERY_CHANNEL))
+                + detail("Betreff der Nachricht", summary.data(OUTPUT_SUBJECT))
+                + section("Nachricht", summary.data(OUTPUT_BODY))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -156,16 +161,56 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet eine Nachricht über die Kommunikationsanbindung einer Identität des Vorgangs.";
+        return "Versendet eine Nachricht über den hinterlegten Zustellweg einer Identität – automatisch oder nach manueller Prüfung.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet eine Nachricht an eine Identität des Vorgangs. Der Versandweg ergibt sich aus der Kommunikationsanbindung, die für die Identität hinterlegt ist; optional werden ganze Anlagensätze angehängt. Bei automatischer Ausführung werden Betreff und Inhalt aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Nach erfolgreichem Versand wird der Vorgang fortgesetzt. Bei automatischer Ausführung schlägt die Aufgabe bei einem Versandfehler oder einem fehlenden oder leeren Anlagensatz fehl. Bei teilautomatisierter Ausführung bleibt die Mitarbeitendenaufgabe in diesen Fällen offen.
+                Versenden Sie eine Nachricht oder Unterlagen an eine Identität des Vorgangs. Eine Identität enthält die zu diesem Vorgang gespeicherten Angaben zu einer beteiligten Person oder Organisation. Prosuna verwendet den für diese Identität hinterlegten Zustellweg.
+
+                Für den ausdrücklichen Versand an angegebene E-Mail-Adressen verwenden Sie „E-Mail versenden“.
+
+                ### Was richten Sie ein?
+
+                Wählen Sie unter „Empfangende Identität“ genau eine Identität aus den vorhergehenden Prozessschritten aus. Sie muss im konkreten Vorgang bereits vorhanden sein und einen verwendbaren Zustellweg besitzen. Dieses Element legt keine neue Identität an.
+
+                Wählen Sie unter „Nachrichtenversand“ zwischen „Automatisch versenden“ und „Vor Versand prüfen und bearbeiten“. Hinterlegen Sie für den automatischen Versand einen Betreff und eine Nachricht. Für die manuelle Prüfung sind ein vorbelegter Betreff, eine vorbelegte Nachricht und der verantwortliche Personenkreis erforderlich. Angaben aus dem Vorgang können über Variablen in Betreff und Nachricht eingefügt werden.
+
+                Optional wählen Sie Anlagensätze aus. Alle Anlagen dieser Sätze werden mit ihren vorhandenen Dateinamen versendet. Ohne Auswahl wird die Nachricht ohne Anhänge versendet.
+
+                Für den Versand per E-Mail können Sie eine Organisationseinheit für die Standard-E-Mail-Signatur auswählen. Deren Erscheinungsbild wird dabei ebenfalls berücksichtigt. Ohne diese Auswahl wird das Erscheinungsbild der verwaltenden Organisationseinheit des Prozesses beziehungsweise das Standarderscheinungsbild verwendet.
+
+                ### Was passiert bei der Ausführung?
+
+                Beim automatischen Versand stellt Prosuna die Nachricht aus den konfigurierten Angaben zusammen, lädt die ausgewählten Anlagen und versendet die Nachricht über den hinterlegten Zustellweg.
+
+                Bei „Vor Versand prüfen und bearbeiten“ erhält eine berechtigte Person aus dem festgelegten Personenkreis eine Mitarbeitendenaufgabe. Sie prüft und bearbeitet Betreff und Nachricht und wählt anschließend „Nachricht versenden“. Die empfangende Identität und die Auswahl der Anhänge können in dieser Aufgabe nicht geändert werden. Unvollständige Entwürfe können automatisch gespeichert werden; beim Versand sind Betreff und Nachricht erforderlich.
+
+                Eine E-Mail-Identität wird direkt über den zentralen E-Mail-Versand erreicht. Bei einer Identität eines Identitätsanbieters verwendet Prosuna die dort ausgewählte Kommunikationsanbindung. Nach erfolgreichem Versand wird der Vorgang über „Nachricht versendet“ fortgesetzt. Bei einem Fehler bleibt eine bereits zugewiesene Mitarbeitendenaufgabe offen. Bei automatischer Ausführung schlägt die Aufgabe fehl.
+
+                Für die Mitarbeitendenaufgabe kann eine Versandfrist eingerichtet werden. Wird die Aufgabe bei Fristüberschreitung automatisch beendet, setzt Prosuna den Vorgang über „Versandfrist überschritten“ fort, ohne die Nachricht zu versenden.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten stehen die empfangende Identität, die verwendete Kommunikationsanbindung, der Betreff, die geschriebene Nachricht als Markdown, die Datenschlüssel der verwendeten Anlagensätze, der Vorbereitungszeitpunkt und das Versandergebnis bereit. Welche Angaben das Versandergebnis enthält, hängt vom Zustellweg ab. Die fertige Darstellung einschließlich einer ergänzten Signatur gehört nicht zum gespeicherten Nachrichtentext. Das Element selbst verändert keine Vorgangsdaten.
+
+                Der Vorgangsverlauf unterscheidet Vorbereitung und Versand. Die Zusammenfassung nennt den Versandzeitpunkt, die empfangende Identität, den Zustellweg, den Betreff und die Nachricht. Ein automatisches Ende wegen Fristüberschreitung wird gesondert ausgewiesen.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Beim Formulareingang wurde die Identität „Kontakt“ angelegt. Sie wählen diese als empfangende Identität, hinterlegen den Betreff „Ihre Unterlagen“ und wählen den Anlagensatz „Erstellte Dokumente“. Prosuna versendet die Nachricht mit allen Anlagen dieses Satzes über den bei „Kontakt“ hinterlegten Zustellweg. Bei manueller Prüfung kann die zuständige Person vorher den Betreff und die Nachricht anpassen.
+
+                ### Was ist zu beachten?
+
+                Eine Identität eines Identitätsanbieters benötigt eine passende und verwendbare Kommunikationsanbindung. Ist diese nicht verfügbar, wechselt Prosuna nicht automatisch zu E-Mail. Für eine E-Mail-Identität muss der E-Mail-Versand der Prosuna-Instanz eingerichtet sein.
+
+                Ein ausgewählter Anlagensatz muss im Vorgang vorhanden sein und Anlagen enthalten; andernfalls wird der Versand abgebrochen. Hier wählen Sie vollständige Anlagensätze. Einzelne Dateien auswählen, für den Versand umbenennen oder in der Mitarbeitendenaufgabe neue Anhänge hochladen können Sie mit diesem Element derzeit nicht.
+
+                „Versendet“ bestätigt die erfolgreiche Rückmeldung des verwendeten Versanddienstes. Ob die Nachricht im Zielpostfach angekommen oder gelesen wurde, prüft dieses Element nicht. Ein gemeldeter Versandfehler schließt eine bereits teilweise erfolgte Übermittlung nicht sicher aus.
                 """;
     }
 
@@ -185,9 +230,10 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         try {
             layout = ElementPOJOMapper.createFromPOJO(Configuration.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
+            throw ResponseException.internalServerErrorWithDetails(
                     e,
-                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
+                    "Die Einstellungen für „Nachricht an Identität senden“ konnten nicht geladen werden.",
+                    null
             );
         }
 
@@ -214,7 +260,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         return List.of(new ProcessNodePort(
                 PORT_OUTPUT,
                 "Nachricht versendet",
-                "Der Vorgang wird fortgesetzt, nachdem die Nachricht synchron versendet wurde."
+                "Der Vorgang wird hier fortgesetzt, nachdem die Nachricht über den hinterlegten Zustellweg versendet wurde."
         ));
     }
 
@@ -222,13 +268,13 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Identität", "ID der adressierten Identität.", "string"),
-                new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "ID der verwendeten Kommunikationsanbindung.", "number | null"),
-                new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff", "Betreff der versendeten Nachricht.", "string"),
-                new ProcessNodeOutput(OUTPUT_BODY, "Inhalt", "Inhalt der versendeten Nachricht.", "string", true),
-                new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze", "Datenschlüssel der angehängten Anlagensätze.", "Array<string>"),
-                new ProcessNodeOutput(OUTPUT_SENT_AT, "Vorbereitungszeitpunkt", "Zeitpunkt, zu dem die Nachricht für den Versand vorbereitet wurde.", "string"),
-                new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandresultat", "Resultat des Versandvorgangs, wie es vom Kommunikationsanbieter zurückgegeben wurde.", "Record<string, unknown>")
+                new ProcessNodeOutput(OUTPUT_IDENTITY_ID, "Empfangende Identität", "Der Schlüssel der Identität im Vorgang, an die die Nachricht versendet wurde.", "string"),
+                new ProcessNodeOutput(OUTPUT_BINDING_ID, "Kommunikationsanbindung", "Die Kennung der in der Identität hinterlegten Kommunikationsanbindung. Bei einer E-Mail-Identität kann dieser Wert leer sein.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_SUBJECT, "Betreff der Nachricht", "Der Betreff der versendeten Nachricht.", "string"),
+                new ProcessNodeOutput(OUTPUT_BODY, "Nachricht", "Die versendete Nachricht als Markdown, ohne eine beim Versand ergänzte Signatur.", "string", true),
+                new ProcessNodeOutput(OUTPUT_ATTACHMENT_SET_DATA_KEYS, "Anlagensätze für Anhänge", "Die Datenschlüssel der Anlagensätze, deren Anlagen mit der Nachricht versendet wurden.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_SENT_AT, "Vorbereitet am", "Der Zeitpunkt, zu dem die Nachricht für den Versand vorbereitet wurde. Der tatsächliche Versand folgt danach.", "string"),
+                new ProcessNodeOutput(OUTPUT_SEND_RESULT, "Versandergebnis", "Die beim Versand zurückgegebenen Angaben. Inhalt und Bedeutung hängen vom verwendeten Zustellweg ab.", "Record<string, unknown>")
         );
     }
 
@@ -245,14 +291,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
             return initManual(context, configuration);
         }
 
-        var executionType = configuration.messageConfig == null
-                ? null
-                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültige Ausführungsart für den Nachrichtenversand. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
-                StringUtils.quote(executionType)
+                "Wählen Sie, ob die Nachricht automatisch oder nach manueller Prüfung versendet werden soll."
         );
     }
 
@@ -295,7 +335,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
+                        "Für die Nachrichtenaufgabe %s konnte keine berechtigte Person aus dem festgelegten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 
@@ -318,7 +358,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
 
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
-        contentField.setLabel("Inhalt der Nachricht");
+        contentField.setLabel("Nachricht");
+        contentField.setHint("Prüfen und bearbeiten Sie die Nachricht vor dem Versand.");
         contentField.setRequired(true);
 
         var root = new GroupLayoutElement();
@@ -348,7 +389,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     ) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: %s.",
                     StringUtils.quote(event)
             );
         }
@@ -374,9 +415,9 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                         context.getCallingUser().getId(),
                         null,
                         null,
-                        "Nachricht verfasst",
+                        "Versand angefordert",
                         Map.of(),
-                        "Die Nachricht mit dem Betreff %s wurde von der Mitarbeiter:in %s verfasst.",
+                        "Der Versand der Nachricht mit dem Betreff %s wurde durch %s angefordert.",
                         StringUtils.quote(subject),
                         ProcessHistoryLabels.quotedUser(context.getCallingUser())
                 );
@@ -393,6 +434,15 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
     }
 
     @Nonnull
+    @Override
+    public ResponseException unavailableStaffTaskEvent(@Nonnull String event, @Nonnull AuthoredElementValues inputs) {
+        return ResponseException.badRequest(
+                "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: %s.",
+                StringUtils.quote(event)
+        );
+    }
+
+    @Nonnull
     private ProcessNodeExecutionResult createCommunicationResult(
             @Nonnull ProcessNodeExecutionLogger logger,
             @Nonnull Configuration configuration,
@@ -406,7 +456,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var identity = processInstance.getIdentities().get(identityId);
         if (identity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die konfigurierte Identität %s ist im Vorgang nicht vorhanden.",
+                    "Die ausgewählte Identität %s ist im Vorgang nicht vorhanden.",
                     StringUtils.quote(identityId)
             );
         }
@@ -468,7 +518,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         var identityId = StringUtils.toNullableTrimmedString(rawIdentityId);
         if (identityId == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den Nachrichtenversand muss eine Identität konfiguriert sein."
+                    "Wählen Sie eine empfangende Identität aus."
             );
         }
         return identityId;
@@ -483,7 +533,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den automatischen Versand müssen Betreff und Nachrichtentext konfiguriert sein."
+                    "Hinterlegen Sie einen Betreff und eine Nachricht für den automatischen Versand."
             );
         }
         return content;
@@ -498,7 +548,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den teilautomatisierten Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
+                    "Hinterlegen Sie einen vorbelegten Betreff und eine vorbelegte Nachricht für die manuelle Prüfung."
             );
         }
         return content;
@@ -511,7 +561,7 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         try {
             return requireManualContent(configuration);
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw ResponseException.internalServerError(e, e.getMessage());
+            throw ResponseException.internalServerErrorWithDetails(e, e.getMessage(), null);
         }
     }
 
@@ -523,13 +573,13 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_SUBJECT_FIELD_ID,
-                    new ComputedElementState().setError("Der Betreff der Nachricht darf nicht leer sein.")
+                    new ComputedElementState().setError("Geben Sie einen Betreff für die Nachricht ein.")
             );
         }
         if (content == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_CONTENT_FIELD_ID,
-                    new ComputedElementState().setError("Der Inhalt der Nachricht darf nicht leer sein.")
+                    new ComputedElementState().setError("Geben Sie eine Nachricht ein.")
             );
         }
         if (derivedRuntimeData.hasAnyError()) {
@@ -581,9 +631,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Die Anlage %s konnte nicht geladen werden: %s",
-                            StringUtils.quote(entity.getFileName()),
-                            e.getMessage()
+                            "Die Anlage %s konnte für den Nachrichtenversand nicht geladen werden.",
+                            StringUtils.quote(entity.getFileName())
                     );
                 }
             }
@@ -615,8 +664,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
          * option must have a usable communication binding because the message is sent through the selected identity.
          */
         @InputElementPOJOBinding(id = IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Identität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität aus, an welche die Nachricht gesendet wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Identität"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität des Vorgangs aus, an die die Nachricht versendet werden soll. Prosuna verwendet den für diese Identität hinterlegten Zustellweg."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
@@ -628,8 +677,8 @@ public class CommunicationMessageActionNodeV1 implements ProcessNodeDefinition<C
          * is normalized to an empty list; configured missing or empty sets fail execution.
          */
         @InputElementPOJOBinding(id = ATTACHMENTS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze, deren Dateien mit der Nachricht versendet werden."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze für Anhänge"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Anlagensätze aus, deren Anlagen vollständig mit der Nachricht versendet werden sollen. Ohne Auswahl wird die Nachricht ohne Anhänge versendet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         @Nullable

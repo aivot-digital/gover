@@ -27,6 +27,7 @@ describe('HtmlTemplateInputComponentDialog', () => {
                 data-slot="message"
                 data-slot-type="richtext"
                 data-slot-label="Nachricht"
+                data-slot-hint="Formulieren Sie die Nachricht für das Dokument."
             ></div>
         `;
         vi.spyOn(AssetsApiService.prototype, 'downloadContentInStorageProvider')
@@ -63,6 +64,10 @@ describe('HtmlTemplateInputComponentDialog', () => {
         iframe.contentWindow!.document.body.innerHTML = template;
         fireEvent.load(iframe);
         fireEvent.click(iframe.contentWindow!.document.querySelector('[data-slot]')!);
+
+        expect(await screen.findByRole('textbox', {name: /^Nachricht/}))
+            .toHaveAccessibleDescription('Formulieren Sie die Nachricht für das Dokument.');
+        expect(screen.getAllByText('Formulieren Sie die Nachricht für das Dokument.')).toHaveLength(1);
 
         await user.click(await screen.findByRole('button', {name: 'Variable referenzieren'}));
         await user.click(await screen.findByText('Name der Person'));

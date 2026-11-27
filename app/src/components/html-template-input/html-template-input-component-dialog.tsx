@@ -1,5 +1,5 @@
 import {ReactEventHandler, useCallback, useEffect, useRef, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, useTheme} from '@mui/material';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
@@ -335,19 +335,6 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                 </DialogTitleWithClose>
 
                 <DialogContent>
-                    {
-                        slotToEdit != null &&
-                        <Typography
-                            variant="body2"
-                            gutterBottom
-                            sx={{
-                                color: "text.secondary"
-                            }}
-                        >
-                            {slotToEdit.hint}
-                        </Typography>
-                    }
-
                     {
                         slotToEdit != null &&
                         <Box sx={{mt: 2}}>

@@ -44,15 +44,15 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         var destinationId = resolveDestinationId(config.destinationId);
         var clientId = requireValue(
                 config.subscriberClientId,
-                "Die Organisations-Client-ID des FIT-Connect-Auslösers ist nicht konfiguriert."
+                "Hinterlegen Sie die Client-ID des FIT-Connect-Empfängers."
         );
         var clientSecret = resolveSecret(
                 config.subscriberClientSecret,
-                "Das Organisations-Client-Secret des FIT-Connect-Auslösers"
+                "Client-Secret"
         );
         var signingKey = resolveJwk(
                 config.privateSigningKey,
-                "Der private Signaturschlüssel des FIT-Connect-Auslösers"
+                "Der ausgewählte private Signaturschlüssel"
         );
         var decryptionKeys = resolveDecryptionKeys(config.privateDecryptionKeys);
 
@@ -64,9 +64,10 @@ public class FitConnectTriggerOrganisationFactoryV1 {
                     .build()
                     .organisation(destinationId, new DestinationKeys(decryptionKeys, signingKey));
         } catch (Exception e) {
-            throw ResponseException.internalServerError(
-                    "Der FIT-Connect-Organisations-Client konnte nicht initialisiert werden.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Der FIT-Connect-Zugang konnte nicht vorbereitet werden.",
+                    null
             );
         }
     }
@@ -79,32 +80,32 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         if (normalizedEnvironment == null || !SUPPORTED_ENVIRONMENTS.contains(normalizedEnvironment)) {
             issues.add(new ValidationIssue(
                     FitConnectTriggerConfigV1.ENVIRONMENT_CONFIG_KEY,
-                    "Wählen Sie eine unterstützte FIT-Connect-Umgebung aus."
+                    "Wählen Sie eine unterstützte FIT-Connect-Umgebung: TEST, STAGE oder PROD."
             ));
         }
         if (StringUtils.toNullableTrimmedString(config.subscriberClientId) == null) {
             issues.add(new ValidationIssue(
                     FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_ID_CONFIG_KEY,
-                    "Die Organisations-Client-ID muss hinterlegt werden."
+                    "Hinterlegen Sie die Client-ID des FIT-Connect-Empfängers."
             ));
         }
 
         validateSecretReference(
                 config.subscriberClientSecret,
                 FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_SECRET_CONFIG_KEY,
-                "Das Organisations-Client-Secret",
+                "Client-Secret",
                 issues
         );
         validateSecretReference(
                 config.callbackSecret,
                 FitConnectTriggerConfigV1.CALLBACK_SECRET_KEY,
-                "Das Callback-Secret",
+                "Callback-Secret",
                 issues
         );
         validateJwkReference(
                 config.privateSigningKey,
                 FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY,
-                "Der private Signaturschlüssel",
+                "Der ausgewählte private Signaturschlüssel",
                 KeyOperation.SIGN,
                 issues
         );
@@ -112,14 +113,14 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         if (config.privateDecryptionKeys == null || config.privateDecryptionKeys.isEmpty()) {
             issues.add(new ValidationIssue(
                     FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY,
-                    "Mindestens ein privater Entschlüsselungsschlüssel muss hinterlegt werden."
+                    "Hinterlegen Sie mindestens einen privaten Entschlüsselungsschlüssel."
             ));
         } else {
             for (var keyConfig : config.privateDecryptionKeys) {
                 validateJwkReference(
                         keyConfig == null ? null : keyConfig.keyFile,
                         FitConnectTriggerConfigV1.PRIVATE_DECRYPTION_KEYS_CONFIG_KEY,
-                        "Der private Entschlüsselungsschlüssel",
+                        "Der ausgewählte private Entschlüsselungsschlüssel",
                         KeyOperation.UNWRAP_KEY,
                         issues
                 );
@@ -134,7 +135,7 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         var environment = normalizeEnvironmentOrNull(rawEnvironment);
         if (!SUPPORTED_ENVIRONMENTS.contains(environment)) {
             throw ResponseException.internalServerError(
-                    "Die FIT-Connect-Umgebung des Auslösers ist ungültig konfiguriert."
+                    "Wählen Sie eine unterstützte FIT-Connect-Umgebung: TEST, STAGE oder PROD."
             );
         }
         return switch (environment) {
@@ -142,7 +143,7 @@ public class FitConnectTriggerOrganisationFactoryV1 {
             case "STAGE" -> FitConnectEnvironment.STAGE;
             case "PROD" -> FitConnectEnvironment.PROD;
             default -> throw ResponseException.internalServerError(
-                    "Die FIT-Connect-Umgebung des Auslösers ist ungültig konfiguriert."
+                    "Wählen Sie eine unterstützte FIT-Connect-Umgebung: TEST, STAGE oder PROD."
             );
         };
     }
@@ -151,14 +152,15 @@ public class FitConnectTriggerOrganisationFactoryV1 {
     private UUID resolveDestinationId(@Nullable String rawDestinationId) throws ResponseException {
         var destinationId = requireValue(
                 rawDestinationId,
-                "Die Zustellpunkt-ID des FIT-Connect-Auslösers ist nicht konfiguriert."
+                "Hinterlegen Sie die Zustellpunkt-ID aus FIT-Connect."
         );
         try {
             return UUID.fromString(destinationId);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.internalServerError(
-                    "Die Zustellpunkt-ID des FIT-Connect-Auslösers ist keine gültige UUID.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Zustellpunkt-ID muss eine gültige UUID sein.",
+                    null
             );
         }
     }
@@ -182,27 +184,27 @@ public class FitConnectTriggerOrganisationFactoryV1 {
     @Nonnull
     private String resolveSecret(@Nullable String rawSecretKey,
                                  @Nonnull String description) throws ResponseException {
-        var secretKeyValue = requireValue(rawSecretKey, description + " ist nicht konfiguriert.");
+        var secretKeyValue = requireValue(rawSecretKey, "Wählen Sie ein Geheimnis für „" + description + "“ aus.");
         final UUID secretKey;
         try {
             secretKey = UUID.fromString(secretKeyValue);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.internalServerError(description + " ist ungültig konfiguriert.", e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Das ausgewählte " + description + " ist ungültig.", null);
         }
 
         var secret = secretService
                 .retrieve(secretKey)
-                .orElseThrow(() -> ResponseException.internalServerError(description + " wurde nicht gefunden."));
+                .orElseThrow(() -> ResponseException.internalServerError("Das ausgewählte " + description + " wurde nicht gefunden."));
         try {
             var decryptedSecret = secretService.decrypt(secret);
             if (decryptedSecret.isBlank()) {
-                throw ResponseException.internalServerError(description + " darf nicht leer sein.");
+                throw ResponseException.internalServerError("Das ausgewählte " + description + " darf nicht leer sein.");
             }
             return decryptedSecret;
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {
-            throw ResponseException.internalServerError(description + " konnte nicht entschlüsselt werden.", e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Das ausgewählte " + description + " konnte nicht entschlüsselt werden.", null);
         }
     }
 
@@ -210,7 +212,7 @@ public class FitConnectTriggerOrganisationFactoryV1 {
     private List<JWK> resolveDecryptionKeys(@Nullable List<FitConnectTriggerConfigV1.PrivateDecryptionKeyConfig> keyConfigs) throws ResponseException {
         if (keyConfigs == null || keyConfigs.isEmpty()) {
             throw ResponseException.internalServerError(
-                    "Es ist kein privater Entschlüsselungsschlüssel für den FIT-Connect-Auslöser konfiguriert."
+                    "Hinterlegen Sie mindestens einen privaten Entschlüsselungsschlüssel."
             );
         }
 
@@ -218,7 +220,7 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         for (var keyConfig : keyConfigs) {
             keys.add(resolveJwk(
                     keyConfig == null ? null : keyConfig.keyFile,
-                    "Ein privater Entschlüsselungsschlüssel des FIT-Connect-Auslösers"
+                    "Der ausgewählte private Entschlüsselungsschlüssel"
             ));
         }
         return keys;
@@ -240,9 +242,9 @@ public class FitConnectTriggerOrganisationFactoryV1 {
             }
             return jwk;
         } catch (ResponseException e) {
-            throw e;
+            throw new ResponseException(e.getStatus(), e.getTitle(), null, e);
         } catch (ParseException e) {
-            throw ResponseException.internalServerError(description + " konnte nicht als JWK gelesen werden.", e);
+            throw ResponseException.internalServerErrorWithDetails(e, description + " konnte nicht als JWK gelesen werden.", null);
         }
     }
 

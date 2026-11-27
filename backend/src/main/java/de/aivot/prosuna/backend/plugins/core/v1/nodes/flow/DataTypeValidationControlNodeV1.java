@@ -84,8 +84,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DataTypeValidationControlNodeV1.DataTypeValidationControlNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var valid = Boolean.TRUE.equals(summary.data(OUTPUT_NAME_IS_VALID));
-        var markdown = new StringBuilder(valid ? "Die Vorgangsdaten wurden erfolgreich validiert." : "Bei der Validierung der Vorgangsdaten wurden Fehler festgestellt.");
-        markdown.append(detail("Geprüfte Regeln", summary.data(OUTPUT_NAME_VALIDATED_RULE_COUNT)))
+        var markdown = new StringBuilder(valid ? "Die Prüfung hat keine Abweichungen von den festgelegten Regeln ergeben." : "Die Prüfung hat Abweichungen von den festgelegten Regeln ergeben.");
+        markdown.append(detail("Ausgewertete Regeln", summary.data(OUTPUT_NAME_VALIDATED_RULE_COUNT)))
                 .append(detail("Geprüfte Werte", summary.data(OUTPUT_NAME_VALIDATED_VALUE_COUNT)));
         for (var entry : list(summary.data(OUTPUT_NAME_ERRORS))) {
             var error = map(entry);
@@ -127,22 +127,64 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     @Nonnull
     @Override
     public String getName() {
-        return "Vorgangsdaten validieren";
+        return "Vorgangsdaten prüfen";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Prüft, ob konfigurierte Pfade in den Vorgangsdaten vorhanden sind und den erwarteten Datentypen entsprechen.";
+        return "Prüft automatisch das Vorhandensein und den Datentyp ausgewählter Vorgangsdaten.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Prüft für jede Regel, ob der angegebene Pfad in den Vorgangsdaten vorhanden ist und dem erwarteten Datentyp entspricht. Sind alle Regeln erfüllt, wird der Vorgang über den Ausgangsport „Daten gültig“ fortgesetzt, andernfalls über „Daten ungültig“. Die gefundenen Abweichungen stehen in den Elementdaten bereit.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Ein vorhandener Wert `null` gilt als vorhanden; der Datentyp „Beliebig“ prüft nur das Vorhandensein. Fehlt die Pfadangabe, ist sie ungültig oder wird ein nicht unterstützter Datentyp angegeben, schlägt die Aufgabe fehl, statt den Ausgangsport „Daten ungültig“ zu verwenden.
+                Mit diesem Prozesselement prüfen Sie automatisch, ob benötigte Werte in den Vorgangsdaten vorhanden sind und den erwarteten Datentyp haben, zum Beispiel Text, Zahl oder Liste. Anhand des Ergebnisses kann der Vorgang auf unterschiedlichen Wegen fortgesetzt werden.
+
+                Damit prüfen Sie die Struktur der ausgewählten Daten. Eine fachliche Prüfung oder Korrektur durch Mitarbeiter:innen ist damit nicht verbunden.
+
+                # Was richten Sie ein?
+
+                Legen Sie unter **„Prüfregeln“** die benötigten Prüfungen an. Für jede Regel geben Sie den **„Speicherort des Werts“** und den **„Erwarteten Datentyp“** an.
+
+                Ein Speicherort ist ein Datenpfad wie `person.name` oder `person.alter`. Mit `personen[0].name` prüfen Sie einen bestimmten Listeneintrag; die Zählung beginnt bei `0`. Mit `personen[*].name` prüfen Sie die Namen an den vorhandenen Listenpositionen. Der Präfix `$.` wird in der Oberfläche bereits angezeigt.
+
+                Wählen Sie **„Beliebig (nur Vorhandensein)“**, wenn der Wert vorhanden sein soll, sein Datentyp aber keine Rolle spielt. Für eine gezielte Typprüfung stehen **„Text“**, **„Zahl“**, **„Ja/Nein“**, **„Objekt“**, **„Liste“** und **„Nullwert (null)“** bereit.
+
+                Verbinden Sie die Ausgänge **„Prüfregeln erfüllt“** und **„Prüfregeln nicht erfüllt“** mit den jeweils passenden nächsten Schritten.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna liest die festgelegten Speicherorte und wertet die Regeln automatisch aus. Sind keine Abweichungen festgestellt worden, wird der Vorgang über **„Prüfregeln erfüllt“** fortgesetzt. Andernfalls geht es über **„Prüfregeln nicht erfüllt“** weiter.
+
+                Eine Abweichung in den Daten ist ein reguläres Prüfergebnis. Eine fehlerhaft konfigurierte Regel, etwa ein ungültiger Datenpfad, führt dagegen zu einer fehlgeschlagenen Aufgabe. Dieser Konfigurationsfehler verwendet keinen der beiden Prüfausgänge.
+
+                # Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten stehen das Prüfergebnis, die Anzahl ausgewerteter Regeln, die Anzahl geprüfter Werte und die festgestellten Abweichungen mit Regelnummer und Speicherort bereit. Über die Ausgangsdatenzuordnung können Sie diese Ergebnisse zusätzlich in die Vorgangsdaten übernehmen.
+
+                Das Element selbst korrigiert oder ergänzt keine Vorgangsdaten. Der Vorgangsverlauf zeigt das Ergebnis der festgelegten Prüfregeln und die gespeicherten Abweichungen.
+
+                Im Testbereich steht ein JSON-Beispiel zu den konfigurierten Regeln zur Verfügung. Es dient der Orientierung und ersetzt keinen Testdurchlauf mit Ihren tatsächlichen Daten.
+
+                # Wie sieht ein Beispiel aus?
+
+                Vor der weiteren automatischen Bearbeitung sollen `person.name` als Text und `person.alter` als Zahl vorliegen. Legen Sie dafür zwei Prüfregeln an.
+
+                Bei `person.name: "Ada"` und `person.alter: 37` sind beide Regeln erfüllt. Steht das Alter dagegen als Text `"37"` in den Daten oder fehlt der Name, wird der Vorgang über **„Prüfregeln nicht erfüllt“** fortgesetzt. Dort können Sie beispielsweise „Vorgangsdaten bearbeiten“ oder „Angaben anfordern“ anschließen.
+
+                # Was ist zu beachten?
+
+                Ein vorhandener Nullwert (`null`) ist etwas anderes als ein fehlendes Feld. Er erfüllt **„Beliebig (nur Vorhandensein)“** und **„Nullwert (null)“**, aber zum Beispiel nicht **„Text“** oder **„Zahl“**.
+
+                Leerer Text ist weiterhin Text. Eine leere Liste kann eine Regel mit `[*]` erfüllen, ohne dass Werte geprüft werden. Eine Mindestanzahl von Einträgen oder vollständig ausgefüllte Angaben werden damit nicht sichergestellt.
+
+                Die Auswahl **„Objekt“** oder **„Liste“** prüft nur den jeweiligen Strukturtyp. Für einzelne enthaltene Felder benötigen Sie eigene Regeln. Zahlen werden nicht aus Text umgewandelt, und fachliche Richtigkeit oder Plausibilität werden nicht bewertet.
+
+                Ein Wert kann durch mehrere Regeln mehrfach gezählt werden. Die Zahl geprüfter Werte ist deshalb keine Anzahl unterschiedlicher oder fehlerfreier Datenfelder.
                 """;
     }
 
@@ -154,7 +196,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         try {
             layout = ElementPOJOMapper.createFromPOJO(DataTypeValidationControlNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
+            throw ResponseException.internalServerError(e, "Die Einstellungen für die Datenprüfung konnten nicht geladen werden.");
         }
 
         layout
@@ -164,13 +206,13 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                             .setType(ValueFunctionType.NoCode)
                             .setNoCode(new NoCodeStaticValue(TYPE_ANY)));
                     expectedTypeInput.setOptions(List.of(
-                            SelectInputElementOption.of(TYPE_ANY, "Beliebig"),
-                            SelectInputElementOption.of(TYPE_STRING, "Text"),
-                            SelectInputElementOption.of(TYPE_NUMBER, "Zahl"),
-                            SelectInputElementOption.of(TYPE_BOOLEAN, "Ja/Nein"),
-                            SelectInputElementOption.of(TYPE_OBJECT, "Objekt"),
-                            SelectInputElementOption.of(TYPE_ARRAY, "Array"),
-                            SelectInputElementOption.of(TYPE_NULL, "Null")
+                            SelectInputElementOption.of(TYPE_ANY, typeLabel(TYPE_ANY)),
+                            SelectInputElementOption.of(TYPE_STRING, typeLabel(TYPE_STRING)),
+                            SelectInputElementOption.of(TYPE_NUMBER, typeLabel(TYPE_NUMBER)),
+                            SelectInputElementOption.of(TYPE_BOOLEAN, typeLabel(TYPE_BOOLEAN)),
+                            SelectInputElementOption.of(TYPE_OBJECT, typeLabel(TYPE_OBJECT)),
+                            SelectInputElementOption.of(TYPE_ARRAY, typeLabel(TYPE_ARRAY)),
+                            SelectInputElementOption.of(TYPE_NULL, typeLabel(TYPE_NULL))
                     ));
                 });
 
@@ -189,13 +231,13 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME_VALID,
-                        "Daten gültig",
-                        "Der Vorgang wird hier fortgesetzt, wenn alle Validierungsregeln erfüllt sind."
+                        "Prüfregeln erfüllt",
+                        "Der Vorgang wird hier fortgesetzt, wenn keine Abweichungen von den festgelegten Prüfregeln festgestellt wurden."
                 ),
                 new ProcessNodePort(
                         PORT_NAME_INVALID,
-                        "Daten ungültig",
-                        "Der Vorgang wird hier fortgesetzt, wenn mindestens eine Validierungsregel verletzt ist."
+                        "Prüfregeln nicht erfüllt",
+                        "Der Vorgang wird hier fortgesetzt, wenn mindestens eine Abweichung von den festgelegten Prüfregeln festgestellt wurde."
                 )
         );
     }
@@ -206,26 +248,26 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_RULE_COUNT,
-                        "Anzahl Regeln",
-                        "Die Anzahl der geprüften Regeln.",
+                        "Ausgewertete Regeln",
+                        "Anzahl der ausgewerteten Regeln, einschließlich Regeln mit festgestellten Abweichungen.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VALIDATED_VALUE_COUNT,
-                        "Anzahl geprüfter Werte",
-                        "Die Anzahl der konkret überprüften Werte über alle Regeln.",
+                        "Geprüfte Werte",
+                        "Anzahl der Werte, die nach vollständigem Lesen der zugehörigen Regel ausgewertet wurden. Auch Werte mit abweichendem Typ und mehrfach geprüfte Werte werden gezählt. Bei „Beliebig“ wird nur das Vorhandensein geprüft.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_IS_VALID,
-                        "Gesamtgültigkeit",
-                        "true, wenn alle Regeln erfolgreich validiert wurden, sonst false.",
+                        "Prüfregeln erfüllt",
+                        "true, wenn keine Abweichungen von den festgelegten Prüfregeln festgestellt wurden; andernfalls false.",
                         "boolean"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ERRORS,
-                        "Validierungsfehler",
-                        "Liste der Regelverletzungen mit Pfad und Fehlermeldung.",
+                        "Festgestellte Abweichungen",
+                        "Liste der festgestellten Abweichungen mit Regelnummer ab 1, konfiguriertem Speicherort und Meldung. Bei Typabweichungen am Endwert enthält resolvedPath zusätzlich den konkreten Speicherort.",
                         OUTPUT_ERRORS_TYPE_DEFINITION
                 )
         );
@@ -238,7 +280,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         groupLayout.setId("layout");
 
         var contentBuilder = new StringBuilder();
-        contentBuilder.append("Beispiel-Payload für die konfigurierten Validierungsregeln:\n\n");
+        contentBuilder.append("Beispiel für die Vorgangsdaten zu Ihren Prüfregeln:\n\n");
 
         try {
             var rules = parseRules(context.configuration());
@@ -254,9 +296,9 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                     .append("\n```\n");
         } catch (Exception e) {
             contentBuilder
-                    .append("Die Beispiel-JSON konnte nicht aus der aktuellen Konfiguration erzeugt werden.\n\n")
+                    .append("Die Beispieldaten konnten nicht aus den aktuellen Prüfregeln erstellt werden.\n\n")
                     .append("```text\n")
-                    .append(e.getMessage() != null ? e.getMessage() : "Unbekannter Fehler")
+                    .append(e.getMessage() != null ? e.getMessage() : "Zu diesem Fehler sind keine weiteren Angaben verfügbar.")
                     .append("\n```\n");
         }
 
@@ -274,7 +316,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         var sourceRoot = context.getCurrentProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Vorgangsdatenwurzel ($) ist kein Objekt."
+                    "Die Vorgangsdaten haben ein ungültiges Format. Für die Prüfung wird am Wurzelpfad ($) ein Objekt erwartet."
             );
         }
 
@@ -341,7 +383,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             var path = row == null ? null : StringUtils.toNullableTrimmedString(row.path);
             if (path == null) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Pfadangabe in Zeile %d darf nicht leer sein.",
+                        "Regel %d: Geben Sie den Speicherort des zu prüfenden Werts an.",
                         rowIndex
                 );
             }
@@ -370,7 +412,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             // Preview generation must not allocate enormous sparse arrays merely to display a valid read path.
             if (pathParts.stream().anyMatch(part -> part instanceof IndexPathPart index && index.index() >= MAX_EXAMPLE_ARRAY_LENGTH)) {
                 throw new IllegalArgumentException(
-                        "Die Beispiel-JSON ist auf 1000 Einträge pro Array begrenzt. Die Validierungsregel bleibt unverändert.");
+                        "Für das JSON-Beispiel sind höchstens 1000 Einträge pro Liste möglich. Die Prüfregel wird dadurch nicht geändert.");
             }
             var exampleValue = createExampleValueForType(rule.expectedType());
             // A wildcard needs one representative row; concrete indices keep their configured position.
@@ -406,7 +448,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         var trimmedPath = path.trim();
         if (trimmedPath.isEmpty()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Pfadangabe in Zeile %d darf nicht leer sein.",
+                    "Regel %d: Geben Sie den Speicherort des zu prüfenden Werts an.",
                     rowIndex
             );
         }
@@ -424,7 +466,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                     }).toList();
         } catch (IllegalArgumentException exception) {
             throw invalidPathException(trimmedPath, rowIndex,
-                    "Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name.");
+                    "Verwenden Sie einen Datenpfad wie person.name, personen[0].name oder personen[*].name.");
         }
     }
 
@@ -444,7 +486,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         if (currentPart instanceof ObjectPathPart objectPathPart) {
             if (!(currentValue instanceof Map<?, ?> currentMap)) {
                 throw new ProcessNodeExecutionExceptionInvalidDataType(
-                        "Der Pfad %s in Zeile %d kann nicht aufgelöst werden. Segment %s erwartet ein Objekt in %s.",
+                        "Der Speicherort %s in Regel %d kann nicht gelesen werden. Für das Feld %s wird unter %s ein Objekt erwartet.",
                         StringUtils.quote(configuredPath),
                         rowIndex,
                         StringUtils.quote(objectPathPart.key()),
@@ -454,7 +496,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
             if (!currentMap.containsKey(objectPathPart.key())) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Der Pfad %s in Zeile %d fehlt. Segment %s ist in %s nicht vorhanden.",
+                        "Der Speicherort %s aus Regel %d ist nicht vollständig vorhanden. Das Feld %s fehlt unter %s.",
                         StringUtils.quote(configuredPath),
                         rowIndex,
                         StringUtils.quote(objectPathPart.key()),
@@ -476,7 +518,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
         if (!(currentValue instanceof List<?> currentList)) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
-                    "Der Pfad %s in Zeile %d kann nicht aufgelöst werden. Das Segment erwartet ein Array in %s.",
+                    "Der Speicherort %s aus Regel %d kann nicht gelesen werden. Unter %s wird eine Liste erwartet.",
                     StringUtils.quote(configuredPath),
                     rowIndex,
                     StringUtils.quote(currentPath)
@@ -485,7 +527,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
         if (currentPart instanceof IndexPathPart index && index.index() >= currentList.size()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Pfad %s in Zeile %d fehlt. Index %d ist in %s nicht vorhanden.",
+                    "Der Speicherort %s aus Regel %d ist nicht vorhanden. Ein Eintrag mit dem Index %d fehlt unter %s.",
                     StringUtils.quote(configuredPath), rowIndex, index.index(), StringUtils.quote(currentPath)
             );
         }
@@ -519,7 +561,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "In Zeile %d ist der Datentyp %s ungültig.",
+                "Regel %d: Der Datentyp %s wird nicht unterstützt. Wählen Sie einen angebotenen Datentyp.",
                 rowIndex,
                 StringUtils.quote(expectedType)
         );
@@ -548,11 +590,11 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         }
 
         throw new ProcessNodeExecutionExceptionInvalidDataType(
-                "Ungültiger Datentyp in Zeile %d bei %s. Erwartet: %s, erhalten: %s.",
+                "Regel %d: Der Wert unter %s hat nicht den erwarteten Datentyp. Erwartet: %s; vorhanden: %s.",
                 rowIndex,
                 StringUtils.quote(resolvedPath),
-                StringUtils.quote(expectedType),
-                StringUtils.quote(describeType(value))
+                StringUtils.quote(typeLabel(expectedType)),
+                StringUtils.quote(typeLabel(describeType(value)))
         );
     }
 
@@ -561,11 +603,25 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
                                                                                           int rowIndex,
                                                                                           @Nonnull String detail) {
         return new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültiger Pfad in Zeile %d: %s. Pfad: %s",
+                "Regel %d: Der Speicherort ist ungültig. %s Angegebener Pfad: %s",
                 rowIndex,
                 detail,
                 StringUtils.quote(path)
         );
+    }
+
+    @Nonnull
+    private static String typeLabel(@Nonnull String type) {
+        return switch (type) {
+            case TYPE_ANY -> "Beliebig (nur Vorhandensein)";
+            case TYPE_STRING -> "Text";
+            case TYPE_NUMBER -> "Zahl";
+            case TYPE_BOOLEAN -> "Ja/Nein";
+            case TYPE_OBJECT -> "Objekt";
+            case TYPE_ARRAY -> "Liste";
+            case TYPE_NULL -> "Nullwert (null)";
+            default -> type;
+        };
     }
 
     @Nonnull
@@ -629,19 +685,19 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
             id = RULES_FIELD_ID,
             allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
             properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Validierungsregeln"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Beispiele: person.name, person.address.street, tags[*], items[*].name"),
+            @ElementPOJOBindingProperty(key = "label", strValue = "Prüfregeln"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Legen Sie fest, welche Vorgangsdaten vorhanden sein sollen und welche Datentypen Sie erwarten. Jede Regel enthält einen Speicherort und einen erwarteten Datentyp."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Regel #"),
+            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Regel"),
             @ElementPOJOBindingProperty(key = "addLabel", strValue = "Regel hinzufügen"),
             @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Regel entfernen")
     })
     public static class DataTypeValidationRuleConfig {
         @InputElementPOJOBinding(id = RULE_PATH_FIELD_ID, type = ElementType.Text,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Pfad"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Speicherort des Werts"),
                 @ElementPOJOBindingProperty(key = "prefix", strValue = "$."),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad mit [*] für Arrays, z. B. addresses[*].street"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Datenpfad ohne den bereits angezeigten Präfix $. ein, zum Beispiel person.name. personen[0].name prüft den ersten Listeneintrag; personen[*].name die vorhandenen Listenpositionen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0)
         })
@@ -649,8 +705,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
 
         @InputElementPOJOBinding(id = RULE_TYPE_FIELD_ID, type = ElementType.Select,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Datentyp"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Datentyp, den der Wert am Pfad haben muss."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Erwarteter Datentyp"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den Typ, den der Wert haben soll. „Beliebig (nur Vorhandensein)“ prüft nur, ob der Speicherort vorhanden ist; auch ein ausdrücklich gesetzter Nullwert zählt als vorhanden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0)
         })

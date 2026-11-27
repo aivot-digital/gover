@@ -3,9 +3,11 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.DepartmentSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
@@ -27,6 +29,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
@@ -45,17 +48,25 @@ import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
+import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.mail.MailSendException;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -163,7 +175,7 @@ class EMailActionNodeV1Test {
         ).orElseThrow();
         assertEquals(List.of(
                 SelectInputElementOption.of("automatic", "Automatisch versenden"),
-                SelectInputElementOption.of("manual", "Manuell bearbeiten und versenden")
+                SelectInputElementOption.of("manual", "Vor Versand prüfen und bearbeiten")
         ), executionType.getOptions());
 
         var automaticGroup = layout.findChild(
@@ -200,6 +212,23 @@ class EMailActionNodeV1Test {
         ).orElseThrow();
         assertEquals("Organisationseinheit für die Signatur", manualSignatureDepartment.getLabel());
         assertFalse(manualSignatureDepartment.getRequired());
+        assertEquals(
+                "Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.",
+                assignment.getText()
+        );
+        var recipients = layout.findChild(EMailActionNodeV1.EMailActionNodeConfig.RECIPIENT_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+        assertEquals("E-Mail-Adressen", recipients.getLabel());
+        assertTrue(recipients.getHint().contains("Trennen Sie mehrere Adressen durch Kommas"));
+        var bcc = layout.findChild(EMailActionNodeV1.EMailActionNodeConfig.BCC_RECIPIENT_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+        assertEquals("Blindkopie (BCC)", bcc.getLabel());
+        assertTrue(bcc.getHint().contains("nicht sichtbar"));
+        var attachments = layout.findChild(EMailActionNodeV1.EMailActionNodeConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID,
+                ProcessInstanceAttachmentSetSelectElement.class).orElseThrow();
+        assertEquals("Anlagensätze für Anhänge", attachments.getLabel());
+        assertTrue(attachments.getHint().contains("vollständig"));
+        assertTrue(attachments.getHint().contains("Ohne Auswahl wird die E-Mail ohne Anhänge versendet"));
 
         // Recipients and subjects become mail headers and the content is rendered as Markdown.
         for (var subjectFieldId : List.of(
@@ -218,6 +247,22 @@ class EMailActionNodeV1Test {
             assertEquals(TemplateOutputFormat.Markdown, layout.findChild(contentFieldId, RichTextInputElement.class)
                     .orElseThrow().getDynamicTextPolicy().outputFormat());
         }
+    }
+
+    @Test
+    void describesStoredMailOutputsAndTheServerHandoff() {
+        var outputs = node.getOutputs();
+        assertEquals(List.of("to", "bcc", "subject", "content", "attachmentSetDataKeys"),
+                outputs.stream().map(output -> output.key()).toList());
+        assertEquals(List.of("E-Mail-Adressen", "Blindkopie (BCC)", "Betreff der E-Mail", "Nachricht", "Anlagensätze für Anhänge"),
+                outputs.stream().map(output -> output.label()).toList());
+        var content = outputs.stream().filter(output -> output.key().equals("content")).findFirst().orElseThrow();
+        assertTrue(content.markdown());
+        assertTrue(content.description().contains("ohne die beim Versand ergänzte E-Mail-Signatur"));
+        var port = node.getPorts(configuration("automatic")).getFirst();
+        assertEquals("output", port.key());
+        assertEquals("E-Mail versendet", port.label());
+        assertTrue(port.description().contains("an den Mailserver übergeben"));
     }
 
     @Test
@@ -354,9 +399,15 @@ class EMailActionNodeV1Test {
 
         var view = node.getStaffTaskView(context);
         var layout = (GroupLayoutElement) view.layout();
-        assertTrue(Boolean.TRUE.equals(layout.findChild("subject", TextInputElement.class).orElseThrow().getRequired()));
-        assertTrue(Boolean.TRUE.equals(layout.findChild("body", RichTextInputElement.class).orElseThrow().getRequired()));
+        var subjectField = layout.findChild("subject", TextInputElement.class).orElseThrow();
+        assertTrue(Boolean.TRUE.equals(subjectField.getRequired()));
+        assertEquals("Betreff der E-Mail", subjectField.getLabel());
+        var bodyField = layout.findChild("body", RichTextInputElement.class).orElseThrow();
+        assertTrue(Boolean.TRUE.equals(bodyField.getRequired()));
+        assertEquals("Nachricht", bodyField.getLabel());
+        assertEquals("Prüfen und bearbeiten Sie die Nachricht vor dem Versand.", bodyField.getHint());
         assertEquals("send", view.events().getFirst().event());
+        assertEquals("E-Mail versenden", view.events().getFirst().label());
 
         var defaults = view.data();
         assertEquals("Entwurf für Ada", defaults.getLiteral("subject"));
@@ -479,7 +530,7 @@ class EMailActionNodeV1Test {
                 () -> node.init(initContext(configuration, processData, processInstance(), task()))
         );
 
-        assertEquals("Der E-Mail-Versand ist nicht konfiguriert.", exception.getMessage());
+        assertEquals("Der E-Mail-Versand ist in Prosuna nicht eingerichtet.", exception.getMessage());
         verifyNoInteractions(processService);
     }
 
@@ -513,7 +564,7 @@ class EMailActionNodeV1Test {
                 processInstance(),
                 task()
         );
-        assertThrows(
+        var validationException = assertThrows(
                 ResponseException.class,
                 () -> node.onEventFromStaffTaskView(
                         manualContext,
@@ -521,9 +572,12 @@ class EMailActionNodeV1Test {
                         "send"
                 )
         );
+        var validation = assertInstanceOf(DerivedRuntimeElementData.class, validationException.getDetails());
+        assertEquals("Geben Sie einen Betreff für die E-Mail ein.", validation.getElementStates().get("subject").getError());
+        assertEquals("Geben Sie eine Nachricht für die E-Mail ein.", validation.getElementStates().get("body").getError());
 
         var invalidConfiguration = configuration("unexpected");
-        assertThrows(
+        var modeException = assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> node.init(initContext(
                         invalidConfiguration,
@@ -532,6 +586,138 @@ class EMailActionNodeV1Test {
                         task()
                 ))
         );
+        assertEquals("Wählen Sie, ob die E-Mail automatisch oder nach manueller Prüfung versendet werden soll.", modeException.getMessage());
+    }
+
+    @Test
+    void mailTransportFailureKeepsItsCauseWithoutExposingSmtpDetails() throws Exception {
+        var configuration = configuration("manual");
+        configuration.to = "customer@example.test";
+        var context = staffContext(configuration, new ProcessExecutionData(), processInstance(), task());
+        var cause = new MailSendException("SMTP internal host: rejected 100% of recipients");
+        doThrow(cause).when(mailService).sendMail(
+                any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any()
+        );
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.onEventFromStaffTaskView(context, authored("subject", "Betreff", "body", "Nachricht"), "send")
+        );
+
+        assertEquals("Beim Versand der E-Mail ist ein Fehler aufgetreten.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @ParameterizedTest
+    @MethodSource("mailPreparationFailures")
+    void otherMailServiceFailuresKeepTheirCauseWithoutExposingDetails(Exception cause) throws Exception {
+        var configuration = configuration("automatic");
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        doThrow(cause).when(mailService).sendMail(
+                any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any()
+        );
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, processData, processInstance(), task()))
+        );
+
+        assertEquals("Beim Vorbereiten oder Versenden der E-Mail ist ein Fehler aufgetreten.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    private static Stream<Exception> mailPreparationFailures() {
+        return Stream.of(
+                new MessagingException("internal MIME detail 100%"),
+                ResponseException.internalServerError("internal template detail 100%"),
+                new IllegalStateException("internal runtime detail 100%")
+        );
+    }
+
+    @Test
+    void processLoadingFailureKeepsItsCauseWithoutExposingDetails() throws Exception {
+        var configuration = configuration("automatic");
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        var cause = ResponseException.internalServerError("internal query detail", new IllegalStateException("database detail"));
+        when(processService.retrieve(PROCESS_ID)).thenThrow(cause);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, processData, processInstance(), task()))
+        );
+
+        assertEquals("Der Prozess für den E-Mail-Versand konnte nicht geladen werden. Prozess: 42.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verify(mailService, never()).sendMail(
+                any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any()
+        );
+    }
+
+    @Test
+    void attachmentReadFailureKeepsItsCauseAndNamesTheAttachment() throws Exception {
+        var configuration = configuration("automatic");
+        configuration.attachmentSetDataKeys = List.of("documents");
+        var processData = new ProcessExecutionData();
+        stubAutomaticMessage(configuration, processData);
+        var cause = new IOException("internal storage location 100%");
+        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
+                .thenReturn(List.of(new ProcessInstanceAttachmentSetEntity().setId(11)));
+        when(processInstanceAttachmentService.findAllByAttachmentSetId(11)).thenReturn(List.of(
+                new ProcessInstanceAttachmentEntity().setFileName("notice-100%.pdf")
+                        .setStorageProviderId(12).setStoragePathFromRoot("internal-path")
+        ));
+        when(storageService.getDocumentContent(12, "internal-path")).thenReturn(new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw cause;
+            }
+        });
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, processData, processInstance(), task()))
+        );
+
+        assertEquals("Die Anlage „notice-100%.pdf“ konnte für den E-Mail-Versand nicht geladen werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verify(mailService, never()).sendMail(
+                any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any()
+        );
+    }
+
+    @Test
+    void unavailableActionUsesTheSameReadableMessageLocallyAndInTheControllerHook() {
+        var inputs = authored("subject", "Betreff", "body", "Nachricht");
+        var context = staffContext(configuration("manual"), new ProcessExecutionData(), processInstance(), task());
+        var expectedMessage = "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: „unknown 100%“.";
+
+        var localException = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.onEventFromStaffTaskView(context, inputs, "unknown 100%"));
+        var controllerException = node.unavailableStaffTaskEvent("unknown 100%", inputs);
+
+        assertEquals(expectedMessage, localException.getMessage());
+        assertEquals(expectedMessage, controllerException.getTitle());
+        assertEquals(HttpStatus.BAD_REQUEST, controllerException.getStatus());
+        assertNull(controllerException.getDetails());
+        verifyNoInteractions(mailService);
+    }
+
+    @Test
+    void missingManualDefaultsHaveASafeStaffViewErrorAndPreserveTheConfigurationCause() {
+        var configuration = configuration("manual");
+        configuration.messageConfig.manualContent.subject = null;
+        var context = staffContext(configuration, new ProcessExecutionData(), processInstance(), task());
+
+        var exception = assertThrows(ResponseException.class, () -> node.getStaffTaskView(context));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Hinterlegen Sie einen vorbelegten Betreff und eine vorbelegte Nachricht für die manuelle Prüfung.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertInstanceOf(ProcessNodeExecutionExceptionInvalidConfiguration.class, exception.getCause());
+        assertEquals(exception.getTitle(), exception.getCause().getMessage());
+        verifyNoInteractions(mailService);
     }
 
     @Test

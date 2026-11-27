@@ -52,9 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
-import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
 
 /**
  * Sends the full process execution data to an AI model and replaces the process data root with the returned JSON object.
@@ -111,16 +109,9 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        var markdown = new StringBuilder("Die Vorgangsdaten wurden erfolgreich mit KI transformiert.")
-                .append(detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL)));
-        var keys = list(summary.data(OUTPUT_TOP_LEVEL_KEYS));
-        if (!keys.isEmpty()) {
-            markdown.append("\n\n**Datenfelder**");
-            for (var key : keys) {
-                markdown.append("\n\n- ").append(text(key));
-            }
-        }
-        return markdown.toString();
+        return "Die Umwandlung der Vorgangsdaten mit KI wurde" + summary.completedAt() + " abgeschlossen."
+                + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -156,22 +147,54 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Nonnull
     @Override
     public String getName() {
-        return "Vorgangsdaten mit KI transformieren";
+        return "Vorgangsdaten mit KI umwandeln";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Lässt eine KI die Vorgangsdaten umwandeln und ersetzt sie durch das zurückgegebene JSON-Objekt.";
+        return "Lässt eine KI neue Vorgangsdaten erzeugen und ersetzt damit den bisherigen Datenbestand vollständig.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet den konfigurierten Prompt zusammen mit den vollständigen Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten an eine OpenAI-kompatible Chat-Completions-API. Das zurückgegebene JSON-Objekt ersetzt die bisherigen Vorgangsdaten vollständig. Liefert die KI kein gültiges JSON-Objekt, schlägt die Aufgabe fehl und die Vorgangsdaten bleiben unverändert.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird. Da die Inhalte dieser Datenebenen an den externen Dienst übermittelt werden, ist vor dem Einsatz zu prüfen, ob diese Übermittlung zulässig ist.
+                Lassen Sie eine KI die Vorgangsdaten nach einer Arbeitsanweisung neu zusammenstellen, zum Beispiel Namen vereinheitlichen oder zusätzliche Angaben aus vorhandenen Texten ableiten. Das Ergebnis ersetzt die bisherigen Vorgangsdaten vollständig.
+
+                Wenn Sie eine Textantwort für einen späteren Schritt benötigen und die übermittelten Angaben selbst festlegen möchten, verwenden Sie „KI-Antwort erzeugen“.
+
+                ### Was richten Sie ein?
+
+                Geben Sie die API-Basis-URL und die genaue Modellkennung Ihres KI-Dienstes an. Wählen Sie ein in Prosuna gespeichertes Geheimnis mit dem zugehörigen API-Schlüssel aus. Der Dienst muss eine OpenAI-kompatible Chat-Completions-API mit den von Prosuna verwendeten Anfrageparametern unterstützen.
+
+                Beschreiben Sie unter „Anfrage an die KI“, wie die Vorgangsdaten umgewandelt werden sollen. Dieser Anfragetext wird auch Prompt genannt. Die verfügbaren Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten werden automatisch mitgesendet. Sie können die Anweisung durch Variablen im Text ergänzen oder die gesamte Anfrage und die Modellkennung aus einer Variablen, mit No-Code oder mit Low-Code bestimmen.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna sendet die vorbereitete Anfrage zusammen mit den genannten Daten an den KI-Dienst. Die KI wird angewiesen, ein vollständiges JSON-Objekt als neuen Vorgangsdatenbestand zurückzugeben.
+
+                Kann die Antwort als JSON-Objekt eingelesen werden, übernimmt Prosuna es vollständig als neue Vorgangsdaten und setzt den Vorgang über „Vorgangsdaten ersetzt“ fort. Meldet die Schnittstelle einen HTTP-Fehler oder kann ihre Antwort nicht entsprechend verarbeitet werden, schlägt die Aufgabe fehl.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Die von der KI zurückgegebenen Angaben stehen direkt in den Vorgangsdaten bereit. Bisherige Angaben, die im Ergebnis fehlen, entfallen. Geschützte Vorgangsdaten und bisherige Elementdaten werden durch dieses Ergebnis nicht ersetzt.
+
+                Der verwendete Auftragstext und verfügbare Angaben zum Modell, Abschlussgrund, Token-Verbrauch und den obersten Schlüsseln des Ergebnisses stehen zusätzlich als Elementdaten bereit. Tokens sind Texteinheiten, mit denen der KI-Dienst die verarbeitete Textmenge zählt. Über die Datenzuordnung unter „Ausgangsdaten“ können Sie diese Ausgangswerte bei Bedarf zusätzlich in die Vorgangsdaten übernehmen.
+
+                ### Wie sieht ein Beispiel aus?
+
+                In den Vorgangsdaten stehen `vorname`, `nachname` und `ort`. Die Anfrage lautet: „Ergänzen Sie aus Vorname und Nachname einen Anzeigenamen. Geben Sie den vollständigen Vorgangsdatenbestand zurück und erhalten Sie alle anderen Angaben.“
+
+                Liefert die KI die bisherigen Angaben zusammen mit `anzeigename` zurück, stehen anschließend alle vier Angaben in den Vorgangsdaten. Liefert sie nur `anzeigename` zurück, entfallen `vorname`, `nachname` und `ort`.
+
+                ### Was ist zu beachten?
+
+                Dieses Element übermittelt automatisch alle verfügbaren Daten aus den genannten Datenebenen. Dazu gehört derzeit auch der Zugangsschlüssel des Vorgangs. Eine Auswahl einzelner Angaben ist nicht vorgesehen.
+
+                Prosuna prüft, ob die Antwort als JSON-Objekt eingelesen werden kann. Es prüft weder die fachliche Richtigkeit noch den Erhalt bisheriger Angaben. Auch ein leeres Objekt ist zulässig und führt zu leeren Vorgangsdaten. Die Arbeitsanweisung an die KI garantiert nicht, dass alle bisherigen Angaben erhalten bleiben. Die Antwortlänge ist durch die Systemeinstellung und die Grenzen des gewählten Modells begrenzt.
                 """;
     }
 
@@ -188,9 +211,10 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         try {
             return ElementPOJOMapper.createFromPOJO(AiProcessDataTransformationActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
+            throw ResponseException.internalServerErrorWithDetails(
                     e,
-                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden.",
+                    null
             );
         }
     }
@@ -201,8 +225,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,
-                        "Vorgangsdaten transformiert",
-                        "Der Vorgang wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
+                        "Vorgangsdaten ersetzt",
+                        "Der Vorgang wird fortgesetzt, nachdem das JSON-Objekt aus der KI-Antwort als neuer Vorgangsdatenbestand übernommen wurde."
                 )
         );
     }
@@ -211,11 +235,11 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell.", "string"),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION),
-                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Vorgangsdatenobjekts.", "Array<string>")
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Gesendeter Anfragetext", "Der nach Auswertung der Eingaben verwendete Arbeitsauftrag an die KI. Die zusätzlich übermittelten Daten sind darin nicht enthalten.", "string"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der vom KI-Dienst gemeldete Grund für das Ende der ersten Antwortoption. Diese Angabe ist keine fachliche Bewertung des Ergebnisses.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Verwendetes Modell", "Die vom KI-Dienst für diese Antwort gemeldete Modellkennung.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_USAGE, "Token-Verbrauch", "Die vom KI-Dienst gemeldeten Token-Anzahlen für Anfrage, Antwort und Gesamtverbrauch.", OUTPUT_USAGE_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Oberste Schlüssel der Vorgangsdaten", "Die Namen aller Einträge auf der obersten Ebene der von der KI zurückgegebenen Vorgangsdaten. Die Liste zeigt keine einzelnen Änderungen.", "Array<string>")
         );
     }
 
@@ -229,7 +253,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpunkt-URL muss angegeben werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Geben Sie die API-Basis-URL an."));
             } else {
                 try {
                     parseEndpointUri(configuration.endpointUrl);
@@ -241,7 +265,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Geheimnis für den API-Schlüssel muss ausgewählt werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Wählen Sie ein gespeichertes Geheimnis mit dem API-Schlüssel aus."));
             } else {
                 try {
                     var secretId = UUID.fromString(configuration.apiKeySecret.trim());
@@ -255,12 +279,12 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         }
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
-            errors.put(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
+            errors.put(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, List.of("Geben Sie eine Modellkennung an."));
         }
 
         if (!context.isDeferred(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Der Prompt muss angegeben werden."));
+                errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Geben Sie eine Anfrage an die KI ein."));
             }
         }
 
@@ -279,16 +303,16 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpunkt-URL für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage fehlt die API-Basis-URL.");
         }
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage wurde kein Geheimnis mit dem API-Schlüssel ausgewählt.");
         }
         if (StringUtils.isNullOrEmpty(configuration.model)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Modell für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage fehlt die Modellkennung.");
         }
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Prompt für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die Anfrage an die KI ist leer. Prüfen Sie die Eingabe oder die verwendete Variable beziehungsweise Regel.");
         }
 
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
@@ -296,7 +320,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var renderedPrompt = configuration.prompt;
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Die Anfrage an die KI ist leer. Prüfen Sie die Eingabe oder die verwendete Variable beziehungsweise Regel."
             );
         }
 
@@ -313,8 +337,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (HttpConnectionException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die API konnte nicht erreicht werden: %s",
-                    e.getMessage()
+                    "Bei der Kommunikation mit dem KI-Dienst ist ein Fehler aufgetreten."
             );
         }
 
@@ -322,9 +345,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var rawBody = decodeResponseBody(response);
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Die API hat mit dem HTTP-Status %d geantwortet. Antwort: %s",
-                    statusCode,
-                    StringUtils.quote(truncateForError(rawBody))
+                    "Der KI-Dienst hat mit dem HTTP-Statuscode %d geantwortet. Die Anfrage konnte nicht abgeschlossen werden.",
+                    statusCode
             );
         }
 
@@ -334,14 +356,13 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die Antwort der KI konnte nicht verarbeitet werden: %s",
-                    e.getMessage()
+                    "Die Antwort des KI-Dienstes konnte nicht verarbeitet werden."
             );
         }
 
         var completionTexts = extractCompletionTexts(completionResponse.choices);
         if (completionTexts.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
+            throw new ProcessNodeExecutionExceptionUnknown("Der KI-Dienst hat keinen Antworttext geliefert.");
         }
 
         var transformedProcessData = parseTransformedProcessData(completionTexts.getFirst());
@@ -356,7 +377,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private URI parseEndpointUri(@Nullable String endpointUrl) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedUrl = StringUtils.toNullableTrimmedString(endpointUrl);
         if (normalizedUrl == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL für den KI-Aufruf ist leer.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die KI-Anfrage fehlt die API-Basis-URL.");
         }
 
         try {
@@ -367,7 +388,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                     .toUri();
 
             if (!uri.isAbsolute() || StringUtils.isNullOrEmpty(uri.getScheme()) || StringUtils.isNullOrEmpty(uri.getHost())) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL muss eine absolute URL sein.");
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die API-Basis-URL muss eine vollständige URL mit Hostnamen sein.");
             }
 
             return uri;
@@ -376,8 +397,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die Endpunkt-URL ist ungültig: %s",
-                    normalizedUrl
+                    "Die API-Basis-URL des KI-Dienstes ist ungültig."
             );
         }
     }
@@ -386,14 +406,14 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private String resolveApiKey(@Nullable String apiKeySecretKey) throws ProcessNodeExecutionException {
         var normalizedSecretKey = StringUtils.toNullableTrimmedString(apiKeySecretKey);
         if (normalizedSecretKey == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage wurde kein Geheimnis mit dem API-Schlüssel ausgewählt.");
         }
 
         UUID secretId;
         try {
             secretId = UUID.fromString(normalizedSecretKey);
         } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.");
         }
 
         SecretEntity secret = secretService
@@ -411,8 +431,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Geheimnis entschlüsselt werden: %s",
-                    e.getMessage()
+                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Geheimnis gelesen werden."
             );
         }
     }
@@ -426,8 +445,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die Vorgangsdaten konnten nicht für den KI-Aufruf serialisiert werden: %s",
-                    e.getMessage()
+                    "Die Daten für die KI-Anfrage konnten nicht vorbereitet werden."
             );
         }
     }
@@ -475,8 +493,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Request-Body für den KI-Aufruf konnte nicht serialisiert werden: %s",
-                    e.getMessage()
+                    "Die Anfrage an den KI-Dienst konnte nicht vorbereitet werden."
             );
         }
     }
@@ -496,7 +513,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     private Map<String, Object> parseTransformedProcessData(@Nonnull String completionText) throws ProcessNodeExecutionExceptionUnknown {
         var normalizedCompletion = StringUtils.toNullableTrimmedString(completionText);
         if (normalizedCompletion == null) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
+            throw new ProcessNodeExecutionExceptionUnknown("Der KI-Dienst hat keinen Antworttext geliefert.");
         }
 
         var jsonPayload = unwrapJsonCodeFence(normalizedCompletion);
@@ -515,14 +532,12 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die KI-Antwort enthält kein gültiges JSON-Objekt. Antwort: %s",
-                    StringUtils.quote(truncateForError(completionText))
+                    "Die KI-Antwort enthält kein gültiges JSON-Objekt für die Vorgangsdaten."
             );
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die KI-Antwort enthält kein gültiges JSON-Objekt. Antwort: %s",
-                    StringUtils.quote(truncateForError(completionText))
+                    "Die KI-Antwort enthält kein gültiges JSON-Objekt für die Vorgangsdaten."
             );
         }
     }
@@ -581,17 +596,6 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 .toList();
     }
 
-    @Nullable
-    private static String truncateForError(@Nullable String rawBody) {
-        if (rawBody == null) {
-            return null;
-        }
-        if (rawBody.length() <= 300) {
-            return rawBody;
-        }
-        return rawBody.substring(0, 300).trim() + "...";
-    }
-
     /**
      * Configuration of the AI process data transformation node.
      */
@@ -603,11 +607,11 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         public static final String PROMPT_FIELD_ID = "prompt";
 
         /**
-         * Absolute URL of the AI completions endpoint. The node uses this URL as-is and does not render it as a template.
+         * Absolute API base URL. The chat completions path is appended without rendering the URL as a template.
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Basis-URL der API. Der Pfad /chat/completions wird automatisch angehängt."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "API-Basis-URL"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Basis-URL einer OpenAI-kompatiblen Chat-Completions-API an, zum Beispiel https://ki.example/v1. Der Pfad /chat/completions wird automatisch ergänzt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
@@ -618,7 +622,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          */
         @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "API-Schlüssel"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein hinterlegtes Geheimnis aus, das den Bearer-Token für die KI enthält."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein in Prosuna gespeichertes Geheimnis aus, das den API-Schlüssel dieses KI-Dienstes enthält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
@@ -629,7 +633,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
          */
         @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Text,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Modellkennung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die genaue Kennung eines Modells an, das über die gewählte API verfügbar ist."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
@@ -643,8 +648,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                 // The prompt goes to a language model, not to a Markdown renderer.
                 dynamicTextFormat = TemplateOutputFormat.PlainText,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Prompt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Prompt-Vorlage mit Template-Ausdrücken. Die Vorlage wird vor dem API-Aufruf mit den aktuellen Vorgangsdaten gerendert."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Anfrage an die KI"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie, wie die Vorgangsdaten umgewandelt werden sollen. Dieser Anfragetext wird auch Prompt genannt. Die verfügbaren Vorgangsdaten, geschützten Vorgangsdaten und Elementdaten werden automatisch mitgesendet. Das Ergebnis ersetzt die bisherigen Vorgangsdaten vollständig."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String prompt;

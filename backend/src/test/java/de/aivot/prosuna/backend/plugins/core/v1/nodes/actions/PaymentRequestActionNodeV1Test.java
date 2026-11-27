@@ -30,6 +30,7 @@ import de.aivot.prosuna.backend.markdown.utils.MarkdownRenderer;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentItem;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
@@ -49,6 +50,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionIO;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -71,7 +73,9 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -156,10 +160,12 @@ class PaymentRequestActionNodeV1Test {
     void configurationLayout_ExposesIdentityPaymentAndBothExecutionModes() throws Exception {
         var layout = node.getConfigurationLayout(configurationLayoutContext());
 
-        assertTrue(layout.findChild(
+        var recipient = layout.findChild(
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID,
                 ProcessIdentityIdInputElement.class
-        ).isPresent());
+        ).orElseThrow();
+        assertEquals("Empfangende Identität", recipient.getLabel());
+        assertTrue(recipient.getHint().contains("hinterlegten Zustellweg"));
         assertTrue(layout.findChild(
                 PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig.PAYMENT_FIELD_ID,
                 PaymentConfigElement.class
@@ -171,7 +177,7 @@ class PaymentRequestActionNodeV1Test {
         ).orElseThrow();
         assertEquals(List.of(
                 SelectInputElementOption.of("automatic", "Automatisch versenden"),
-                SelectInputElementOption.of("manual", "Manuell bearbeiten und versenden")
+                SelectInputElementOption.of("manual", "Vor Versand prüfen und bearbeiten")
         ), executionType.getOptions());
 
         var automaticGroup = layout.findChild(
@@ -184,6 +190,13 @@ class PaymentRequestActionNodeV1Test {
         ).orElseThrow();
         assertNotNull(automaticGroup.getVisibility());
         assertNotNull(manualGroup.getVisibility());
+        for (var fieldId : List.of(
+                SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID,
+                SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID
+        )) {
+            var message = layout.findChild(fieldId, RichTextInputElement.class).orElseThrow();
+            assertTrue(message.getHint().contains("Der Link zur Zahlung wird automatisch ergänzt."));
+        }
 
         var assignment = layout.findChild(
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
@@ -207,7 +220,10 @@ class PaymentRequestActionNodeV1Test {
                 },
                 node.getExecutionTypes()
         );
-        assertEquals("Fordert eine Online-Zahlung von Beteiligten an und wartet auf deren Abschluss.", node.getAbstract());
+        assertEquals("Fordert eine Online-Zahlung an und wartet auf die Zahlungsbestätigung.", node.getAbstract());
+        var paidPort = node.getPorts(nodeConfiguration(paymentConfig(UUID.randomUUID()), "automatic")).getFirst();
+        assertEquals("paid", paidPort.key());
+        assertEquals("Zahlung bestätigt", paidPort.label());
     }
 
     @Test
@@ -407,7 +423,10 @@ class PaymentRequestActionNodeV1Test {
                 paymentInformation.getContent()
         );
         assertTrue(Boolean.TRUE.equals(layout.findChild("subject", TextInputElement.class).orElseThrow().getRequired()));
-        assertTrue(Boolean.TRUE.equals(layout.findChild("body", RichTextInputElement.class).orElseThrow().getRequired()));
+        var message = layout.findChild("body", RichTextInputElement.class).orElseThrow();
+        assertTrue(Boolean.TRUE.equals(message.getRequired()));
+        assertEquals("Nachricht", message.getLabel());
+        assertTrue(message.getHint().contains("Der Link zur Zahlung wird automatisch ergänzt."));
         assertEquals(
                 List.of(new TaskViewEvent("Zahlungsaufforderung versenden", "send")),
                 view.events()
@@ -551,7 +570,7 @@ class PaymentRequestActionNodeV1Test {
     void staffTaskView_FailsWhenPreparedPaymentIsMissing() {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
 
-        assertThrows(
+        var exception = assertThrows(
                 ResponseException.class,
                 () -> node.getStaffTaskView(staffContext(
                         configuration,
@@ -560,13 +579,15 @@ class PaymentRequestActionNodeV1Test {
                         task()
                 ))
         );
+        assertEquals("Für diese Zahlungsaufforderung liegen keine vorbereiteten Zahlungsdaten vor.", exception.getTitle());
+        assertInstanceOf(ProcessNodeExecutionExceptionMissingValue.class, exception.getCause());
     }
 
     @Test
     void staffTaskView_FailsWhenPreparedPaymentCannotBeRead() {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
 
-        assertThrows(
+        var exception = assertThrows(
                 ResponseException.class,
                 () -> node.getStaffTaskView(staffContext(
                         configuration,
@@ -579,6 +600,9 @@ class PaymentRequestActionNodeV1Test {
                         )
                 ))
         );
+        assertEquals("Die vorbereiteten Zahlungsdaten konnten nicht gelesen werden.", exception.getTitle());
+        assertInstanceOf(ProcessNodeExecutionExceptionInvalidDataType.class, exception.getCause());
+        assertNotNull(exception.getCause().getCause());
     }
 
     @Test
@@ -588,7 +612,7 @@ class PaymentRequestActionNodeV1Test {
         when(paymentProviderRepository.findById(paymentProviderKey))
                 .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionMissingValue.class,
                 () -> node.onEventFromStaffTaskView(
                         staffContext(
@@ -601,6 +625,7 @@ class PaymentRequestActionNodeV1Test {
                         "send"
                 )
         );
+        assertEquals("Für diese Zahlungsaufforderung liegen keine vorbereiteten Zahlungsdaten vor.", exception.getMessage());
         verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
         verify(paymentTransactionService, never()).create(any(), any(), any());
     }
@@ -609,7 +634,7 @@ class PaymentRequestActionNodeV1Test {
     void staffTask_RejectsEmptyEditedMessageBeforeCreatingPayment() throws Exception {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
 
-        assertThrows(
+        var exception = assertThrows(
                 ResponseException.class,
                 () -> node.onEventFromStaffTaskView(
                         staffContext(
@@ -622,6 +647,9 @@ class PaymentRequestActionNodeV1Test {
                         "send"
                 )
         );
+        var validation = assertInstanceOf(DerivedRuntimeElementData.class, exception.getDetails());
+        assertEquals("Geben Sie einen Betreff für die Zahlungsaufforderung an.", validation.getElementStates().get("subject").getError());
+        assertEquals("Geben Sie eine Nachricht für die Zahlungsaufforderung an.", validation.getElementStates().get("body").getError());
 
         verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
         verify(paymentTransactionService, never()).create(any(), any(), any());
@@ -631,7 +659,7 @@ class PaymentRequestActionNodeV1Test {
     void staffTask_RejectsUnknownEvent() {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "manual");
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
                 () -> node.onEventFromStaffTaskView(
                         staffContext(
@@ -644,13 +672,19 @@ class PaymentRequestActionNodeV1Test {
                         "save"
                 )
         );
+        var expectedMessage = "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: „save“.";
+        assertEquals(expectedMessage, exception.getMessage());
+        var controllerException = node.unavailableStaffTaskEvent("save", authored("subject", "Betreff", "body", "Nachricht"));
+        assertEquals(HttpStatus.BAD_REQUEST, controllerException.getStatus());
+        assertEquals(expectedMessage, controllerException.getTitle());
+        assertNull(controllerException.getDetails());
     }
 
     @Test
     void initAutomatic_FailsWhenRecipientIdentityIsMissing() throws Exception {
         var configuration = nodeConfiguration(paymentConfig(UUID.randomUUID()), "automatic");
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionMissingValue.class,
                 () -> node.init(context(
                         configuration,
@@ -659,6 +693,7 @@ class PaymentRequestActionNodeV1Test {
                         task()
                 ))
         );
+        assertEquals("Die ausgewählte empfangende Identität „applicant“ ist in diesem Vorgang nicht vorhanden.", exception.getMessage());
         verify(paymentPayloadCreationService, never()).createRequest(any(), any(), any());
         verify(paymentTransactionService, never()).create(any(), any(), any());
     }
@@ -704,6 +739,83 @@ class PaymentRequestActionNodeV1Test {
                 any(), any(), any(), any(), any(), any(), any(), any(), any()
         );
         verify(paymentTransactionService, never()).create(any(), any(), any());
+    }
+
+    @Test
+    void initAutomatic_PreservesHelpfulPaymentPreparationErrorAndCause() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentConfig = paymentConfig(paymentProviderKey);
+        var cause = new PaymentException("Die Zahlungsposition 2 muss einen Steuersatz enthalten.");
+        when(paymentProviderRepository.findById(paymentProviderKey))
+                .thenReturn(Optional.of(paymentProvider(paymentProviderKey)));
+        when(paymentPayloadCreationService.createRequest(eq(paymentConfig), any(), any())).thenThrow(cause);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(
+                        nodeConfiguration(paymentConfig, "automatic"),
+                        new ProcessExecutionData(),
+                        processInstance(recipientIdentity()),
+                        task()
+                ))
+        );
+
+        assertEquals(
+                "Die Zahlungsanforderung konnte nicht vorbereitet werden: Die Zahlungsposition 2 muss einen Steuersatz enthalten.",
+                exception.getMessage()
+        );
+        assertSame(cause, exception.getCause());
+        verifyNoInteractions(paymentTransactionService);
+    }
+
+    @Test
+    void initAutomatic_ReportsProviderCreationFailureWithoutDetailsAndKeepsCause() throws Exception {
+        var paymentProviderKey = UUID.randomUUID();
+        var paymentConfig = paymentConfig(paymentProviderKey);
+        var paymentProvider = paymentProvider(paymentProviderKey);
+        var paymentPayload = paymentPayload();
+        var cause = new PaymentException("%s", "Private provider response with 100% diagnostic content");
+        when(paymentProviderRepository.findById(paymentProviderKey)).thenReturn(Optional.of(paymentProvider));
+        when(paymentPayloadCreationService.createRequest(eq(paymentConfig), any(), any()))
+                .thenReturn(Optional.of(paymentPayload));
+        when(paymentTransactionService.create(same(paymentProvider), same(paymentPayload), any())).thenThrow(cause);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(
+                        nodeConfiguration(paymentConfig, "automatic"),
+                        new ProcessExecutionData(),
+                        processInstance(recipientIdentity()),
+                        task()
+                ))
+        );
+
+        assertEquals("Die Zahlung konnte beim Zahlungsanbieter nicht angelegt werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "tx-missing"})
+    void resume_ReportsMissingTransactionReferenceOrTransaction(String transactionKey) {
+        Map<String, Object> runtimeData = transactionKey.isEmpty()
+                ? Map.of() : Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, transactionKey);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionMissingValue.class,
+                () -> node.resume(context(
+                        nodeConfiguration(paymentConfig(UUID.randomUUID()), "automatic"),
+                        new ProcessExecutionData(),
+                        processInstance(recipientIdentity()),
+                        task(runtimeData, Map.of(), Map.of())
+                ))
+        );
+
+        assertEquals(
+                transactionKey.isEmpty()
+                        ? "Für diese Zahlungsaufforderung ist keine Zahlung hinterlegt."
+                        : "Die hinterlegte Zahlung konnte nicht gefunden werden. Transaktionsschlüssel: „tx-missing“.",
+                exception.getMessage()
+        );
     }
 
     @Test
@@ -789,14 +901,18 @@ class PaymentRequestActionNodeV1Test {
         assertEquals(Map.of("existing", "value"), result.getProcessData());
     }
 
-    @Test
-    void resume_FailsWhenPaymentFailed() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "FAILED, Die Zahlung ist fehlgeschlagen.",
+            "CANCELED, Die Zahlung wurde abgebrochen."
+    })
+    void resume_ReportsPaymentFailureOrCancellationWithoutProviderDetails(XBezahldienstStatus status, String message) throws Exception {
         var paymentProviderKey = UUID.randomUUID();
-        var transaction = paymentTransaction(paymentProviderKey, XBezahldienstStatus.FAILED)
-                .setPaymentError("Provider rejected payment");
+        var transaction = paymentTransaction(paymentProviderKey, status)
+                .setPaymentError("Private provider response with 100% diagnostic content");
         when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionIO.class,
                 () -> node.resume(context(
                         nodeConfiguration(paymentConfig(paymentProviderKey), "automatic"),
@@ -805,6 +921,8 @@ class PaymentRequestActionNodeV1Test {
                         task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"), Map.of(), Map.of())
                 ))
         );
+        assertEquals(message + " Transaktionsschlüssel: „tx-1“.", exception.getMessage());
+        assertFalse(exception.getMessage().contains(transaction.getPaymentError()));
     }
 
     @Test

@@ -24,6 +24,8 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
@@ -34,6 +36,7 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.submission.services.ElementDataTransformService;
 import org.junit.jupiter.api.Test;
 
@@ -139,27 +142,45 @@ class SwitchFlowControlNodeV1Test {
 
     @Test
     void shouldContinueViaFirstTrueCaseWithoutEvaluatingLaterCases() throws Exception {
-        var result = execute(config(null,
+        var configuration = config(null,
                 noCode(ID_1, "Erster", false),
                 lowCode(ID_2, "Zweiter", "1 + 1 === 2"),
                 noCode(ID_3, "Dritter", true),
                 lowCode(ID_4, "Vierter", "throw new Error('darf nicht ausgewertet werden')")
-        ));
+        );
+        var result = execute(configuration);
 
         assertEquals("0190a6f21a2b7c3d8e4f000000000002", result.getViaPort());
         assertEquals(ID_2, result.getNodeData().get("matchedCaseId"));
         assertEquals("Zweiter", result.getNodeData().get("matchedCaseLabel"));
         assertEquals(false, result.getNodeData().get("defaultUsed"));
+
+        var expectedSummary = "Als erster zutreffender Fall wurde „Zweiter“ ermittelt."
+                + " Für die Fortsetzung wurde der Ausgang „Zweiter“ gewählt.";
+        assertEquals(expectedSummary, summary(configuration, result, null));
+        assertEquals(
+                expectedSummary + "\n\nKurzbeschreibung\n:   Prüfumfang \\*festlegen\\*",
+                summary(configuration, result, "Prüfumfang *festlegen*")
+        );
     }
 
     @Test
     void shouldContinueViaDefaultPortWhenNoCaseIsTrue() throws Exception {
-        var result = execute(config(null, noCode(ID_1, "Erster", false), lowCode(ID_2, "Zweiter", "false")));
+        var configuration = config(null, noCode(ID_1, "Erster", false), lowCode(ID_2, "Zweiter", "false"));
+        var result = execute(configuration);
 
         assertEquals("default", result.getViaPort());
         assertNull(result.getNodeData().get("matchedCaseId"));
         assertNull(result.getNodeData().get("matchedCaseLabel"));
         assertEquals(true, result.getNodeData().get("defaultUsed"));
+
+        var expectedSummary = "Keiner der Fälle trifft zu."
+                + " Für die Fortsetzung wurde der Standardausgang „Standard“ gewählt.";
+        assertEquals(expectedSummary, summary(configuration, result, null));
+        assertEquals(
+                expectedSummary + "\n\nKurzbeschreibung\n:   Prüfumfang \\*festlegen\\*",
+                summary(configuration, result, "Prüfumfang *festlegen*")
+        );
     }
 
     @Test
@@ -172,7 +193,7 @@ class SwitchFlowControlNodeV1Test {
     void shouldRejectCaseLabelsMatchingTheEffectiveDefaultLabel() {
         var errors = validate(config(null, noCode(ID_1, " standard ", true)));
 
-        assertEquals(List.of("Fall 1: Die Beschriftung „standard“ wird bereits für den Standardausgang verwendet. Vergeben Sie eine eindeutige Beschriftung."),
+        assertEquals(List.of("Fall 1: Die Bezeichnung „standard“ wird bereits für den Standardausgang verwendet. Vergeben Sie eine eindeutige Bezeichnung."),
                 errors);
         assertNotNull(validate(config("Sonst", noCode(ID_1, "SONST", true))));
     }
@@ -186,7 +207,7 @@ class SwitchFlowControlNodeV1Test {
     void shouldRejectDuplicateCaseLabels() {
         var errors = validate(config(null, noCode(ID_1, "Antrag", true), noCode(ID_2, "Bescheid", true), noCode(ID_3, " ANTRAG", true)));
 
-        assertEquals(List.of("Fall 3: Die Beschriftung „ANTRAG“ wird bereits für Fall 1 verwendet. Vergeben Sie eine eindeutige Beschriftung."),
+        assertEquals(List.of("Fall 3: Die Bezeichnung „ANTRAG“ wird bereits für Fall 1 verwendet. Vergeben Sie eine eindeutige Bezeichnung."),
                 errors);
     }
 
@@ -221,6 +242,18 @@ class SwitchFlowControlNodeV1Test {
         when(context.getCurrentProcessExecutionData()).thenReturn(new ProcessExecutionData());
         when(context.getConfigurationOfExecutingNode()).thenReturn(config);
         return assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context));
+    }
+
+    private String summary(SwitchFlowControlNodeV1.SwitchFlowControlNodeConfig config,
+                           ProcessNodeExecutionResultTaskCompleted result,
+                           String description) {
+        return node.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(
+                config,
+                new ProcessNodeEntity().setDescription(description),
+                new ProcessInstanceEntity(),
+                new ProcessInstanceTaskEntity().setNodeData(result.getNodeData()),
+                null, null, null, result.getViaPort()
+        ));
     }
 
     private static SwitchFlowControlNodeV1.SwitchFlowControlNodeConfig config(String defaultPortLabel,

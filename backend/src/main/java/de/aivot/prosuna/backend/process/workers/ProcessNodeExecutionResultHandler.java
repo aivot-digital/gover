@@ -476,9 +476,8 @@ public class ProcessNodeExecutionResultHandler {
             if (recipientIdentity != null) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Die Nachricht an die Identität %s konnte nicht versendet werden: %s",
-                        StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientIdentity.identityId(), recipientIdentity.title())),
-                        e.getMessage()
+                        "Beim Versand der Nachricht an die Identität %s ist ein Fehler aufgetreten.",
+                        StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientIdentity.identityId(), recipientIdentity.title()))
                 );
             }
             throw new ProcessNodeExecutionExceptionUnknown(
@@ -550,9 +549,13 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Info,
                     false,
                     true,
+                    true,
+                    null,
+                    null,
+                    null,
                     "Nachricht versendet",
                     eventDetails,
-                    "Die Nachricht mit dem Betreff %s wurde erfolgreich an die Identität %s versendet.",
+                    "Die Nachricht mit dem Betreff %s wurde an die Identität %s versendet.",
                     StringUtils.quote(message.subject()),
                     StringUtils.quote(ProcessHistoryLabels.nameOrId(recipientIdentity.identityId(), recipientIdentity.title()))
             );
@@ -561,6 +564,10 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Info,
                     false,
                     true,
+                    true,
+                    null,
+                    null,
+                    null,
                     "Nachricht versendet",
                     eventDetails,
                     "Die Nachricht mit dem Betreff %s wurde erfolgreich an die E-Mail-Adresse %s versendet.",
@@ -595,9 +602,8 @@ public class ProcessNodeExecutionResultHandler {
             markTaskFailed(context.processInstanceTask);
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Prozess %s des Vorgangs konnte nicht geladen werden: %s",
-                    context.processInstance.getProcessId(),
-                    e.getMessage()
+                    "Der Prozess %s des Vorgangs konnte nicht geladen werden.",
+                    context.processInstance.getProcessId()
             );
         }
 
@@ -679,13 +685,16 @@ public class ProcessNodeExecutionResultHandler {
                 ProcessNodeExecutionLogLevel.Info,
                 false,
                 true,
+                true,
+                null,
+                null,
+                null,
                 "Zahlung angefordert",
-                "Es wurde eine Zahlung über den Zahlungsanbieter %s mit der Transaktions-ID %s angefordert.",
+                Map.of(),
+                "Die Zahlung wurde beim Zahlungsanbieter %s bereitgestellt. Die Aufgabe wartet auf die Zahlungsbestätigung. Transaktionsschlüssel: %s.",
                 StringUtils.quote(context.result.getPaymentProviderName()),
                 StringUtils.quote(context.result.getTransactionKey())
         );
-
-        // TODO: Use communication package to send payment request information to target in a later product iteration.
     }
 
     private void handleAssigned(@Nonnull HandlerContext<?, ProcessNodeExecutionResultTaskAssigned> context) throws ProcessNodeExecutionException {
@@ -915,12 +924,12 @@ public class ProcessNodeExecutionResultHandler {
             if (newlyAssignedUser.isEmpty()) {
                 logMessageTitle = "Zuweisung zu Vorgang unverändert";
                 logMessageDetailsBuilder
-                        .append("Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war keine Mitarbeiter:in zugewiesen und es ist weiterhin keine Mitarbeiter:in zugewiesen.");
+                        .append("Dem Vorgang ist weiterhin keine Person zugewiesen.");
             } else {
                 logMessageTitle = "Vorgang zugewiesen";
                 logMessageDetailsBuilder
                         .append(String.format(
-                                "Die Zuweisung zu diesem Vorgang wurde auf die Mitarbeiter:in %s geändert.",
+                                "Der Vorgang wurde %s zugewiesen.",
                                 ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
                         ));
                 sendAssignedEmail = true;
@@ -932,7 +941,7 @@ public class ProcessNodeExecutionResultHandler {
                 logMessageTitle = "Zuweisung zu Vorgang entfernt";
                 logMessageDetailsBuilder
                         .append(String.format(
-                                "Die Zuweisung zu diesem Vorgang zur Mitarbeiter:in %s wurde entfernt.",
+                                "Die Zuweisung des Vorgangs an %s wurde aufgehoben.",
                                 ProcessHistoryLabels.quotedUser(previousAssignedUser.get())
                         ));
                 sendUnassignedEmail = true;
@@ -941,15 +950,14 @@ public class ProcessNodeExecutionResultHandler {
                     logMessageTitle = "Zuweisung zu Vorgang unverändert";
                     logMessageDetailsBuilder
                             .append(String.format(
-                                    "Die Zuweisung zu diesem Vorgang wurde nicht geändert. Es war die Mitarbeiter:in %s zugewiesen und es ist weiterhin die Mitarbeiter:in %s zugewiesen.",
-                                    ProcessHistoryLabels.quotedUser(previousAssignedUser.get()),
+                                    "Der Vorgang bleibt %s zugewiesen.",
                                     ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
                             ));
                 } else {
                     logMessageTitle = "Vorgang neu zugewiesen";
                     logMessageDetailsBuilder
                             .append(String.format(
-                                    "Die Zuweisung zu diesem Vorgang wurde von der Mitarbeiter:in %s auf die Mitarbeiter:in %s geändert.",
+                                    "Die zuständige Person des Vorgangs wurde von %s auf %s geändert.",
                                     ProcessHistoryLabels.quotedUser(previousAssignedUser.get()),
                                     ProcessHistoryLabels.quotedUser(newlyAssignedUser.get())
                             ));
@@ -961,11 +969,11 @@ public class ProcessNodeExecutionResultHandler {
 
         if (triggeringUser.isEmpty()) {
             logMessageDetailsBuilder
-                    .append(" Die Änderung wurde automatisch vorgenommen.");
+                    .append(" Die Aktion wurde automatisch ausgeführt.");
         } else {
             logMessageDetailsBuilder
                     .append(String.format(
-                            " Die Änderung wurde durch %s vorgenommen.",
+                            " Die Aktion wurde durch %s ausgeführt.",
                             ProcessHistoryLabels.quotedUser(triggeringUser.get())
                     ));
         }
@@ -1071,7 +1079,12 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
+                    true,
+                    null,
+                    null,
+                    null,
                     "Aufgabe per E-Mail zugewiesen",
+                    Map.of(),
                     "Zur Bearbeitung der Aufgabe %s wurde eine Einladung an %s versendet.",
                     StringUtils.quote(context.currentNode.resolveName(context.provider)),
                     StringUtils.quote(communicationRequest.recipientEmailAddress())
@@ -1103,7 +1116,12 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Info,
                     false,
                     true,
+                    true,
+                    null,
+                    null,
+                    null,
                     "Aufgabe neu zugewiesen",
+                    Map.of(),
                     "Die Aufgabe wurde durch %s der Identität %s zugewiesen.",
                     ProcessHistoryLabels.quotedUser(context.triggeringUser),
                     StringUtils.quote(ProcessHistoryLabels.nameOrId(assignedCustomer.identityId(), assignedCustomer.title()))
@@ -1113,7 +1131,12 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
+                    true,
+                    null,
+                    null,
+                    null,
                     "Aufgabe " + StringUtils.quote(context.currentNode.resolveName(context.provider)) + " automatisch zugewiesen",
+                    Map.of(),
                     "Die Aufgabe wurde automatisch der Identität %s zugewiesen.",
                     StringUtils.quote(ProcessHistoryLabels.nameOrId(assignedCustomer.identityId(), assignedCustomer.title()))
             );
@@ -1295,7 +1318,7 @@ public class ProcessNodeExecutionResultHandler {
                 true,
                 true,
                 "Vorgang abgeschlossen",
-                "Der Vorgang wurde erfolgreich abgeschlossen. Das abschließende Prozesselement war %s",
+                "Der Vorgang wurde abgeschlossen. Abschließendes Prozesselement: %s.",
                 StringUtils.quote(context.currentNode.resolveName(context.provider))
         );
     }
@@ -1346,7 +1369,7 @@ public class ProcessNodeExecutionResultHandler {
         var versionId = ProcessVersionEntityId.of(context.currentNode.getProcessId(), context.currentNode.getProcessVersion());
         var version = processVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionBrokenImplementation(
-                        "Die Prozessversion %d des abschließenden Prozesselements wurde nicht gefunden.",
+                        "Der Vorgang konnte nicht abgeschlossen werden, weil die Prozessversion %d des abschließenden Prozesselements nicht gefunden wurde.",
                         context.currentNode.getProcessVersion()
                 ));
         if (version.getRetentionTimeValue() == null && version.getRetentionTimeUnit() == null) {
@@ -1354,7 +1377,7 @@ public class ProcessNodeExecutionResultHandler {
         }
         if (version.getRetentionTimeValue() == null || version.getRetentionTimeUnit() == null) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    "Die Aufbewahrungsfrist der Prozessversion %d ist unvollständig.",
+                    "Die Aufbewahrungsfrist der Prozessversion %d ist unvollständig. Prüfen Sie die Fristeinstellungen dieser Prozessversion.",
                     version.getProcessVersion()
             );
         }

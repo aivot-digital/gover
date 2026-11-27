@@ -46,7 +46,7 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.de
 @Component
 public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlNodeV1.IfFlowControlNodeConfig> {
     public static final String NODE_KEY = "if";
-    private static final String CONDITION_SUBJECT = "des Bedingungselements";
+    private static final String CONDITION_SUBJECT = "der bedingten Verzweigung";
 
     private static final String PORT_NAME_TRUE = "true";
     private static final String PORT_NAME_FALSE = "false";
@@ -70,8 +70,9 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         var summary = new ExecutionSummaryMarkdown(context);
         var fulfilled = Boolean.TRUE.equals(summary.data(OUTPUT_NAME_CONDITION_VALUE));
         var path = PORT_NAME_TRUE.equals(context.viaPort()) ? "Bedingung erfüllt" : "Bedingung nicht erfüllt";
-        return "Der Vorgang wurde über den Pfad „" + path + "“ fortgesetzt."
-                + detail("Ergebnis der Auswertung der Bedingung", fulfilled ? "Wahr" : "Falsch");
+        return "Für die Fortsetzung wurde der Ausgang „" + path + "“ gewählt."
+                + detail("Bedingung erfüllt", fulfilled ? "Ja" : "Nein")
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -107,22 +108,66 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
     @Nonnull
     @Override
     public String getName() {
-        return "Bedingte Verzweigung (Wenn-Dann-Sonst)";
+        return "Bedingte Verzweigung";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Setzt den Vorgang abhängig von einer Bedingung über einen von zwei Ausgangsports fort.";
+        return "Prüft eine Bedingung und setzt den Vorgang über „Bedingung erfüllt“ oder „Bedingung nicht erfüllt“ fort.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Wertet eine Bedingung aus und setzt den Vorgang über den Ausgangsport „Bedingung erfüllt“ oder „Bedingung nicht erfüllt“ fort.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Die Bedingung wird als No-Code-Ausdruck oder als Low-Code-Skript formuliert und kann auf Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten zugreifen. Ein Low-Code-Skript muss einen Wahrheitswert zurückgeben, sonst schlägt die Aufgabe fehl. Bei einem No-Code-Ausdruck gilt ein leeres Ergebnis als nicht erfüllt.
+                Verwenden Sie dieses Prozesselement, wenn der weitere Ablauf von einer Bedingung abhängt, zum Beispiel von einem Betrag oder einer vorherigen Entscheidung. Prosuna prüft die Bedingung automatisch und wählt einen von zwei Ausgängen. Das entspricht einer Wenn-Dann-Sonst-Entscheidung.
+
+                # Was richten Sie ein?
+
+                Wählen Sie unter „Bedingungsart“, wie Sie die Bedingung festlegen:
+
+                - **No-Code:** Stellen Sie die Bedingung mit den verfügbaren Funktionen und Wertquellen zusammen. Diese Art ist vorbelegt.
+                - **Low-Code (JavaScript):** Hinterlegen Sie die Bedingung als eigenes Skript. Das Ergebnis des letzten Ausdrucks muss `true` für „erfüllt“ oder `false` für „nicht erfüllt“ sein.
+
+                Beide Arten können Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten verwenden. In einem Low-Code-Skript greifen Sie mit `$` auf die Vorgangsdatenebene zu, zum Beispiel `$.betrag`. `$$` steht für die geschützte Vorgangsdatenebene und `_` für die Elementdatenebene.
+
+                Verbinden Sie die Ausgänge „Bedingung erfüllt“ und „Bedingung nicht erfüllt“ mit den passenden nächsten Schritten.
+
+                # Was passiert bei der Ausführung?
+
+                Sobald der Vorgang dieses Element erreicht, wertet Prosuna die hinterlegte Bedingung aus:
+
+                - Ist die Bedingung erfüllt, wird „Bedingung erfüllt“ gewählt.
+                - Ist die Bedingung nicht erfüllt, wird „Bedingung nicht erfüllt“ gewählt.
+
+                Nur der gewählte Ausgang bestimmt die Fortsetzung. Auch bei nicht erfüllter Bedingung wird der Vorgang fortgesetzt. Fehlt die Bedingung oder kann sie nicht ausgewertet werden, schlägt die Aufgabe fehl.
+
+                # Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten werden die hinterlegte Bedingung, das ursprüngliche Ergebnis als Text und die abschließende Ja/Nein-Bewertung gespeichert. „Bedingung erfüllt“ enthält `true` für Ja oder `false` für Nein. Diese Ergebnisse können Sie in weiteren Schritten verwenden oder über eine Ausgangsdatenzuordnung in die Vorgangsdaten übernehmen.
+
+                Die vorhandenen Vorgangsdaten werden weitergegeben. Wenn Sie Ausgangsdatenzuordnungen einrichten, werden die ausgewählten Ergebnisse an den festgelegten Speicherorten eingetragen; vorhandene Werte dort werden ersetzt.
+
+                Die Zusammenfassung im Vorgangsverlauf nennt den gewählten Ausgang und ob die Bedingung erfüllt war. Eine hinterlegte Kurzbeschreibung wird ebenfalls angezeigt. Beschreiben Sie dort die fachliche Bedingung, damit die Entscheidung im Verlauf verständlich bleibt.
+
+                # Wie sieht ein Beispiel aus?
+
+                Ein Betrag über `1000` soll zu einem zusätzlichen Prüfschritt führen. Wählen Sie „No-Code“ und die Funktion „Größer als“. Verwenden Sie den Vorgangsdatenwert `betrag` als Zahl und `1000` als Vergleichszahl. Verbinden Sie „Bedingung erfüllt“ mit dem zusätzlichen Prüfschritt und „Bedingung nicht erfüllt“ mit dem regulären nächsten Schritt.
+
+                Bei `betrag: 1500` wird „Bedingung erfüllt“ gewählt. Bei `betrag: 800` oder genau `1000` wird „Bedingung nicht erfüllt“ gewählt.
+
+                Dieselbe Bedingung können Sie unter „Low-Code (JavaScript)“ mit `$.betrag > 1000` festlegen.
+
+                # Was ist zu beachten?
+
+                Das Element hat genau zwei Ausgänge. Für weitere aufeinanderfolgende Entscheidungen können Sie mehrere Verzweigungen verbinden oder „Fallunterscheidung“ verwenden.
+
+                Ein fehlender Bedingungsausdruck führt zu einem Fehler. Liefert ein hinterlegter No-Code-Ausdruck dagegen `null` oder leeren Text, gilt die Bedingung als nicht erfüllt. Auch die Texte `true` oder `wahr` sowie `false` oder `falsch` werden als entsprechende Wahrheitswerte erkannt. Andere Ergebnisse, etwa Zahlen oder die Texte `ja` und `nein`, sind keine gültigen Bedingungsergebnisse.
+
+                Bei Low-Code muss das letzte Ergebnis ein tatsächlicher JavaScript-Wahrheitswert sein: `true` oder `false`, jeweils ohne Anführungszeichen. `null`, `undefined`, Texte und Zahlen führen zu einem Fehler. Ein alleinstehendes `return` auf oberster Skriptebene ist unzulässig; wenn Sie eine Funktion verwenden, rufen Sie diese im Skript auf.
                 """;
     }
 
@@ -134,7 +179,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         try {
             layout = ElementPOJOMapper.createFromPOJO(IfFlowControlNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
+            throw ResponseException.internalServerError(e, "Die Einstellungen für „Bedingte Verzweigung“ konnten nicht geladen werden.");
         }
 
         FlowConditionSupport.configureConditionFields(layout);
@@ -171,20 +216,20 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EXPRESSION,
-                        "Bedingungsausdruck",
-                        "Der konfigurierte Bedingungsausdruck.",
+                        "Hinterlegte Bedingung",
+                        "Die hinterlegte Bedingung als JavaScript-Skript oder als technische JSON-Darstellung des No-Code-Ausdrucks.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_EVALUATED,
-                        "Ausgewerteter Bedingungswert",
-                        "Der Rückgabewert des ausgewerteten Bedingungsausdrucks als Text.",
+                        "Ergebnis des Ausdrucks als Text",
+                        "Das ursprüngliche Ergebnis des Bedingungsausdrucks als Text, bevor es als erfüllt oder nicht erfüllt bewertet wird.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONDITION_VALUE,
-                        "Boolesches Ergebnis",
-                        "Das boolesche Ergebnis der Bedingungsauswertung.",
+                        "Bedingung erfüllt",
+                        "Gibt an, ob die Bedingung erfüllt ist: true bedeutet Ja, false bedeutet Nein.",
                         "boolean"
                 )
         );
@@ -235,7 +280,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
             case CONDITION_TYPE_VALUE_LOW_CODE -> ConditionType.LOW_CODE;
             case CONDITION_TYPE_VALUE_NO_CODE -> ConditionType.NO_CODE;
             default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Der Modus der If-Bedingung ist ungültig. Übergeben wurde: %s",
+                    "Die Bedingungsart %s wird nicht unterstützt. Wählen Sie „No-Code“ oder „Low-Code (JavaScript)“.",
                     StringUtils.quote(configuredConditionType)
             );
         };
@@ -246,7 +291,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                                                String lowCodeCondition) throws ProcessNodeExecutionException {
         if (StringUtils.isNullOrEmpty(lowCodeCondition)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Low-Code-Bedingung für das Bedingungselement wurde nicht angegeben."
+                    "Legen Sie die Bedingung als Low-Code-Skript in JavaScript fest."
             );
         }
 
@@ -263,7 +308,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                                                               NoCodeOperand noCodeCondition) throws ProcessNodeExecutionException {
         if (noCodeCondition == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die No-Code-Bedingung für das Bedingungselement wurde nicht angegeben."
+                    "Legen Sie einen No-Code-Ausdruck für die Bedingung fest."
             );
         }
 
@@ -301,7 +346,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Sie die Bedingung als No-Code-Ausdruck oder als Low-Code-Skript festlegen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Sie die Bedingung als No-Code-Ausdruck oder als Low-Code-Skript in JavaScript festlegen."),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
                 @ElementPOJOBindingProperty(key = "displayInline", boolValue = true),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
@@ -310,7 +355,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
         @InputElementPOJOBinding(id = CONDITION_LOW_CODE_FIELD_ID, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "JavaScript-Ausdruck oder -Funktion, der/die direkt zu true oder false ausgewertet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Ergebnis des letzten JavaScript-Ausdrucks muss true (erfüllt) oder false (nicht erfüllt) sein, zum Beispiel $.betrag > 1000."),
                 @ElementPOJOBindingProperty(key = "editorHeight", intValue = 140),
                 @ElementPOJOBindingProperty(key = "wordWrap", boolValue = true),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
@@ -319,7 +364,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
 
         @InputElementPOJOBinding(id = CONDITION_NO_CODE_FIELD_ID, type = ElementType.NoCodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "No-Code-Ausdruck, der zu true oder false ausgewertet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Stellen Sie eine Bedingung zusammen, die „Wahr“ (erfüllt) oder „Falsch“ (nicht erfüllt) ergibt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public NoCodeInputElementItem conditionNoCode;

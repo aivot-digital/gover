@@ -150,8 +150,8 @@ class FormRequestActionNodeV1Test {
                 FormRequestActionNodeV1.NodeConfig.RECIPIENT_IDENTITY_ID_FIELD_ID,
                 ProcessIdentityIdInputElement.class
         ).orElseThrow();
-        assertEquals("Identität", recipient.getLabel());
-        assertEquals("Wählen Sie die Identität aus, an welche die Nachricht gesendet wird.", recipient.getHint());
+        assertEquals("Empfangende Identität", recipient.getLabel());
+        assertEquals("Wählen Sie die Identität des Vorgangs, die die angeforderten Angaben übermitteln soll. Die Nachricht wird über deren hinterlegten Zustellweg versendet.", recipient.getHint());
         assertEquals("existing", node.getInitialConfiguration().getLiteral(FormRequestActionNodeV1.NodeConfig.RECIPIENT_MODE_FIELD_ID));
         assertEquals(2, layout.findChild(
                 FormRequestActionNodeV1.NodeConfig.RECIPIENT_MODE_FIELD_ID,
@@ -176,7 +176,7 @@ class FormRequestActionNodeV1Test {
                 RichTextInputElement.class
         ).orElseThrow();
         assertEquals(
-                "Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt.",
+                "Beschreiben Sie, welche Angaben benötigt werden. Der Link zum Formular wird automatisch ergänzt.",
                 automaticContent.getHint()
         );
     }
@@ -215,7 +215,7 @@ class FormRequestActionNodeV1Test {
         assertEquals(RECIPIENT_IDENTITY_ID, result.getCommunicationRequest().recipientIdentityId());
         assertEquals(
                 List.of(new CommunicationMessageCallToAction(
-                        "Angaben übermitteln",
+                        "Formular öffnen",
                         "https://example.test/process/instance-access/tasks/task-access"
                 )),
                 message.callToActions()
@@ -257,7 +257,7 @@ class FormRequestActionNodeV1Test {
         assertNull(result.getCommunicationRequest().recipientIdentityId());
         assertEquals(normalized, result.getCommunicationRequest().recipientEmailAddress());
         assertEquals(List.of(new CommunicationMessageCallToAction(
-                "Angaben übermitteln", "https://example.test/process/instance-access/tasks/task-access"
+                "Formular öffnen", "https://example.test/process/instance-access/tasks/task-access"
         )), result.getCommunicationRequest().message().callToActions());
         assertEquals(1, instance.getIdentities().size());
 
@@ -347,7 +347,7 @@ class FormRequestActionNodeV1Test {
         assertEquals(1, view.layout().getChildren().size());
         var confirmation = assertInstanceOf(AlertContentElement.class, view.layout().getChildren().getFirst());
         assertEquals("Angaben übermittelt", confirmation.getTitle());
-        assertEquals("Sie haben die angeforderten Angaben erfolgreich übermittelt.", confirmation.getText());
+        assertEquals("Die angeforderten Angaben wurden erfolgreich übermittelt.", confirmation.getText());
         assertTrue(view.data().isEmpty());
         assertTrue(view.trustedData().isEmpty());
         assertTrue(view.events().isEmpty());
@@ -699,33 +699,33 @@ class FormRequestActionNodeV1Test {
                 List.of(
                         new ProcessNodeOutput(
                                 "recipientIdentityId",
-                                "Identität",
-                                "Die ID der bestehenden oder bei der Übermittlung neu angegebenen Identität.",
+                                "Empfangende Identität",
+                                "Die Kennung der Identität, unter der die angeforderten Angaben übermittelt wurden.",
                                 "string"
                         ),
                         new ProcessNodeOutput(
                                 "payload",
-                                "Zugeordnete Formulardaten",
-                                "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
+                                "Formulardaten mit Datenschlüssel",
+                                "Die übermittelten Angaben aus Formularfeldern mit Datenschlüssel, aufgebaut nach diesen Datenschlüsseln.",
                                 "Record<string, unknown>"
                         ),
                         new ProcessNodeOutput(
                                 "unmapped",
-                                "Formular-Rohdaten",
-                                "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                                "Feldwerte nach Element-ID",
+                                "Die übermittelten Feldwerte unter ihrer jeweiligen Element-ID. Ein Datenschlüssel ist dafür nicht erforderlich.",
                                 "Record<string, unknown>"
                         ),
                         new ProcessNodeOutput(
                                 "attachments",
-                                "Anlagen",
-                                "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden.",
+                                "Übermittelte Anlagen",
+                                "Die mit den endgültigen Formularangaben übermittelten Anlagen dieser Aufgabe.",
                                 "Array<{ key: string; fileName: string; originalFileName: string; group: string | null; " +
                                         "storageProviderId: number; storagePathFromRoot: string; }>"
                         ),
                         new ProcessNodeOutput(
                                 "started",
-                                "Eingangszeitstempel",
-                                "Der Zeitpunkt der Übermittlung der Angaben",
+                                "Übermittelt am",
+                                "Der Zeitpunkt, zu dem die angeforderten Angaben übermittelt wurden.",
                                 "string"
                         )
                 ),
@@ -901,7 +901,7 @@ class FormRequestActionNodeV1Test {
         assertEquals(hasIdentity ? null : "invitee@example.test", result.getCommunicationRequest().recipientEmailAddress());
         var event = captureHistoryEvent();
         assertEquals("Versand vorbereitet", event.getTitle());
-        assertEquals("Der Versand der Aufforderung mit dem Betreff „Daten ergänzen“ an " + expectedRecipient
+        assertEquals("Der Versand der Nachricht mit dem Betreff „Daten ergänzen“ an " + expectedRecipient
                 + (automatic ? " wurde automatisch vorbereitet." : " wurde durch „Ada Beispiel“ vorbereitet."), event.getMessage());
         assertEquals(automatic ? null : "staff-1", event.getTriggeringUserId());
         assertEquals(automatic ? null : "staff-1", event.getConcernedUserId());

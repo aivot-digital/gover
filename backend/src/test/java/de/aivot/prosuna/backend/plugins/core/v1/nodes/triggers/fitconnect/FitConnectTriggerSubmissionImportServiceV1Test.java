@@ -31,6 +31,7 @@ import dev.fitko.fitconnect.sdk.clients.OrganisationCases;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
@@ -131,6 +132,9 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die Fachdaten der FIT-Connect-Einreichung enthalten kein gültiges JSON.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertInstanceOf(JacksonException.class, exception.getCause());
         verify(fixture.organisation()).reject(eq(fixture.receivedSubmission()), anyList());
         verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
         assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
@@ -154,6 +158,11 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(
+                "Die FIT-Connect-Fachdaten können nicht in die Vorgangsdaten übernommen werden. Erwartet wird ein JSON-Objekt mit Feldnamen und Werten.",
+                exception.getTitle()
+        );
+        assertNull(exception.getDetails());
         verify(fixture.organisation()).reject(eq(fixture.receivedSubmission()), anyList());
         verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
         assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
@@ -191,6 +200,9 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die FIT-Connect-Einreichung kann nicht übernommen werden.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertEquals(report.describe(), exception.getCause().getMessage());
         verify(fixture.organisation()).reject(
                 eq(rejectedSubmission),
                 argThat(problems -> problems.size() == 1 && problems.getFirst() == problem)
@@ -203,8 +215,9 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
     @Test
     void transientRetrievalFailureReleasesInboundReferenceForRetry() throws Exception {
         var fixture = createFixture("{}");
+        var cause = new IllegalStateException("temporarily unavailable: internal 100% detail");
         when(fixture.organisation().receive(any(SubmissionForPickup.class)))
-                .thenThrow(new IllegalStateException("temporarily unavailable"));
+                .thenThrow(cause);
 
         var exception = assertThrows(
                 ResponseException.class,
@@ -218,8 +231,61 @@ class FitConnectTriggerSubmissionImportServiceV1Test {
         );
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Die FIT-Connect-Einreichung konnte nicht vollständig in den Vorgang übernommen werden.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertSame(cause, exception.getCause());
         assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
         assertEquals(1, fixture.savedInboundReferences().size());
+        assertNull(fixture.savedInboundReferences().getFirst());
+    }
+
+    @Test
+    void rejectionFailureKeepsParserCauseAndReleasesInboundReferenceWithoutExposingDetails() throws Exception {
+        var fixture = createFixture("not-json");
+        var rejectionFailure = new IllegalStateException("internal rejection detail");
+        doThrow(rejectionFailure).when(fixture.organisation()).reject(eq(fixture.receivedSubmission()), anyList());
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.service().importSubmission(null, fixture.node(), fixture.config(), reference(), STARTED_AT)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die Fachdaten der FIT-Connect-Einreichung enthalten kein gültiges JSON.", exception.getTitle());
+        assertNull(exception.getDetails());
+        var parserCause = assertInstanceOf(JacksonException.class, exception.getCause());
+        assertArrayEquals(new Throwable[]{rejectionFailure}, parserCause.getSuppressed());
+        verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
+        assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
+        assertNull(fixture.savedInboundReferences().getFirst());
+    }
+
+    @Test
+    void mismatchedSubmissionIsNotAcceptedOrRejected() throws Exception {
+        var fixture = createFixture("{}");
+        var mismatchedSubmission = ReceivedSubmission.builder()
+                .data("{}".getBytes(StandardCharsets.UTF_8))
+                .metadata(fixture.metadata())
+                .submissionId(SUBMISSION_ID)
+                .caseId(CASE_ID)
+                .destinationId(UUID.fromString("d12caea8-f372-4eb1-b102-b0a228253a12"))
+                .serviceType(new PublicService("Test service", "urn:de:service:test"))
+                .attachments(fixture.receivedAttachments())
+                .report(ReceiveReport.EMPTY)
+                .build();
+        when(fixture.organisation().receive(any(SubmissionForPickup.class))).thenReturn(mismatchedSubmission);
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> fixture.service().importSubmission(null, fixture.node(), fixture.config(), reference(), STARTED_AT)
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Die abgerufene FIT-Connect-Einreichung stimmt nicht mit den gemeldeten Kennungen überein.", exception.getTitle());
+        assertNull(exception.getDetails());
+        verify(fixture.organisation(), never()).accept(any(ReceivedSubmission.class));
+        verify(fixture.organisation(), never()).reject(any(ReceivedSubmission.class), anyList());
+        assertEquals(List.of(ProcessInstanceStatus.Failed), fixture.savedStatuses());
         assertNull(fixture.savedInboundReferences().getFirst());
     }
 

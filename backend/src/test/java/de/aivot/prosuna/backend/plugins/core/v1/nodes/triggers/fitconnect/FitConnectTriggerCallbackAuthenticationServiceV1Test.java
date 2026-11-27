@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -142,6 +143,7 @@ class FitConnectTriggerCallbackAuthenticationServiceV1Test {
         ));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Das ausgewählte Callback-Secret wurde nicht gefunden.", exception.getTitle());
     }
 
     @Test
@@ -158,6 +160,8 @@ class FitConnectTriggerCallbackAuthenticationServiceV1Test {
         ));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Das ausgewählte Callback-Secret konnte nicht entschlüsselt werden.", exception.getTitle());
+        assertNull(exception.getDetails());
         assertEquals(cause, exception.getCause());
     }
 
@@ -179,7 +183,7 @@ class FitConnectTriggerCallbackAuthenticationServiceV1Test {
     private static void assertUnauthorized(ThrowingCall call) {
         var exception = assertThrows(ResponseException.class, call::run);
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
-        assertEquals("Die FIT-Connect-Callback-Authentifizierung ist ungültig.", exception.getMessage());
+        assertEquals("Die Authentifizierung der FIT-Connect-Benachrichtigung fehlt oder ist ungültig.", exception.getMessage());
     }
 
     private static String sign(String timestamp, byte[] rawBody, String secret) throws Exception {

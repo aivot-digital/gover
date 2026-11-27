@@ -475,7 +475,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.AssignmentContext, id),
         label: 'Verantwortlicher Personenkreis',
         headline: 'Verantwortlicher Personenkreis',
-        text: 'Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.',
+        text: 'Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.',
         placeholder: 'Organisationseinheit, Team oder Mitarbeiter:in suchen',
         minItems: undefined,
         maxItems: undefined,

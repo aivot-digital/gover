@@ -55,12 +55,12 @@ class LowCodeActionNodeV1Test {
         ));
 
         var codeInput = assertInstanceOf(CodeInputElement.class, layout.getChildren().getFirst());
-        assertEquals("JavaScript-Code", codeInput.getLabel());
+        assertEquals("Low-Code-Skript (JavaScript)", codeInput.getLabel());
         assertTrue(codeInput.getHint().contains("...$"));
 
         var notice = assertInstanceOf(AlertContentElement.class, layout.getChildren().get(1));
         assertEquals(AlertType.Info, notice.getAlertType());
-        assertTrue(notice.getText().contains("ersetzt die bisherigen Vorgangsdaten vollständig"));
+        assertTrue(notice.getText().contains("Das Ergebnisobjekt ersetzt die bisherigen Vorgangsdaten vollständig."));
     }
 
     private LowCodeActionNodeV1 createNode() {

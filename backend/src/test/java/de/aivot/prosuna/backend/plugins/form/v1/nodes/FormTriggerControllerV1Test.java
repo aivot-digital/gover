@@ -277,7 +277,7 @@ class FormTriggerControllerV1Test {
         ));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
-        assertEquals("Der für das Formular konfigurierte Zahlungsanbieter wurde nicht gefunden.", error.getTitle());
+        assertEquals("Der ausgewählte Zahlungsanbieter wurde nicht gefunden. Zahlungsanbieter: „" + paymentProviderKey + "“.", error.getTitle());
         assertNull(error.getDetails());
     }
 
@@ -304,7 +304,7 @@ class FormTriggerControllerV1Test {
         ));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
-        assertEquals("Für den konfigurierten Zahlungsanbieter ist keine gültige Definition verfügbar.", error.getTitle());
+        assertEquals("Die Einrichtung des Zahlungsanbieters wurde nicht gefunden. Kennung: „test-provider“, Version: 1.", error.getTitle());
         assertNull(error.getDetails());
     }
 
@@ -329,11 +329,8 @@ class FormTriggerControllerV1Test {
         ));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
-        assertEquals(
-                "Die Kosten für das Formular konnten nicht berechnet werden: " + cause.getMessage(),
-                error.getTitle()
-        );
-        assertEquals(cause.getMessage(), error.getDetails());
+        assertEquals("Die Kosten für das Formular konnten nicht berechnet werden.", error.getTitle());
+        assertNull(error.getDetails());
         assertSame(cause, error.getCause());
     }
 

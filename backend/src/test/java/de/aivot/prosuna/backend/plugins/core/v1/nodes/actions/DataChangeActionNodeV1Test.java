@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -154,7 +155,7 @@ class DataChangeActionNodeV1Test {
 
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertEquals(
-                List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
+                List.of(new TaskViewEvent("Daten übernehmen", "complete")),
                 view.events()
         );
 
@@ -189,7 +190,7 @@ class DataChangeActionNodeV1Test {
                 )
         );
 
-        assertEquals("Unbekannte Aktion: save", ex.getMessage());
+        assertEquals("Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: save.", ex.getMessage());
     }
 
     @Test
@@ -277,6 +278,45 @@ class DataChangeActionNodeV1Test {
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
         assertEquals(Map.of("name", "Grace"), changedData.get("applicant"));
         assertFalse(completed.getNodeData().containsKey("diff"));
+    }
+
+    @Test
+    void completingUnchangedDataDoesNotClaimAChangeInTheSummary() throws Exception {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada", "age", 33));
+        var configuration = configuration();
+        var config = nodeConfiguration(configuration);
+        var executingNode = processNode(configuration);
+        var instance = processInstance("staff-1");
+        var currentTask = task(77, Map.of(), Map.of(), processData);
+        var actor = user("staff-1").setFullName("Ada Beispiel");
+        var remark = "50 % geprüft";
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff<>(
+                        logger(), executingNode, instance, currentTask, null, actor, config,
+                        currentProcessData(processData)
+                ),
+                authored("applicantName", "Ada", "dataChangeRemark", remark),
+                "complete"
+        );
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.orElseThrow());
+        assertEquals(processData, completed.getProcessData());
+        assertEquals(remark, completed.getNodeData().get("remark"));
+        currentTask.setProcessData(completed.getProcessData())
+                .setNodeData(completed.getNodeData())
+                .setRuntimeData(completed.getRuntimeData())
+                .setStatus(ProcessTaskStatus.Completed)
+                .setFinished(Instant.now());
+
+        var markdown = node.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(
+                config, executingNode, instance, currentTask, null, actor, null, completed.getViaPort()
+        ));
+
+        assertTrue(markdown.startsWith("Die Bearbeitung der Vorgangsdaten wurde"), markdown);
+        assertTrue(markdown.contains("durch „Ada Beispiel“ abgeschlossen."), markdown);
+        assertFalse(markdown.contains("geändert"), markdown);
+        assertTrue(markdown.endsWith("\n\nÄnderungsvermerk\n:   " + remark), markdown);
     }
 
     @Test

@@ -38,6 +38,7 @@ class InstanceUnassignmentActionNodeV1Test {
         assertTrue(node.getOutputs().isEmpty());
         assertEquals(1, node.getPorts(new InstanceUnassignmentActionNodeV1.Config()).size());
         assertEquals("success", node.getPorts(new InstanceUnassignmentActionNodeV1.Config()).getFirst().key());
+        assertEquals("Keine Person zugewiesen", node.getPorts(new InstanceUnassignmentActionNodeV1.Config()).getFirst().label());
     }
 
     @Test

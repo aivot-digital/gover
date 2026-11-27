@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.core.jackson.JsonMapperTestUtils;
 import de.aivot.prosuna.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.*;
 import de.aivot.prosuna.backend.elements.models.elements.layout.GroupLayoutElement;
@@ -14,6 +15,7 @@ import de.aivot.prosuna.backend.elements.services.ElementDerivationService;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.elements.services.InputVariableResolver;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
@@ -21,8 +23,12 @@ import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
@@ -32,6 +38,7 @@ import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecut
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.process.repositories.VPotentialProcessInstanceAccessRepository;
@@ -41,6 +48,11 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.mockito.Mockito;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpStatus;
+import tools.jackson.core.JacksonException;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -74,6 +86,83 @@ class ManualActionNodeV1Test {
     void offersTheManualPhaseDeadline() {
         var config = new ManualActionNodeV1.ManualActionNodeConfig();
         assertEquals(List.of("processing"), node.getDeadlines(config).stream().map(definition -> definition.key()).toList());
+    }
+
+    @Test
+    void configurationNamesOptionalInputsAndRetainsTheSharedAssignmentHint() throws Exception {
+        var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
+                null, new ProcessEntity().setId(PROCESS_ID),
+                new ProcessVersionEntity().setProcessVersion(PROCESS_VERSION), processNode(configuration())));
+
+        var uiDefinition = layout.findChild(ManualActionNodeV1.ManualActionNodeConfig.UI_DEFINITION_FIELD_ID,
+                UiDefinitionInputElement.class).orElseThrow();
+        assertEquals("Angaben zur Aufgabe", uiDefinition.getLabel());
+        var assignmentContext = layout.findChild(ManualActionNodeV1.ManualActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID,
+                AssignmentContextInputElement.class).orElseThrow();
+        assertEquals("Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.",
+                assignmentContext.getText());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" \n\t"})
+    void missingDescriptionHasAnActionableConfigurationError(String description) throws Exception {
+        var config = nodeConfiguration(configuration());
+        config.taskDescription = description;
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(config)));
+
+        assertEquals("Hinterlegen Sie eine Aufgabenbeschreibung für die freie Aufgabe.", error.getMessage());
+    }
+
+    @Test
+    void missingOrEmptyAssignmentContextHasAnActionableConfigurationError() throws Exception {
+        var config = nodeConfiguration(configuration());
+        for (var assignmentContext : Arrays.asList(null, new AssignmentContextInputElementValue())) {
+            config.assignmentContext = assignmentContext;
+
+            var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                    () -> node.init(initContext(config)));
+
+            assertEquals("Wählen Sie einen verantwortlichen Personenkreis für die freie Aufgabe aus.", error.getMessage());
+        }
+    }
+
+    @Test
+    void unresolvedAssigneeNamesTheTaskAndExplainsWhatToCheck() throws Exception {
+        var context = initContext(nodeConfiguration(configuration()));
+        context.getThisNode().setName("Ortstermin");
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
+                () -> node.init(context));
+
+        assertEquals("Für die Aufgabe „Ortstermin“ konnte im festgelegten Personenkreis keine geeignete Person ermittelt werden. Prüfen Sie den Personenkreis und die erforderlichen Berechtigungen.",
+                error.getMessage());
+    }
+
+    @Test
+    void unreadableUiDefinitionHasAReadableErrorAndRetainsTheParserCause() throws Exception {
+        var config = nodeConfiguration(configuration());
+        config.uiDefinition.setType(null);
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(config)));
+
+        assertEquals("Die UI-Definition der freien Aufgabe konnte nicht gelesen werden. Prüfen Sie die hinterlegte UI-Definition.",
+                error.getMessage());
+        assertInstanceOf(JacksonException.class, error.getCause());
+    }
+
+    @Test
+    void uiDefinitionWithAnotherRootTypeExplainsTheRequiredGroup() throws Exception {
+        var config = nodeConfiguration(configuration());
+        config.uiDefinition.setType(ElementType.Text);
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(config)));
+
+        assertEquals("Die UI-Definition der freien Aufgabe muss mit einer Gruppe beginnen.", error.getMessage());
     }
 
     @Test
@@ -154,7 +243,7 @@ class ManualActionNodeV1Test {
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("manual-action-actions-spacer").isPresent());
         assertEquals(
-                List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
+                List.of(new TaskViewEvent("Erledigung bestätigen", "complete")),
                 view.events()
         );
 
@@ -185,10 +274,12 @@ class ManualActionNodeV1Test {
 
         var layout = (GroupLayoutElement) node.getStaffTaskView(context).layout();
         var description = layout.findChild("manual-action-description-content", RichTextContentElement.class).orElseThrow();
+        var uiHeadline = layout.findChild("manual-action-ui-headline", HeadlineContentElement.class).orElseThrow();
         var dataField = layout.findChild("applicantName", TextInputElement.class).orElseThrow();
         var remarkField = layout.findChild("manualActionRemark", RichTextInputElement.class).orElseThrow();
 
         assertEquals("<p>Bitte führen Sie die Prüfung vor Ort durch.</p>", description.getContent());
+        assertEquals("Angaben zur Aufgabe", uiHeadline.getContent());
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertTrue(layout.findChild("manual-action-remark-spacer").isPresent());
         assertEquals(6.0, remarkField.getWeight());
@@ -225,7 +316,11 @@ class ManualActionNodeV1Test {
                 )
         );
 
-        assertEquals("Unbekannte Aktion: save", ex.getMessage());
+        assertEquals("Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: save.", ex.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        var controllerError = node.unavailableStaffTaskEvent("save", new AuthoredElementValues());
+        assertEquals(ex.getMessage(), controllerError.getMessage());
+        assertEquals(ex.getStatus(), controllerError.getStatus());
     }
 
     @Test
@@ -548,6 +643,13 @@ class ManualActionNodeV1Test {
 
     private static ProcessExecutionData currentProcessData(Map<String, Object> processData) {
         return new ProcessExecutionData().addProcessData(processData);
+    }
+
+    private static ProcessNodeExecutionInitContext<ManualActionNodeV1.ManualActionNodeConfig> initContext(
+            ManualActionNodeV1.ManualActionNodeConfig config) {
+        return new ProcessNodeExecutionInitContext<>(logger(), processNode(configuration()),
+                processInstance("process-owner"), task(77, Map.of(), Map.of(), Map.of()),
+                null, new ProcessExecutionData(), config);
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {

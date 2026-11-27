@@ -116,8 +116,10 @@ class InstanceAssignmentActionNodeV1Test {
                 nullable(Integer.class), nullable(String.class), any(AssignmentContextInputElementValue.class),
                 anyList(), anySet())).thenReturn(Optional.empty());
 
-        assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class,
                 () -> node.init(initContext(config("automatic"))));
+        assertEquals("Für die automatische Vorgangszuweisung konnte keine berechtigte Person aus dem festgelegten Personenkreis ermittelt werden.",
+                error.getMessage());
     }
 
     @Test
@@ -271,6 +273,10 @@ class InstanceAssignmentActionNodeV1Test {
                 AssignmentContextInputElement.class).orElseThrow();
         var manualField = layout.findChild(InstanceAssignmentActionNodeV1.Config.MANUAL_CONTEXT_FIELD_ID,
                 AssignmentContextInputElement.class).orElseThrow();
+        assertEquals("Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist den Vorgang einer berechtigten Person aus diesem Personenkreis zu.",
+                automaticField.getText());
+        assertEquals("Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.",
+                manualField.getText());
         var descriptionField = layout.findChild(InstanceAssignmentActionNodeV1.Config.TASK_DESCRIPTION_FIELD_ID,
                 RichTextInputElement.class).orElseThrow();
         assertNotNull(automaticField.getVisibility());

@@ -47,6 +47,7 @@ import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionS
 import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_TYPE_FIELD_ID;
 import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_TYPE_VALUE_LOW_CODE;
 import static de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.FlowConditionSupport.CONDITION_TYPE_VALUE_NO_CODE;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 
 @Component
@@ -77,12 +78,14 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<SwitchFlowControlNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         if (Boolean.TRUE.equals(summary.data(OUTPUT_NAME_DEFAULT_USED))) {
-            return "Keiner der Fälle wurde zu „Wahr“ ausgewertet. Der Vorgang wurde über den Standardausgang „"
-                    + text(getDefaultPortLabel(context.configurationOfExecutingNode())) + "“ fortgesetzt.";
+            return "Keiner der Fälle trifft zu. Für die Fortsetzung wurde der Standardausgang „"
+                    + text(getDefaultPortLabel(context.configurationOfExecutingNode())) + "“ gewählt."
+                    + detail("Kurzbeschreibung", context.thisNode().getDescription());
         }
         var caseLabel = summary.value(OUTPUT_NAME_MATCHED_CASE_LABEL);
-        return "Der Fall „" + caseLabel + "“ wurde als erster zu „Wahr“ ausgewertet. Der Vorgang wurde über den Ausgang „"
-                + caseLabel + "“ fortgesetzt.";
+        return "Als erster zutreffender Fall wurde „" + caseLabel + "“ ermittelt. Für die Fortsetzung wurde der Ausgang „"
+                + caseLabel + "“ gewählt."
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -118,22 +121,74 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
     @Nonnull
     @Override
     public String getName() {
-        return "Fallbasierte Verzweigung (Wenn-Dann)";
+        return "Fallunterscheidung";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Leitet den Vorgang über den Ausgang des ersten zutreffenden Falls weiter.";
+        return "Prüft mehrere Bedingungen der Reihe nach und wählt den Ausgang des ersten zutreffenden Falls oder den Standardausgang.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Prüft die Fälle in der konfigurierten Reihenfolge und setzt den Vorgang über den Ausgangsport des ersten Falls fort, dessen Bedingung zu „Wahr“ ausgewertet wird. Trifft kein Fall zu, wird der Vorgang über den Standardausgang fortgesetzt.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Jeder Fall erhält einen eigenen Ausgangsport. Seine Bedingung wird als No-Code-Ausdruck oder als Low-Code-Skript formuliert und kann auf Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten zugreifen. Die ID und die Beschriftung des zutreffenden Falls stehen in den Elementdaten bereit. Ein Low-Code-Skript muss einen Wahrheitswert zurückgeben, sonst schlägt die Aufgabe fehl. Bei einem No-Code-Ausdruck gilt ein leeres Ergebnis als nicht erfüllt.
+                Verwenden Sie dieses Prozesselement, wenn mehrere Fälle zu unterschiedlichen nächsten Schritten führen können. Prosuna prüft die Bedingungen in der festgelegten Reihenfolge und wählt den ersten zutreffenden Fall. Trifft kein Fall zu, wird der Standardausgang gewählt.
+
+                Für eine einzelne Bedingung mit zwei Ausgängen können Sie „Bedingte Verzweigung“ verwenden.
+
+                # Was richten Sie ein?
+
+                Legen Sie unter „Fälle“ mindestens einen Eintrag an. Jeder Fall erhält eine „Bezeichnung des Ausgangs“ und eine „Bedingung“. Benennen Sie den Ausgang so, dass der Fall fachlich erkennbar ist, zum Beispiel „Betrag über 1.000 Euro“.
+
+                Wählen Sie für jeden Fall die „Bedingungsart“:
+
+                - **No-Code:** Stellen Sie die Bedingung mit den verfügbaren Funktionen und Wertquellen zusammen. Diese Art ist für neue Fälle vorbelegt.
+                - **Low-Code (JavaScript):** Hinterlegen Sie die Bedingung als eigenes Skript. Das Ergebnis des letzten Ausdrucks muss `true` für „erfüllt“ oder `false` für „nicht erfüllt“ sein.
+
+                Beide Arten können Vorgangsdaten, geschützte Vorgangsdaten und Elementdaten verwenden. In einem Low-Code-Skript greifen Sie mit `$` auf die Vorgangsdatenebene zu, zum Beispiel `$.betrag`. `$$` steht für die geschützte Vorgangsdatenebene und `_` für die Elementdatenebene.
+
+                Ordnen Sie die Fälle in der gewünschten Reihenfolge von oben nach unten an. Unter „Bezeichnung des Standardausgangs“ können Sie den zusätzlichen Ausgang benennen. Ohne eigene Angabe heißt er „Standard“. Verbinden Sie alle Fallausgänge und den Standardausgang mit den passenden nächsten Schritten.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna prüft die erste Fallbedingung. Ist sie nicht erfüllt, folgt die nächste. Sobald eine Bedingung erfüllt ist, steht der Ausgang fest; die späteren Fallbedingungen werden nicht mehr ausgewertet.
+
+                Sind alle Fallbedingungen nicht erfüllt, wird der Standardausgang gewählt. Kann eine tatsächlich geprüfte Bedingung nicht ausgewertet werden, schlägt die Aufgabe fehl.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Die Elementdaten enthalten die Kennung und die Bezeichnung des gewählten Falls. Außerdem wird unter „Standardausgang gewählt“ ein Ja/Nein-Wert gespeichert. Wird der Standardausgang gewählt, ist dieser Wert `true`; Kennung und Bezeichnung eines gewählten Falls sind dann `null`.
+
+                Diese Ergebnisse können Sie in weiteren Schritten verwenden oder über eine Ausgangsdatenzuordnung in die Vorgangsdaten übernehmen. Die bisherigen Vorgangsdaten werden weitergegeben. Eingerichtete Ausgangsdatenzuordnungen schreiben die ausgewählten Ergebnisse an die festgelegten Speicherorte und ersetzen dort vorhandene Werte.
+
+                Die Zusammenfassung im Vorgangsverlauf nennt den ersten zutreffenden Fall beziehungsweise den gewählten Standardausgang. Eine hinterlegte Kurzbeschreibung wird ebenfalls angezeigt. Beschreiben Sie dort den fachlichen Zweck der Fallunterscheidung.
+
+                # Wie sieht ein Beispiel aus?
+
+                Abhängig vom Betrag soll ein unterschiedlicher Prüfschritt folgen. Legen Sie diese Fälle in der angegebenen Reihenfolge an:
+
+                1. **Betrag über 1.000 Euro:** Wählen Sie „No-Code“ und die Funktion „Größer als“. Verwenden Sie den Vorgangsdatenwert `betrag` als Zahl und `1000` als Vergleichszahl.
+                2. **Betrag über 500 Euro:** Verwenden Sie dieselbe Funktion mit dem Vergleichswert `500`.
+
+                Benennen Sie den Standardausgang „Weitere Bearbeitung“ und verbinden Sie die drei Ausgänge mit den vorgesehenen nächsten Schritten.
+
+                Bei `betrag: 1500` wird der erste Fall gewählt. Bei `betrag: 750` wird der zweite Fall gewählt. Bei genau `500` oder einem kleineren Betrag wird der Standardausgang gewählt.
+
+                Die Reihenfolge ist entscheidend: Stünde „Betrag über 500 Euro“ an erster Stelle, würde dieser Fall auch bei `1500` zuerst zutreffen. Die Prüfung würde dort enden.
+
+                # Was ist zu beachten?
+
+                Richten Sie alle angelegten Fälle vollständig und gültig ein. Vor der Ausführung wird die gesamte Konfiguration geprüft. Entfernen Sie nicht benötigte Fälle und prüfen Sie die zugehörigen Verbindungen im Prozessmodell.
+
+                Die Bezeichnungen der Fallausgänge und des Standardausgangs müssen eindeutig sein. Groß- und Kleinschreibung sowie Leerzeichen am Anfang und Ende unterscheiden die Bezeichnungen nicht. Beide Bezeichnungsfelder erlauben höchstens 64 Zeichen.
+
+                Liefert ein hinterlegter No-Code-Ausdruck `null` oder leeren Text, gilt die Bedingung als nicht erfüllt. Auch die Texte `true` oder `wahr` sowie `false` oder `falsch` werden als entsprechende Wahrheitswerte erkannt. Andere Ergebnisse, etwa Zahlen oder die Texte `ja` und `nein`, führen zu einem Fehler. Eine fehlende Bedingung ist ebenfalls ein Fehler.
+
+                Bei Low-Code muss das letzte Ergebnis ein tatsächlicher JavaScript-Wahrheitswert sein: `true` oder `false`, jeweils ohne Anführungszeichen. `null`, `undefined`, Texte und Zahlen führen zu einem Fehler. Ein alleinstehendes `return` auf oberster Skriptebene ist unzulässig; wenn Sie eine Funktion verwenden, rufen Sie diese im Skript auf.
                 """;
     }
 
@@ -145,7 +200,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
         try {
             layout = ElementPOJOMapper.createFromPOJO(SwitchFlowControlNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
+            throw ResponseException.internalServerError(e, "Die Einstellungen für „Fallunterscheidung“ konnten nicht geladen werden.");
         }
 
         FlowConditionSupport.configureConditionFields(layout);
@@ -169,14 +224,14 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
             ports.add(new ProcessNodePort(
                     getPortKey(caseConfig),
                     getCaseLabel(caseConfig, i),
-                    "Der Vorgang wird hier fortgesetzt, wenn dieser Fall als erster zu „Wahr“ ausgewertet wird."
+                    "Der Vorgang wird hier fortgesetzt, wenn die Bedingung dieses Falls als erste erfüllt ist."
             ));
         }
         // The default port is always the last one, so it reads as the fallback after all cases.
         ports.add(new ProcessNodePort(
                 PORT_NAME_DEFAULT,
                 getDefaultPortLabel(configuration),
-                "Der Vorgang wird hier fortgesetzt, wenn keiner der Fälle zu „Wahr“ ausgewertet wird."
+                "Der Vorgang wird hier fortgesetzt, wenn keine Fallbedingung erfüllt ist."
         ));
         return ports;
     }
@@ -187,20 +242,20 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_NAME_MATCHED_CASE_ID,
-                        "ID des zutreffenden Falls",
-                        "Die ID des ersten Falls, der zu „Wahr“ ausgewertet wurde, oder null, wenn kein Fall zutrifft.",
+                        "Kennung des gewählten Falls",
+                        "Die automatisch vergebene Kennung des ersten Falls mit erfüllter Bedingung. Beim Standardausgang ist der Wert null.",
                         "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_MATCHED_CASE_LABEL,
-                        "Beschriftung des zutreffenden Falls",
-                        "Die Beschriftung des ersten Falls, der zu „Wahr“ ausgewertet wurde, oder null, wenn kein Fall zutrifft.",
+                        "Bezeichnung des gewählten Falls",
+                        "Die Bezeichnung des ersten Falls mit erfüllter Bedingung. Beim Standardausgang ist der Wert null.",
                         "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_DEFAULT_USED,
-                        "Standardausgang verwendet",
-                        "Gibt an, ob der Vorgang über den Standardausgang fortgesetzt wurde.",
+                        "Standardausgang gewählt",
+                        "Gibt an, ob der Standardausgang gewählt wurde: true bedeutet Ja, false bedeutet Nein.",
                         "boolean"
                 )
         );
@@ -225,7 +280,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
             }
             var owner = labelOwners.putIfAbsent(normalizeLabel(label), "Fall " + (i + 1));
             if (owner != null) {
-                errors.add("Fall %d: Die Beschriftung %s wird bereits für %s verwendet. Vergeben Sie eine eindeutige Beschriftung.".formatted(
+                errors.add("Fall %d: Die Bezeichnung %s wird bereits für %s verwendet. Vergeben Sie eine eindeutige Bezeichnung.".formatted(
                         i + 1,
                         StringUtils.quote(label),
                         owner
@@ -275,7 +330,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
                 var lowCodeCondition = StringUtils.toNullableTrimmedString(caseConfig.condition);
                 if (lowCodeCondition == null) {
                     throw new ProcessNodeExecutionExceptionMissingValue(
-                            "Die Low-Code-Bedingung %s wurde nicht angegeben.",
+                            "Die Low-Code-Bedingung %s fehlt. Hinterlegen Sie ein JavaScript-Skript.",
                             subject
                     );
                 }
@@ -287,7 +342,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
                 var noCodeCondition = caseConfig.conditionNoCode != null ? caseConfig.conditionNoCode.getNoCode() : null;
                 if (noCodeCondition == null) {
                     throw new ProcessNodeExecutionExceptionMissingValue(
-                            "Die No-Code-Bedingung %s wurde nicht angegeben.",
+                            "Die No-Code-Bedingung %s fehlt. Legen Sie einen Ausdruck fest.",
                             subject
                     );
                 }
@@ -296,7 +351,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
                         .conditionValue();
             }
             default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Bedingungsart %s ist ungültig. Übergeben wurde: %s",
+                    "Die Bedingungsart %s wird nicht unterstützt. Konfigurierter Wert: %s. Wählen Sie „No-Code“ oder „Low-Code (JavaScript)“.",
                     subject,
                     StringUtils.quote(conditionType)
             );
@@ -338,8 +393,8 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
         public List<SwitchCaseConfig> cases;
 
         @InputElementPOJOBinding(id = DEFAULT_PORT_LABEL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Beschriftung des Standardausgangs"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Standardausgang wird verwendet, wenn keiner der Fälle zutrifft. Ohne Eingabe lautet die Beschriftung „Standard“."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Bezeichnung des Standardausgangs"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Ausgang wird gewählt, wenn keine Fallbedingung erfüllt ist. Ohne eigene Bezeichnung heißt er „Standard“."),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = DEFAULT_PORT_LABEL),
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 64)
         })
@@ -348,7 +403,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
 
     @ReplicatingContainerLayoutElementElementPOJOBinding(id = CASES_FIELD_ID, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "Fälle"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Die Fälle werden in der angegebenen Reihenfolge geprüft. Der Vorgang wird über den Ausgang des ersten Falls fortgesetzt, dessen Bedingung zu „Wahr“ ausgewertet wird. Weitere zutreffende Fälle werden nicht berücksichtigt."),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Die Fälle werden von oben nach unten geprüft. Sobald eine Fallbedingung erfüllt ist, wird ihr Ausgang gewählt. Spätere Fallbedingungen werden nicht mehr ausgewertet."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Fall #"),
             @ElementPOJOBindingProperty(key = "addLabel", strValue = "Fall hinzufügen"),
@@ -360,8 +415,8 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
         public String id;
 
         @InputElementPOJOBinding(id = CASE_LABEL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Beschriftung des Ausgangs"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wird als Beschriftung des Ausgangs für diesen Fall angezeigt."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Bezeichnung des Ausgangs"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die Bezeichnung erscheint am Ausgang und im Ergebnis der Fallunterscheidung. Verwenden Sie eine eindeutige Bezeichnung, die sich von den anderen Fällen und dem Standardausgang unterscheidet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 64)
         })
@@ -370,7 +425,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
         @InputElementPOJOBinding(id = CONDITION_TYPE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingungsart"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Sie die Bedingung als No-Code-Ausdruck oder als Low-Code-Skript festlegen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Sie die Bedingung als No-Code-Ausdruck oder als Low-Code-Skript in JavaScript festlegen."),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
                 @ElementPOJOBindingProperty(key = "displayInline", boolValue = true),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
@@ -379,7 +434,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
 
         @InputElementPOJOBinding(id = CONDITION_LOW_CODE_FIELD_ID, type = ElementType.CodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "JavaScript-Ausdruck oder -Funktion, der/die direkt zu true oder false ausgewertet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Das Ergebnis des letzten JavaScript-Ausdrucks muss true (erfüllt) oder false (nicht erfüllt) sein, zum Beispiel $.betrag > 1000."),
                 @ElementPOJOBindingProperty(key = "editorHeight", intValue = 140),
                 @ElementPOJOBindingProperty(key = "wordWrap", boolValue = true),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
@@ -388,7 +443,7 @@ public class SwitchFlowControlNodeV1 implements ProcessNodeDefinition<SwitchFlow
 
         @InputElementPOJOBinding(id = CONDITION_NO_CODE_FIELD_ID, type = ElementType.NoCodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "No-Code-Ausdruck, der zu true oder false ausgewertet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Stellen Sie eine Bedingung zusammen, die „Wahr“ (erfüllt) oder „Falsch“ (nicht erfüllt) ergibt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public NoCodeInputElementItem conditionNoCode;

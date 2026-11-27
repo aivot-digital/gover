@@ -53,6 +53,7 @@ import java.util.UUID;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
 
 @Component
 public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnectTriggerConfigV1> {
@@ -94,8 +95,15 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FitConnectTriggerConfigV1> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Der Vorgang wurde" + summary.eventAt("started") + " durch einen Aufruf über eine FIT-Connect-Schnittstelle ausgelöst."
-                + detail("Zustellpunkt", map(summary.data("submission")).get("destinationId"));
+        var started = summary.data(INITIAL_DATA_KEY_STARTED);
+        var receivedAt = timestamp(started).isEmpty() ? context.thisProcessInstance().getStarted() : started;
+        var submission = map(summary.data(INITIAL_DATA_KEY_SUBMISSION));
+        return "Der Vorgang wurde" + summary.at(receivedAt) + " durch eine über FIT-Connect empfangene Einreichung ausgelöst."
+                + detail("Zustellpunkt-ID", submission.get("destinationId"))
+                + detail("Einreichungs-ID", submission.get("submissionId"))
+                + detail("Fall-ID bei FIT-Connect", submission.get("caseId"))
+                + detail("Bei FIT-Connect eingereicht am", timestamp(submission.get("submittedAt")))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -125,16 +133,50 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet für jede Übermittlung an einen FIT-Connect-Zustellpunkt einen neuen Vorgang.";
+        return "Startet einen neuen Vorgang aus einer über FIT-Connect empfangenen Einreichung.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Empfängt Übermittlungen an den konfigurierten FIT-Connect-Zustellpunkt und startet für jede Übermittlung einen neuen Vorgang. Sobald FIT-Connect eine neue Übermittlung meldet, werden Fach- und Metadaten abgerufen und entschlüsselt, und die Übermittlung wird bei FIT-Connect angenommen. Bereits verarbeitete Übermittlungen werden ignoriert, nicht verarbeitbare zurückgewiesen.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Die JSON-Fachdaten werden nur in die Vorgangsdaten übernommen, wenn „JSON in Vorgangsdaten kopieren“ aktiviert ist; andernfalls beginnt der Vorgang mit leeren Vorgangsdaten. Übermittelte Dateien werden als Anlagen gespeichert.
+                Empfangen Sie Fachdaten und Anhänge über einen bereits eingerichteten FIT-Connect-Zustellpunkt und starten Sie daraus einen Vorgang in Prosuna. FIT-Connect bezeichnet die übermittelten Daten und Anhänge als Einreichung. Eine neu übernommene Einreichung startet einen eigenen Vorgang.
+
+                ### Was richten Sie ein?
+
+                Legen Sie unter „Callback-URL (URL-Segment)“ den letzten Teil der Prosuna-Empfangsadresse fest. Kopieren Sie anschließend über das Kopiersymbol die vollständige Callback-URL und hinterlegen Sie diese im Zustellpunkt bei FIT-Connect. Die Callback-URL muss für FIT-Connect über das Internet per HTTPS erreichbar sein.
+
+                Wählen Sie direkt darunter das „Callback-Secret“. Hinterlegen Sie den Wert dieses Geheimnisses auch im FIT-Connect-Zustellpunkt als Callback-Secret. Auf beiden Seiten muss derselbe Wert verwendet werden; damit prüft Prosuna die eingehenden Benachrichtigungen.
+
+                Wählen Sie die zum Zustellpunkt passende FIT-Connect-Umgebung und geben Sie dessen Zustellpunkt-ID an. Für den Abruf benötigen Sie die Client-ID und das zugehörige Client-Secret des empfangenden Systems sowie die passenden privaten Signatur- und Entschlüsselungsschlüssel im JWK-Format (JSON Web Key).
+
+                Mit „Fachdaten in Vorgangsdaten übernehmen“ legen Sie fest, ob die JSON-Fachdaten zusätzlich in die Vorgangsdaten übernommen werden. Dafür müssen die Fachdaten ein JSON-Objekt mit Feldnamen und Werten sein.
+
+                ### Was passiert bei der Ausführung?
+
+                FIT-Connect benachrichtigt Prosuna über neue Einreichungen. Prosuna prüft die Benachrichtigung, reserviert einen Vorgang und ruft die Einreichung ab. Die Fachdaten, Metadaten und Anhänge werden entschlüsselt und durch die vorhandene FIT-Connect-Empfangsprüfung geprüft.
+
+                Prosuna speichert die Daten und Anlagen lokal und bestätigt anschließend die Annahme bei FIT-Connect. Danach wird der Vorgang über „Einreichung empfangen“ fortgesetzt. Bereits angenommene oder zurückgewiesene Einreichungen werden bei weiteren Benachrichtigungen nicht erneut importiert.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten stehen die JSON-Fachdaten, Einreichungsdetails, FIT-Connect-Metadaten, Anlagen, Dateiverweise und der Zeitpunkt der Benachrichtigung bereit. Bei aktivierter Übernahme stehen die Eigenschaften des Fachdatenobjekts zusätzlich in den Vorgangsdaten. Andernfalls bleiben die Vorgangsdaten leer.
+
+                Der Vorgangsverlauf nennt den Eingang über FIT-Connect und die zugehörigen Kennungen. Der ursprüngliche Einreichungszeitpunkt bei FIT-Connect wird zusätzlich angezeigt, wenn er aus dem FIT-Connect-Fallprotokoll ermittelt werden konnte. Die Zustellpunkt-ID bezeichnet den empfangenden Endpunkt.
+
+                ### Wie sieht ein Beispiel aus?
+
+                FIT-Connect meldet eine neue Einreichung mit den Fachdaten `{"kontakt":{"name":"Ada"}}` und einem PDF-Anhang. Prosuna ruft beides ab und speichert das PDF als Anlage. Ist „Fachdaten in Vorgangsdaten übernehmen“ aktiviert, steht der Name im nächsten Schritt unter `$.kontakt.name` bereit.
+
+                ### Was ist zu beachten?
+
+                Die Callback-URL und das Callback-Secret werden zusätzlich im FIT-Connect-Zustellpunkt eingerichtet. Dieses Prozesselement legt den externen Zustellpunkt nicht automatisch an.
+
+                Der Prosuna-Testmodus verwendet weiterhin die hier konfigurierte FIT-Connect-Umgebung. Die Testadresse ordnet Einreichungen einer Prosuna-Testsitzung zu; sie schaltet die FIT-Connect-Verbindung nicht automatisch auf TEST um. Auch im Test müssen Benachrichtigungen mit dem passenden Callback-Secret abgesichert sein.
+
+                Eine eigene JSON-Schema-Prüfung können Sie in diesem Prozesselement derzeit nicht konfigurieren. Die vorhandenen SDK-Empfangsprüfungen bleiben wirksam. Eine Annahme bei FIT-Connect bestätigt den technischen Empfang, nicht den fachlichen Abschluss des Vorgangs.
                 """;
     }
 
@@ -158,8 +200,8 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Übermittlung empfangen",
-                        "Der Vorgang wird mit den importierten FIT-Connect-Daten fortgesetzt."
+                        "Einreichung empfangen",
+                        "Die Einreichung wurde übernommen und bei FIT-Connect angenommen. Der Vorgang wird hier fortgesetzt."
                 )
         );
     }
@@ -168,12 +210,12 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(INITIAL_DATA_KEY_PAYLOAD, "JSON-Daten", "Die entschlüsselten Fachdaten.", "unknown"),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_SUBMISSION, "Übermittlung", "Technische Informationen zur FIT-Connect-Einreichung.", SUBMISSION_OUTPUT_TYPE),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_METADATA, "Metadaten", "Die entschlüsselten FIT-Connect-Metadaten.", "Record<string, unknown>"),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_ATTACHMENTS, "Anlagen", "Die gespeicherten FIT-Connect-Anlagen.", ATTACHMENTS_OUTPUT_TYPE),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_FILES, "Dateien", "Die Anlagen im Format eines Datei-Anlagen-Feldes.", FILES_OUTPUT_TYPE),
-                new ProcessNodeOutput(INITIAL_DATA_KEY_STARTED, "Eingangszeitstempel", "Der Zeitpunkt, an dem der Callback empfangen wurde.", "string")
+                new ProcessNodeOutput(INITIAL_DATA_KEY_PAYLOAD, "Fachdaten (JSON)", "Die entschlüsselten JSON-Fachdaten der Einreichung. Bei aktivierter Übernahme werden die Eigenschaften eines JSON-Objekts zusätzlich in den Vorgangsdaten bereitgestellt.", "unknown"),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_SUBMISSION, "Einreichungsdetails", "Die gespeicherten Angaben zur FIT-Connect-Einreichung, darunter Zustellpunkt-ID, Einreichungs-ID, Fall-ID und gegebenenfalls der Einreichungszeitpunkt.", SUBMISSION_OUTPUT_TYPE),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_METADATA, "Metadaten", "Die entschlüsselten Begleitangaben der FIT-Connect-Einreichung.", "Record<string, unknown>"),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_ATTACHMENTS, "Anlagen", "Informationen zu den FIT-Connect-Anhängen, die als Anlagen beim Vorgang gespeichert wurden.", ATTACHMENTS_OUTPUT_TYPE),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_FILES, "Dateiverweise", "Die importierten Anhänge als Dateiverweise zur Weiterverwendung in Anlagenfeldern.", FILES_OUTPUT_TYPE),
+                new ProcessNodeOutput(INITIAL_DATA_KEY_STARTED, "Eingegangen am", "Der bei der Verarbeitung der FIT-Connect-Benachrichtigung festgehaltene Zeitpunkt im ISO-Format. Der ursprüngliche FIT-Connect-Einreichungszeitpunkt steht gesondert in den Einreichungsdetails.", "string")
         );
     }
 
@@ -185,9 +227,10 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         try {
             layout = ElementPOJOMapper.createFromPOJO(FitConnectTriggerConfigV1.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    "Das Konfigurationslayout des FIT-Connect-Auslösers konnte nicht erstellt werden.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Einstellungen für den FIT-Connect-Zustellpunkt konnten nicht geladen werden.",
+                    null
             );
         }
 
@@ -200,7 +243,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
                                     NoCodeReference.of(FitConnectTriggerConfigV1.SLUG_CONFIG_KEY),
                                     NoCodeStaticValue.of("^[a-z0-9-]+$")
                             ),
-                            "Das URL-Segment darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                            "Das URL-Segment der Callback-URL darf nur Kleinbuchstaben von a bis z, Zahlen und Bindestriche enthalten."
                     ));
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
                     field.setCopyable(true);
@@ -231,13 +274,13 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         var errors = new LinkedHashMap<String, List<String>>();
         var slug = StringUtils.toNullableTrimmedString(configuration.slug);
         if (slug == null) {
-            addValidationError(errors, FitConnectTriggerConfigV1.SLUG_CONFIG_KEY, "Das URL-Segment muss hinterlegt werden.");
+            addValidationError(errors, FitConnectTriggerConfigV1.SLUG_CONFIG_KEY, "Legen Sie ein URL-Segment für die Callback-URL fest.");
         } else {
             if (!slug.matches("^[a-z0-9-]+$")) {
                 addValidationError(
                         errors,
                         FitConnectTriggerConfigV1.SLUG_CONFIG_KEY,
-                        "Das URL-Segment darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                        "Das URL-Segment der Callback-URL darf nur Kleinbuchstaben von a bis z, Zahlen und Bindestriche enthalten."
                 );
             }
 
@@ -252,14 +295,14 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
                 addValidationError(
                         errors,
                         FitConnectTriggerConfigV1.SLUG_CONFIG_KEY,
-                        "Das URL-Segment wird in dieser Prozessversion bereits von einem anderen FIT-Connect-Auslöser verwendet."
+                        "Das URL-Segment der Callback-URL wird in dieser Prozessversion bereits von einem anderen FIT-Connect-Zustellpunkt verwendet. Wählen Sie ein anderes Segment."
                 );
             }
         }
 
         var destinationId = StringUtils.toNullableTrimmedString(configuration.destinationId);
         if (destinationId == null) {
-            addValidationError(errors, FitConnectTriggerConfigV1.DESTINATION_ID_CONFIG_KEY, "Die Zustellpunkt-ID muss hinterlegt werden.");
+            addValidationError(errors, FitConnectTriggerConfigV1.DESTINATION_ID_CONFIG_KEY, "Hinterlegen Sie die Zustellpunkt-ID aus FIT-Connect.");
         } else {
             try {
                 UUID.fromString(destinationId);
@@ -299,11 +342,11 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
         var text = new RichTextContentElement();
         text.setId("callback-url");
         text.setContent("""
-                Verwenden Sie für einen Test-Zustellpunkt die folgende Callback-URL:
+                Hinterlegen Sie für Ihren Test-Zustellpunkt in FIT-Connect die folgende vollständige Callback-URL:
 
                 <%s>
 
-                FIT-Connect muss den Request weiterhin mit dem konfigurierten Callback-Secret signieren.
+                Hinterlegen Sie dort außerdem denselben Callback-Secret-Wert wie in Prosuna. FIT-Connect muss Benachrichtigungen weiterhin damit absichern. Der Parameter `test-claim` ordnet die Einreichung Ihrer Prosuna-Testsitzung zu. Die ausgewählte FIT-Connect-Umgebung wird durch den Prosuna-Testmodus nicht geändert.
                 """.formatted(callbackUrl));
 
         var layout = new GroupLayoutElement();
@@ -342,7 +385,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
             var payload = nodeData.get(INITIAL_DATA_KEY_PAYLOAD);
             if (!(payload instanceof Map<?, ?> payloadMap)) {
                 throw new ProcessNodeExecutionExceptionInvalidDataType(
-                        "Die empfangenen FIT-Connect-Daten können nicht in die Vorgangsdaten kopiert werden, weil das JSON kein Objekt ist."
+                        "Die FIT-Connect-Fachdaten können nicht in die Vorgangsdaten übernommen werden. Erwartet wird ein JSON-Objekt mit Feldnamen und Werten."
                 );
             }
 
@@ -350,7 +393,7 @@ public class FitConnectTriggerNodeV1 implements ProcessNodeDefinition<FitConnect
             for (var entry : payloadMap.entrySet()) {
                 if (!(entry.getKey() instanceof String key)) {
                     throw new ProcessNodeExecutionExceptionInvalidDataType(
-                            "Die empfangenen FIT-Connect-Daten enthalten einen ungültigen Objektschlüssel."
+                            "Die Feldnamen der FIT-Connect-Fachdaten müssen Texte sein."
                     );
                 }
                 convertedPayload.put(key, entry.getValue());

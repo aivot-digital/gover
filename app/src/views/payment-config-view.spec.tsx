@@ -287,10 +287,10 @@ describe('PaymentConfigView', () => {
         });
 
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
-        fireEvent.change(screen.getByLabelText('Erfolgsmeldung'), {
+        fireEvent.change(screen.getByLabelText('Nachricht nach bestätigter Zahlung'), {
             target: {value: '# Danke\n**{{ $.name }}**'},
         });
-        fireEvent.change(screen.getByLabelText('Fehlermeldung'), {
+        fireEvent.change(screen.getByLabelText('Nachricht bei Zahlungsfehler oder Abbruch'), {
             target: {value: '# Nicht bezahlt\nDie Zahlung fuer **{{ $.name }}** wurde nicht abgeschlossen.'},
         });
         fireEvent.click(screen.getByText('Übernehmen'));
@@ -312,20 +312,20 @@ describe('PaymentConfigView', () => {
         });
         await user.click(screen.getByText('Neue Zahlungskonfiguration'));
 
-        await user.click(openVariablePickerOf('Erfolgsmeldung'));
+        await user.click(openVariablePickerOf('Nachricht nach bestätigter Zahlung'));
         await user.click(await screen.findByText('Name der Person'));
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
             expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
-            expect(screen.getByLabelText('Erfolgsmeldung')).toHaveValue('{{ $.person.name }}');
+            expect(screen.getByLabelText('Nachricht nach bestätigter Zahlung')).toHaveValue('{{ $.person.name }}');
         });
 
-        await user.click(openVariablePickerOf('Fehlermeldung'));
+        await user.click(openVariablePickerOf('Nachricht bei Zahlungsfehler oder Abbruch'));
         await user.click(await screen.findByText('Name der Person'));
         await user.click(screen.getByTestId('use-variable-reference'));
         await waitFor(() => {
             expect(screen.queryByRole('heading', {name: 'Variable referenzieren'})).not.toBeInTheDocument();
-            expect(screen.getByLabelText('Fehlermeldung')).toHaveValue('{{ $.person.name }}');
+            expect(screen.getByLabelText('Nachricht bei Zahlungsfehler oder Abbruch')).toHaveValue('{{ $.person.name }}');
         });
 
         await user.click(screen.getByText('Übernehmen'));
@@ -456,7 +456,7 @@ describe('PaymentConfigView', () => {
         fireEvent.click(screen.getByText('Neue Zahlungskonfiguration'));
         await screen.findByText('Personen- oder Organisationsangaben zuordnen');
 
-        expect(screen.getByTestId('process-data-key-Datenfeld zur Kennzeichnung als Organisation')).toHaveAttribute('data-required', 'true');
+        expect(screen.getByTestId('process-data-key-Vorgangsdatenpfad: Organisation')).toHaveAttribute('data-required', 'true');
         expect(screen.getByTestId('process-data-key-Nachname')).toHaveAttribute('data-required', 'false');
         expect(screen.getByTestId('process-data-key-Vorname')).toHaveAttribute('data-required', 'false');
         expect(screen.getByTestId('process-data-key-Geschlecht')).toHaveAttribute('data-required', 'false');

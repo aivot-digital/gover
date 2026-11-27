@@ -6,6 +6,7 @@ import de.aivot.prosuna.backend.enums.ConditionOperator;
 import de.aivot.prosuna.backend.exceptions.RequiredValidationException;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -38,7 +39,24 @@ class HtmlTemplateInputElementTest {
                 .setSlots(Map.of("header_left", "Header"));
 
         assertDoesNotThrow(() -> element.performValidation(value));
-        assertEquals("1 Slot ausgefüllt", element.toDisplayValue(value));
+        assertEquals("1 Anpassung hinterlegt", element.toDisplayValue(value));
+    }
+
+    @Test
+    void displayValueUsesPluralAndKeepsTheExistingCountOfFilledAdjustments() {
+        var element = new HtmlTemplateInputElement();
+        var value = new HtmlTemplateInputElementValue().setAssetKey("templateAssetKey").setSlots(Map.of());
+        assertEquals("0 Anpassungen hinterlegt", element.toDisplayValue(value));
+
+        var slots = new LinkedHashMap<String, String>();
+        slots.put("title", "Titel");
+        slots.put("body", "Text");
+        slots.put("empty", "");
+        slots.put("whitespace", " ");
+        slots.put("null", null);
+        value.setSlots(slots);
+
+        assertEquals("2 Anpassungen hinterlegt", element.toDisplayValue(value));
     }
 
     @Test

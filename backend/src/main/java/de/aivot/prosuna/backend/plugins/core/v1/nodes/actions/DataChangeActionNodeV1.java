@@ -61,10 +61,10 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 @Component
 public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeActionNodeV1.DataChangeActionNodeConfig> {
     private static final ProcessNodeDeadlineDefinition DATA_ENTRY_DEADLINE = new ProcessNodeDeadlineDefinition(
-            "dataEntry", "Dateneingabe",
-            "Zeit für die Eingabe oder Änderung der Daten.",
-            new ProcessNodePort("data_entry_overdue", "Fristüberschreitung: Dateneingabe",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Dateneingabe beendet wurde."));
+            "dataEntry", "Bearbeitung der Vorgangsdaten",
+            "Zeit für die Bearbeitung der Vorgangsdaten ab der Zuweisung der Aufgabe.",
+            new ProcessNodePort("data_entry_overdue", "Bearbeitungsfrist überschritten",
+                    "Der Vorgang wird hier fortgesetzt, wenn die Aufgabe nach Ablauf der Bearbeitungsfrist automatisch beendet wurde. Ein gespeicherter Entwurf wird dabei nicht in die Vorgangsdaten übernommen."));
 
     public static final String NODE_KEY = "data_change";
 
@@ -102,8 +102,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<DataChangeActionNodeV1.DataChangeActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die Vorgangsdaten wurden" + summary.eventAt("processedAt") + " durch " + summary.actor() + " geändert."
-                + section("Vermerk", summary.data(OUTPUT_REMARK));
+        return "Die Bearbeitung der Vorgangsdaten wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " abgeschlossen."
+                + section("Änderungsvermerk", summary.data(OUTPUT_REMARK));
     }
 
     @Nonnull
@@ -139,22 +139,64 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getName() {
-        return "Datenanpassung";
+        return "Vorgangsdaten bearbeiten";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erstellt eine Mitarbeitendenaufgabe zum Prüfen und Anpassen der Vorgangsdaten über eine UI-Definition.";
+        return "Erstellt eine Aufgabe, in der Mitarbeiter:innen ausgewählte Vorgangsdaten ergänzen oder ändern.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person Vorgangsdaten über die konfigurierte UI-Definition prüft und anpasst; die Formularelemente sind mit den aktuellen Vorgangsdaten vorbelegt. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet, bis sie die Änderungen übernimmt. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Beim Abschluss werden die Angaben aus Formularelementen mit Datenschlüssel in die Vorgangsdaten übernommen. Optional kann ein Änderungsvermerk erfasst werden.
+                Mit diesem Prozesselement lassen Sie Mitarbeiter:innen ausgewählte Vorgangsdaten ergänzen oder ändern, zum Beispiel eine Anschrift berichtigen oder interne Angaben hinzufügen.
+
+                Sie legen fest, welche Felder für die Bearbeitung bereitstehen. Eine fachliche Entscheidung mit Freigabe und Ablehnung ist damit nicht verbunden.
+
+                # Was richten Sie ein?
+
+                Gestalten Sie unter **„Ansicht für die Datenbearbeitung“** die benötigten Felder und Hinweise mit einer UI-Definition. Über den Datenschlüssel eines Feldes legen Sie fest, welche Vorgangsdaten angezeigt und beim Abschluss übernommen werden. Felder ohne Datenschlüssel ändern die Vorgangsdaten nicht direkt.
+
+                Wählen Sie den **„Verantwortlichen Personenkreis“** aus. Sie können außerdem Bevorzugungen für die Zuweisung festlegen, auch für eine erneute Ausführung in einer Schleife.
+
+                Bei Bedarf richten Sie eine Frist für die **„Bearbeitung der Vorgangsdaten“** ein. Entscheiden Sie dabei, ob die Aufgabe bei Fristüberschreitung automatisch beendet werden soll. Verbinden Sie in diesem Fall auch den Ausgang **„Bearbeitungsfrist überschritten“** mit dem nächsten Schritt.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna weist die Aufgabe einer berechtigten Person aus dem festgelegten Personenkreis zu. Die Oberfläche wird anhand der Datenschlüssel mit den vorhandenen Vorgangsdaten vorbelegt. Ein gespeicherter Zwischenstand wird beim erneuten Öffnen wieder angezeigt.
+
+                Die zuständige Person bearbeitet die Angaben und kann einen **„Änderungsvermerk“** erfassen. Unvollständige Zwischenstände werden automatisch gespeichert. Beim Abschluss müssen die Pflichtangaben und Feldprüfungen erfüllt sein.
+
+                Mit **„Daten übernehmen“** schließt die Person die Aufgabe ab. Der Vorgang wird über **„Daten übernommen“** fortgesetzt. Ein Abschluss ist auch möglich, wenn keine Werte geändert wurden.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Die Angaben aus Feldern mit Datenschlüssel werden in die Vorgangsdaten übernommen. Andere Vorgangsdaten bleiben erhalten. Hochgeladene Dateien werden als Anlagen des Vorgangs gespeichert.
+
+                In den Elementdaten stehen die übernommenen Angaben, die ausgewerteten Feldwerte nach Element-ID, der optionale Änderungsvermerk sowie die bearbeitende Person und der Abschlusszeitpunkt bereit. Über die Datenzuordnung können Sie weitere Ergebnisse, etwa den Vermerk, zusätzlich in die Vorgangsdaten übernehmen.
+
+                Die Zusammenfassung im Vorgangsverlauf zeigt, wer die Bearbeitung abgeschlossen hat und wann. Ein erfasster Änderungsvermerk wird ebenfalls angezeigt. Unter **„Datenänderungen“** können Sie die gespeicherten Datenstände vergleichen, sofern der vorherige Stand verfügbar ist.
+
+                # Wie sieht ein Beispiel aus?
+
+                Eine zuständige Person soll die Anschrift in einem Vorgang berichtigen. Legen Sie dafür ein Textfeld mit dem Datenschlüssel `person.anschrift` an und wählen Sie den verantwortlichen Personenkreis aus.
+
+                Das Feld zeigt die vorhandene Anschrift. Die Person trägt die neue Anschrift ein und erläutert im Änderungsvermerk zum Beispiel „Anschrift anhand der Rückmeldung berichtigt“. Mit **„Daten übernehmen“** wird die Anschrift in den Vorgangsdaten aktualisiert. Andere Angaben zur Person bleiben erhalten.
+
+                # Was ist zu beachten?
+
+                Ein gespeicherter Zwischenstand ist noch keine Übernahme in die Vorgangsdaten. Hochgeladene Anlagen können jedoch bereits während der Bearbeitung gespeichert werden.
+
+                Ein Feld zu leeren entfernt nicht automatisch seinen Datenschlüssel aus den Vorgangsdaten. Ob ein leerer Wert zulässig ist, bestimmen die Feldregeln.
+
+                Eine Bevorzugung bei der Zuweisung garantiert keine bestimmte Person und keinen verbindlichen Ausschluss einer zuvor beteiligten Person.
+
+                Ohne automatische Beendigung bleibt die Aufgabe nach Fristüberschreitung bearbeitbar. Mit automatischer Beendigung wird die Bearbeitung ohne Übernahme des Entwurfs beendet. Dieser Fristablauf ist kein regulärer Abschluss der Datenbearbeitung.
                 """;
     }
 
@@ -167,7 +209,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
             layout = ElementPOJOMapper.createFromPOJO(DataChangeActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
-                    "Die Konfiguration des Prozesselements konnte nicht geladen werden."
+                    "Die Einstellungen für die Datenbearbeitung konnten nicht geladen werden."
             );
         }
 
@@ -182,7 +224,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .findChild(DataChangeActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
                 .ifPresent(element -> {
                     element.setHeadline("Verantwortlicher Personenkreis");
-                    element.setText("Definieren Sie den Personenkreis, der diese Datenänderung vornehmen darf.");
+                    element.setText("Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.");
                     element.setPlaceholder("Organisationseinheit, Team oder Mitarbeiter:in suchen");
                     element.setAllowedTypes(List.of("orgUnit", "team", "user"));
                     element.setProcessAccessConstraint(new DomainAndUserSelectProcessAccessConstraint()
@@ -213,8 +255,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,
-                        "Datenänderung übernommen",
-                        "Der Vorgang wird hier fortgesetzt, nachdem die Datenänderung übernommen wurde."
+                        "Daten übernommen",
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Bearbeitung abgeschlossen und die Angaben übernommen wurden."
                 )
         );
     }
@@ -225,32 +267,32 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_DATA,
-                        "Bearbeitete Daten",
-                        "Die final übernommenen Daten aus der konfigurierten Oberfläche im Payload-Format.",
+                        "Übernommene Daten",
+                        "Die beim Abschluss übernommenen Angaben aus Feldern mit Datenschlüssel. Enthält auch unverändert übernommene Werte und ist kein Änderungsvergleich.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Änderungsvermerk",
-                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung.",
+                        "Der beim Abschluss freiwillig erfasste Vermerk zur Bearbeitung.",
                         "string | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
-                        "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat.",
+                        "Die Kennung des Kontos der Person, die die Bearbeitung abgeschlossen hat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
-                        "Bearbeitet am",
-                        "Der Zeitstempel der finalen Übernahme im ISO-Format.",
+                        "Abgeschlossen am",
+                        "Der Zeitpunkt des Abschlusses im technischen ISO-Zeitformat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
-                        "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Feldwerte nach Element-ID",
+                        "Die ausgewerteten Werte der Felder unter ihrer jeweiligen Element-ID, auch ohne Datenschlüssel.",
                         "Record<string, unknown>"
                 )
         );
@@ -284,7 +326,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement '%s' konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
+                        "Für das Prozesselement „%s“ konnte keine berechtigte Person aus dem festgelegten Personenkreis für die Bearbeitung ermittelt werden.",
                         context.getThisNode().getName() != null ? context.getThisNode().getName() : getName()
                 ));
 
@@ -307,7 +349,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         var uiHeadline = new HeadlineContentElement();
         uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
-        uiHeadline.setContent("Daten zu dieser Aufgabe");
+        uiHeadline.setContent("Vorgangsdaten bearbeiten");
         children.add(uiHeadline);
         children.add(cloneDataDefinition(config.dataDefinition));
 
@@ -319,7 +361,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         var remarkField = new RichTextInputElement();
         remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
         remarkField.setLabel("Änderungsvermerk");
-        remarkField.setHint("Optionaler interner Vermerk zur vorgenommenen Datenanpassung.");
+        remarkField.setHint("Erläutern Sie bei Bedarf Ihre Bearbeitung. Der Vermerk erscheint in der Zusammenfassung der Aufgabe.");
         remarkField.setRequired(false);
         remarkField.setWeight(6.0);
         children.add(remarkField);
@@ -331,7 +373,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         return ProcessNodeStaffView.of(
                 context,
                 layout,
-                List.of(new TaskViewEvent("Aufgabe abschließen", EVENT_COMPLETE)),
+                List.of(new TaskViewEvent("Daten übernehmen", EVENT_COMPLETE)),
                 initialData
         );
     }
@@ -353,7 +395,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         return switch (event) {
             case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData, update));
-            default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
+            default -> throw ResponseException.badRequest("Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: " + event + ".");
         };
     }
 
@@ -396,7 +438,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .convertValue(rawElement, BaseElement.class);
 
         if (!(copy instanceof GroupLayoutElement copiedElement)) {
-            throw new IllegalStateException("Die konfigurierte Oberfläche für die Datenänderung ist keine Gruppierung.");
+            throw new IllegalStateException("Die Ansicht für die Datenbearbeitung konnte nicht geladen werden. Die UI-Definition muss eine Gruppe von Formularelementen enthalten.");
         }
 
         return copiedElement;
@@ -409,7 +451,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         if (!(rawWorkingProcessData instanceof Map<?, ?> rawWorkingProcessDataMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Vorgangsdatenwurzel ($) ist kein Objekt."
+                    "Die Vorgangsdaten haben ein ungültiges Format. Für die Datenbearbeitung wird am Wurzelpfad ($) ein Datenobjekt erwartet."
             );
         }
 
@@ -445,15 +487,15 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine UI-Definition für die Bearbeitung der Vorgangsdaten."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Ansicht für die Datenbearbeitung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Gestalten Sie mit einer UI-Definition die Felder und Hinweise für die Bearbeitung. Über den Datenschlüssel eines Feldes legen Sie fest, welche Vorgangsdaten angezeigt und beim Abschluss übernommen werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataDefinition;
 
         @InputElementPOJOBinding(id = ASSIGNMENT_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der diese Aufgabe bearbeiten darf."),
+                @ElementPOJOBindingProperty(key = "text", strValue = "Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public AssignmentContextInputElementValue assignmentContext;

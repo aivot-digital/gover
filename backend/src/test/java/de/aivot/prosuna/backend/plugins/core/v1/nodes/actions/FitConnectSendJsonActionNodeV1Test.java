@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessDataKeyInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.process.entities.*;
@@ -18,6 +20,7 @@ import de.aivot.prosuna.backend.secrets.services.SecretService;
 import dev.fitko.fitconnect.core.http.api.RestApiException;
 import dev.fitko.fitconnect.rest.client.config.FitConnectEnvironment;
 import dev.fitko.fitconnect.rest.model.event.Event;
+import dev.fitko.fitconnect.rest.model.event.problems.Problem;
 import dev.fitko.fitconnect.rest.model.submission.PublicService;
 import dev.fitko.fitconnect.rest.model.submission.SentSubmission;
 import dev.fitko.fitconnect.sdk.api.OutgoingSubmission;
@@ -27,6 +30,8 @@ import dev.fitko.fitconnect.sdk.clients.OnlineService;
 import dev.fitko.fitconnect.sdk.clients.OnlineServiceCases;
 import dev.fitko.fitconnect.sdk.exceptions.FitConnectSenderException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
@@ -43,7 +48,7 @@ class FitConnectSendJsonActionNodeV1Test {
     private static final UUID SECRET_ID = UUID.fromString("114b3dcc-a8e4-43cc-a7d7-017bfe13b432");
 
     @Test
-    void configurationLayoutContainsRequiredEnvironmentSelectionWithoutDefault() throws Exception {
+    void configurationLayoutExplainsFitConnectSettingsAndKeepsEnvironmentWithoutDefault() throws Exception {
         var node = new FitConnectSendJsonActionNodeV1(mock(SecretService.class), mock(JsonMapper.class));
         var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
                 null,
@@ -61,6 +66,8 @@ class FitConnectSendJsonActionNodeV1Test {
 
         assertTrue(environment.getRequired());
         assertNull(environment.getValue());
+        assertEquals("Daten über FIT-Connect senden", node.getName());
+        assertTrue(environment.getHint().contains("Der Prosuna-Testmodus ändert diese Auswahl nicht."));
         assertEquals(
                 List.of(
                         SelectInputElementOption.of("TEST", "TEST"),
@@ -69,6 +76,25 @@ class FitConnectSendJsonActionNodeV1Test {
                 ),
                 environment.getOptions()
         );
+
+        var serviceName = assertInstanceOf(BaseInputElement.class, layout.findChild("serviceName").orElseThrow());
+        assertEquals("Bezeichnung der Verwaltungsleistung", serviceName.getLabel());
+        var senderDestination = assertInstanceOf(BaseInputElement.class, layout.findChild("senderDestinationId").orElseThrow());
+        assertEquals("Zustellpunkt-ID des Onlinedienstes", senderDestination.getLabel());
+        var secret = assertInstanceOf(BaseInputElement.class, layout.findChild("senderClientSecret").orElseThrow());
+        assertEquals("Client-Secret", secret.getLabel());
+        assertTrue(secret.getHint().contains("in Prosuna hinterlegte Geheimnis"));
+        var path = layout.findChild("jsonDatasetProcessKey", ProcessDataKeyInputElement.class).orElseThrow();
+        assertEquals("Vorgangsdatenpfad der JSON-Daten", path.getLabel());
+        assertTrue(path.getHint().contains("Präfix $. steht für die Vorgangsdatenebene"));
+        var schema = assertInstanceOf(BaseInputElement.class, layout.findChild("jsonSchemaLink").orElseThrow());
+        assertEquals("JSON-Schema-Referenz (URI)", schema.getLabel());
+
+        var port = node.getPorts(validConfig("TEST")).getFirst();
+        assertEquals("success", port.key());
+        assertEquals("Einreichung gesendet", port.label());
+        assertTrue(port.description().contains("Eingereicht (SUBMITTED)"));
+        assertTrue(port.description().contains("Angenommen (ACCEPTED)"));
     }
 
     @Test
@@ -92,13 +118,24 @@ class FitConnectSendJsonActionNodeV1Test {
         config.destinationId = "invalid";
         config.senderDestinationId = "invalid";
         var errors = node.validateConfiguration(new ProcessNodeConfigurationValidationContext<>(processNode, config, DerivedRuntimeElementData.empty(), ProcessNodeConfigurationValidationPhase.Authoring));
-        assertTrue(errors.containsKey(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.DESTINATION_ID_FIELD_ID));
-        assertTrue(errors.containsKey(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.SENDER_DESTINATION_ID_FIELD_ID));
+        assertEquals(
+                List.of("Geben Sie eine gültige Empfänger-Zustellpunkt-ID im UUID-Format an."),
+                errors.get(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.DESTINATION_ID_FIELD_ID)
+        );
+        assertEquals(
+                List.of("Geben Sie eine gültige Zustellpunkt-ID des Onlinedienstes im UUID-Format an."),
+                errors.get(FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config.SENDER_DESTINATION_ID_FIELD_ID)
+        );
     }
 
     @Test
     void usesConfiguredEnvironmentAndCompletesViaSuccessPort() throws Exception {
         var fixture = fixture();
+        when(fixture.cases().logOf(fixture.sentSubmission())).thenReturn(
+                transferLog(Event.SUBMIT_SUBMISSION),
+                transferLog(Event.ACCEPT_SUBMISSION),
+                transferLog(Event.ACCEPT_SUBMISSION)
+        );
         var createdEnvironments = new ArrayList<FitConnectEnvironment>();
         doAnswer(invocation -> {
             createdEnvironments.add(invocation.getArgument(2));
@@ -127,37 +164,43 @@ class FitConnectSendJsonActionNodeV1Test {
     }
 
     @Test
-    void mapsMissingDestinationToInvalidConfiguration() throws Exception {
+    void mapsMissingSdkResourceToInvalidConfigurationAndKeepsCause() throws Exception {
         var fixture = fixture();
-        when(fixture.onlineService().send(any(OutgoingSubmission.class))).thenThrow(
-                new FitConnectSenderException(
-                        "Could not get destination for id " + DESTINATION_ID,
-                        new RestApiException("Destination does not exist.", 404)
-                )
+        var cause = new FitConnectSenderException(
+                "Could not load internal resource with private details",
+                new RestApiException("Resource does not exist.", 404)
         );
+        when(fixture.onlineService().send(any(OutgoingSubmission.class))).thenThrow(cause);
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> fixture.node().init(context(validConfig("STAGE"), new ProcessExecutionData()))
         );
 
-        assertTrue(exception.getMessage().contains(DESTINATION_ID.toString()));
-        assertTrue(exception.getMessage().contains("STAGE"));
+        assertEquals(
+                "Eine für den FIT-Connect-Versand benötigte Ressource wurde nicht gefunden. Empfänger-Zustellpunkt: „%s“. Umgebung: „STAGE“.".formatted(DESTINATION_ID),
+                exception.getMessage()
+        );
+        assertSame(cause, exception.getCause());
     }
 
     @Test
     void mapsGeneralSendingFailureToUnknownExecutionError() throws Exception {
         var fixture = fixture();
+        var cause = new FitConnectSenderException("Authentifizierung fehlgeschlagen: private client details");
         when(fixture.onlineService().send(any(OutgoingSubmission.class)))
-                .thenThrow(new FitConnectSenderException("Authentifizierung fehlgeschlagen"));
+                .thenThrow(cause);
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
                 () -> fixture.node().init(context(validConfig("PROD"), new ProcessExecutionData()))
         );
 
-        assertTrue(exception.getMessage().contains("Authentifizierung fehlgeschlagen"));
-        assertTrue(exception.getMessage().contains("PROD"));
+        assertEquals(
+                "Beim Senden des JSON-Datensatzes an den FIT-Connect-Zustellpunkt „%s“ in der Umgebung „PROD“ ist ein Fehler aufgetreten.".formatted(DESTINATION_ID),
+                exception.getMessage()
+        );
+        assertSame(cause, exception.getCause());
     }
 
     @Test
@@ -169,13 +212,14 @@ class FitConnectSendJsonActionNodeV1Test {
                 () -> fixture.node().init(context(validConfig(null), new ProcessExecutionData()))
         );
 
-        assertTrue(exception.getMessage().contains("TEST, STAGE oder PROD"));
+        assertEquals("Wählen Sie TEST, STAGE oder PROD als FIT-Connect-Umgebung aus.", exception.getMessage());
     }
 
     @Test
     void mapsClientInitializationFailureToUnknownExecutionError() throws Exception {
         var fixture = fixture();
-        doThrow(new IllegalStateException("SDK-Konfiguration ungültig"))
+        var cause = new IllegalStateException("SDK-Konfiguration ungültig: private client details");
+        doThrow(cause)
                 .when(fixture.node())
                 .createOnlineService(anyString(), anyString(), any(FitConnectEnvironment.class), any(UUID.class));
 
@@ -184,38 +228,119 @@ class FitConnectSendJsonActionNodeV1Test {
                 () -> fixture.node().init(context(validConfig("STAGE"), new ProcessExecutionData()))
         );
 
-        assertTrue(exception.getMessage().contains("SDK-Konfiguration ungültig"));
-        assertTrue(exception.getMessage().contains("STAGE"));
+        assertEquals(
+                "Der FIT-Connect-Versand konnte für den Onlinedienst-Zustellpunkt „%s“ in der Umgebung „STAGE“ nicht vorbereitet werden.".formatted(SENDER_DESTINATION_ID),
+                exception.getMessage()
+        );
+        assertSame(cause, exception.getCause());
     }
 
     @Test
     void mapsStatusRetrievalFailureToUnknownExecutionError() throws Exception {
         var fixture = fixture();
+        var cause = new FitConnectSenderException("Statusdienst nicht erreichbar: private API details");
         when(fixture.cases().logOf(fixture.sentSubmission()))
-                .thenThrow(new FitConnectSenderException("Statusdienst nicht erreichbar"));
+                .thenThrow(cause);
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
                 () -> fixture.node().init(context(validConfig("TEST"), new ProcessExecutionData()))
         );
 
-        assertTrue(exception.getMessage().contains("Statusdienst nicht erreichbar"));
-        assertTrue(exception.getMessage().contains("TEST"));
+        assertEquals(
+                "Der JSON-Datensatz wurde an FIT-Connect übergeben. Der Status der Einreichung für den Zustellpunkt „%s“ in der Umgebung „TEST“ konnte nicht abgefragt werden.".formatted(DESTINATION_ID),
+                exception.getMessage()
+        );
+        assertSame(cause, exception.getCause());
+        verify(fixture.onlineService()).send(any(OutgoingSubmission.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Event.class, names = {"REJECT_SUBMISSION", "NOTIFY_SUBMISSION"})
+    void reportsUnsupportedStatusWithoutRawProblemList(Event event) throws Exception {
+        var fixture = fixture();
+        var problem = new Problem("urn:test:problem", "Private problem title", "Private diagnostic detail", "private-instance");
+        when(fixture.cases().logOf(fixture.sentSubmission()))
+                .thenReturn(new TransferLog(List.of(
+                        CaseEvent.builder().event(event).issueTime(Instant.now()).problems(List.of(problem)).build()
+                )));
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> fixture.node().init(context(validConfig("TEST"), new ProcessExecutionData()))
+        );
+
+        assertEquals(
+                "FIT-Connect meldet für die Einreichung an den Zustellpunkt „%s“ in der Umgebung „TEST“ den Status „%s“. Dieses Prozesselement setzt den Vorgang nur bei „Eingereicht (SUBMITTED)“ oder „Angenommen (ACCEPTED)“ fort."
+                        .formatted(DESTINATION_ID, event.getState()),
+                exception.getMessage()
+        );
+        assertFalse(exception.getMessage().contains(problem.toString()));
     }
 
     @Test
-    void rejectsNonSuccessfulSubmissionStatusWithDetails() throws Exception {
+    void rejectsInvalidSchemaReferenceWithoutExposingUriAndKeepsCause() throws Exception {
         var fixture = fixture();
-        when(fixture.cases().logOf(fixture.sentSubmission()))
-                .thenReturn(transferLog(Event.REJECT_SUBMISSION));
+        var config = validConfig("TEST");
+        config.jsonSchemaLink = "https://private-user:private-secret@schema.example/%";
 
         var exception = assertThrows(
-                ProcessNodeExecutionExceptionUnknown.class,
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> fixture.node().init(context(config, new ProcessExecutionData()))
+        );
+
+        assertEquals("Die JSON-Schema-Referenz ist keine gültige URI.", exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        verifyNoInteractions(fixture.onlineService(), fixture.secretService());
+    }
+
+    @Test
+    void rejectsInvalidSecretReferenceWithPercentSignsAndKeepsCause() throws Exception {
+        var fixture = fixture();
+        var config = validConfig("TEST");
+        config.senderClientSecret = "ungueltiges-geheimnis-%s-%";
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> fixture.node().init(context(config, new ProcessExecutionData()))
+        );
+
+        assertEquals(
+                "Wählen Sie ein gültiges gespeichertes Geheimnis mit dem Client-Secret des Onlinedienstes aus.",
+                exception.getMessage()
+        );
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        verifyNoInteractions(fixture.onlineService(), fixture.secretService());
+    }
+
+    @Test
+    void reportsMissingSelectedSecretWithoutExposingItsReference() throws Exception {
+        var fixture = fixture();
+        when(fixture.secretService().retrieve(SECRET_ID)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> fixture.node().init(context(validConfig("TEST"), new ProcessExecutionData()))
         );
 
-        assertTrue(exception.getMessage().contains("REJECTED"));
-        assertTrue(exception.getMessage().contains("Probleme"));
+        assertEquals("Das ausgewählte Geheimnis mit dem Client-Secret wurde nicht gefunden.", exception.getMessage());
+        verifyNoInteractions(fixture.onlineService());
+    }
+
+    @Test
+    void reportsUnreadableSecretWithoutExposingDetailsAndKeepsCause() throws Exception {
+        var fixture = fixture();
+        var cause = new IllegalStateException("Private encryption details with 100% content");
+        when(fixture.secretService().decrypt(fixture.secret())).thenThrow(cause);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> fixture.node().init(context(validConfig("TEST"), new ProcessExecutionData()))
+        );
+
+        assertEquals("Das gespeicherte Client-Secret des Onlinedienstes konnte nicht gelesen werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verifyNoInteractions(fixture.onlineService());
     }
 
     private static Fixture fixture() throws Exception {
@@ -249,7 +374,7 @@ class FitConnectSendJsonActionNodeV1Test {
                 anyString(), anyString(), any(FitConnectEnvironment.class), any(UUID.class)
         );
 
-        return new Fixture(node, onlineService, cases, sentSubmission);
+        return new Fixture(node, onlineService, cases, sentSubmission, secretService, secret);
     }
 
     private static TransferLog transferLog(Event event) {
@@ -295,7 +420,9 @@ class FitConnectSendJsonActionNodeV1Test {
             FitConnectSendJsonActionNodeV1 node,
             OnlineService onlineService,
             OnlineServiceCases cases,
-            SentSubmission sentSubmission
+            SentSubmission sentSubmission,
+            SecretService secretService,
+            SecretEntity secret
     ) {
     }
 }

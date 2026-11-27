@@ -78,12 +78,14 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         var summary = new ExecutionSummaryMarkdown(context);
         var increment = summary.data(OUTPUT_INCREMENT);
         var amount = increment instanceof Number number ? number.doubleValue() : 0;
-        var variable = summary.data(OUTPUT_STORAGE_TARGET) != null ? summary.data(OUTPUT_STORAGE_TARGET) : context.thisNode().getDataKey();
+        var storageTarget = summary.data(OUTPUT_STORAGE_TARGET);
+        var variable = storageTarget instanceof String path && StringUtils.isNotNullOrEmpty(path)
+                ? path : context.thisNode().resolveName(this);
         var change = amount > 0 ? " um " + text(increment) + " erhöht"
                 : amount < 0 ? " um " + text(new java.math.BigDecimal(increment.toString()).abs().stripTrailingZeros().toPlainString()) + " verringert"
                 : " nicht verändert";
         return "Der Zähler „" + text(variable) + "“ wurde" + change + "."
-                + detail("Vorheriger Wert", summary.data(OUTPUT_PREVIOUS_VALUE)) + detail("Neuer Wert", summary.data(OUTPUT_VALUE));
+                + detail("Vorheriger Zählerstand", summary.data(OUTPUT_PREVIOUS_VALUE)) + detail("Neuer Zählerstand", summary.data(OUTPUT_VALUE));
     }
 
     @Nonnull
@@ -125,18 +127,46 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Ändert einen Zählerstand bei jeder Ausführung um einen konfigurierbaren Wert.";
+        return "Erhöht oder verringert einen Zählerstand bei jeder Ausführung, zum Beispiel um Wiederholungen zu zählen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Addiert bei jeder Ausführung das konfigurierte Inkrement zum aktuellen Zählerstand und eignet sich damit für Schleifen und wiederholte Schritte. Das Inkrement beträgt standardmäßig `1` und kann auch negativ sein.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Ist ein Zielpfad konfiguriert, wird der Zählerstand dort in den Vorgangsdaten gelesen und gespeichert. Ohne Zielpfad wird der Wert der vorherigen Ausführung dieses Prozesselements aus den Elementdaten fortgeführt. Ein noch nicht vorhandener Zählerstand beginnt bei `0`.
+                Zählen Sie, wie oft ein Schritt innerhalb eines Vorgangs ausgeführt wird. Eine nachfolgende Bedingung kann den Zählerstand verwenden, um beispielsweise nach drei Wiederholungen einen anderen Prozesspfad zu wählen.
 
-                Zählerstand und Inkrement werden als ganze Zahlen verarbeitet. Als Zählerstand werden auch numerische Zeichenketten und Ja/Nein-Werte (`1` beziehungsweise `0`) akzeptiert. Andere Datentypen werden als `0` behandelt; bei einer nicht numerischen Zeichenkette schlägt die Aufgabe fehl.
+                # Was richten Sie ein?
+
+                Legen Sie unter **„Änderung pro Ausführung“** fest, um welchen Wert sich der Zählerstand verändert. Sie können die Zahl fest eingeben oder über eine Variable, einen No-Code-Ausdruck oder ein Low-Code-Skript bestimmen. Ohne Angabe wird der Zählerstand um `1` erhöht. Negative Werte verringern den Stand; bei `0` bleibt er gleich.
+
+                Optional geben Sie unter **„Speicherort in den Vorgangsdaten“** einen Pfad an, zum Beispiel `schleife.anzahl`. Dann wird der bisherige Stand dort gelesen und der neue dort gespeichert. Ohne Angabe führt das Element seinen letzten erfolgreich abgeschlossenen Zählerstand im selben Vorgang fort.
+
+                # Was passiert bei der Ausführung?
+
+                Das Element liest den bisherigen Zählerstand und addiert die festgelegte Änderung. Fehlt ein bisheriger Stand, beginnt die Berechnung bei `0`. Anschließend wird der Vorgang über den Ausgang „Zähler aktualisiert“ fortgesetzt.
+
+                Der Zähler löst selbst keine Wiederholung aus. Dafür verbinden Sie die erforderlichen Schritte und ergänzen eine Bedingung für den weiteren Ablauf.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Der neue und der vorherige Zählerstand sowie die verwendete Änderung stehen in den Elementdaten bereit. Haben Sie einen Speicherort angegeben, wird der neue Stand zusätzlich an diesem Pfad in den Vorgangsdaten gespeichert.
+
+                Die Zusammenfassung im Vorgangsverlauf zeigt, wie sich der Stand verändert hat.
+
+                # Wie sieht ein Beispiel aus?
+
+                Geben Sie als Speicherort `schleife.anzahl` und als Änderung `1` an. Ist dort noch kein Stand vorhanden, ergibt die erste Ausführung `1`, die zweite `2` und die dritte `3`. Eine anschließende Bedingung kann ab dem Stand `3` einen anderen Prozesspfad wählen.
+
+                # Was ist zu beachten?
+
+                Verwenden Sie ganze Zahlen für Zählerstand und Änderung. Die Änderung wird im Zahlenfeld auf ganze Zahlen gerundet. Bei einem vorhandenen Zählerstand werden Nachkommastellen abgeschnitten.
+
+                Vorhandene Zahlen können auch als Text gespeichert sein. Ja/Nein-Werte werden als `1` beziehungsweise `0` gelesen, Objekte und Listen als `0`. Kann ein vorhandener Text nicht als Zahl gelesen werden, schlägt die Aufgabe fehl.
+
+                Zusätzliche Datenzuweisungen können den neuen Stand überschreiben, wenn sie denselben Pfad in den Vorgangsdaten verwenden. Bei sehr großen Zahlen wird eine Überschreitung des unterstützten Zahlenbereichs derzeit nicht erkannt; das Ergebnis kann dadurch falsch sein.
                 """;
     }
 
@@ -165,7 +195,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 new ProcessNodePort(
                         PORT_NAME,
                         "Zähler aktualisiert",
-                        "Der Vorgang wird fortgesetzt, nachdem der Zählerstand aktualisiert wurde."
+                        "Der Vorgang wird nach der Berechnung des neuen Zählerstands fortgesetzt."
                 )
         );
     }
@@ -176,20 +206,20 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_VALUE,
-                        "Zählerstand",
-                        "Der neue Zählerstand nach der Änderung.",
+                        "Neuer Zählerstand",
+                        "Der berechnete Zählerstand nach dieser Ausführung.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PREVIOUS_VALUE,
                         "Vorheriger Zählerstand",
-                        "Der Zählerstand vor der Änderung.",
+                        "Der als ganze Zahl verwendete Zählerstand vor der Änderung.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_INCREMENT,
-                        "Inkrement",
-                        "Der Wert, der zum vorherigen Zählerstand addiert wurde.",
+                        "Änderung pro Ausführung",
+                        "Die bei dieser Ausführung addierte Zahl. Negative Zahlen verringern den Zählerstand.",
                         "number"
                 )
         );
@@ -301,9 +331,9 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                     .longValue();
         } catch (NumberFormatException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
-                    "Der aktuelle Wert der Vorgangsdatenvariable %s konnte nicht in eine Zahl umgewandelt werden. Der Wert war %s.",
-                    StringUtils.quote(variableProcessDataKey),
-                    StringUtils.quote(currentCounterObj.toString())
+                    "Der Zähler konnte nicht aktualisiert werden. Der Wert %s am Speicherort %s ist keine gültige Zahl. Prüfen Sie den gespeicherten Wert.",
+                    StringUtils.quote(currentCounterObj.toString()),
+                    StringUtils.quote(variableProcessDataKey)
             );
         }
     }
@@ -349,8 +379,8 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
          * This field contains the process data key variable where the counter value is stored id. It is nullable which will be handled by the node separately.
          */
         @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselementes aus den Elementdaten verwendet."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Speicherort in den Vorgangsdaten"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional. Geben Sie einen Pfad ein, zum Beispiel schleife.anzahl. Ohne Angabe wird der letzte Zählerstand dieses Prozesselements im selben Vorgang fortgeführt."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
                 @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true),
         })
@@ -371,8 +401,8 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                         InputVariableSource.ProtectedProcessData
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale ganze Zahl, die zum Zählerstand addiert wird. Negative Werte verringern den Zählerstand. Wenn leer, wird 1 verwendet."),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Änderung pro Ausführung"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie eine ganze Zahl ein (Inkrement): 1 erhöht den Zählerstand um eins, -1 verringert ihn um eins. Bei 0 bleibt er gleich. Ohne Angabe wird 1 verwendet."),
                         @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
                         @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
                 }

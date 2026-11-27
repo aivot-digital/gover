@@ -34,6 +34,7 @@ describe('AssignmentContextFieldComponent', () => {
         const group = title.parentElement;
         expect(group).toHaveAttribute('role', 'group');
         expect(group).toHaveAttribute('aria-labelledby', title.id);
+        expect(group).toHaveAccessibleDescription('Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.');
         const personLabel = screen.getByTitle('Personenkreis');
         const personInput = document.getElementById(personLabel.getAttribute('for')!);
         expect(personInput).toBeRequired();
@@ -58,7 +59,7 @@ describe('AssignmentContextFieldComponent', () => {
         );
 
         const input = screen.getByRole('combobox', {name: 'Personenkreis – optional'});
-        expect(input).toHaveAccessibleDescription(/derzeit keine Person mit dem Recht „Aufgaben bearbeiten“/);
+        expect(input).toHaveAccessibleDescription(/derzeit keine Person mit den erforderlichen Berechtigungen/);
         expect(screen.getByRole('status')).toHaveTextContent('Hinweis zur aktuellen Zuweisung');
     });
 

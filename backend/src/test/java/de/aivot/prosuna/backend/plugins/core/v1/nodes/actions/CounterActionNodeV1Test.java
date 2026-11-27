@@ -153,7 +153,7 @@ class CounterActionNodeV1Test {
                         "loop", Map.of("count", "abc")
                 ));
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionInvalidDataType.class,
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
@@ -164,6 +164,10 @@ class CounterActionNodeV1Test {
                         processData,
                         nodeConfiguration(configuration("loop.count", 1L))
                 ))
+        );
+        assertEquals(
+                "Der Zähler konnte nicht aktualisiert werden. Der Wert „abc“ am Speicherort „loop.count“ ist keine gültige Zahl. Prüfen Sie den gespeicherten Wert.",
+                exception.getMessage()
         );
     }
 

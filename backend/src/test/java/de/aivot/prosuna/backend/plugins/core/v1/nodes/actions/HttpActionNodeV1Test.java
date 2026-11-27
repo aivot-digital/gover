@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
+import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.elements.enums.InputMode;
 import de.aivot.prosuna.backend.elements.enums.InputVariableSource;
@@ -8,8 +9,12 @@ import de.aivot.prosuna.backend.elements.models.elements.BaseInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.DynamicTextElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SecretSelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessDataKeyInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1Config;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
@@ -20,6 +25,9 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionIO;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -30,10 +38,14 @@ import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentSetSer
 import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
+import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.storage.services.StorageService;
 import de.aivot.prosuna.backend.utils.MultipartUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
@@ -42,13 +54,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.core.JacksonException;
 
+import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -56,7 +71,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class HttpActionNodeV1Test {
@@ -128,7 +145,10 @@ class HttpActionNodeV1Test {
                 .orElseThrow();
 
         assertEquals("unknown", processedResponseOutput.typeDefinition());
+        assertEquals("Antwortdaten", processedResponseOutput.label());
         assertEquals("Record<string, Array<string>>", headersOutput.typeDefinition());
+        assertEquals("Antwortheader", headersOutput.label());
+        assertEquals("Dateiverweise", filesOutput.label());
         assertEquals(
                 "Array<{ name: string; originalFileName: string; uri: string; size: number; }>",
                 filesOutput.typeDefinition()
@@ -144,6 +164,19 @@ class HttpActionNodeV1Test {
         );
 
         var layout = node.getConfigurationLayout(null);
+        assertEquals("HTTP-Schnittstelle aufrufen", node.getName());
+        var port = node.getPorts(baseConfig("GET", "https://prosuna.test/api", "text", "200")).getFirst();
+        assertEquals("success", port.key());
+        assertEquals("Antwort verarbeitet", port.label());
+        assertTrue(port.description().contains("Statuscode zugelassen"));
+        assertEquals("Adresse der HTTP-Schnittstelle (URL)", layout.findChild("url", TextInputElement.class).orElseThrow().getLabel());
+        var requestContentType = layout.findChild("requestContentType", SelectInputElement.class).orElseThrow();
+        assertEquals("Format des Anfrageinhalts", requestContentType.getLabel());
+        assertEquals("Ohne Anfrageinhalt", requestContentType.getOptions().stream()
+                .filter(option -> "custom".equals(option.getValue())).findFirst().orElseThrow().getLabel());
+        var path = layout.findChild("requestJsonProcessDataKey", ProcessDataKeyInputElement.class).orElseThrow();
+        assertEquals("Vorgangsdatenpfad", path.getLabel());
+        assertTrue(path.getHint().contains("Präfix $. steht für die Vorgangsdatenebene"));
         for (var fieldId : List.of("url", "bearerToken")) {
             var input = assertInstanceOf(BaseInputElement.class, layout.findChild(fieldId).orElseThrow());
             assertEquals(List.of(InputMode.values()), input.getInputModePolicy().allowedModes(), fieldId);
@@ -257,20 +290,124 @@ class HttpActionNodeV1Test {
         assertEquals("{\"vorname\":\"Anna\"}", bodyCaptor.getValue());
     }
 
-    @Test
-    void init_ShouldRouteUnexpectedStatusToErrorPort() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"text", "file"})
+    void init_ShouldRejectUnexpectedStatusWithoutExposingTheResponseBody(String responseType) throws Exception {
         when(httpService.request(eq(HttpMethod.GET), any(), any()))
                 .thenReturn(ResponseEntity
                         .status(HttpStatus.UNPROCESSABLE_ENTITY)
                         .header("X-Error-Code", "unprocessable")
-                        .body("invalid".getBytes(StandardCharsets.UTF_8)));
+                        .body("internal-response-100%".getBytes(StandardCharsets.UTF_8)));
 
-        var configuration = baseConfig("GET", "https://prosuna.test/api", "text", "200");
+        var configuration = baseConfig("GET", "https://prosuna.test/api", responseType, "200");
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionIO.class,
                 () -> node.init(context(configuration))
         );
+        assertEquals("Die HTTP-Schnittstelle hat mit dem Statuscode 422 geantwortet. Für diese Aufgabe sind folgende Statuscodes zugelassen: [200].", exception.getMessage());
+        verifyNoInteractions(processInstanceAttachmentService, processInstanceAttachmentSetService);
+    }
+
+    @Test
+    void init_ShouldReportInvalidUriWithoutExposingTheOriginalUrl() {
+        var configuration = baseConfig("GET", "https://user:private-password@prosuna.test/bad path?token=private-token", "text", "200");
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(context(configuration)));
+
+        assertEquals("Die Zieladresse (URL) für den HTTP-Aufruf ist ungültig.", exception.getMessage());
+        assertNotNull(exception.getCause());
+        verifyNoInteractions(httpService);
+    }
+
+    @Test
+    void init_ShouldPreserveConnectionFailureCauseWithoutExposingClientDetails() throws Exception {
+        var cause = new HttpConnectionException(new IOException("internal host detail 100%"));
+        when(httpService.request(eq(HttpMethod.GET), any(), any())).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionIO.class,
+                () -> node.init(context(baseConfig("GET", "https://prosuna.test/api", "text", "200"))));
+
+        assertEquals("Bei der Kommunikation mit der HTTP-Schnittstelle ist ein Fehler aufgetreten.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void init_ShouldPreserveUnexpectedFailureCauseWithoutExposingClientDetails() throws Exception {
+        var cause = new IllegalStateException("internal client detail 100%");
+        when(httpService.request(eq(HttpMethod.GET), any(), any())).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(baseConfig("GET", "https://prosuna.test/api", "text", "200"))));
+
+        assertEquals("Die HTTP-Anfrage konnte nicht vorbereitet oder ausgeführt werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void init_ShouldPreserveJsonParserCauseWithoutExposingResponseContents() throws Exception {
+        when(httpService.request(eq(HttpMethod.GET), any(), any()))
+                .thenReturn(ResponseEntity.ok("{\"credential\":\"internal-100%\"".getBytes(StandardCharsets.UTF_8)));
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidDataType.class,
+                () -> node.init(context(baseConfig("GET", "https://prosuna.test/api", "json", "200"))));
+
+        assertEquals("Die Antwort der HTTP-Schnittstelle konnte nicht als JSON verarbeitet werden.", exception.getMessage());
+        assertInstanceOf(JacksonException.class, exception.getCause());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "basic, Geben Sie den Nutzernamen und das gespeicherte Passwort für die Basic-Authentifizierung an.",
+            "bearer, Geben Sie den Bearer-Token für den Zugang zur HTTP-Schnittstelle an."
+    })
+    void init_ShouldExplainMissingAuthenticationSettings(String authMethod, String expectedMessage) {
+        var configuration = baseConfig("GET", "https://prosuna.test/api", "text", "200");
+        configuration.authMethod = authMethod;
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(context(configuration)));
+
+        assertEquals(expectedMessage, exception.getMessage());
+        verifyNoInteractions(httpService);
+    }
+
+    @Test
+    void init_ShouldPreservePasswordDecryptionCauseWithoutExposingSecretDetails() throws Exception {
+        var configuration = baseConfig("GET", "https://prosuna.test/api", "text", "200");
+        configuration.authMethod = "basic";
+        configuration.basicAuthConfig = new HttpActionNodeV1Config.BasicAuthConfig();
+        configuration.basicAuthConfig.username = "service-user";
+        var secretKey = UUID.randomUUID();
+        configuration.basicAuthConfig.passwordSecretKey = secretKey.toString();
+        var secret = new SecretEntity();
+        secret.setKey(secretKey);
+        var cause = new IllegalStateException("internal decryption detail 100%");
+        when(secretService.retrieve(secretKey)).thenReturn(Optional.of(secret));
+        when(secretService.decrypt(secret)).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration)));
+
+        assertEquals("Das gespeicherte Passwort für die Basic-Authentifizierung konnte nicht gelesen werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verifyNoInteractions(httpService);
+    }
+
+    @Test
+    void init_ShouldPreserveResponseAttachmentStorageCauseWithoutExposingStorageDetails() throws Exception {
+        when(httpService.request(eq(HttpMethod.GET), any(), any()))
+                .thenReturn(ResponseEntity.ok("file".getBytes(StandardCharsets.UTF_8)));
+        var cause = ResponseException.internalServerError("internal storage detail 100%");
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class))).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(baseConfig("GET", "https://prosuna.test/file", "file", "200"))));
+
+        assertEquals("Die als Datei empfangene HTTP-Antwort konnte nicht als Anlage zum Vorgang gespeichert werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verify(processInstanceAttachmentService, never()).create(any(ProcessInstanceAttachmentEntity.class));
     }
 
     @Test

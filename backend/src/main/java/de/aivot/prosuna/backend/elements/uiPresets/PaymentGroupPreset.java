@@ -45,11 +45,10 @@ public class PaymentGroupPreset extends GroupLayoutElement {
                 yield """
                         # Zahlung ausstehend
                         Für diesen Vorgang ist eine Zahlung erforderlich.
+                        Wählen Sie „Zahlung durchführen“, um beim Zahlungsanbieter zu bezahlen.
+                        Die weitere Bearbeitung wartet auf die Zahlungsbestätigung.
+                        
                         Die Zahlung wird durch den Dienstleister **%s** abgewickelt.
-                        Bitte achten Sie darauf, dass Sie die Zahlungsinformationen korrekt eingeben und den Zahlungsvorgang abschließen.
-                        
-                        
-                        **Wichtig:** Die weitere Verarbeitung wartet auf die Bestätigung der Zahlung.
                         
                         
                         Zahlungsübersicht:
@@ -108,10 +107,10 @@ public class PaymentGroupPreset extends GroupLayoutElement {
             }
             case XBezahldienstStatus.PAYED -> {
                 yield """
-                        # Zahlung abgeschlossen
+                        # Zahlung bestätigt
                         %s
                         """.formatted(
-                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde erfolgreich abgeschlossen."
+                        StringUtils.isNotNullOrEmpty(successMessage) ? successMessage : "Die Zahlung wurde bestätigt."
                 );
             }
         };

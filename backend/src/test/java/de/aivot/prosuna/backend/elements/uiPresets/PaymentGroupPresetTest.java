@@ -31,7 +31,7 @@ class PaymentGroupPresetTest {
     void shouldUseConfiguredPaymentResultMessages() throws Exception {
         var paidPreset = createPreset(XBezahldienstStatus.PAYED, "# Bezahlt\n**Danke.**", "# Nicht bezahlt.");
         var paidMessage = renderMessage(paidPreset);
-        assertTrue(paidMessage.contains("# Zahlung abgeschlossen\n# Bezahlt\n**Danke.**"));
+        assertTrue(paidMessage.contains("# Zahlung bestätigt\n# Bezahlt\n**Danke.**"));
         assertEquals(
                 "https://example.test/payment-confirmation/",
                 paidPreset.findChild("download", LinkButtonContentElement.class).orElseThrow().getHref()
@@ -52,7 +52,7 @@ class PaymentGroupPresetTest {
     @Test
     void shouldKeepDefaultPaymentResultMessagesWhenConfiguredMessagesAreBlank() throws Exception {
         assertTrue(renderMessage(XBezahldienstStatus.PAYED, " ", null)
-                .contains("# Zahlung abgeschlossen\nDie Zahlung wurde erfolgreich abgeschlossen."));
+                .contains("# Zahlung bestätigt\nDie Zahlung wurde bestätigt."));
         assertTrue(renderMessage(XBezahldienstStatus.FAILED, null, " ")
                 .contains("# Zahlung fehlgeschlagen\nDie Zahlung ist fehlgeschlagen. Bitte wenden Sie sich an die verantwortliche Stelle. "
                         + "Öffnen Sie „Hilfe“ am Ende der Seite. Dort finden Sie die Kontaktinformationen."));
@@ -76,6 +76,13 @@ class PaymentGroupPresetTest {
                 transaction, null, null, "https://example.test/confirmation");
 
         var text = renderMessage(preset);
+        assertTrue(text.contains("Wählen Sie „Zahlung durchführen“, um beim Zahlungsanbieter zu bezahlen."));
+        assertTrue(text.contains("Die weitere Bearbeitung wartet auf die Zahlungsbestätigung."));
+        assertTrue(text.contains("„Stadtkasse“"));
+        var payButton = preset.findChild("pay", LinkButtonContentElement.class).orElseThrow();
+        assertEquals("Zahlung durchführen", payButton.getLabel());
+        assertEquals("https://example.test/pay", payButton.getHref());
+        assertTrue(preset.findChild("qr").isPresent());
         assertTrue(text.contains(" Euro inkl. " + formattedTaxRate + "% Steuern"));
         if (taxRate.equals("19")) {
             assertTrue(text.contains("Position: 11,90 Euro inkl. 19% Steuern"));

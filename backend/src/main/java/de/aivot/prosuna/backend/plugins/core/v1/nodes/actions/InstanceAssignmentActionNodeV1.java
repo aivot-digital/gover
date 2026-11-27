@@ -58,19 +58,21 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.user;
 
 @Component
 public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<InstanceAssignmentActionNodeV1.Config> {
     private static final ProcessNodeDeadlineDefinition ASSIGNMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "assignment", "Vorgangszuweisung",
-            "Zeit für die manuelle Zuweisung des Vorgangs.",
+            "Zeit für die manuelle Auswahl und Bestätigung der zuständigen Person. Die Frist beginnt mit der Zuweisung der Mitarbeitendenaufgabe.",
             new ProcessNodePort("assignment_overdue", "Fristüberschreitung: Vorgangszuweisung",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Vorgangszuweisung beendet wurde."));
+                    "Der Vorgang wird hier fortgesetzt, wenn die Zuweisungsaufgabe nach Fristablauf automatisch beendet wurde. Die bisherige Vorgangszuweisung bleibt bestehen."));
 
     public static final String NODE_KEY = "assign_instance";
 
@@ -115,8 +117,21 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<InstanceAssignmentActionNodeV1.Config> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Der Vorgang wurde " + user(summary.data(OUTPUT_ASSIGNED_USER_ID), summary.metadata(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME))
-                + " durch " + summary.actor() + " zugewiesen.";
+        var assignedUserId = summary.data(OUTPUT_ASSIGNED_USER_ID);
+        var previousUserId = summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_ID);
+        var assignedUser = user(assignedUserId, summary.metadata(ExecutionSummaryMarkdown.ASSIGNED_USER_NAME));
+        final String markdown;
+        if (previousUserId == null) {
+            markdown = "Der Vorgang wurde " + assignedUser + " durch " + summary.actor() + " zugewiesen.";
+        } else if (Objects.equals(previousUserId, assignedUserId)) {
+            markdown = "Der Vorgang bleibt " + assignedUser + " zugewiesen. Die bestehende Zuweisung wurde durch "
+                    + summary.actor() + " beibehalten.";
+        } else {
+            var previousUser = user(previousUserId, summary.metadata(ExecutionSummaryMarkdown.PREVIOUS_ASSIGNED_USER_NAME));
+            markdown = "Die zuständige Person des Vorgangs wurde durch " + summary.actor() + " von " + previousUser
+                    + " auf " + assignedUser + " geändert.";
+        }
+        return markdown + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -146,16 +161,61 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Legt die zuständige Person eines Vorgangs automatisch oder über eine Mitarbeitendenaufgabe fest.";
+        return "Legt die zuständige Person für einen Vorgang automatisch oder durch manuelle Auswahl fest.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Bei automatischer Ausführung wird die zuständige Person aus dem konfigurierten Personenkreis ermittelt; berücksichtigt werden nur Mitarbeiter:innen, die den Vorgang einsehen dürfen. Bei manueller Ausführung entsteht eine Mitarbeitendenaufgabe für eine Person aus einem eigenen Personenkreis. Diese wählt eine der Mitarbeiter:innen aus, die aktuell für den Vorgang berechtigt sind. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Eine bestehende Zuweisung wird ersetzt. Anschließend wird der Vorgang fortgesetzt.
+                Legen Sie mit diesem Prozesselement fest, welche Mitarbeiter:in für einen Vorgang zuständig ist. Prosuna kann die Person automatisch bestimmen oder zunächst eine Mitarbeitendenaufgabe zur manuellen Auswahl erstellen. Der Vorgang wird einer einzelnen Person zugewiesen.
+
+                # Was richten Sie ein?
+
+                Wählen Sie unter „Art der Zuweisung“ zwischen „Automatisch“ und „Manuell“:
+
+                - **Automatisch:** Legen Sie unter „Personenkreis für die Vorgangszuweisung“ Organisationseinheiten, Teams oder einzelne Mitarbeiter:innen fest. Aus diesem Personenkreis ermittelt Prosuna die zuständige Person des Vorgangs. Für diese automatische Auswahl benötigt die Person derzeit eigene Berechtigungen zum Anzeigen des Vorgangs und zum Bearbeiten seiner Aufgaben.
+                - **Manuell:** Legen Sie unter „Personenkreis für die Zuweisungsaufgabe“ fest, wer die Auswahl übernehmen soll. Prosuna weist einer berechtigten Person aus diesem Personenkreis eine Mitarbeitendenaufgabe zu. Die zuständige Person des Vorgangs wird anschließend in dieser Aufgabe ausgewählt und kann auch außerhalb des Aufgabenpersonenkreises liegen.
+
+                Unter „Bevorzugung bei der Zuweisung“ können Sie die zuständige Person des vorherigen Prozessschritts oder eine bisher unbeteiligte Person bevorzugen. Kann die Bevorzugung nicht angewendet werden, bleibt die ermittelte Personenauswahl bestehen. Bei mehreren möglichen Personen berücksichtigt Prosuna deren aktuelle Aufgabenlast.
+
+                Für die manuelle Auswahl können Sie eine „Aufgabenbeschreibung“ mit fachlichen Auswahlkriterien hinterlegen und eine Frist einrichten. Die Person, die diese Aufgabe erhält, benötigt die Berechtigungen zum Anzeigen des Vorgangs, zum Bearbeiten der Aufgabe und zum Neuzuweisen des Vorgangs.
+
+                # Was passiert bei der Ausführung?
+
+                Bei automatischer Ausführung legt Prosuna die zuständige Person fest und schließt den Schritt ab.
+
+                Bei manueller Ausführung wartet der Vorgang auf die Zuweisungsaufgabe. Die zugewiesene Person oder eine aktive Stellvertretung wählt unter „Zuständige Person“ einen angebotenen Eintrag aus und bestätigt mit „Vorgang zuweisen“. Die bisher zuständige Person wird nicht automatisch vorausgewählt.
+
+                Für die manuelle Empfängerauswahl sind eine eigene direkte Mitgliedschaft in einer Organisationseinheit oder einem Team, das den Zugang zum Vorgang vermittelt, und eigenes Leserecht darüber erforderlich. Ausschließlich globale Berechtigungen ohne diese Mitgliedschaft und Zugangsquelle oder Rechte aus einer Stellvertretung reichen für diese Auswahl nicht aus.
+
+                Steht während der manuellen Bearbeitung keine Person zur Auswahl, bleibt die Aufgabe offen. Die Auswahl und die Aktion „Vorgang zuweisen“ sind dann nicht verfügbar. Die Berechtigung der ausgewählten Person wird vor der Übernahme erneut geprüft.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Der Vorgang hat eine zuständige Person. Eine vorherige Vorgangszuweisung wird ersetzt. Bestätigen Sie dieselbe Person erneut, bleibt die Zuweisung bestehen und der Schritt wird ebenfalls abgeschlossen. Bereits bestehende Aufgaben behalten ihre eigene Zuweisung.
+
+                Nach erfolgreicher Zuweisung wird der Vorgang über „Zuweisung erfolgt“ fortgesetzt. Die Kennung des Kontos der zuständigen Person steht unter „Zuständige Person“ in den Elementdaten bereit. Über eine Ausgangsdatenzuordnung können Sie diesen Wert bei Bedarf zusätzlich in die Vorgangsdaten übernehmen.
+
+                Die Zusammenfassung im Vorgangsverlauf nennt die zuständige Person und wer die Auswahl vorgenommen hat. Ein Wechsel oder eine unveränderte Zuweisung wird entsprechend beschrieben. Eine hinterlegte Kurzbeschreibung wird ebenfalls angezeigt.
+
+                # Wie sieht ein Beispiel aus?
+
+                Die Teamleitung soll entscheiden, wer einen neuen Vorgang übernimmt. Wählen Sie „Manuell“ und hinterlegen Sie das Team der Teamleitung unter „Personenkreis für die Zuweisungsaufgabe“. Geben Sie in der Aufgabenbeschreibung an, nach welchen fachlichen Kriterien die Auswahl erfolgen soll.
+
+                Eine berechtigte Person aus diesem Team erhält die Aufgabe. Sie wählt beispielsweise „Mara Beispiel“ aus der aktuellen Empfängerliste und bestätigt mit „Vorgang zuweisen“. Danach ist Mara Beispiel die zuständige Person des Vorgangs. Die auswählbaren Personen müssen nicht zum Team gehören, das die Zuweisungsaufgabe bearbeitet.
+
+                # Was ist zu beachten?
+
+                Die Personenkreise und die dort gewählten Bevorzugungen bestimmen die automatische Auswahl der zuständigen Person beziehungsweise der Person für die Zuweisungsaufgabe. Eine Bevorzugung garantiert keine bestimmte Auswahl und ist kein fester Ausschluss anderer Personen.
+
+                Kann bei Beginn des Elements keine berechtigte Person aus dem jeweiligen Personenkreis ermittelt werden, schlägt die Aufgabe fehl. Die Zuweisung selbst ersetzt keine erforderlichen Berechtigungen.
+
+                Die Frist für die manuelle Auswahl beginnt mit der Zuweisung der Mitarbeitendenaufgabe. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, beendet Prosuna die offene Aufgabe nach Fristablauf und wählt „Fristüberschreitung: Vorgangszuweisung“. Die bisherige Vorgangszuweisung bleibt dabei bestehen. Ohne automatische Beendigung bleibt die Aufgabe auch nach Fristablauf bearbeitbar.
+
+                Bei einer Änderung der Zuweisung versucht Prosuna, die neu und gegebenenfalls bisher zuständige Person per E-Mail zu informieren. Versandfehler werden im technischen Protokoll festgehalten. Bleibt dieselbe Person zuständig, wird keine erneute Benachrichtigung versendet.
                 """;
     }
 
@@ -185,7 +245,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         try {
             layout = ElementPOJOMapper.createFromPOJO(Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Konfiguration für die Vorgangszuweisung konnte nicht erstellt werden.");
+            throw ResponseException.internalServerError(e, "Die Einstellungen für „Vorgang zuweisen“ konnten nicht geladen werden.");
         }
 
         layout.findChild(Config.MODE_FIELD_ID, SelectInputElement.class)
@@ -256,7 +316,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         var config = context.configuration();
         var mode = normalizeMode(config.mode);
         if (mode == null) {
-            return Map.of(Config.MODE_FIELD_ID, List.of("Wählen Sie eine gültige Art der Vorgangszuweisung aus."));
+            return Map.of(Config.MODE_FIELD_ID, List.of("Wählen Sie unter „Art der Zuweisung“ entweder „Automatisch“ oder „Manuell“."));
         }
 
         var fieldId = MODE_AUTOMATIC.equals(mode)
@@ -266,7 +326,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         var assignmentContext = AssignmentContextInputElement._formatValue(rawContext);
         if (assignmentContext == null || assignmentContext.getDomainAndUserSelection() == null
                 || assignmentContext.getDomainAndUserSelection().isEmpty()) {
-            return Map.of(fieldId, List.of("Wählen Sie einen Personenkreis aus."));
+            return Map.of(fieldId, List.of("Wählen Sie einen Personenkreis für die ausgewählte Art der Zuweisung aus."));
         }
         try {
             restrictedAssignmentContextElement().performValidation(assignmentContext);
@@ -289,15 +349,15 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         return List.of(new ProcessNodePort(
                 PORT_SUCCESS,
                 "Zuweisung erfolgt",
-                "Der Vorgang wurde einer Person zugewiesen."
+                "Der Vorgang wird hier fortgesetzt, nachdem die zuständige Person des Vorgangs festgelegt wurde."
         ));
     }
 
     @Nonnull
     @Override
     public List<ProcessNodeOutput> getOutputs() {
-        return List.of(new ProcessNodeOutput(OUTPUT_ASSIGNED_USER_ID, "Zugewiesene Person",
-                "Die ID der Person, der der Vorgang zugewiesen wurde.", "string"));
+        return List.of(new ProcessNodeOutput(OUTPUT_ASSIGNED_USER_ID, "Zuständige Person",
+                "Die Kennung des Kontos der Person, der der Vorgang nach erfolgreicher Zuweisung zugewiesen ist.", "string"));
     }
 
     @Override
@@ -319,7 +379,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                     .collect(Collectors.toSet());
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionInvalidAssignment(e,
-                    "Die berechtigten Personen für die Vorgangszuweisung konnten nicht ermittelt werden.");
+                    "Die für die Vorgangszuweisung verfügbaren Personen konnten nicht ermittelt werden.");
         }
 
         var selectedUserId = assigneeResolverService.resolveAssignee(
@@ -336,8 +396,8 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
                         MODE_AUTOMATIC.equals(mode)
-                                ? "Im konfigurierten Personenkreis konnte keine geeignete Person für die Vorgangszuweisung gefunden werden."
-                                : "Im konfigurierten Personenkreis konnte keine geeignete Person für die manuelle Zuweisungsaufgabe gefunden werden."
+                                ? "Für die automatische Vorgangszuweisung konnte keine berechtigte Person aus dem festgelegten Personenkreis ermittelt werden."
+                                : "Für die Aufgabe zur Auswahl der zuständigen Person konnte keine berechtigte Person aus dem festgelegten Personenkreis ermittelt werden."
                 ));
 
         if (MODE_MANUAL.equals(mode)) {
@@ -354,7 +414,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     @Override
     public ProcessNodeStaffView getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<Config> context) throws ResponseException {
         if (!MODE_MANUAL.equals(normalizeMode(context.getConfigurationOfExecutingNode().mode))) {
-            throw ResponseException.badRequest("Für diese Vorgangszuweisung gibt es keine manuelle Aufgabe.");
+            throw ResponseException.badRequest("Für diese Vorgangszuweisung ist keine manuelle Bearbeitung vorgesehen.");
         }
         requireAssignedTaskUser(context);
 
@@ -443,7 +503,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                                                                          @Nonnull String event) throws ResponseException {
         if (!EVENT_ASSIGN.equals(event)
                 || !MODE_MANUAL.equals(normalizeMode(context.getConfigurationOfExecutingNode().mode))) {
-            throw ResponseException.badRequest("Unbekannte Aktion für die Vorgangszuweisung.");
+            throw ResponseException.badRequest("Die ausgewählte Aktion ist für diese Vorgangszuweisung nicht verfügbar.");
         }
         requireAssignedTaskUser(context);
 
@@ -475,7 +535,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
     private static String requireMode(@Nullable String rawMode) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var mode = normalizeMode(rawMode);
         if (mode == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie eine gültige Art der Vorgangszuweisung aus.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie unter „Art der Zuweisung“ entweder „Automatisch“ oder „Manuell“.");
         }
         return mode;
     }
@@ -493,7 +553,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
             throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var value = AssignmentContextInputElement._formatValue(rawContext);
         if (value == null || value.getDomainAndUserSelection() == null || value.getDomainAndUserSelection().isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie einen Personenkreis für die Vorgangszuweisung aus.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie einen Personenkreis für die ausgewählte Art der Zuweisung aus.");
         }
         try {
             restrictedAssignmentContextElement().performValidation(value);
@@ -546,7 +606,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         @InputElementPOJOBinding(id = MODE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Art der Zuweisung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die zuzuweisende Person automatisch ermittelt oder in einer Aufgabe ausgewählt wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob Prosuna die zuständige Person automatisch ermittelt oder ob sie in einer Mitarbeitendenaufgabe ausgewählt wird."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String mode;
@@ -557,7 +617,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
         @Nullable
         @InputElementPOJOBinding(id = AUTOMATIC_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Personenkreis für die Vorgangszuweisung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, aus dem die zugewiesene Person ermittelt wird."),
+                @ElementPOJOBindingProperty(key = "text", strValue = "Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist den Vorgang einer berechtigten Person aus diesem Personenkreis zu."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public AssignmentContextInputElementValue automaticAssignmentContext;
@@ -570,7 +630,7 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die Auswahlkriterien für die dem Vorgang zuzuweisende Person."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie, nach welchen Kriterien die zuständige Person des Vorgangs ausgewählt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public String taskDescription;
@@ -580,8 +640,8 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
          */
         @Nullable
         @InputElementPOJOBinding(id = MANUAL_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, aus dem die zuständige Person für die Zuweisungsaufgabe ermittelt wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Personenkreis für die Zuweisungsaufgabe"),
+                @ElementPOJOBindingProperty(key = "text", strValue = "Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public AssignmentContextInputElementValue manualAssignmentContext;

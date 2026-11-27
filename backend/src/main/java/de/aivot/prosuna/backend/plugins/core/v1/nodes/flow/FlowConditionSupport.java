@@ -124,9 +124,8 @@ final class FlowConditionSupport {
             } catch (Exception e) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
-                        "Die Bedingung %s konnte nicht als JavaScript ausgeführt werden: %s",
-                        subject,
-                        e.getMessage()
+                        "Die Low-Code-Bedingung %s konnte nicht ausgewertet werden. Prüfen Sie das Skript und sein Ergebnis.",
+                        subject
                 );
             }
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
@@ -134,15 +133,14 @@ final class FlowConditionSupport {
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Initialisieren der JavaScript-Engine für die Bedingung %s: %s",
-                    subject,
-                    e.getMessage()
+                    "Die Umgebung für die Low-Code-Bedingung %s konnte nicht verwendet werden.",
+                    subject
             );
         }
 
         if (conditionValue == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Bedingung %s muss einen booleschen JavaScript-Wert ergeben. Übergeben wurde: %s",
+                    "Die Low-Code-Bedingung %s muss true (erfüllt) oder false (nicht erfüllt) ergeben. Erhaltenes Ergebnis: %s.",
                     subject,
                     StringUtils.quote(conditionEvaluated)
             );

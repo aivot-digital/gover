@@ -52,6 +52,7 @@ import de.aivot.prosuna.backend.process.filters.ProcessVersionFilter;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.*;
 import de.aivot.prosuna.backend.process.utils.ProcessSubmissionCookieUtils;
+import de.aivot.prosuna.backend.utils.StringUtils;
 import de.aivot.prosuna.backend.services.PdfService;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.services.StorageProviderService;
@@ -479,19 +480,22 @@ public class FormTriggerControllerV1 {
         }
 
         if (paymentConfig.paymentProviderKey() == null) {
-            throw ResponseException.internalServerError("Für den Formularauslöser ist kein gültiger Zahlungsanbieter hinterlegt.");
+            throw ResponseException.internalServerError("Für den Formulareingang ist kein Zahlungsanbieter ausgewählt.");
         }
 
         PaymentProviderEntity paymentProvider = paymentProviderRepository
                 .findById(paymentConfig.paymentProviderKey())
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Der für das Formular konfigurierte Zahlungsanbieter wurde nicht gefunden."
+                        "Der ausgewählte Zahlungsanbieter wurde nicht gefunden. Zahlungsanbieter: %s.",
+                        StringUtils.quote(paymentConfig.paymentProviderKey().toString())
                 ));
 
         PaymentProviderDefinition paymentProviderDefinition = paymentProviderDefinitionsService
                 .getProviderDefinition(paymentProvider.getPaymentProviderDefinitionKey(), paymentProvider.getPaymentProviderDefinitionVersion())
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Für den konfigurierten Zahlungsanbieter ist keine gültige Definition verfügbar."
+                        "Die Einrichtung des Zahlungsanbieters wurde nicht gefunden. Kennung: %s, Version: %s.",
+                        StringUtils.quote(paymentProvider.getPaymentProviderDefinitionKey()),
+                        paymentProvider.getPaymentProviderDefinitionVersion()
                 ));
 
         var options = new ElementDerivationOptions()
@@ -534,9 +538,10 @@ public class FormTriggerControllerV1 {
                     formSlug,
                     e
             );
-            throw ResponseException.internalServerError(
-                    "Die Kosten für das Formular konnten nicht berechnet werden: " + e.getMessage(),
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Kosten für das Formular konnten nicht berechnet werden.",
+                    null
             );
         }
 
@@ -628,10 +633,10 @@ public class FormTriggerControllerV1 {
 
         var identitySlots = getIdentitySlots(node, identitySessionId, config);
         if (identitySlots.stream().anyMatch(slot -> slot.getIsRequired() && !slot.isReady())) {
-            throw ResponseException.badRequest("Mindestens eine verpflichtende Identität wurde nicht vollständig angegeben.");
+            throw ResponseException.badRequest("Vervollständigen Sie alle verpflichtenden Identitäten, bevor Sie das Formular übermitteln.");
         }
         if (identitySlots.stream().anyMatch(slot -> slot.identityType() != null && !slot.isReady())) {
-            throw ResponseException.badRequest("Bitte vervollständigen Sie jede ausgewählte Identität.");
+            throw ResponseException.badRequest("Vervollständigen Sie die ausgewählte Identität oder entfernen Sie die Auswahl.");
         }
 
         // Perform derivation
@@ -1056,7 +1061,7 @@ public class FormTriggerControllerV1 {
 
         var formLayout = config.configuration().formLayout;
         if (formLayout == null) {
-            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein Formular.");
+            throw ResponseException.internalServerError("Hinterlegen Sie ein Formular für den Formulareingang.");
         }
 
         return new ResolvedSubmittedFormTriggerTaskContext(
@@ -1130,7 +1135,7 @@ public class FormTriggerControllerV1 {
         var formLayout = config.configuration().formLayout;
 
         if (formLayout == null) {
-            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein Formular.");
+            throw ResponseException.internalServerError("Hinterlegen Sie ein Formular für den Formulareingang.");
         }
 
         return new ResolvedFormTriggerContext(process, processVersionEntity, node, formLayout);
