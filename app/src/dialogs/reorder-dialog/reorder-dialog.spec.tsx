@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import {DragAndDropProvider} from '../../providers/drag-and-drop-provider';
@@ -30,7 +30,9 @@ describe('ReorderDialog', () => {
         drag('C', ['A']);
         expect(getShownOrder()).toEqual(['C', 'A', 'B']);
 
+        const dialog = screen.getByRole('dialog', {name: 'Testreihenfolge'});
         await user.click(screen.getByRole('button', {name: 'Abbrechen'}));
+        await waitFor(() => expect(dialog).not.toBeInTheDocument());
         await user.click(screen.getByRole('button', {name: 'Sortieren'}));
 
         expect(getShownOrder()).toEqual(['A', 'B', 'C']);
