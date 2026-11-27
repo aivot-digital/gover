@@ -196,7 +196,7 @@ class AiHubCompletionActionNodeV1Test {
     }
 
     @Test
-    void init_ShouldRejectHttpErrorWithoutExposingResponseBody() throws Exception {
+    void init_ShouldKeepHttpErrorDetailsAsTechnicalCause() throws Exception {
         var secretId = UUID.randomUUID();
         when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
         when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
@@ -219,6 +219,8 @@ class AiHubCompletionActionNodeV1Test {
                 "Der KI-Dienst hat mit dem HTTP-Statuscode 502 geantwortet. Die Anfrage konnte nicht abgeschlossen werden.",
                 exception.getMessage()
         );
+        assertNotNull(exception.getCause());
+        assertTrue(exception.getCause().getMessage().contains("Private upstream response with customer details"));
     }
 
     @Test

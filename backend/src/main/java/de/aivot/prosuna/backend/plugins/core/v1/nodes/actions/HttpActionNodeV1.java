@@ -440,6 +440,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
             if (!statusCodeAllowed) {
                 throw new ProcessNodeExecutionExceptionIO(
+                        new ExternalServiceResponseException(decodeResponseBody(response)),
                         "Die HTTP-Schnittstelle hat mit dem Statuscode %d geantwortet. Für diese Aufgabe sind folgende Statuscodes zugelassen: %s.",
                         statusCode,
                         allowedStatusCodes.stream().map(String::valueOf).toList()
@@ -509,6 +510,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
         if (!statusCodeAllowed) {
             throw new ProcessNodeExecutionExceptionIO(
+                    new ExternalServiceResponseException(rawBody),
                     "Die HTTP-Schnittstelle hat mit dem Statuscode %d geantwortet. Für diese Aufgabe sind folgende Statuscodes zugelassen: %s.",
                     statusCode,
                     allowedStatusCodes.stream().map(String::valueOf).toList()

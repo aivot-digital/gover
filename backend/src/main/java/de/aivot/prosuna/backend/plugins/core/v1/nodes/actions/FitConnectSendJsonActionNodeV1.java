@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.exceptions.ExternalServiceResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -50,8 +51,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
@@ -329,7 +332,12 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         }
 
         if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
+            var problems = status.problems() == null ? null : status.problems().stream()
+                    .filter(Objects::nonNull)
+                    .map(problem -> "%s: %s (%s)".formatted(problem.getTitle(), problem.getDetail(), problem.getType()))
+                    .collect(Collectors.joining("; "));
             throw new ProcessNodeExecutionExceptionUnknown(
+                    new ExternalServiceResponseException(problems),
                     "FIT-Connect meldet für die Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ den Status „%s“. Dieses Prozesselement setzt den Vorgang nur bei „Eingereicht (SUBMITTED)“ oder „Angenommen (ACCEPTED)“ fort.",
                     destinationId,
                     environmentName,

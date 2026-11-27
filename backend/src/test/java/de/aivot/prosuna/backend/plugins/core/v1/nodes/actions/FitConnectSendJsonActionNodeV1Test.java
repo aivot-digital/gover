@@ -257,7 +257,7 @@ class FitConnectSendJsonActionNodeV1Test {
 
     @ParameterizedTest
     @EnumSource(value = Event.class, names = {"REJECT_SUBMISSION", "NOTIFY_SUBMISSION"})
-    void reportsUnsupportedStatusWithoutRawProblemList(Event event) throws Exception {
+    void retainsProblemsAsTechnicalCauseForUnsupportedStatus(Event event) throws Exception {
         var fixture = fixture();
         var problem = new Problem("urn:test:problem", "Private problem title", "Private diagnostic detail", "private-instance");
         when(fixture.cases().logOf(fixture.sentSubmission()))
@@ -276,6 +276,10 @@ class FitConnectSendJsonActionNodeV1Test {
                 exception.getMessage()
         );
         assertFalse(exception.getMessage().contains(problem.toString()));
+        assertNotNull(exception.getCause());
+        assertFalse(exception.getMessage().contains("Private diagnostic detail"));
+        assertEquals("External service response: Private problem title: Private diagnostic detail (urn:test:problem)",
+                exception.getCause().getMessage());
     }
 
     @Test

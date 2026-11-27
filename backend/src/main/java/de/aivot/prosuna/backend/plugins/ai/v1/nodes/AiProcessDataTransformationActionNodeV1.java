@@ -23,6 +23,7 @@ import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
+import de.aivot.prosuna.backend.process.exceptions.ExternalServiceResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
@@ -345,6 +346,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var rawBody = decodeResponseBody(response);
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new ProcessNodeExecutionExceptionUnknown(
+                    new ExternalServiceResponseException(rawBody),
                     "Der KI-Dienst hat mit dem HTTP-Statuscode %d geantwortet. Die Anfrage konnte nicht abgeschlossen werden.",
                     statusCode
             );

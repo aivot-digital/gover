@@ -20,6 +20,7 @@ import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1Co
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
@@ -291,13 +292,14 @@ class HttpActionNodeV1Test {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"text", "file"})
-    void init_ShouldRejectUnexpectedStatusWithoutExposingTheResponseBody(String responseType) throws Exception {
+    @ValueSource(strings = {"text", "file", "json"})
+    void init_ShouldKeepRejectionDetailsInTechnicalLogOnly(String responseType) throws Exception {
+        var responseBody = "{\"error\":\"customerNumber is required (100%)\"}";
         when(httpService.request(eq(HttpMethod.GET), any(), any()))
                 .thenReturn(ResponseEntity
                         .status(HttpStatus.UNPROCESSABLE_ENTITY)
                         .header("X-Error-Code", "unprocessable")
-                        .body("internal-response-100%".getBytes(StandardCharsets.UTF_8)));
+                        .body(responseBody.getBytes(StandardCharsets.UTF_8)));
 
         var configuration = baseConfig("GET", "https://prosuna.test/api", responseType, "200");
 
@@ -306,6 +308,17 @@ class HttpActionNodeV1Test {
                 () -> node.init(context(configuration))
         );
         assertEquals("Die HTTP-Schnittstelle hat mit dem Statuscode 422 geantwortet. Für diese Aufgabe sind folgende Statuscodes zugelassen: [200].", exception.getMessage());
+        assertNotNull(exception.getCause());
+        assertTrue(exception.getCause().getMessage().contains(responseBody));
+
+        var repository = mock(ProcessInstanceHistoryEventRepository.class);
+        new ProcessNodeExecutionLogger(PROCESS_INSTANCE_ID, TASK_ID, null, null, repository).logException(exception);
+        var eventCaptor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(repository).save(eventCaptor.capture());
+        var event = eventCaptor.getValue();
+        assertTrue(event.getTechnical());
+        assertEquals(exception.getMessage(), event.getMessage());
+        assertEquals(exception.getCause().getMessage(), event.getDetails().get("causeMessage"));
         verifyNoInteractions(processInstanceAttachmentService, processInstanceAttachmentSetService);
     }
 
