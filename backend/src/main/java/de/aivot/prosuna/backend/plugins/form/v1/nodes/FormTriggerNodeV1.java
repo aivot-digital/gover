@@ -564,6 +564,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 )
                         .setNewDeadlineKey(PAYMENT_DEADLINE.key())
                         .setNodeData(nodeData)
+                        // The payment view and the payment deadline use the same process data as a completed form.
+                        .setProcessData(readFormPayload(processInstanceInitialPayload))
                         .setRuntimeData(Map.of(
                                 DATA_KEY_PAYMENT_PAYLOAD, paymentRequest.get(),
                                 DATA_KEY_PAYMENT_TRANSACTION_KEY, transaction.getKey()
@@ -606,19 +608,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     private ProcessNodeExecutionResult complete(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
                                                 @Nonnull Map<String, Object> nodeData,
                                                 @Nonnull Map<String, Object> runtimeData) throws ProcessNodeExecutionException {
-        var processInstanceInitialPayload = context
-                .getThisProcessInstance()
-                .getInitialPayload();
-
-        var nodeInitialPayloadRaw = processInstanceInitialPayload
-                .get(DATA_KEY_PAYLOAD);
-
-        var nodeInitialPayload = new HashMap<String, Object>();
-        if (nodeInitialPayloadRaw instanceof Map<?, ?> mInitialPayload) {
-            for (var key : mInitialPayload.keySet()) {
-                nodeInitialPayload.put(String.valueOf(key), mInitialPayload.get(key));
-            }
-        }
+        var nodeInitialPayload = readFormPayload(context.getThisProcessInstance().getInitialPayload());
 
         if (runtimeData.containsKey(DATA_KEY_PAYMENT_TRANSACTION_KEY)) {
             var txKey = runtimeData
@@ -673,6 +663,21 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .setRuntimeData(runtimeData)
                 .setNodeData(nodeData)
                 .setProcessData(nodeInitialPayload);
+    }
+
+    /**
+     * The mapped form data of the submission, which becomes the process data. The other entries of the initial payload
+     * remain node data.
+     */
+    @Nonnull
+    private static Map<String, Object> readFormPayload(@Nonnull Map<String, Object> processInstanceInitialPayload) {
+        var formPayload = new HashMap<String, Object>();
+        if (processInstanceInitialPayload.get(DATA_KEY_PAYLOAD) instanceof Map<?, ?> payload) {
+            for (var key : payload.keySet()) {
+                formPayload.put(String.valueOf(key), payload.get(key));
+            }
+        }
+        return formPayload;
     }
 
     @Nonnull
