@@ -82,13 +82,7 @@ public class ProcessDataService {
         var tasks = processInstanceTaskRepository
                 .getLatestTasksByProcessInstanceId(instance.getId());
 
-        var previousTask = previousNodeId == null ?
-                null :
-                tasks
-                        .stream()
-                        .filter(t -> t.getProcessNodeId().equals(previousNodeId))
-                        .findFirst()
-                        .orElse(null);
+        var previousTask = resolvePreviousTask(previousNodeId, currentTask, tasks);
 
         var previousNode = previousTask == null ?
                 null :
@@ -103,6 +97,31 @@ public class ProcessDataService {
         allData.put("_", getNodeData(tasks, nodes));
 
         return allData;
+    }
+
+    /**
+     * The task the current task continues from. In a direct self-loop, the latest task of the previous node is the
+     * current attempt itself, whose process data is still empty, so the recorded predecessor task is preferred.
+     */
+    @Nullable
+    private ProcessInstanceTaskEntity resolvePreviousTask(@Nullable Integer previousNodeId,
+                                                          @Nonnull ProcessInstanceTaskEntity currentTask,
+                                                          @Nonnull List<ProcessInstanceTaskEntity> latestTasks) {
+        var previousTaskId = currentTask.getPreviousProcessInstanceTaskId();
+        if (previousTaskId != null) {
+            var previousTask = processInstanceTaskRepository.findById(previousTaskId);
+            if (previousTask.isPresent()) {
+                return previousTask.get();
+            }
+        }
+        // Tasks without a recorded predecessor task continue from the latest task of the previous node.
+        return previousNodeId == null ?
+                null :
+                latestTasks
+                        .stream()
+                        .filter(t -> t.getProcessNodeId().equals(previousNodeId))
+                        .findFirst()
+                        .orElse(null);
     }
 
     @Nonnull

@@ -72,6 +72,35 @@ class ProcessDataServiceTest {
     }
 
     @Test
+    void foldProcessInstanceData_ContinuesFromThePredecessorTaskInADirectSelfLoop() {
+        var instance = new ProcessInstanceEntity(
+                42L, "CASE-42", "access-key", 7, 1, ProcessInstanceStatus.Running,
+                null, null, List.of(), new IdentityDataMap(), Instant.now(), Instant.now(),
+                null, null, Map.of(), 11, null, null);
+        var node = new ProcessNodeEntity().setId(11).setProcessId(7).setDataKey("loop");
+        var predecessor = new ProcessInstanceTaskEntity().setId(20L).setProcessNodeId(11)
+                .setStatus(de.aivot.prosuna.backend.process.enums.ProcessTaskStatus.Completed)
+                .setNodeData(Map.of()).setProcessData(Map.of("existing", true));
+        // The worker has already saved the new attempt of the same node, so it is the latest task of that node.
+        var currentAttempt = new ProcessInstanceTaskEntity().setId(21L).setProcessNodeId(11)
+                .setPreviousProcessInstanceTaskId(20L).setPreviousProcessNodeId(11)
+                .setStatus(de.aivot.prosuna.backend.process.enums.ProcessTaskStatus.Running)
+                .setNodeData(Map.of()).setProcessData(Map.of());
+        var nodes = mock(ProcessNodeRepository.class);
+        when(nodes.findAllByProcessId(7)).thenReturn(List.of(node));
+        when(nodes.findById(11)).thenReturn(Optional.of(node));
+        var tasks = mock(ProcessInstanceTaskRepository.class);
+        when(tasks.getLatestTasksByProcessInstanceId(42L)).thenReturn(List.of(currentAttempt));
+        when(tasks.findById(20L)).thenReturn(Optional.of(predecessor));
+
+        var data = new ProcessDataService(tasks, nodes, mock(ProcessInstanceAttachmentRepository.class),
+                mock(ProcessInstanceAttachmentSetRepository.class), JsonMapperTestUtils.createMapper())
+                .foldProcessInstanceData(instance, 11, currentAttempt);
+
+        assertEquals(Map.of("existing", true), data.get("$"));
+    }
+
+    @Test
     void foldProcessInstanceData_IncludesAttachmentSetsWithContainedAttachments() {
         var instance = new ProcessInstanceEntity(
                 42L,
