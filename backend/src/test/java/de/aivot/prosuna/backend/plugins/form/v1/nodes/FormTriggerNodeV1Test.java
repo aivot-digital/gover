@@ -468,6 +468,62 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
+    void keepsTheFormDataAsProcessDataWhilePaymentIsPendingAndAfterPayment() throws Exception {
+        var configuration = configuration("antrag-online", validFormLayout());
+        var providerKey = UUID.randomUUID();
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, false, null, List.of(),
+                "Danke {{ $.person.name }}.", "Hallo {{ $.person.name }}.");
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenReturn(new byte[]{1, 2, 3});
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentSetEntity.class).setId(321));
+        when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentEntity.class)
+                        .setKey(UUID.randomUUID()).setStorageProviderId(7).setStoragePathFromRoot("summary.pdf"));
+        var paymentProvider = paymentProvider(providerKey);
+        when(paymentProviderRepository.findById(providerKey)).thenReturn(Optional.of(paymentProvider));
+        var paymentPayload = new PaymentPayload();
+        paymentPayload.setPaymentItems(List.of());
+        paymentPayload.setTotal(new java.math.BigDecimal("12.50"));
+        when(paymentPayloadCreationService.createRequest(any(), any(), any())).thenReturn(Optional.of(paymentPayload));
+        var pendingTransaction = paymentTransaction(providerKey, XBezahldienstStatus.INITIAL);
+        pendingTransaction.getPaymentInformation().setTransactionRedirectUrl(java.net.URI.create("https://payment.example/tx-1"));
+        when(paymentTransactionService.create(any(), any(), any())).thenReturn(pendingTransaction);
+        var paymentProviderDefinition = paymentProviderDefinition();
+        when(paymentProviderDefinitionsService.getProviderDefinition(
+                paymentProvider.getPaymentProviderDefinitionKey(),
+                paymentProvider.getPaymentProviderDefinitionVersion()
+        )).thenReturn(Optional.of(paymentProviderDefinition));
+        when(processService.retrieve(PROCESS_ID)).thenReturn(Optional.of(process()));
+        var formData = Map.<String, Object>of("person", Map.of("name", "Ada"));
+        var initialPayload = Map.<String, Object>of(
+                FormTriggerNodeV1.DATA_KEY_PAYLOAD, formData,
+                FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()
+        );
+
+        var requested = assertInstanceOf(
+                ProcessNodeExecutionResultPaymentRequested.class,
+                node.init(context(configuration, initialPayload))
+        );
+        // The payment deadline completes the task with this process data unchanged.
+        assertEquals(formData, requested.getProcessData());
+
+        var pendingTask = task().setRuntimeData(requested.getRuntimeData()).setProcessData(requested.getProcessData());
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(pendingTransaction));
+        var pendingView = node.getCustomerTaskView(new ProcessNodeExecutionContextUICustomer<>(
+                mock(ProcessNodeExecutionLogger.class), processNode(), processInstance(initialPayload), pendingTask,
+                null, null, configuration, null
+        ));
+        assertNotNull(pendingView.layout());
+
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(paymentTransaction(providerKey, XBezahldienstStatus.PAYED)));
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.resume(new ProcessNodeExecutionInitContext<>(
+                mock(ProcessNodeExecutionLogger.class), processNode(), processInstance(initialPayload), pendingTask,
+                null, new ProcessExecutionData(), configuration
+        )));
+        assertEquals(formData, completed.getProcessData());
+    }
+
+    @Test
     void init_CompletesWithThePaymentOfAnEarlierAttemptInsteadOfRequestingAgain() throws Exception {
         var configuration = configuration("antrag-online", validFormLayout());
         var providerKey = UUID.randomUUID();
