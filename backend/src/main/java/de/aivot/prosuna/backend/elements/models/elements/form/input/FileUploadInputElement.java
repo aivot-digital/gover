@@ -111,10 +111,7 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
                 if (file.getSize() == null || file.getSize() <= 0) {
                     throw new ValidationException(this, "Dateigröße fehlt oder ist ungültig.");
                 }
-
-                if (file.getSize() > 10 * 1024 * 1024) {
-                    throw new ValidationException(this, "Datei zu groß. Die Datei " + file.getName() + " darf maximal 10 Megabyte groß sein.");
-                }
+                // No size limit here: uploads are limited by the storage provider and the system-wide upload limit.
             }
 
             if (extensions != null) {
