@@ -332,7 +332,9 @@ public class InstanceAssignmentActionNodeV1 implements ProcessNodeDefinition<Ins
                         context.getThisProcessInstance().getAssignedUserId(),
                         assignmentContext,
                         permissions,
-                        eligibleUserIds
+                        eligibleUserIds,
+                        // Only the manual mode creates a task; the automatic mode assigns the instance itself.
+                        MODE_MANUAL.equals(mode)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
                         MODE_AUTOMATIC.equals(mode)

@@ -60,11 +60,16 @@ public class AssignmentContextAssigneeResolverService {
         return resolveAssignee(
                 processId, processVersion, processInstanceId, currentProcessNodeId,
                 currentProcessInstanceTaskId, previousProcessNodeId, processInstanceAssignedUserId,
-                assignmentContext, requiredPermissions, null
+                assignmentContext, requiredPermissions, null, true
         );
     }
 
-    /** Uses current instance eligibility when a node needs more than the definition-level access view can express. */
+    /**
+     * Uses current instance eligibility when a node needs more than the definition-level access view can express.
+     *
+     * @param forTask Whether the person receives a task, which requires the task permissions, or becomes responsible
+     *                for the instance itself, which requires only own read access.
+     */
     @Nonnull
     public java.util.Optional<String> resolveAssignee(
             @Nonnull Integer processId,
@@ -76,7 +81,8 @@ public class AssignmentContextAssigneeResolverService {
             @Nullable String processInstanceAssignedUserId,
             @Nullable AssignmentContextInputElementValue assignmentContext,
             @Nullable List<String> requiredPermissions,
-            @Nullable Set<String> currentlyEligibleUserIds
+            @Nullable Set<String> currentlyEligibleUserIds,
+            boolean forTask
     ) {
         var selection = assignmentContext != null ? assignmentContext.getDomainAndUserSelection() : null;
         if (selection == null || selection.isEmpty()) {
@@ -120,8 +126,9 @@ public class AssignmentContextAssigneeResolverService {
         // Preserve the configured candidate pool, including permissions through the selected membership.
         // Current instance rights only narrow that pool: rights through another team must not expand it.
         // Filter before preferences/load balancing so an ineligible preferred user cannot hide a valid alternative.
-        candidateUserIds.removeIf(userId -> !processAssignmentService.canReceiveTaskAssignment(
-                userId, processInstanceId, normalizedRequiredPermissions));
+        candidateUserIds.removeIf(userId -> !(forTask
+                ? processAssignmentService.canReceiveTaskAssignment(userId, processInstanceId, normalizedRequiredPermissions)
+                : processAssignmentService.canReceiveInstanceAssignment(userId, processInstanceId, normalizedRequiredPermissions)));
         if (candidateUserIds.isEmpty()) {
             return java.util.Optional.empty();
         }

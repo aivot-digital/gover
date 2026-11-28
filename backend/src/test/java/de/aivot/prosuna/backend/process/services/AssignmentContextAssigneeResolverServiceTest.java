@@ -111,10 +111,26 @@ class AssignmentContextAssigneeResolverServiceTest {
                 null,
                 assignmentContext(List.of(new DomainAndUserSelectInputElementValue("user", "globally-authorized"))),
                 List.of("process_instance.read"),
-                Set.of("globally-authorized")
+                Set.of("globally-authorized"),
+                false
         );
 
         assertEquals(Optional.of("globally-authorized"), result);
+    }
+
+    @Test
+    void resolveAssignee_RequiresTaskPermissionsOnlyWhenAssigningATask() {
+        when(permissions.hasProcessInstancePermissionWithoutDeputies("reader", PROCESS_INSTANCE_ID, REQUIRED_PERMISSION))
+                .thenReturn(false);
+        var selection = assignmentContext(List.of(user("reader")));
+
+        var instanceAssignee = service.resolveAssignee(PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID,
+                CURRENT_TASK_ID, null, null, selection, List.of(PROCESS_INSTANCE_READ), Set.of("reader"), false);
+        var taskAssignee = service.resolveAssignee(PROCESS_ID, PROCESS_VERSION, PROCESS_INSTANCE_ID, CURRENT_NODE_ID,
+                CURRENT_TASK_ID, null, null, selection, List.of(PROCESS_INSTANCE_READ), Set.of("reader"), true);
+
+        assertEquals(Optional.of("reader"), instanceAssignee);
+        assertEquals(Optional.empty(), taskAssignee);
     }
 
     @Test
