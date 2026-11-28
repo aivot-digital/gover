@@ -217,7 +217,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
     const canBrowse = !isReadonlyOrDisabled && !selectedProviderIsReadOnlyDisabled && value?.storageProviderId != null;
     const resolvedError = error ?? (
         selectedProviderIsReadOnlyDisabled
-            ? 'Dieser Speicheranbieter ist nur lesend und kann hier nicht ausgewählt werden.'
+            ? 'Dieser Speicheranbieter ist schreibgeschützt und kann hier nicht ausgewählt werden.'
             : undefined
     );
     const selectionLabel = 'Ordner auswählen';

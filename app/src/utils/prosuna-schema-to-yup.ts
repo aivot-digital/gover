@@ -136,13 +136,13 @@ function authoredInputValueToYup(element: AnyInputElement, literalValueSchema: S
 
         if (value.type !== InputMode.Literal) {
             // Dynamic payloads are structurally validated by the backend against the trusted element policy.
-            return yup.mixed().defined();
+            return yup.mixed().defined('Geben Sie einen Wert für dieses Feld an.');
         }
 
         return yup.object({
-            type: yup.string().oneOf([InputMode.Literal]).required(),
+            type: yup.string().typeError('Der Eingabemodus ist ungültig.').oneOf([InputMode.Literal], 'Der Eingabemodus ist ungültig.').required('Geben Sie einen Eingabemodus an.'),
             value: literalValueSchema,
-        });
+        }).typeError('Die Angaben haben ein ungültiges Format.');
     }) as unknown as Schema;
 }
 
@@ -187,7 +187,7 @@ function countedArraySchema(opts: {
     maxItems?: number | null;
 }) {
     const requiredMessage = `${opts.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
-    let schema = yup.array().nullable().test('minimum-items', function (value) {
+    let schema = yup.array().typeError('Die Einträge haben ein ungültiges Format.').nullable().test('minimum-items', function (value) {
         const count = value?.length ?? 0;
         // Unlike array.min(), this permits an empty optional field with a configured minimum.
         // Required controls emptiness; the minimum applies once entries exist.
@@ -227,10 +227,10 @@ function genericFieldToYup(elem: AnyInputElement): Schema {
 
 function htmlTemplateInputFieldToYup(elem: AnyInputElement): Schema {
     let schema: Schema = yup
-        .object()
+        .object().typeError('Die Angaben haben ein ungültiges Format.')
         .shape({
-            assetKey: yup.string().nullable(),
-            slots: yup.object().nullable(),
+            assetKey: yup.string().typeError('Wählen Sie eine gültige HTML-Vorlage aus.').nullable(),
+            slots: yup.object().typeError('Die Angaben haben ein ungültiges Format.').nullable(),
         })
         .nullable();
 
@@ -248,10 +248,10 @@ function htmlTemplateInputFieldToYup(elem: AnyInputElement): Schema {
 
 function storagePathSelectorInputFieldToYup(elem: AnyInputElement): Schema {
     return yup
-        .object()
+        .object().typeError('Die Angaben haben ein ungültiges Format.')
         .shape({
-            storageProviderId: yup.number().nullable(),
-            path: yup.string().trim().nullable(),
+            storageProviderId: yup.number().typeError('Wählen Sie einen gültigen Speicheranbieter aus.').nullable(),
+            path: yup.string().typeError('Geben Sie einen gültigen Speicherpfad an.').trim().nullable(),
         })
         .nullable()
         .test(
@@ -272,7 +272,7 @@ function storagePathSelectorInputFieldToYup(elem: AnyInputElement): Schema {
 
 function textFieldToYup(elem: TextFieldElement): Schema {
     let textFieldSchema: StringSchema<string | undefined | null> = yup
-        .string()
+        .string().typeError('Bitte geben Sie einen Text ein.')
         .trim();
 
     if (elem.minCharacters) {
@@ -297,19 +297,19 @@ function textFieldToYup(elem: TextFieldElement): Schema {
 }
 
 function phoneNumberFieldToYup(elem: PhoneNumberFieldElement): Schema {
-    const schema = yup.string().trim().nullable().test('phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.',
+    const schema = yup.string().typeError('Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.').trim().nullable().test('phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.',
         value => isBlankPhoneNumber(value) || normalizePhoneNumber(value, elem.validationMode ?? PhoneNumberValidation.Possible) != null);
     return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
 }
 
 function emailFieldToYup(elem: EmailFieldElement): Schema {
-    const schema = yup.string().trim().nullable().test('email-address', 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+    const schema = yup.string().typeError('Bitte geben Sie eine gültige E-Mail-Adresse ein.').trim().nullable().test('email-address', 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
         value => validateEmailAddress(value, elem.allowLocalDomains ?? false) == null);
     return elem.required ? schema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`) : schema;
 }
 
 function durationFieldToYup(elem: DurationFieldElement): Schema {
-    const schema = yup.number().strict().nullable().test('duration', 'Ungültige Zeitdauer.', function (value) {
+    const schema = yup.number().typeError('Bitte geben Sie eine gültige Zeitdauer ein.').strict().nullable().test('duration', 'Ungültige Zeitdauer.', function (value) {
         const error = validateDurationSeconds(value, elem.precision ?? DurationPrecision.Minute, elem.minDuration, elem.maxDuration, elem.largestUnit);
         return error == null || this.createError({message: error});
     });
@@ -319,7 +319,7 @@ function durationFieldToYup(elem: DurationFieldElement): Schema {
 function richTextInputFieldToYup(elem: RichTextInputElement): Schema {
     // Not trimmed: the backend limits the stored Markdown as it is.
     let richTextSchema: StringSchema<string | undefined | null> = yup
-        .string();
+        .string().typeError('Bitte geben Sie einen Text ein.');
 
     // Non-positive limits mean unlimited, as in the editor component and the backend.
     if (elem.maxCharacters != null && elem.maxCharacters > 0) {
@@ -338,7 +338,7 @@ function richTextInputFieldToYup(elem: RichTextInputElement): Schema {
 
 function numberFieldToYup(elem: AnyInputElement): Schema {
     let numberFieldSchema: NumberSchema<number | undefined | null> = yup
-        .number();
+        .number().typeError('Bitte geben Sie eine gültige Zahl ein.');
 
     if (elem.required) {
         numberFieldSchema = numberFieldSchema
@@ -353,7 +353,7 @@ function numberFieldToYup(elem: AnyInputElement): Schema {
 
 function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
     let departmentSchema: NumberSchema<number | undefined | null> = yup
-        .number()
+        .number().typeError('Wählen Sie eine gültige Organisationseinheit aus.')
         .strict()
         .integer('Bitte wählen Sie eine gültige Organisationseinheit aus.')
         .positive('Bitte wählen Sie eine gültige Organisationseinheit aus.');
@@ -370,7 +370,7 @@ function departmentSelectFieldToYup(elem: AnyInputElement): Schema {
 
 function selectFieldToYup(elem: SelectFieldElement): Schema {
     let selectFieldSchema: StringSchema<string | undefined | null> = yup
-        .string()
+        .string().typeError('Wählen Sie einen gültigen Eintrag aus.')
         .trim();
 
     if (elem.required) {
@@ -398,7 +398,7 @@ function selectFieldToYup(elem: SelectFieldElement): Schema {
 
 function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectSelectFieldElement): Schema {
     let selectFieldSchema: StringSchema<string | undefined | null> = yup
-        .string()
+        .string().typeError('Wählen Sie einen gültigen Eintrag aus.')
         .trim();
 
     if (elem.required) {
@@ -414,7 +414,7 @@ function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectS
 
 function processDataKeyInputFieldToYup(elem: ProcessDataKeyInputFieldElement): Schema {
     let processDataKeySchema: StringSchema<string | undefined | null> = yup
-        .string()
+        .string().typeError('Geben Sie einen gültigen Datenschlüssel ein.')
         .trim();
 
     if (elem.required) {
@@ -452,11 +452,11 @@ function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: Com
         }
 
         return yup
-            .object()
+            .object().nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.')
             .shape({
-                id: yup.string().nullable(),
+                id: yup.string().typeError('Die Kennung des Eintrags hat ein ungültiges Format.').nullable(),
                 values: yup
-                    .object()
+                    .object().nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.')
                     .shape(childShape),
             });
     });
@@ -476,7 +476,7 @@ function parseArrayIndex(path: string): number {
 
 function chipInputFieldToYup(elem: ChipInputFieldElement): Schema {
     let chipSchema = countedArraySchema(elem)
-        .of(yup.string().trim());
+        .of(yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim());
 
     if (elem.allowDuplicates !== true) {
         chipSchema = chipSchema
@@ -536,7 +536,7 @@ function buildRangeSchema<T>(
     compareValues: (left: T, right: T) => number,
 ): Schema {
     let rangeSchema: Schema = yup
-        .object()
+        .object().typeError('Die Angaben haben ein ungültiges Format.')
         .shape({
             start: temporalRangeBoundarySchema(parseValue),
             end: temporalRangeBoundarySchema(parseValue),
@@ -598,7 +598,7 @@ function buildRangeSchema<T>(
 
 function temporalRangeBoundarySchema<T>(parseValue: (value: string) => T | null): Schema {
     return yup
-        .string()
+        .string().typeError('Geben Sie ein gültiges Datum oder eine gültige Uhrzeit ein.')
         .nullable()
         .test(
             'temporal-format',
@@ -609,11 +609,11 @@ function temporalRangeBoundarySchema<T>(parseValue: (value: string) => T | null)
 
 function mapPointFieldToYup(elem: MapPointFieldElement): Schema {
     let mapPointSchema: Schema = yup
-        .object()
+        .object().typeError('Die Angaben haben ein ungültiges Format.')
         .shape({
-            latitude: yup.number().nullable(),
-            longitude: yup.number().nullable(),
-            address: yup.string().nullable(),
+            latitude: yup.number().typeError('Geben Sie einen gültigen Breitengrad als Zahl an.').nullable(),
+            longitude: yup.number().typeError('Geben Sie einen gültigen Längengrad als Zahl an.').nullable(),
+            address: yup.string().typeError('Die Adresse hat ein ungültiges Format.').nullable(),
         })
         .test(
             'map-point-pair',
@@ -649,7 +649,7 @@ function noCodeInputFieldToYup(elem: NoCodeInputFieldElement): Schema {
     const requiredMessage = `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`;
 
     let noCodeSchema: Schema = yup
-        .object()
+        .object().typeError('Die Angaben haben ein ungültiges Format.')
         .shape({
             noCode: yup.mixed().nullable(),
         });
@@ -683,10 +683,10 @@ function createDomainAndUserSelectionSchema(
         .of(
             yup
                 .object({
-                    type: yup.string().oneOf(['orgUnit', 'team', 'user']).required(),
-                    id: yup.string().trim().required(),
-                })
-                .required()
+                    type: yup.string().typeError('Wählen Sie eine gültige Organisationseinheit, ein Team oder eine Person aus.').oneOf(['orgUnit', 'team', 'user'], 'Wählen Sie eine gültige Organisationseinheit, ein Team oder eine Person aus.').required('Wählen Sie eine Organisationseinheit, ein Team oder eine Person aus.'),
+                    id: yup.string().typeError('Die Kennung des ausgewählten Eintrags ist ungültig.').trim().required('Die Kennung des ausgewählten Eintrags muss angegeben werden.'),
+                }).typeError('Die Angaben haben ein ungültiges Format.')
+                .required('Wählen Sie eine Organisationseinheit, ein Team oder eine Person aus.')
                 .test(
                     'normalize-item',
                     'Ungültiger Eintrag.',
@@ -753,24 +753,24 @@ function assignmentContextFieldToYup(elem: AssignmentContextFieldElement): Schem
     });
 
     let assignmentContextSchema: Schema = yup
-        .object()
+        .object().typeError('Die Angaben haben ein ungültiges Format.')
         .shape({
             domainAndUserSelection: domainSelectionSchema,
-            generalAssigneePreference: yup.string().oneOf([
+            generalAssigneePreference: yup.string().typeError('Wählen Sie eine gültige Bevorzugung für die zuständige Person aus.').oneOf([
                 'none',
                 'previousProcessStepAssignee',
                 'uninvolvedUser',
                 'processInstanceAssignee',
-            ]).nullable().test(
+            ], 'Wählen Sie eine gültige Bevorzugung für die zuständige Person aus.').nullable().test(
                 'process-instance-assignee-option-enabled',
                 'Die Bevorzugung der dem Vorgang zugewiesenen Person ist hier nicht zulässig.',
                 (value) => elem.disableProcessInstanceAssigneeOption !== true || value !== 'processInstanceAssignee',
             ),
-            repeatExecutionAssigneePreference: yup.string().oneOf([
+            repeatExecutionAssigneePreference: yup.string().typeError('Wählen Sie eine gültige Bevorzugung bei erneuter Ausführung aus.').oneOf([
                 'none',
                 'previousIterationAssignee',
                 'differentFromPreviousIterationAssignee',
-            ]).nullable().test(
+            ], 'Wählen Sie eine gültige Bevorzugung bei erneuter Ausführung aus.').nullable().test(
                 'repeat-execution-assignee-preference-options-enabled',
                 'Eine Bevorzugung bei erneuter Ausführung ist hier nicht zulässig.',
                 (value) => elem.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions !== true ||

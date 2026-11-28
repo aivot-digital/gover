@@ -66,8 +66,8 @@ class IfFlowControlNodeV1Test {
 
     @Test
     void shouldRejectNonBooleanLowCodeResults() {
-        assertTrue(lowCodeError("'ja'").contains("Die Bedingung des Bedingungselements konnte nicht als JavaScript ausgeführt werden"));
-        assertTrue(lowCodeError("undefined").contains("Die Bedingung des Bedingungselements muss einen booleschen JavaScript-Wert ergeben."));
+        assertTrue(lowCodeError("'ja'").contains("Die Low-Code-Bedingung der bedingten Verzweigung konnte nicht ausgewertet werden. Prüfen Sie das Skript und sein Ergebnis."));
+        assertTrue(lowCodeError("undefined").contains("Die Low-Code-Bedingung der bedingten Verzweigung muss true (erfüllt) oder false (nicht erfüllt) ergeben."));
     }
 
     private String lowCodeError(String condition) {

@@ -99,7 +99,7 @@ public class DefaultStorageAssetsSystemConfigDefinition implements SystemConfigD
 
         if (storageProviderRepository.existsByIdAndReadOnlyStorageTrue(Integer.parseInt(newValue))) {
             throw ResponseException.badRequest(
-                    "Der ausgewählte Speicheranbieter ist schreibgeschützt und kann nicht als zentraler Speicheranbieter für Assets verwendet werden. Bitte wählen Sie einen anderen Speicheranbieter aus."
+                    "Der ausgewählte Speicheranbieter ist schreibgeschützt und kann nicht als zentraler Speicheranbieter für Dateien und Medien verwendet werden. Bitte wählen Sie einen anderen Speicheranbieter aus."
             );
         }
     }

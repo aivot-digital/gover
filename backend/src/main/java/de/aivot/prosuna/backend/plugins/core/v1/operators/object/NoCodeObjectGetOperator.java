@@ -32,22 +32,30 @@ public class NoCodeObjectGetOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Lesen Sie eine einzelne Eigenschaft aus einem Objekt aus, etwa den Ort aus einer gespeicherten Adresse.
 
                 # Welche Werte werden benötigt?
-                Ein „Objekt“ und die gesuchte „Eigenschaft“. Ein festes Objekt geben Sie als JSON-Text ein, zum Beispiel `{"ort":"Berlin"}`. Den Namen der Eigenschaft geben Sie frei als Text ein, etwa `ort`; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können beide Eingaben auch aus Wertquellen oder Funktionen stammen.
+
+                - **Objekt:** Das Objekt, aus dem Sie eine Eigenschaft lesen möchten. Ein festes Objekt geben Sie als JSON-Text ein, zum Beispiel `{"ort":"Berlin"}`.
+                - **Eigenschaft:** Der Name der gesuchten Eigenschaft. Geben Sie ihn frei als Text ein, etwa `ort`; es gibt keine vorgegebenen Auswahlwerte.
+
+                Über **„Andere Wertquelle verwenden …“** können beide Eingaben auch aus Wertquellen oder Funktionen stammen.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Den unter diesem Namen gespeicherten Wert. Der Wert kann beispielsweise ein Text, eine Zahl, eine Liste oder ein weiteres Objekt sein. Fehlt die Eigenschaft, erhalten Sie einen leeren Wert.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Objekteigenschaft lesen“ als Funktion für einen Wert.
-                2. Wählen Sie als „Objekt“ über „Andere Wertquelle verwenden …“ die Wertquelle „Adresse“, die ein Objekt mit der Eigenschaft `ort` enthält.
-                3. Tragen Sie bei „Eigenschaft“ `ort` ein.
 
-                Steht dort „Berlin“, erhalten Sie den Text „Berlin“. Diesen können Sie beispielsweise mit „Ist gleich“ vergleichen.
+                1. Wählen Sie **„Objekteigenschaft lesen“** als Funktion für einen Wert.
+                2. Wählen Sie als **„Objekt“** über **„Andere Wertquelle verwenden …“** die Wertquelle **„Adresse“**, die ein Objekt mit der Eigenschaft `ort` enthält.
+                3. Tragen Sie bei **„Eigenschaft“** `ort` ein.
+
+                Steht dort `Berlin`, erhalten Sie den Text `Berlin`. Diesen können Sie beispielsweise mit **„Ist gleich“** vergleichen.
 
                 # Was ist zu beachten?
+
                 Der Name muss einschließlich Groß- und Kleinschreibung übereinstimmen. Es wird genau eine Eigenschaft auf der obersten Ebene gelesen. `adresse.ort` wird als vollständiger Eigenschaftsname behandelt, nicht als Pfad. Für verschachtelte Objekte können Sie die Funktion mehrfach ineinander einsetzen.
 
                 Fehlt das Objekt oder enthält der JSON-Text `null`, erhalten Sie einen leeren Wert. Ungültiger JSON-Text und Werte ohne Objektstruktur führen zu einer Fehlermeldung.

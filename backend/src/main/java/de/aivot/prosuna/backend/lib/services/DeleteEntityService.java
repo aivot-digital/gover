@@ -11,7 +11,7 @@ public interface DeleteEntityService<T, I> extends RetrieveEntityService<T, I> {
     ) throws ResponseException {
         var entity = retrieve(id);
         if (entity.isEmpty()) {
-            throw new ResponseException(HttpStatus.NOT_FOUND, "Entity not found");
+            throw new ResponseException(HttpStatus.NOT_FOUND, "Der Eintrag wurde nicht gefunden. Möglicherweise wurde er bereits gelöscht.");
         }
         performDelete(entity.get());
         return entity.get();

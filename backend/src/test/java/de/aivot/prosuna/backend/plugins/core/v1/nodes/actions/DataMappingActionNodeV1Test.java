@@ -21,6 +21,7 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -363,6 +364,50 @@ class DataMappingActionNodeV1Test {
     }
 
     @Test
+    void unchangedRuleExecutionIsSummarizedWithoutClaimingDataChanges() throws Exception {
+        var initialData = Map.<String, Object>of(
+                "person", Map.of("firstName", "Ada"),
+                "empty", List.of()
+        );
+        var configuration = configuration(List.of(
+                Map.of("source", "empty[*].name", "target", "copied[*].name"),
+                Map.of("source", "person.missing", "deleteOnly", true, "cleanupSource", true),
+                Map.of("source", "person.firstName", "target", "person.firstName", "cleanupSource", true)
+        ), false);
+        var config = nodeConfiguration(configuration);
+        var executingNode = processNode(configuration);
+        var instance = processInstance();
+        var currentTask = task(initialData);
+
+        var completed = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(new ProcessNodeExecutionInitContext<>(
+                        logger(), executingNode, instance, currentTask, null,
+                        new ProcessExecutionData().addProcessData(initialData), config
+                ))
+        );
+
+        assertEquals(initialData, completed.getProcessData());
+        assertEquals(3, completed.getNodeData().get("mappedRuleCount"));
+        currentTask.setProcessData(completed.getProcessData())
+                .setNodeData(completed.getNodeData())
+                .setStatus(ProcessTaskStatus.Completed)
+                .setFinished(Instant.now());
+
+        var markdown = node.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(
+                config, executingNode, instance, currentTask, null, null, null, completed.getViaPort()
+        ));
+
+        assertEquals(
+                "Es wurden 3 Regeln zur Bearbeitung der Vorgangsdaten ausgeführt."
+                        + "\n\n- Kopierregel: empty\\[\\*\\]\\.name → copied\\[\\*\\]\\.name"
+                        + "\n\n- Löschregel: person\\.missing"
+                        + "\n\n- Verschieberegel: person\\.firstName → person\\.firstName",
+                markdown
+        );
+    }
+
+    @Test
     void init_FailsForInvalidRawSourcePathDuringExecution() throws Exception {
         var processData = new ProcessExecutionData()
                 .addProcessData(Map.of(
@@ -390,7 +435,7 @@ class DataMappingActionNodeV1Test {
                 ))
         );
 
-        assertTrue(exception.getMessage().contains("Zeile 1"));
+        assertTrue(exception.getMessage().contains("Regel 1"));
     }
 
     @Test
@@ -422,7 +467,7 @@ class DataMappingActionNodeV1Test {
                 ))
         );
 
-        assertTrue(exception.getMessage().contains("Zeile 1"));
+        assertTrue(exception.getMessage().contains("Regel 1"));
     }
 
     private record ConfigurationFixture(AuthoredElementValues authored, EffectiveElementValues effective) {}

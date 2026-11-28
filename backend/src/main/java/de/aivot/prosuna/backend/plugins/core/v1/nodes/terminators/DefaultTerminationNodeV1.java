@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
 
 @Component
@@ -60,7 +61,10 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         var summary = new ExecutionSummaryMarkdown(context);
         var retention = timestamp(context.thisProcessInstance().getKeepUntil());
         return "Der Vorgang wurde" + summary.at(context.thisProcessInstance().getFinished()) + " abgeschlossen."
-                + (retention.isEmpty() ? "" : " Das Ende der Aufbewahrungsfrist für die Vorgangsdaten wurde für " + retention + " festgelegt.");
+                + (retention.isEmpty()
+                ? " Für diesen Vorgang ist keine Aufbewahrungsfrist festgelegt."
+                : " Die Aufbewahrungsfrist endet am " + retention + ".")
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -102,16 +106,44 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Beendet einen Vorgang und verwendet die Aufbewahrungsfrist der Prozessversion oder eine eigene Frist.";
+        return "Schließt den Vorgang automatisch ab und legt seine Aufbewahrung fest.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Schließt den Vorgang regulär ab und beendet damit seine weitere Bearbeitung. Das Prozesselement besitzt deshalb keinen Ausgangsport.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Ab dem Abschluss gilt die Aufbewahrungsfrist der Prozessversion; für dieses Prozesselement kann eine abweichende Frist festgelegt werden. Nach Ablauf der Frist wird der Vorgang automatisch gelöscht. Ist keine Frist festgelegt, bleibt der Vorgang erhalten.
+                Schließen Sie einen Vorgang ab, wenn seine Bearbeitung beendet ist. Das Prozesselement hält den Abschluss fest und bestimmt, wie lange der Vorgang anschließend aufbewahrt wird.
+
+                ### Was richten Sie ein?
+
+                Standardmäßig gilt die Aufbewahrungsfrist der Prozessversion dieses Prozesselements. Lassen Sie dafür „Abweichende Aufbewahrungsfrist“ und „Einheit der Aufbewahrungsfrist“ leer.
+
+                Möchten Sie für diesen Abschluss eine andere Frist verwenden, geben Sie eine positive ganze Zahl und die passende Zeiteinheit an. Sie können Tage, Wochen, Monate oder Jahre wählen. Die Frist darf höchstens 100 Jahre betragen.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna setzt den Vorgang automatisch auf „Abgeschlossen“, hält den Abschlusszeitpunkt fest und berechnet das Ende der Aufbewahrungsfrist. Die weitere Bearbeitung dieses Vorgangs endet. Das Prozesselement hat keinen Ausgangsport.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Im Vorgangsverlauf ist erkennbar, wann der Vorgang abgeschlossen wurde und wann seine Aufbewahrungsfrist endet. Der Vorgang mit seinen Aufgaben, seinem Verlauf und seinen Anlagen bleibt zunächst gespeichert.
+
+                Nach Ablauf der Aufbewahrungsfrist löscht Prosuna den abgeschlossenen Vorgang einschließlich seiner Aufgaben, seines Verlaufs und seiner Anlagen bei einem automatischen Bereinigungslauf. Die Löschung erfolgt daher nicht zwingend genau zum angegebenen Fristende.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Die Prozessversion sieht sechs Monate Aufbewahrung vor. Für einen bestimmten Abschluss legen Sie abweichend drei Monate fest. Wird der Vorgang am 15. März abgeschlossen, endet seine Aufbewahrungsfrist am 15. Juni. Ab diesem Zeitpunkt kann ihn die automatische Bereinigung löschen.
+
+                ### Was ist zu beachten?
+
+                Eine abweichende Frist gilt nur, wenn Dauer und Zeiteinheit vollständig angegeben sind. Leere Elementfelder übernehmen die Frist der Prozessversion.
+
+                Zum Veröffentlichen einer Prozessversion muss eine Aufbewahrungsfrist festgelegt sein. Wird beispielsweise ein Entwurf ohne eigene oder übernommene Frist ausgeführt, bleibt der abgeschlossene Vorgang ohne automatische Löschung nach einer Aufbewahrungsfrist erhalten.
+
+                Die Aufbewahrungsfrist steuert die spätere Löschung des Vorgangs. Dieses Prozesselement erstellt keine Archivablage. Benötigte Dokumente müssen vor dem Abschluss über die dafür vorgesehenen Schritte gesichert werden.
                 """;
     }
 
@@ -131,12 +163,12 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
             return Map.of(RETENTION_UNIT_FIELD_KEY, List.of("Wählen Sie für die abweichende Aufbewahrungsfrist eine Zeiteinheit aus."));
         }
         if (value > ProcessRetentionTime.maximumValue(unit)) {
-            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die abweichende Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren."));
+            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die abweichende Aufbewahrungsfrist darf höchstens 100 Jahre betragen."));
         }
         try {
             ProcessRetentionTime.calculate(Instant.now(), value, unit);
         } catch (DateTimeException | ArithmeticException e) {
-            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die angegebene Aufbewahrungsfrist ist zu groß."));
+            return Map.of(RETENTION_VALUE_FIELD_KEY, List.of("Die angegebene Aufbewahrungsfrist konnte nicht berechnet werden. Prüfen Sie Dauer und Zeiteinheit."));
         }
         return null;
     }
@@ -155,7 +187,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         try {
             layout = ElementPOJOMapper.createFromPOJO(DefaultTerminationNodeV1Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts für den DefaultTerminationNodeV1: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Einstellungen für „Vorgang beenden“ konnten nicht geladen werden.");
         }
 
         layout
@@ -183,15 +215,15 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         var value = positiveWholeNumber(configuration.retentionValue);
         var unit = parseRetentionUnit(configuration.retentionUnit);
         if (value == null || unit == null) {
-            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements ist ungültig.");
+            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist ist unvollständig oder ungültig. Geben Sie eine positive ganze Zahl und eine Zeiteinheit an.");
         }
         if (value > ProcessRetentionTime.maximumValue(unit)) {
-            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements überschreitet die zulässige Höchstdauer von 100 Jahren.");
+            throw new ProcessNodeExecutionExceptionBrokenImplementation("Die abweichende Aufbewahrungsfrist darf höchstens 100 Jahre betragen.");
         }
         try {
             return result.setRetentionDate(ProcessRetentionTime.calculate(Instant.now(), value, unit));
         } catch (DateTimeException | ArithmeticException e) {
-            throw new ProcessNodeExecutionExceptionBrokenImplementation(e, "Die abweichende Aufbewahrungsfrist des abschließenden Prozesselements ist zu groß.");
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(e, "Die angegebene Aufbewahrungsfrist konnte nicht berechnet werden. Prüfen Sie Dauer und Zeiteinheit.");
         }
     }
 
@@ -234,7 +266,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         /** If absent together with the unit, the process version controls retention. */
         @InputElementPOJOBinding(id = RETENTION_VALUE_FIELD_KEY, type = ElementType.Number, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Abweichende Aufbewahrungsfrist"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Ohne Angabe gilt die Aufbewahrungsfrist der Prozessversion. Die Frist darf höchstens 100 Jahre betragen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Geben Sie eine positive ganze Zahl und die passende Zeiteinheit an. Lassen Sie beide Felder leer, gilt die Aufbewahrungsfrist der Prozessversion. Die Frist darf höchstens 100 Jahre betragen."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false),
                 @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0)
@@ -245,6 +277,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         /** Required only when an override value is provided. */
         @InputElementPOJOBinding(id = RETENTION_UNIT_FIELD_KEY, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Einheit der Aufbewahrungsfrist"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine Zeiteinheit, wenn Sie eine abweichende Aufbewahrungsfrist angeben."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })

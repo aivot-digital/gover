@@ -23,7 +23,7 @@ import java.util.UUID;
 public class FitConnectTriggerCallbackAuthenticationServiceV1 {
     private static final String HMAC_ALGORITHM = "HmacSHA512";
     private static final long MAX_CALLBACK_AGE_SECONDS = 5 * 60;
-    private static final String UNAUTHORIZED_MESSAGE = "Die FIT-Connect-Callback-Authentifizierung ist ungültig.";
+    private static final String UNAUTHORIZED_MESSAGE = "Die Authentifizierung der FIT-Connect-Benachrichtigung fehlt oder ist ungültig.";
 
     private final SecretService secretService;
     private final Clock clock;
@@ -83,7 +83,7 @@ public class FitConnectTriggerCallbackAuthenticationServiceV1 {
         var normalizedSecretKey = StringUtils.toNullableTrimmedString(rawSecretKey);
         if (normalizedSecretKey == null) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Auslösers ist nicht konfiguriert."
+                    "Wählen Sie ein Geheimnis für „Callback-Secret“ aus."
             );
         }
 
@@ -92,29 +92,30 @@ public class FitConnectTriggerCallbackAuthenticationServiceV1 {
             secretKey = UUID.fromString(normalizedSecretKey);
         } catch (IllegalArgumentException e) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Auslösers ist ungültig konfiguriert."
+                    "Das ausgewählte Callback-Secret ist ungültig."
             );
         }
 
         var secret = secretService
                 .retrieve(secretKey)
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Das Callback-Geheimnis des FIT-Connect-Auslösers wurde nicht gefunden."
+                        "Das ausgewählte Callback-Secret wurde nicht gefunden."
                 ));
 
         final String decryptedSecret;
         try {
             decryptedSecret = secretService.decrypt(secret);
         } catch (Exception e) {
-            throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Auslösers konnte nicht entschlüsselt werden.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Das ausgewählte Callback-Secret konnte nicht entschlüsselt werden.",
+                    null
             );
         }
 
         if (decryptedSecret.isEmpty()) {
             throw ResponseException.internalServerError(
-                    "Das Callback-Geheimnis des FIT-Connect-Auslösers darf nicht leer sein."
+                    "Das ausgewählte Callback-Secret darf nicht leer sein."
             );
         }
         return decryptedSecret;
@@ -131,9 +132,10 @@ public class FitConnectTriggerCallbackAuthenticationServiceV1 {
             mac.update((byte) '.');
             return mac.doFinal(rawBody);
         } catch (GeneralSecurityException e) {
-            throw ResponseException.internalServerError(
-                    "Die FIT-Connect-Callback-Authentifizierung konnte nicht geprüft werden.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Authentifizierung der FIT-Connect-Benachrichtigung konnte nicht geprüft werden.",
+                    null
             );
         }
     }

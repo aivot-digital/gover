@@ -65,7 +65,7 @@ public class ProcessNotificationTaskAssignedUserConfigDefinition implements User
         if (value instanceof List<?> list) {
             return String.join(",", (List<String>) list);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

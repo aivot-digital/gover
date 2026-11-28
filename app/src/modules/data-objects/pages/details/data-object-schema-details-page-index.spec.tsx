@@ -100,7 +100,7 @@ describe('DataObjectSchemaDetailsPageIndex', () => {
         {
             description: 'keeps the fallback message for unexpected errors',
             error: new Error('Unexpected save failure'),
-            expectedMessage: 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+            expectedMessage: 'Das Datenmodell konnte nicht gespeichert werden.',
             canReload: false,
         },
     ])('$description and preserves the edited data model', async ({error, expectedMessage, canReload}) => {

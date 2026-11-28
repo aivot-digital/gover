@@ -96,7 +96,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     <Grid size={{xs: 12, lg: 6}}>
                         <CodeListColumnSelectField
                             label="Wert-Spalte"
-                            hint="Die Werte dieser Spalte werden gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben."
+                            hint="Die Werte dieser Spalte werden bei der Auswahl als Feldwerte gespeichert."
                             value={props.element.codeListValueColumnKey}
                             onChange={(codeListValueColumnKey) => props.onPatch({codeListValueColumnKey})}
                             columnOptions={codeListColumns.options}
@@ -112,7 +112,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     <Grid size={{xs: 12, lg: 6}}>
                         <CodeListColumnSelectField
                             label="Beschriftungs-Spalte"
-                            hint="Die Werte dieser Spalte werden als Beschriftung der Optionen angezeigt. Einträge mit demselben Wert werden zu einer Option zusammengefasst."
+                            hint="Die Werte dieser Spalte werden als Beschriftung der Optionen angezeigt. Bei mehrfach vorkommenden Auswahlwerten aus der Wert-Spalte wird nur eine Option angezeigt."
                             value={props.element.codeListLabelColumnKey}
                             onChange={(codeListLabelColumnKey) => props.onPatch({codeListLabelColumnKey})}
                             columnOptions={codeListColumns.options}

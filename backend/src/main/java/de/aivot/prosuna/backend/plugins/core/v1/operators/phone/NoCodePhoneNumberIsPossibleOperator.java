@@ -31,25 +31,30 @@ public class NoCodePhoneNumberIsPossibleOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob eine Telefonnummer grundsätzlich möglich ist, zum Beispiel bevor Sie eine eingegebene Kontaktnummer weiterverwenden.
 
                 # Welche Werte werden benötigt?
-                **Telefonnummer:** Eine Telefonnummer mit internationaler Ländervorwahl, zum Beispiel **+49 30 123456**. Sie können sie frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
+
+                - **Telefonnummer:** Eine Telefonnummer mit internationaler Ländervorwahl, zum Beispiel `+49 30 123456`. Sie können sie frei eingeben, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Vorgegebene Auswahlwerte gibt es nicht.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn die Telefonnummer für das jeweilige Land grundsätzlich möglich ist. Andernfalls erhalten Sie **Falsch**, auch bei einer fehlenden oder leeren Angabe.
+
+                `Wahr`, wenn die Telefonnummer für das jeweilige Land grundsätzlich möglich ist. Andernfalls erhalten Sie `Falsch`, auch bei einer fehlenden oder leeren Angabe.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für eine Bedingung **„Telefonnummer ist plausibel“**.
-                2. Wählen Sie als **„Telefonnummer“** ein Telefonnummer-Feld als andere Wertquelle oder legen Sie **+49 30 123456** selbst fest.
+                2. Wählen Sie als **„Telefonnummer“** ein Telefonnummer-Feld als andere Wertquelle oder legen Sie `+49 30 123456` selbst fest.
                 3. Verwenden Sie das Ergebnis beispielsweise als Bedingung für die weitere Verarbeitung der Kontaktnummer.
 
-                Für **+49 30 123456** ist das Ergebnis **Wahr**. Zugeklappt lesen Sie: **„„+49 30 123456“ ist eine plausible Telefonnummer“**.
+                Für `+49 30 123456` ist das Ergebnis `Wahr`. Zugeklappt lesen Sie: `„+49 30 123456“ ist eine plausible Telefonnummer`.
 
                 # Was ist zu beachten?
-                Die Prüfung berücksichtigt insbesondere die mögliche Länge einer Telefonnummer im jeweiligen Land. Sie ist weniger streng als **„Telefonnummer ist gültig“** und akzeptiert beispielsweise auch **+49 1234**.
 
-                Die Nummer muss mit **+** und der Ländervorwahl beginnen. Leerzeichen, Klammern, Schrägstriche, Bindestriche und Punkte sind als Schreibweisen möglich; separate Nebenstellenzusätze werden abgelehnt. Die Prüfung sagt nicht aus, ob die Nummer vergeben oder erreichbar ist.
+                Die Prüfung berücksichtigt insbesondere die mögliche Länge einer Telefonnummer im jeweiligen Land. Sie ist weniger streng als **„Telefonnummer ist gültig“** und akzeptiert beispielsweise auch `+49 1234`.
+
+                Die Nummer muss mit `+` und der Ländervorwahl beginnen. Leerzeichen, Klammern, Schrägstriche, Bindestriche und Punkte sind als Schreibweisen möglich; separate Nebenstellenzusätze werden abgelehnt. Die Prüfung sagt nicht aus, ob die Nummer vergeben oder erreichbar ist.
                 """;
     }
 

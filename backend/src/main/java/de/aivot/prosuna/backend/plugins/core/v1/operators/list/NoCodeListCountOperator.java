@@ -29,22 +29,29 @@ public class NoCodeListCountOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Ermitteln Sie, wie oft ein bestimmter Wert in einer Liste vorkommt, beispielsweise die Anzahl gleicher Antworten.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Die Liste, in der gezählt wird. **Gesuchter Wert:** Der einzelne Wert, dessen Vorkommen Sie zählen möchten.
+
+                - **Liste:** Die Liste, in der gezählt wird.
+                - **Gesuchter Wert:** Der einzelne Wert, dessen Vorkommen Sie zählen möchten.
 
                 Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert. Den gesuchten Wert können Sie frei eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine ganze Zahl mit der Anzahl passender Einträge. Gibt es keine passenden Einträge, ist das Ergebnis `0`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Vorkommen in Liste zählen“**. Verwenden Sie für **Liste** die Variable „Antworten“ mit `["Ja", "Nein", "Ja"]` und geben Sie als **Gesuchter Wert** `Ja` ein.
+
+                1. Wählen Sie **„Vorkommen in Liste zählen“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Antworten“** mit `["Ja", "Nein", "Ja"]` und geben Sie als **„Gesuchter Wert“** `Ja` ein.
 
                 Zugeklappt und in der Vorschau lesen Sie: `Anzahl der Vorkommen von „Ja“ in „Antworten“`. Das Ergebnis ist `2`. Sie können das Ergebnis mit einer Zahl vergleichen, beispielsweise mit **„Größer als“** und `1`.
 
                 # Was ist zu beachten?
+
                 Eine leere Liste ergibt `0`. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Jeder passende Eintrag wird gezählt, auch wenn derselbe Wert mehrfach vorkommt. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }

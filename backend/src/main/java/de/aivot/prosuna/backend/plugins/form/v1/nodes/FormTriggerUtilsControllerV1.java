@@ -144,7 +144,7 @@ public class FormTriggerUtilsControllerV1 {
                     managingDepartment
             );
         } catch (IOException | URISyntaxException | InterruptedException | TemplateProcessingException e) {
-            throw ResponseException.internalServerError("Fehler beim Erzeugen der PDF-Datei. Bitte versuchen Sie es später erneut.", e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Druckansicht des Formulars konnte nicht erstellt werden.", null);
         }
 
         return ResponseEntity
@@ -181,11 +181,11 @@ public class FormTriggerUtilsControllerV1 {
                 .configuration();
 
         if (config.formLayout == null) {
-            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein Formular.");
+            throw ResponseException.internalServerError("Hinterlegen Sie ein Formular für den Formulareingang.");
         }
 
         if (StringUtils.isNullOrEmpty(config.formSlug)) {
-            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein URL-Segment des Formulars.");
+            throw ResponseException.internalServerError("Hinterlegen Sie ein URL-Segment für den Formulareingang.");
         }
 
         return new ResolvedFormTriggerConfiguration(

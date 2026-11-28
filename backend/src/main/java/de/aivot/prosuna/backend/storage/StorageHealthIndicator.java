@@ -151,7 +151,7 @@ public class StorageHealthIndicator implements HealthIndicator {
             builder.withDetail("hint", "Der Standard-Speicheranbieter für Anlagen von Vorgängen ist nicht konfiguriert. Bis Sie einen Speicheranbieter als Standard-Speicheranbieter für Anlagen von Vorgängen auswählen, können Vorgänge keine Anlagen speichern.");
         } else if (!defaultAttachmentsProviderIsPresent) {
             builder.withDetail("error", String.format(
-                    "Der Standard-Speicheranbieter für Anlagen von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
+                    "Der Standard-Speicheranbieter für Anlagen von Vorgängen (ID: %s) ist nicht verfügbar. Prüfen Sie die Konfiguration des Standard-Speicheranbieters.",
                     defaultAttachmentStorage
             ));
         }

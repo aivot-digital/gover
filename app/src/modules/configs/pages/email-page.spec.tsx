@@ -116,7 +116,7 @@ describe('EmailPage', () => {
 
         fireEvent.click(await screen.findByRole('button', {name: 'Test-E-Mail versenden'}));
 
-        expect(await screen.findByText('SMTP authentication failed')).toBeInTheDocument();
+        expect(await screen.findByText('Technische Fehlermeldung: SMTP authentication failed')).toBeInTheDocument();
         expect(screen.getByText('Testversand fehlgeschlagen')).toBeInTheDocument();
     });
 });

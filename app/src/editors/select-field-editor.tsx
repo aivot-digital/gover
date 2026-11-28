@@ -217,7 +217,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 >
                     <CodeListColumnSelectField
                         label="Wert-Spalte"
-                        hint="Die Werte dieser Spalte werden gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben."
+                        hint="Der Wert dieser Spalte wird bei der Auswahl als Feldwert gespeichert."
                         value={element.codeListValueColumnKey}
                         onChange={(codeListValueColumnKey) => onPatch({codeListValueColumnKey})}
                         columnOptions={codeListColumns.options}
@@ -238,7 +238,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 >
                     <CodeListColumnSelectField
                         label="Beschriftungs-Spalte"
-                        hint="Die Werte dieser Spalte werden als Beschriftung der Optionen angezeigt. Einträge mit demselben Wert werden zu einer Option zusammengefasst."
+                        hint="Die Werte dieser Spalte werden als Beschriftung der Optionen angezeigt. Bei mehrfach vorkommenden Auswahlwerten aus der Wert-Spalte wird nur eine Option angezeigt."
                         value={element.codeListLabelColumnKey}
                         onChange={(codeListLabelColumnKey) => onPatch({codeListLabelColumnKey})}
                         columnOptions={codeListColumns.options}

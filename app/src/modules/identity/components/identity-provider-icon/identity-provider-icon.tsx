@@ -55,7 +55,7 @@ export function IdentityProviderIcon(props: IdentityProviderIconProps) {
     return (
         <Box
             role="img"
-            aria-label={`Logo ${name.trim().length > 0 ? name : 'Konto'}`}
+            aria-label={`Logo ${name.trim().length > 0 ? name : 'Identitätsanbieter'}`}
             data-testid="identity-provider-logo"
             sx={{
                 width: '100%',

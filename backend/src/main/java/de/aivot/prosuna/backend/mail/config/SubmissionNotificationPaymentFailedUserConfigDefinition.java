@@ -42,13 +42,13 @@ public class SubmissionNotificationPaymentFailedUserConfigDefinition implements 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Fehlermeldungen bei Abwicklung einer Zahlung mit einem Zahlungsdienstleister";
+        return "Zahlung fehlgeschlagen (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung bei einer fehlgeschlagenen Onlinezahlung in einem Vorgang, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst verantwortlich, sonst verwaltend).";
+        return "Diese Einstellung wird derzeit nicht verwendet. Bei fehlgeschlagenen Zahlungen werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override
@@ -65,7 +65,7 @@ public class SubmissionNotificationPaymentFailedUserConfigDefinition implements 
         if (value instanceof List<?> list) {
             return String.join(",", (List<String>) list);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

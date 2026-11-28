@@ -86,6 +86,6 @@ describe('ProcessListRowMenu', () => {
         expect(moveItem()).toHaveAttribute('aria-disabled', 'true');
 
         await userEvent.hover(moveItem().parentElement as HTMLElement);
-        expect(await screen.findByRole('tooltip')).toHaveTextContent('Nur die verwaltende Organisationseinheit');
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('Zum Übertragen benötigen Sie die Berechtigung „Prozess bearbeiten“ in der verwaltenden Organisationseinheit oder systemweit.');
     });
 });

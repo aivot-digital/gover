@@ -14,7 +14,7 @@ public interface UpdateEntityService<T, I> extends RetrieveEntityService<T, I> {
         var existingEntity = retrieve(id);
 
         if (existingEntity.isEmpty()) {
-            throw new ResponseException(HttpStatus.NOT_FOUND, "Entity not found");
+            throw new ResponseException(HttpStatus.NOT_FOUND, "Der Eintrag wurde nicht gefunden. Möglicherweise wurde er bereits gelöscht.");
         } else {
             LockVersioned.requireCurrent(entity, existingEntity.get());
             return performUpdate(id, entity, existingEntity.get());

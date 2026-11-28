@@ -32,22 +32,28 @@ public class NoCodeListAvgOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Berechnen Sie den Durchschnitt mehrerer Zahlen, beispielsweise die durchschnittliche Bewertung aus einer Liste.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Die Zahlen, deren Durchschnitt Sie benötigen.
+
+                - **Liste:** Die Zahlen, deren Durchschnitt Sie benötigen.
 
                 Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine Zahl: die Summe der Werte geteilt durch die Anzahl der Listeneinträge. Eine leere Liste ergibt `0`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Durchschnitt einer Liste“**. Verwenden Sie für **Liste** die Variable „Bewertungen“, die `[4, 5, 3, 4]` liefert.
+
+                1. Wählen Sie **„Durchschnitt einer Liste“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Bewertungen“**, die `[4, 5, 3, 4]` liefert.
 
                 Zugeklappt und in der Vorschau lesen Sie: `Durchschnitt von „Bewertungen“`. Das Ergebnis ist `4`. Sie können die Funktion beispielsweise als ersten Wert von **„Größer als“** verwenden und mit `3` vergleichen.
 
                 # Was ist zu beachten?
+
                 Das Ergebnis wird auf acht Nachkommastellen gerundet. Jeder Eintrag geht in die Berechnung ein; Einträge ohne Wert und leerer Text zählen als `0`. Verwenden Sie Zahlen oder Zahlen als Text wie `1.5` oder `1,5`; andere Einträge führen zu einer Fehlermeldung. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung.
                 """;
     }

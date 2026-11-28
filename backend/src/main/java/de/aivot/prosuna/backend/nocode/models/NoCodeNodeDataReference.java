@@ -39,7 +39,7 @@ public class NoCodeNodeDataReference extends NoCodeOperand {
         }
 
         if (!NODE_KEY_PATTERN.matcher(nodeDataKey).matches()) {
-            return new NoCodeOperandError(this, "Der Datenschlüssel des Prozesselements darf nur Buchstaben (A-Z), Zahlen und Unterstriche enthalten", null);
+            return new NoCodeOperandError(this, "Der Datenschlüssel des Prozesselements darf nur Buchstaben (A–Z, a–z), Ziffern und Unterstriche enthalten.", null);
         }
 
         if (StringUtils.isNullOrEmpty(path)) {

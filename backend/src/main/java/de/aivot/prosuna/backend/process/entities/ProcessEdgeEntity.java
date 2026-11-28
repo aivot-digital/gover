@@ -20,23 +20,23 @@ public class ProcessEdgeEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID muss angegeben werden.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessversion darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion muss angegeben werden.")
     private Integer processVersion;
 
     @Nonnull
-    @NotNull(message = "Die ID des ausgehenden Prozesselements darf nicht null sein.")
+    @NotNull(message = "Die ID des ausgehenden Prozesselements muss angegeben werden.")
     private Integer fromNodeId;
 
     @Nonnull
-    @NotNull(message = "Die ID des eingehenden Prozesselements darf nicht null sein.")
+    @NotNull(message = "Die ID des eingehenden Prozesselements muss angegeben werden.")
     private Integer toNodeId;
 
     @Nonnull
-    @NotNull(message = "Der Ausgangsport darf nicht null sein.")
+    @NotNull(message = "Der Ausgangsport muss angegeben werden.")
     @NotBlank(message = "Der Ausgangsport darf nicht leer sein.")
     @Length(min = 1, max = 32, message = "Der Ausgangsport muss zwischen 1 und 32 Zeichen lang sein.")
     private String viaPort;

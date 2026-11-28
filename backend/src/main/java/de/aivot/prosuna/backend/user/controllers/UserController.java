@@ -102,7 +102,7 @@ public class UserController {
             if (e instanceof ResponseException re) {
                 throw re;
             }
-            throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
+            throw ResponseException.badRequest("Das Konto konnte nicht angelegt werden.", e);
         }
 
         auditService
@@ -152,7 +152,7 @@ public class UserController {
             if (e instanceof ResponseException re) {
                 throw re;
             }
-            throw ResponseException.badRequest("Fehler beim Anlegen der Mitarbeiter:in", e);
+            throw ResponseException.badRequest("Das Konto konnte nicht angelegt werden.", e);
         }
 
         auditService
@@ -240,12 +240,12 @@ public class UserController {
                     .update(id, newUser);
         } catch (ResponseException e) {
             // An outdated lock version keeps its 409, so clients can tell a conflict from a failed save.
-            throw e.getStatus() == HttpStatus.CONFLICT ? e : ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
+            throw e.getStatus() == HttpStatus.CONFLICT ? e : ResponseException.badRequest("Die Kontodaten konnten nicht gespeichert werden.", e);
         } catch (ConcurrencyFailureException | OptimisticLockException e) {
             // The GlobalExceptionHandler answers a concurrent commit with 409.
             throw e;
         } catch (Exception e) {
-            throw ResponseException.badRequest("Fehler beim Speichern der Mitarbeiter:in", e);
+            throw ResponseException.badRequest("Die Kontodaten konnten nicht gespeichert werden.", e);
         }
 
         auditService

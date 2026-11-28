@@ -12,6 +12,6 @@ import java.util.List;
 public record ProcessInstanceAccessRuleDTO(
         @Nullable Integer sourceDepartmentId,
         @Nullable Integer sourceTeamId,
-        @Nonnull @NotNull List<@NotNull String> permissions
+        @Nonnull @NotNull(message = "Die Berechtigungsauswahl muss angegeben werden.") List<@NotNull(message = "Ein Berechtigungseintrag darf nicht fehlen.") String> permissions
 ) {
 }

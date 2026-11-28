@@ -8,6 +8,8 @@ import de.aivot.prosuna.backend.elements.models.ComputedElementStates;
 import de.aivot.prosuna.backend.elements.models.ComputedElementSubState;
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
@@ -17,6 +19,8 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingConta
 import de.aivot.prosuna.backend.elements.models.elements.layout.EffectiveReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -29,6 +33,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -71,8 +76,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -169,7 +174,10 @@ class WriteExternalStorageActionNodeV1Test {
         var attachmentSets = layout
                 .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
                 .orElseThrow();
-        assertEquals("Anlagensatz #", attachmentSets.getHeadlineTemplate());
+        assertEquals("Ablageeinträge", attachmentSets.getLabel());
+        assertEquals("Ablageeintrag #", attachmentSets.getHeadlineTemplate());
+        assertEquals("Ablageeintrag hinzufügen", attachmentSets.getAddLabel());
+        assertEquals("Ablageeintrag entfernen", attachmentSets.getRemoveLabel());
 
         var attachmentSetField = layout
                 .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
@@ -181,21 +189,30 @@ class WriteExternalStorageActionNodeV1Test {
                 .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .orElseThrow();
         assertEquals(List.of(StorageProviderType.Assets, StorageProviderType.External), storagePathField.getAllowedStorageProviderTypes());
-        assertEquals("Speicheranbieter, bei welchem der Anlagensatz gespeichert wird.", storagePathField.getStorageProviderSelectHint());
+        assertEquals("Ablageziel", storagePathField.getLabel());
+        assertEquals("Wählen Sie den Speicheranbieter aus, bei dem die Anlagen gespeichert werden sollen.", storagePathField.getStorageProviderSelectHint());
+        assertTrue(storagePathField.getHint().contains("Prosuna ergänzt die Dateinamen automatisch"));
 
         var ignoreEmptyAttachmentSetField = layout
                 .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, CheckboxInputElement.class)
                 .orElseThrow();
-        assertEquals("Optionaler Anlagensatz", ignoreEmptyAttachmentSetField.getLabel());
+        assertEquals("Fehlenden oder leeren Anlagensatz überspringen", ignoreEmptyAttachmentSetField.getLabel());
+        assertTrue(ignoreEmptyAttachmentSetField.getHint().contains("Fehler beim Lesen oder Speichern"));
 
         var fileNameField = layout
                 .findChild(WriteExternalStorageActionNodeV1.WriteExternalStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
                 .orElseThrow();
         assertNotNull(fileNameField.getVisibility());
+        assertEquals("Dateiname bei der Ablage", fileNameField.getLabel());
+        assertTrue(fileNameField.getHint().contains("immer eine laufende Nummer"));
         assertEquals(
                 List.of(InputVariableSource.values()),
                 fileNameField.getDynamicTextPolicy().variableSuggestionSources()
         );
+        var port = node.getPorts(configuration()).getFirst();
+        assertEquals("output", port.key());
+        assertEquals("Ablage abgeschlossen", port.label());
+        assertTrue(port.description().contains("optionale Anlagensätze übersprungen"));
     }
 
     @Test
@@ -217,6 +234,11 @@ class WriteExternalStorageActionNodeV1Test {
         var metadataField = layout
                 .findChild(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "x-amz-meta-case-id"), TextInputElement.class)
                 .orElseThrow();
+        assertEquals("Vorgangs-ID", metadataField.getLabel());
+        assertEquals("Zusätzliche Angaben (Metadaten)", layout
+                .findChild("meta__attributes_77_hdl", HeadlineContentElement.class).orElseThrow().getContent());
+        assertTrue(layout.findChild("meta__attributes_77_desc", RichTextContentElement.class).orElseThrow().getContent()
+                .contains("alle Dateien dieses Eintrags"));
         assertEquals(
                 List.of(InputVariableSource.values()),
                 metadataField.getDynamicTextPolicy().variableSuggestionSources()
@@ -465,6 +487,8 @@ class WriteExternalStorageActionNodeV1Test {
         )));
 
         assertEquals(0, result.getNodeData().get("count"));
+        assertEquals("output", result.getViaPort());
+        assertEquals("Ablage abgeschlossen", node.getPorts(configuration()).getFirst().label());
         assertEquals(List.of(), result.getNodeData().get("storagePathsFromRoot"));
         assertEquals(List.of(), result.getNodeData().get("fileNames"));
         assertEquals(List.of(), result.getNodeData().get("results"));
@@ -475,7 +499,9 @@ class WriteExternalStorageActionNodeV1Test {
         assertEquals(ProcessNodeExecutionLogLevel.Info, event.getLevel());
         assertEquals(false, event.getTechnical());
         assertEquals(true, event.getAudit());
-        assertEquals("Anlagensatz „Dokumente“ enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
+        assertEquals(true, event.getHistoryRelevant());
+        assertEquals("Optionaler Anlagensatz übersprungen", event.getTitle());
+        assertEquals("Für den optionalen Anlagensatz „Dokumente“ waren keine Anlagen zum Speichern vorhanden. Der Eintrag wurde übersprungen.", event.getMessage());
     }
 
     @Test
@@ -496,7 +522,89 @@ class WriteExternalStorageActionNodeV1Test {
         assertTrue(storedDocuments.isEmpty());
 
         var event = captureSingleEvent(eventRepository);
-        assertEquals("Anlagensatz „documents“ enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
+        assertEquals(ProcessNodeExecutionLogLevel.Info, event.getLevel());
+        assertEquals(false, event.getTechnical());
+        assertEquals(true, event.getAudit());
+        assertEquals(true, event.getHistoryRelevant());
+        assertEquals("Optionaler Anlagensatz übersprungen", event.getTitle());
+        assertEquals("Für den optionalen Anlagensatz „documents“ waren keine Anlagen zum Speichern vorhanden. Der Eintrag wurde übersprungen.", event.getMessage());
+    }
+
+    @Test
+    void init_FolderCreationFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        arrangeAttachmentSet("documents", 321, attachment("report.pdf", 1, 11, "/source/report.pdf"));
+        var cause = ResponseException.internalServerError("internal folder location 100%");
+        when(storageService.createFolder(TARGET_STORAGE_PROVIDER_ID, "/archive/")).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/archive/")))));
+
+        assertEquals("Beim Anlegen des Zielordners „/archive/“ beim Speicheranbieter 77 ist ein Fehler aufgetreten.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verify(storageService, never()).storeDocument(any(Integer.class), anyString(), any(InputStream.class), any(StorageItemMetadata.class));
+    }
+
+    @Test
+    void init_StorageFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        arrangeAttachmentSet("documents", 321, attachment("report-100%.pdf", 1, 11, "/source/report.pdf"));
+        var cause = ResponseException.internalServerError("internal storage location 100%");
+        when(storageService.storeDocument(any(Integer.class), anyString(), any(InputStream.class), any(StorageItemMetadata.class)))
+                .thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/archive/")))));
+
+        assertEquals("Beim Speichern der Anlage „report-100%.pdf“ beim Speicheranbieter 77 ist ein Fehler aufgetreten.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void init_UnexpectedTargetPathFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        arrangeAttachmentSet("documents", 321, attachment("report.pdf", 1, 11, "/source/report.pdf"));
+        var renderer = mock(TemplateRenderService.class);
+        var cause = new UnsupportedOperationException("internal path detail 100%");
+        when(renderer.interpolate(any(), anyString(), eq(TemplateOutputFormat.SingleLineText))).thenThrow(cause);
+        var failingNode = nodeWithTemplateRenderer(renderer);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> failingNode.init(context(configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/archive/")))));
+
+        assertEquals("Eintrag 1: Der Zielordnerpfad konnte nicht ermittelt werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void init_TargetPathExpressionFailureKeepsTheHelpfulLineDiagnostic() throws Exception {
+        arrangeAttachmentSet("documents", 321, attachment("report.pdf", 1, 11, "/source/report.pdf"));
+        var renderingNode = nodeWithTemplateRenderer(new TemplateRenderService(new JavascriptEngineFactoryService(List.of())));
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> renderingNode.init(context(configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/archive/{{")))));
+
+        assertTrue(exception.getMessage().startsWith("Eintrag 1: Der Vorlagenausdruck im Zielordnerpfad konnte nicht verarbeitet werden:"));
+        assertTrue(exception.getMessage().contains("Zeile 1:"));
+        assertTrue(exception.getMessage().contains("/archive/{{"));
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+    }
+
+    @Test
+    void init_UnexpectedMetadataFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        arrangeAttachmentSet("documents", 321, attachment("report.pdf", 1, 11, "/source/report.pdf"));
+        when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID)).thenReturn(Optional.of(
+                storageProviderWithMetadata(TARGET_STORAGE_PROVIDER_ID, "Metadaten-Ziel", false, metadataAttribute("case-id", "Vorgang"))));
+        var renderer = mock(TemplateRenderService.class);
+        when(renderer.interpolate(any(), anyString(), eq(TemplateOutputFormat.SingleLineText)))
+                .thenAnswer(invocation -> invocation.getArgument(1, String.class));
+        var cause = new UnsupportedOperationException("internal metadata detail 100%");
+        when(renderer.interpolate(any(), eq("unavailable"), eq(TemplateOutputFormat.SingleLineText))).thenThrow(cause);
+        var failingNode = nodeWithTemplateRenderer(renderer);
+        var authoredRow = new AuthoredElementValues().putLiteral(metadataFieldId(TARGET_STORAGE_PROVIDER_ID, "case-id"), "unavailable");
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> failingNode.init(context(
+                configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/archive/")), authoredConfiguration(authoredRow))));
+
+        assertEquals("Eintrag 1: Die zusätzliche Angabe „case-id“ konnte nicht ermittelt werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
     }
 
     @Test
@@ -629,6 +737,11 @@ class WriteExternalStorageActionNodeV1Test {
                     eq(attachment.getStoragePathFromRoot())
             )).thenReturn(new ByteArrayInputStream(attachment.getFileName().getBytes(StandardCharsets.UTF_8)));
         }
+    }
+
+    private WriteExternalStorageActionNodeV1 nodeWithTemplateRenderer(TemplateRenderService renderer) {
+        return new WriteExternalStorageActionNodeV1(renderer, processInstanceAttachmentService, processInstanceAttachmentSetService,
+                storageService, storageProviderRepository, storageProviderDefinitionService);
     }
 
     private static ProcessInstanceAttachmentEntity attachment(String fileName,

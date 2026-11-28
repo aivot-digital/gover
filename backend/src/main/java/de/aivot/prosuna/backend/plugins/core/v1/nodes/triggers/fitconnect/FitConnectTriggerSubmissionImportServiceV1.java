@@ -21,6 +21,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -83,8 +84,8 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                         organisation,
                         receivedSubmission,
                         report.asProblems(),
-                        "Die FIT-Connect-Einreichung konnte nicht akzeptiert werden: " + report.describe(),
-                        null
+                        "Die FIT-Connect-Einreichung kann nicht übernommen werden.",
+                        new IllegalStateException(report.describe())
                 );
             }
 
@@ -95,7 +96,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                         organisation,
                         receivedSubmission,
                         List.of(new UnsupportedDataSchema(receivedSubmission.getDataSchemaUri().toString())),
-                        "Die FIT-Connect-Einreichung enthält kein JSON-Objekt und kann deshalb nicht in die Vorgangsdaten kopiert werden.",
+                        "Die FIT-Connect-Fachdaten können nicht in die Vorgangsdaten übernommen werden. Erwartet wird ein JSON-Objekt mit Feldnamen und Werten.",
                         null
                 );
             }
@@ -127,9 +128,10 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
             if (e instanceof ResponseException responseException) {
                 throw responseException;
             }
-            throw ResponseException.internalServerError(
-                    "Die FIT-Connect-Einreichung konnte nicht in einen Vorgang importiert werden.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die FIT-Connect-Einreichung konnte nicht vollständig in den Vorgang übernommen werden.",
+                    null
             );
         }
     }
@@ -183,7 +185,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                     organisation,
                     submission,
                     List.of(new DataJsonSyntaxViolation(resolveExceptionMessage(e))),
-                    "Die FIT-Connect-Einreichung enthält kein gültiges JSON.",
+                    "Die Fachdaten der FIT-Connect-Einreichung enthalten kein gültiges JSON.",
                     e
             );
         }
@@ -201,13 +203,14 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
         } catch (Exception rejectionException) {
             if (cause != null) {
                 cause.addSuppressed(rejectionException);
-                throw ResponseException.badRequest(message, cause);
+                throw new ResponseException(HttpStatus.BAD_REQUEST, message, null, cause);
             }
-            throw ResponseException.badRequest(message, rejectionException);
+            throw new ResponseException(HttpStatus.BAD_REQUEST, message, null, rejectionException);
         }
 
         return new TerminalSubmissionException(
-                cause == null ? ResponseException.badRequest(message) : ResponseException.badRequest(message, cause)
+                cause == null ? ResponseException.badRequest(message) :
+                        new ResponseException(HttpStatus.BAD_REQUEST, message, null, cause)
         );
     }
 
@@ -233,7 +236,7 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
                 !reference.submissionId().equals(submission.submissionId()) ||
                 !reference.caseId().equals(submission.caseId())) {
             throw ResponseException.internalServerError(
-                    "Die abgerufene FIT-Connect-Einreichung stimmt nicht mit dem Callback überein."
+                    "Die abgerufene FIT-Connect-Einreichung stimmt nicht mit den gemeldeten Kennungen überein."
             );
         }
     }
@@ -354,9 +357,10 @@ public class FitConnectTriggerSubmissionImportServiceV1 {
             var metadata = jsonMapper.convertValue(submission.getMetadata(), Map.class);
             return metadata == null ? Map.of() : metadata;
         } catch (Exception e) {
-            throw ResponseException.internalServerError(
-                    "Die FIT-Connect-Metadaten konnten nicht für den Vorgang aufbereitet werden.",
-                    e
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Metadaten der FIT-Connect-Einreichung konnten nicht für den Vorgang aufbereitet werden.",
+                    null
             );
         }
     }

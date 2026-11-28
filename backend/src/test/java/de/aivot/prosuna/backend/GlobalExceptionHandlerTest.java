@@ -10,9 +10,12 @@ import de.aivot.prosuna.backend.models.dtos.ApiErrorDto;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import jakarta.persistence.OptimisticLockException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,11 +36,32 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class GlobalExceptionHandlerTest {
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void logsTheCauseOfServerErrorsWhilePreservingPublicDetails(CapturedOutput output) {
+        var handler = new GlobalExceptionHandler(mock(ExceptionMailService.class), mock(ProsunaConfig.class));
+        var cause = new IllegalStateException("diagnostic for operations");
+        var failure = ResponseException.internalServerErrorWithDetails(cause, "Öffentliche Meldung", null);
+
+        handler.handleBaseResponseException(ResponseException.badRequest("Ungültig", new Exception("client error detail")));
+        handler.handleBaseResponseException(ResponseException.internalServerError("Server error without cause"));
+        var response = handler.handleBaseResponseException(failure);
+
+        var body = assertInstanceOf(ApiErrorDto.class, response.getBody());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("Öffentliche Meldung", body.getMessage());
+        assertNull(body.getDetails());
+        assertTrue(output.getAll().contains("Caused by: java.lang.IllegalStateException: diagnostic for operations"));
+        assertFalse(output.getAll().contains("client error detail"));
+        assertFalse(output.getAll().contains("Server error without cause"));
+    }
+
     @Test
     void validationMessageOmitsTechnicalFieldPathsWhileDetailsPreserveThem() throws Exception {
         var errors = new BeanPropertyBindingResult(new Object(), "request");

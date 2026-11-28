@@ -14,6 +14,7 @@ import de.aivot.prosuna.backend.plugins.core.CorePlugin;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
+import de.aivot.prosuna.backend.process.exceptions.ExternalServiceResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
@@ -50,8 +51,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 
@@ -78,8 +81,11 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FitConnectSendJsonActionNodeV1.SendDataFitConnectActionNodeV1Config> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var configuration = context.configurationOfExecutingNode();
-        return "Die Daten wurden erfolgreich an eine FIT-Connect-Schnittstelle übertragen."
-                + detail("Zielsystem", configuration.serviceName) + detail("Zustellpunkt", configuration.destinationId);
+        return "Der JSON-Datensatz wurde" + summary.completedAt() + " über FIT-Connect eingereicht."
+                + detail("Bezeichnung der Verwaltungsleistung", configuration.serviceName)
+                + detail("Empfänger-Zustellpunkt-ID", configuration.destinationId)
+                + detail("FIT-Connect-Umgebung", normalizeEnvironment(configuration.environment))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -103,22 +109,50 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
     @Nonnull
     @Override
     public String getName() {
-        return "Datenübertragung an FIT-Connect";
+        return "Daten über FIT-Connect senden";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet einen JSON-Datensatz aus den Vorgangsdaten als Einreichung über FIT-Connect.";
+        return "Sendet JSON-Daten aus den Vorgangsdaten an einen eingerichteten FIT-Connect-Zustellpunkt.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet einen JSON-Datensatz aus den Vorgangsdaten als Einreichung über den konfigurierten FIT-Connect-Onlinedienst an den ausgewählten Zustellpunkt. Anlagen werden nicht übertragen.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Nach dem Senden wird der Status der Einreichung abgefragt. Nur wenn FIT-Connect sie als eingereicht oder angenommen meldet, wird der Vorgang fortgesetzt; andernfalls schlägt die Aufgabe fehl.
+                Übermitteln Sie Daten eines Vorgangs über FIT-Connect an eine empfangende Stelle, zum Beispiel an ein Fachsystem einer Behörde. Die Daten werden als JSON-Datensatz in einer FIT-Connect-Einreichung gesendet.
+
+                ### Was richten Sie ein?
+
+                Wählen Sie die FIT-Connect-Umgebung und tragen Sie die Zustellpunkt-ID des empfangenden Systems ein. Für den Versand benötigen Sie außerdem die Zustellpunkt-ID des sendenden Onlinedienstes sowie dessen Client-ID und Client-Secret. Wählen Sie das Client-Secret aus den in Prosuna gespeicherten Geheimnissen aus. Die Zustellpunkte und Zugangsdaten müssen bereits in der passenden FIT-Connect-Umgebung eingerichtet sein. Der Prosuna-Testmodus ändert die ausgewählte Umgebung nicht.
+
+                Geben Sie den Vorgangsdatenpfad der JSON-Daten an, zum Beispiel „fachdaten“. Bereiten Sie den benötigten Datensatz bei Bedarf in einem vorherigen Schritt vor. Stimmen Sie die Kennung und Bezeichnung der Verwaltungsleistung sowie die JSON-Schema-Referenz mit dem empfangenden System ab.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna liest die ausgewählten Vorgangsdaten, erstellt daraus einen JSON-Datensatz und übermittelt ihn über FIT-Connect an den Empfänger-Zustellpunkt. Das FIT-Connect-SDK übernimmt dabei die Verschlüsselung und den Versand.
+
+                Anschließend fragt Prosuna einmal den aktuellen Einreichungsstatus ab. Meldet FIT-Connect „Eingereicht (SUBMITTED)“ oder „Angenommen (ACCEPTED)“, setzt Prosuna den Vorgang über „Einreichung gesendet“ fort. Bei anderen Zuständen oder Fehlern schlägt die Aufgabe fehl. Für diesen Schritt entsteht keine Mitarbeitendenaufgabe.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Die Vorgangsdaten bleiben unverändert. Dieses Element stellt derzeit keine zusätzlichen Elementdaten bereit. Der Vorgangsverlauf zeigt den Abschluss der Einreichung mit Angaben zur Verwaltungsleistung und zum Empfänger-Zustellpunkt.
+
+                Der Abschluss bestätigt die Einreichung über FIT-Connect. Er bestätigt nicht, dass die empfangende Stelle die Daten fachlich geprüft oder das Anliegen abschließend bearbeitet hat. Das Element wartet auch nicht auf eine spätere fachliche Antwort.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Ein Vorgang enthält unter „fachdaten“ die Angaben für eine Meldung an eine Behörde. Sie wählen diesen Vorgangsdatenpfad, den zugehörigen Empfänger-Zustellpunkt und die mit der Behörde abgestimmte Schema-Referenz. Prosuna sendet die Daten als JSON. Meldet FIT-Connect anschließend „Eingereicht (SUBMITTED)“, läuft der Vorgang in Prosuna weiter; die Bearbeitung bei der Behörde kann danach erfolgen.
+
+                ### Was ist zu beachten?
+
+                Dieses Element überträgt JSON-Daten, keine Anlagen. Der Datensatz muss zum vereinbarten Fachdatenschema passen. Die Angabe der Schema-Referenz ersetzt keine Prüfung der Daten gegen die Inhaltsregeln dieses Schemas.
+
+                Ein Fehler bei der anschließenden Statusabfrage kann auftreten, obwohl die Einreichung bereits gesendet wurde. Prüfen Sie den Versandstand, bevor Sie die Aufgabe erneut ausführen, damit dieselben Daten nicht unbeabsichtigt nochmals eingereicht werden.
                 """;
     }
 
@@ -142,8 +176,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         return List.of(
                 new ProcessNodePort(
                         PORT_SUCCESS,
-                        "Erfolgreich",
-                        "Der JSON-Datensatz wurde erfolgreich an FIT-Connect übertragen."
+                        "Einreichung gesendet",
+                        "Der Vorgang wird hier fortgesetzt, wenn die Einreichung gesendet wurde und FIT-Connect den Status „Eingereicht (SUBMITTED)“ oder „Angenommen (ACCEPTED)“ meldet."
                 )
         );
     }
@@ -155,7 +189,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         try {
             config = ElementPOJOMapper.createFromPOJO(SendDataFitConnectActionNodeV1Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError("Die Konfigurationsoberfläche für das Prozesselement konnte nicht erstellt werden: " + NODE_KEY, e);
+            throw ResponseException.internalServerError("Die Einstellungen für den FIT-Connect-Versand konnten nicht geladen werden.", e);
         }
 
         config
@@ -196,13 +230,13 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         validateUuid(
                 configuration.destinationId,
                 SendDataFitConnectActionNodeV1Config.DESTINATION_ID_FIELD_ID,
-                "Die Empfänger-Zustellpunkt-ID muss eine gültige UUID sein.",
+                "Geben Sie eine gültige Empfänger-Zustellpunkt-ID im UUID-Format an.",
                 errors
         );
         validateUuid(
                 configuration.senderDestinationId,
                 SendDataFitConnectActionNodeV1Config.SENDER_DESTINATION_ID_FIELD_ID,
-                "Die Absender-Zustellpunkt-ID muss eine gültige UUID sein.",
+                "Geben Sie eine gültige Zustellpunkt-ID des Onlinedienstes im UUID-Format an.",
                 errors
         );
         return errors.isEmpty() ? null : errors;
@@ -219,7 +253,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         );
         final UUID senderDestinationId = requireUuid(
                 config.senderDestinationId,
-                "Absender-Zustellpunkt-ID"
+                "Zustellpunkt-ID des Onlinedienstes"
         );
 
         var jsonData = ProcessDataValueUtils
@@ -235,8 +269,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der JSON-Schema-Link „%s“ ist keine gültige URI.",
-                    config.jsonSchemaLink
+                    "Die JSON-Schema-Referenz ist keine gültige URI."
             );
         }
 
@@ -260,10 +293,9 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der FIT-Connect-Onlinedienst „%s“ für die Umgebung „%s“ konnte nicht initialisiert werden: %s",
+                    "Der FIT-Connect-Versand konnte für den Onlinedienst-Zustellpunkt „%s“ in der Umgebung „%s“ nicht vorbereitet werden.",
                     senderDestinationId,
-                    environmentName,
-                    resolveExceptionMessage(e)
+                    environmentName
             );
         }
 
@@ -274,17 +306,16 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
             if (hasNotFoundCause(e)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
-                        "Der FIT-Connect-Zustellpunkt „%s“ wurde in der Umgebung „%s“ nicht gefunden.",
+                        "Eine für den FIT-Connect-Versand benötigte Ressource wurde nicht gefunden. Empfänger-Zustellpunkt: „%s“. Umgebung: „%s“.",
                         destinationId,
                         environmentName
                 );
             }
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die JSON-Daten konnten nicht an den FIT-Connect-Zustellpunkt „%s“ in der Umgebung „%s“ übertragen werden: %s",
+                    "Beim Senden des JSON-Datensatzes an den FIT-Connect-Zustellpunkt „%s“ in der Umgebung „%s“ ist ein Fehler aufgetreten.",
                     destinationId,
-                    environmentName,
-                    resolveExceptionMessage(e)
+                    environmentName
             );
         }
 
@@ -294,20 +325,23 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Status der FIT-Connect-Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ konnte nicht abgerufen werden: %s",
+                    "Der JSON-Datensatz wurde an FIT-Connect übergeben. Der Status der Einreichung für den Zustellpunkt „%s“ in der Umgebung „%s“ konnte nicht abgefragt werden.",
                     destinationId,
-                    environmentName,
-                    resolveExceptionMessage(e)
+                    environmentName
             );
         }
 
         if (status.state() != EventState.ACCEPTED && status.state() != EventState.SUBMITTED) {
+            var problems = status.problems() == null ? null : status.problems().stream()
+                    .filter(Objects::nonNull)
+                    .map(problem -> "%s: %s (%s)".formatted(problem.getTitle(), problem.getDetail(), problem.getType()))
+                    .collect(Collectors.joining("; "));
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "FIT-Connect meldete für die Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ den Status „%s“. Probleme: %s",
+                    new ExternalServiceResponseException(problems),
+                    "FIT-Connect meldet für die Einreichung an den Zustellpunkt „%s“ in der Umgebung „%s“ den Status „%s“. Dieses Prozesselement setzt den Vorgang nur bei „Eingereicht (SUBMITTED)“ oder „Angenommen (ACCEPTED)“ fort.",
                     destinationId,
                     environmentName,
-                    status.state(),
-                    status.problems()
+                    status.state()
             );
         }
 
@@ -338,18 +372,24 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         try {
             senderClientSecretKey = UUID.fromString(config.senderClientSecret);
         } catch (Exception e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Kennung des Client-Geheimnisses des Absenders ist keine gültige UUID: " + config.senderClientSecret, e);
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Wählen Sie ein gültiges gespeichertes Geheimnis mit dem Client-Secret des Onlinedienstes aus."
+            );
         }
 
         final var senderClientSecretEntity = secretService
                 .retrieve(senderClientSecretKey)
-                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das Client-Geheimnis des Absenders wurde nicht gefunden: " + senderClientSecretKey));
+                .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis mit dem Client-Secret wurde nicht gefunden."));
 
         final String senderClientSecret;
         try {
             senderClientSecret = secretService.decrypt(senderClientSecretEntity);
         } catch (Exception e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das Client-Geheimnis des Absenders konnte nicht entschlüsselt werden: " + senderClientSecretKey, e);
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Das gespeicherte Client-Secret des Onlinedienstes konnte nicht gelesen werden."
+            );
         }
 
         return senderClientSecret;
@@ -372,7 +412,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         var value = StringUtils.toNullableTrimmedString(rawValue);
         if (value == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die FIT-Connect-%s muss hinterlegt werden.",
+                    "Geben Sie die %s an.",
                     description
             );
         }
@@ -381,7 +421,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die FIT-Connect-%s „%s“ ist keine gültige UUID.",
+                    "Die %s „%s“ ist keine gültige UUID.",
                     description,
                     value
             );
@@ -409,7 +449,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         var environment = normalizeEnvironment(rawEnvironment);
         if (environment == null || !SUPPORTED_ENVIRONMENTS.contains(environment)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die FIT-Connect-Umgebung muss konfiguriert sein und einem der Werte TEST, STAGE oder PROD entsprechen."
+                    "Wählen Sie TEST, STAGE oder PROD als FIT-Connect-Umgebung aus."
             );
         }
         return environment;
@@ -424,12 +464,6 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
             current = current.getCause();
         }
         return false;
-    }
-
-    @Nonnull
-    private static String resolveExceptionMessage(@Nonnull Throwable throwable) {
-        var message = StringUtils.toNullableTrimmedString(throwable.getMessage());
-        return message == null ? "Unbekannter Fehler" : message;
     }
 
     @Nonnull
@@ -457,7 +491,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         /** FIT-Connect environment used for all sender API calls. */
         @InputElementPOJOBinding(id = ENVIRONMENT_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "FIT-Connect-Umgebung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Die Umgebung, an die der JSON-Datensatz übertragen wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Umgebung, in der der Zustellpunkt eingerichtet ist. Der Prosuna-Testmodus ändert diese Auswahl nicht."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -465,8 +499,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Identifier of the service type assigned to the submission. */
         @InputElementPOJOBinding(id = SERVICE_IDENTIFIER_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Service Identifier"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Service Identifier für die Nachrichtenübermittlung."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Kennung der Verwaltungsleistung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Kennung der Verwaltungsleistung an, der die Einreichung zugeordnet werden soll. Stimmen Sie diese Angabe mit dem empfangenden System ab."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -474,8 +508,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Human-readable service name assigned to the submission. */
         @InputElementPOJOBinding(id = SERVICE_NAME_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Service Name"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Service Name für die Nachrichtenübermittlung."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Bezeichnung der Verwaltungsleistung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Bezeichnung der Verwaltungsleistung für diese Einreichung an."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -484,7 +518,7 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
         /** UUID of the receiving organisation in the selected FIT-Connect environment. */
         @InputElementPOJOBinding(id = DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfänger-Zustellpunkt-ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID der Organisation, die den Datensatz empfängt."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Zustellpunkt-ID des empfangenden Systems in der gewählten FIT-Connect-Umgebung an."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -492,8 +526,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** UUID of the type-C online service that sends the submission. */
         @InputElementPOJOBinding(id = SENDER_DESTINATION_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Absender-Zustellpunkt-ID"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Zustellpunkt-ID des Onlinedienstes, der den Datensatz versendet."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zustellpunkt-ID des Onlinedienstes"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Zustellpunkt-ID des Onlinedienstes an, der die Einreichung sendet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -501,8 +535,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Client ID used to authenticate the sender against FIT-Connect. */
         @InputElementPOJOBinding(id = SENDER_CLIENT_ID_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Client-ID des Absenders"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Client-ID des Absenders."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Client-ID"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Client-ID der FIT-Connect-Zugangsdaten für diesen Onlinedienst an."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -510,8 +544,8 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Secret reference whose decrypted value is the FIT-Connect sender client secret. */
         @InputElementPOJOBinding(id = SENDER_CLIENT_SECRET_KEY_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Client-Geheimnis des Absenders"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Client-Geheimnis des Absenders."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Client-Secret"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie das in Prosuna hinterlegte Geheimnis aus, das das Client-Secret dieser Client-ID enthält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 6.0),
         })
@@ -519,17 +553,17 @@ public class FitConnectSendJsonActionNodeV1 implements ProcessNodeDefinition<Fit
 
         /** Process-data key from which the JSON submission body is read. */
         @InputElementPOJOBinding(id = JSON_DATASET_PROCESS_KEY_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Datenschlüssel des JSON-Datensatzes"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Datenschlüssel, unter dem der JSON-Datensatz für die Nachrichtenübermittlung gespeichert ist."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenpfad der JSON-Daten"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Pfad zu den zu sendenden Daten an, zum Beispiel fachdaten. Das angezeigte Präfix $. steht für die Vorgangsdatenebene."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
         })
         public String jsonDatasetProcessKey;
 
-        /** URI of the JSON schema used by FIT-Connect to validate the submitted data. */
+        /** URI identifying the JSON schema expected by the receiving service. */
         @InputElementPOJOBinding(id = JSON_SCHEMA_LINK_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Schema-Link"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Link zum JSON-Schema, das den Datensatz validiert."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Schema-Referenz (URI)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die URI des JSON-Schemas an, das der Zustellpunkt für diese Verwaltungsleistung unterstützt. Übernehmen Sie die Angabe aus der FIT-Connect-Konfiguration des Zustellpunkts."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
         })

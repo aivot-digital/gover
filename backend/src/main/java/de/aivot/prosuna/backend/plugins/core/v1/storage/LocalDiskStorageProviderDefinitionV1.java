@@ -160,10 +160,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         try {
             Files.createDirectories(rootPathReal);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Initialisieren des Speicheranbieters. Das Stammverzeichnis %s konnte nicht erstellt werden: %s.",
-                    StringUtils.quote(rootPathReal.toString()),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Das Stammverzeichnis des Speicheranbieters konnte nicht erstellt werden.");
         }
     }
 
@@ -275,10 +273,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                     false
             ), folderToCreatePathReal);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Erstellen des Verzeichnisses %s: %s",
-                    StringUtils.quote(pathFromRoot),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Erstellen des Verzeichnisses %s.",
+                    StringUtils.quote(pathFromRoot));
         }
     }
 
@@ -340,10 +337,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 }
             }
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Lesen des Verzeichnisses %s: %s.",
-                    StringUtils.quote(folderToRetrievePathReal.toString()),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Lesen des Verzeichnisses %s.",
+                    StringUtils.quote(pathFromRoot));
         }
 
         return folderObject;
@@ -409,10 +405,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 }
             }
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Lesen des Verzeichnisses %s: %s.",
-                    StringUtils.quote(folderToRetrievePathReal.toString()),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Lesen des Verzeichnisses %s.",
+                    StringUtils.quote(pathFromRoot));
         }
 
         return folderObject;
@@ -457,11 +452,10 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         try {
             Files.move(sourcePathReal, targetPathReal, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Verschieben des Ordners von %s nach %s: %s.",
+            throw localDiskError(e,
+                    "Fehler beim Verschieben des Ordners von %s nach %s.",
                     StringUtils.quote(sourcePathFromRoot),
-                    StringUtils.quote(targetPathFromRoot),
-                    e.getMessage());
+                    StringUtils.quote(targetPathFromRoot));
         }
 
         return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
@@ -516,19 +510,17 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                         Files.copy(sourceEntry, targetEntry, StandardCopyOption.REPLACE_EXISTING);
                     }
                 } catch (IOException e) {
-                    throw new StorageException(e,
-                            "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
+                    throw localDiskError(e,
+                            "Fehler beim Kopieren des Ordners von %s nach %s.",
                             StringUtils.quote(sourcePathFromRoot),
-                            StringUtils.quote(targetPathFromRoot),
-                            e.getMessage());
+                            StringUtils.quote(targetPathFromRoot));
                 }
             }
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Kopieren des Ordners von %s nach %s: %s.",
+            throw localDiskError(e,
+                    "Fehler beim Kopieren des Ordners von %s nach %s.",
                     StringUtils.quote(sourcePathFromRoot),
-                    StringUtils.quote(targetPathFromRoot),
-                    e.getMessage());
+                    StringUtils.quote(targetPathFromRoot));
         }
 
         return retrieveFolder(config, toSuffixWithSlash(toPrefixWithSlash(targetPathFromRoot)), true)
@@ -555,7 +547,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 if (!file.delete()) {
                     throw new StorageException(
                             "Fehler beim Löschen der Datei oder des Verzeichnisses %s.",
-                            StringUtils.quote(file.getAbsolutePath())
+                            StringUtils.quote(config.getRealRootPath().relativize(file.toPath()).toString())
                     );
                 }
             }
@@ -563,10 +555,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             // If the folder does not exist, we can consider it as already deleted, so we ignore this exception
             return;
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Löschen des Verzeichnisses %s: %s.",
-                    StringUtils.quote(path),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Löschen des Verzeichnisses %s.",
+                    StringUtils.quote(path));
         }
     }
 
@@ -592,10 +583,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             var attributes = readFileAttributes(sanitizedDocumentPathReal);
             return withFileAttributes(new StorageDocument(relativePathFromRoot, sanitizedFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Speichern der Datei %s: %s.",
-                    StringUtils.quote(path),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Speichern der Datei %s.",
+                    StringUtils.quote(path));
         }
     }
 
@@ -622,10 +612,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         try {
             return Files.newInputStream(documentPathReal);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Lesen der Datei %s: %s.",
-                    StringUtils.quote(pathFromRoot),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Lesen der Datei %s.",
+                    StringUtils.quote(pathFromRoot));
         }
     }
 
@@ -662,11 +651,10 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             var attributes = readFileAttributes(sanitizedTargetPathReal);
             return withFileAttributes(new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Verschieben der Datei von %s nach %s: %s.",
+            throw localDiskError(e,
+                    "Fehler beim Verschieben der Datei von %s nach %s.",
                     StringUtils.quote(sourcePathFromRoot),
-                    StringUtils.quote(targetPathFromRoot),
-                    e.getMessage());
+                    StringUtils.quote(targetPathFromRoot));
         }
     }
 
@@ -697,11 +685,10 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             var attributes = readFileAttributes(sanitizedTargetPathReal);
             return withFileAttributes(new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Kopieren der Datei von %s nach %s: %s.",
+            throw localDiskError(e,
+                    "Fehler beim Kopieren der Datei von %s nach %s.",
                     StringUtils.quote(sourcePathFromRoot),
-                    StringUtils.quote(targetPathFromRoot),
-                    e.getMessage());
+                    StringUtils.quote(targetPathFromRoot));
         }
     }
 
@@ -716,10 +703,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 return;
             }
 
-            throw new StorageException(e,
-                    "Fehler beim Löschen der Datei %s: %s.",
-                    StringUtils.quote(path),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Löschen der Datei %s.",
+                    StringUtils.quote(path));
         }
     }
 
@@ -748,7 +734,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         // Ensure the resolved pathFromRoot is within the base directory
         if (!resolved.startsWith(normalizedBase)) {
-            throw new SecurityException("Path traversal attempt detected: " + path);
+            throw new SecurityException("Der angegebene Pfad liegt außerhalb des erlaubten Speicherverzeichnisses: " + path);
         }
 
         return resolved;
@@ -782,14 +768,32 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     }
 
     @Nonnull
+    private static StorageException localDiskError(@Nonnull IOException cause, @Nonnull String format, Object... args) {
+        // Filesystem exception messages can contain absolute server paths. Only expose known reasons.
+        String reason = switch (cause) {
+            case AccessDeniedException ignored -> "Der Zugriff wurde verweigert.";
+            case NoSuchFileException ignored -> "Die Datei oder das Verzeichnis wurde nicht gefunden.";
+            case FileAlreadyExistsException ignored -> "Unter diesem Namen existiert bereits eine Datei oder ein Verzeichnis.";
+            case DirectoryNotEmptyException ignored -> "Das Verzeichnis ist nicht leer.";
+            default -> switch (cause instanceof FileSystemException fs ? fs.getReason() : cause.getMessage()) {
+                case "No space left on device", "Disk quota exceeded" -> "Es steht kein Speicherplatz mehr zur Verfügung.";
+                case "Read-only file system" -> "Das Dateisystem ist schreibgeschützt.";
+                case "Permission denied", "Operation not permitted" -> "Der Zugriff wurde verweigert.";
+                case null, default -> null;
+            };
+        };
+        var message = format.formatted(args);
+        return new StorageException(reason == null ? message : message + " " + reason, cause);
+    }
+
+    @Nonnull
     private static BasicFileAttributes readFileAttributes(@Nonnull Path path) throws StorageException {
         try {
             return Files.readAttributes(path, BasicFileAttributes.class);
         } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Lesen der Dateiattribute für %s: %s.",
-                    StringUtils.quote(path.toString()),
-                    e.getMessage());
+            throw localDiskError(e,
+                    "Fehler beim Lesen der Dateiattribute für %s.",
+                    StringUtils.quote(path.getFileName().toString()));
         }
     }
 

@@ -61,12 +61,12 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         var summary = new ExecutionSummaryMarkdown(context);
         var ruleCount = summary.data("mappedRuleCount");
         var singular = ruleCount instanceof Number count && count.longValue() == 1;
-        var markdown = new StringBuilder("Die Vorgangsdaten wurden anhand von " + text(ruleCount)
-                + (singular ? " Regel angepasst." : " Regeln angepasst."));
+        var markdown = new StringBuilder((singular ? "Es wurde " : "Es wurden ") + text(ruleCount)
+                + (singular ? " Regel" : " Regeln") + " zur Bearbeitung der Vorgangsdaten ausgeführt.");
         for (var entry : list(summary.data("mappedValues"))) {
             var rule = map(entry);
-            var action = Boolean.TRUE.equals(rule.get("deleteOnly")) ? "Gelöscht"
-                    : Boolean.TRUE.equals(rule.get("cleanupSource")) ? "Verschoben" : "Kopiert";
+            var action = Boolean.TRUE.equals(rule.get("deleteOnly")) ? "Löschregel"
+                    : Boolean.TRUE.equals(rule.get("cleanupSource")) ? "Verschieberegel" : "Kopierregel";
             markdown.append("\n\n- ").append(action).append(": ").append(text(rule.get("originalPath")));
             if (!Boolean.TRUE.equals(rule.get("deleteOnly"))) {
                 markdown.append(" → ").append(text(rule.get("newPath")));
@@ -108,24 +108,64 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     @Nonnull
     @Override
     public String getName() {
-        return "Datenfelder übertragen";
+        return "Datenfelder kopieren, verschieben oder löschen";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Kopiert, verschiebt oder löscht Werte innerhalb der Vorgangsdaten.";
+        return "Kopiert, verschiebt oder löscht ausgewählte Vorgangsdaten automatisch nach festgelegten Regeln.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Führt die konfigurierten Abbildungsregeln der Reihe nach auf den Vorgangsdaten aus. Jede Regel kopiert einen Wert vom Ausgangspfad an den Zielpfad, verschiebt ihn, indem der Ausgangswert anschließend bereinigt wird, oder löscht den Ausgangswert nur.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Fehlt der Wert an einem konkreten Ausgangspfad, wird beim Kopieren oder Verschieben am Zielpfad `null` gesetzt. Wildcard-Pfade verarbeiten nur vorhandene Array-Einträge. Gibt es keine passenden Einträge, erfolgt keine Übertragung.
+                Mit diesem Prozesselement ordnen Sie vorhandene Vorgangsdaten für die weitere Bearbeitung neu an. Sie können Werte an einen anderen Speicherort kopieren, dorthin verschieben oder vollständig entfernen. Dafür ist kein eigenes Skript nötig.
 
-                Optional werden dabei leer gewordene übergeordnete Objekte und Arrays entfernt. Die übrigen Vorgangsdaten bleiben erhalten.
+                Das Element arbeitet innerhalb der Vorgangsdaten. Für eine manuelle Eingabe oder Korrektur durch Mitarbeiter:innen verwenden Sie „Vorgangsdaten bearbeiten“.
+
+                # Was richten Sie ein?
+
+                Legen Sie mindestens eine **„Regel für die Datenbearbeitung“** an. Der **„Bisherige Speicherort“** ist der Ausgangspfad des Werts, zum Beispiel `person.name`. Für das Kopieren oder Verschieben geben Sie außerdem den **„Neuen Speicherort“** als Zielpfad an, zum Beispiel `kontakt.name`.
+
+                - **Kopieren:** Lassen Sie **„Wert am bisherigen Speicherort entfernen“** ausgeschaltet. Der Ausgangswert bleibt bestehen.
+                - **Verschieben:** Aktivieren Sie **„Wert am bisherigen Speicherort entfernen“** und geben Sie den neuen Speicherort an.
+                - **Löschen:** Aktivieren Sie zusätzlich **„Nur löschen“**. Ein neuer Speicherort ist dann nicht erforderlich.
+
+                Bringen Sie die Regeln in die gewünschte Reihenfolge. Bei Bedarf aktivieren Sie **„Leere übergeordnete Objekte und Listen entfernen“**.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna führt die Regeln automatisch von oben nach unten aus. Jede Regel verwendet den Datenstand, den die vorherige Regel hinterlassen hat. Bereits vorhandene Werte am neuen Speicherort werden ersetzt.
+
+                Bei Listen können Sie einen einzelnen Eintrag mit `[0]`, `[1]` und weiteren Indizes auswählen. Mit `[*]` verarbeiten Sie alle vorhandenen Listenpositionen. Für das Kopieren und Verschieben müssen Ausgangs- und Zielpfad dieselbe Anzahl solcher Platzhalter enthalten.
+
+                Nach erfolgreicher Ausführung aller Regeln wird der Vorgang über **„Datenfelder verarbeitet“** fortgesetzt. Die Aufgabe wartet auf keine manuelle Bestätigung.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Das Ergebnis ist der neue Stand der Vorgangsdaten. Beim Löschen wird der betreffende Datenschlüssel entfernt. Das unterscheidet sich vom Leeren eines Felds, bei dem der Schlüssel mit einem leeren Wert erhalten bleiben kann.
+
+                In den Elementdaten werden die Anzahl ausgeführter Regeln und Angaben zu jeder Regel gespeichert, darunter die beteiligten Pfade und zugeordnete Werte. Die Anzahl der Regeln sagt nicht aus, wie viele Datenfelder tatsächlich verändert wurden.
+
+                Der Vorgangsverlauf zeigt die ausgeführten Kopier-, Verschiebe- und Löschregeln. Unter **„Datenänderungen“** können Sie die gespeicherten Datenstände vergleichen, sofern der vorherige Stand verfügbar ist.
+
+                # Wie sieht ein Beispiel aus?
+
+                Der Name einer Person steht unter `person.name` und soll zusätzlich unter `kontakt.name` bereitstehen. Legen Sie eine Regel mit dem bisherigen Speicherort `person.name` und dem neuen Speicherort `kontakt.name` an. Lassen Sie **„Wert am bisherigen Speicherort entfernen“** ausgeschaltet. Nach der Ausführung steht der Name an beiden Speicherorten.
+
+                Soll der Name nur noch unter `kontakt.name` stehen, aktivieren Sie die Entfernung am bisherigen Speicherort. Soll er vollständig entfallen, aktivieren Sie zusätzlich **„Nur löschen“** und lassen den neuen Speicherort weg.
+
+                # Was ist zu beachten?
+
+                Fehlt ein Wert an einem konkreten Ausgangspfad, wird beim Kopieren oder Verschieben am Zielpfad `null` gespeichert. Ein dort bereits vorhandener Wert wird damit überschrieben. Gibt es bei einer Listenregel keine passenden Listenpositionen, findet keine Übertragung statt.
+
+                Das Löschen eines Listeneintrags verändert die Positionen der nachfolgenden Einträge. Die Bereinigung leerer übergeordneter Objekte und Listen kann weitere leere Strukturen entfernen. Prüfen Sie deshalb die Reihenfolge Ihrer Regeln.
+
+                Eine Regel kann ohne Änderung der Daten ausgeführt werden, etwa beim Löschen eines bereits fehlenden Werts. Die Zusammenfassung bestätigt die ausgeführten Regeln; die tatsächlichen Unterschiede zeigt der Datenvergleich.
                 """;
     }
 
@@ -137,7 +177,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         try {
             layoutElement = ElementPOJOMapper.createFromPOJO(DataMappingActionNodeV1Config.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e);
+            throw ResponseException.internalServerError(e, "Die Einstellungen für die Datenbearbeitung konnten nicht geladen werden.");
         }
 
         layoutElement
@@ -169,7 +209,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                 new ProcessNodePort(
                         PORT_NAME,
                         "Datenfelder verarbeitet",
-                        "Der Vorgang wird hier fortgesetzt, nachdem die Abbildungsregeln ausgeführt wurden."
+                        "Der Vorgang wird hier fortgesetzt, nachdem alle Regeln für die Datenbearbeitung erfolgreich ausgeführt wurden."
                 )
         );
     }
@@ -209,7 +249,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         var configuration = context.getConfigurationOfExecutingNode();
         if (configuration.rules == null || configuration.rules.isEmpty()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Es wurde keine Abbildungsregel angegeben."
+                    "Fügen Sie mindestens eine Regel für die Datenbearbeitung hinzu."
             );
         }
 
@@ -222,7 +262,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
             if (rule == null) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Abbildungsregel in Zeile %d ist ungültig.",
+                        "Regel %d enthält keine gültigen Einstellungen. Prüfen Sie diese Regel.",
                         rowIndex
                 );
             }
@@ -237,16 +277,15 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
-                        "Fehler in Abbildungsregel Zeile %d: %s",
+                        "Regel %d konnte nicht ausgeführt werden: %s",
                         rowIndex,
                         e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
                 );
             } catch (Exception e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Fehler in Abbildungsregel Zeile %d: %s",
-                        rowIndex,
-                        e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
+                        "Regel %d konnte wegen eines internen Fehlers nicht ausgeführt werden.",
+                        rowIndex
                 );
             }
         }
@@ -347,28 +386,28 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         private static final String RULES_FIELD_ID = "rules";
 
         @InputElementPOJOBinding(id = CLEANUP_EMPTY_CONTAINERS_FIELD_ID, type = ElementType.Checkbox, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Leere Objekte und Arrays bereinigen"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt nach dem Bereinigen eines Ausgangswerts auch leere Objekte und Arrays. Wenn deaktiviert, bleiben leere Container bestehen.")
+                @ElementPOJOBindingProperty(key = "label", strValue = "Leere übergeordnete Objekte und Listen entfernen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt nach dem Löschen auch dadurch leer gewordene übergeordnete Objekte und Listen. Wenn die Option ausgeschaltet ist, bleiben diese leeren Strukturen bestehen.")
         })
         public Boolean cleanupEmptyContainers;
 
         public List<DataMappingActionNodeV1Rule> rules;
 
         @ReplicatingContainerLayoutElementElementPOJOBinding(id = RULES_FIELD_ID, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Abbildungsregeln"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie alle Abbildungsregeln, die auf die Daten angewendet werden sollen."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Regeln für die Datenbearbeitung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Legen Sie fest, welche Vorgangsdaten kopiert, verschoben oder gelöscht werden sollen. Die Regeln werden von oben nach unten ausgeführt. Spätere Regeln verwenden den bereits bearbeiteten Datenstand."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Abbildungsregel"),
-                @ElementPOJOBindingProperty(key = "addLabel", strValue = "Neue Abbildungsregel"),
-                @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Abbildungsregel entfernen"),
+                @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Regel"),
+                @ElementPOJOBindingProperty(key = "addLabel", strValue = "Regel hinzufügen"),
+                @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Regel entfernen"),
                 @ElementPOJOBindingProperty(key = "sortable", boolValue = true)
         })
         public static class DataMappingActionNodeV1Rule {
             public static final String SOURCE_FIELD_ID = "source";
 
             @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                    @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert, z. B. person.name oder items[0].price. Fehlt der Wert an einem konkreten Pfad, wird null verwendet. Mit items[*].price werden vorhandene Array-Einträge abgebildet; ohne passende Einträge erfolgt keine Übertragung."),
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Bisheriger Speicherort"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Datenschlüssel des bisherigen Werts, zum Beispiel person.name oder personen[0].name. Mit personen[*].name verarbeiten Sie vorhandene Listenpositionen. Fehlt ein Wert an einem konkreten Pfad, wird beim Kopieren oder Verschieben null am neuen Speicherort gesetzt."),
                     @ElementPOJOBindingProperty(key = "required", boolValue = true),
                     @ElementPOJOBindingProperty(key = "disableWildCards", falseValue = true),
             })
@@ -377,24 +416,24 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             public static final String CLEANUP_SOURCE_FIELD_ID = "cleanupSource";
 
             @InputElementPOJOBinding(id = CLEANUP_SOURCE_FIELD_ID, type = ElementType.Checkbox, properties = {
-                    @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangswert bereinigen"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt den Ausgangswert nach dem Schreiben aus den Vorgangsdaten.")
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Wert am bisherigen Speicherort entfernen"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt den Wert samt Datenschlüssel nach dem Kopieren. Damit wird der Wert verschoben. Für eine reine Löschung aktivieren Sie zusätzlich „Nur löschen“.")
             })
             public Boolean cleanupSource;
 
             public static final String DELETE_ONLY_FIELD_ID = "deleteOnly";
 
             @InputElementPOJOBinding(id = DELETE_ONLY_FIELD_ID, type = ElementType.Checkbox, properties = {
-                    @ElementPOJOBindingProperty(key = "label", strValue = "Wert nur löschen"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Löscht den Ausgangswert, ohne ihn in einen Zielpfad zu kopieren.")
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Nur löschen"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt den Wert samt Datenschlüssel am bisherigen Speicherort, ohne ihn an einen anderen Speicherort zu kopieren.")
             })
             public Boolean deleteOnly;
 
             public static final String TARGET_FIELD_ID = "target";
 
             @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                    @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt. Pfade verwenden dieselbe Datenvariablen-Syntax wie Ausgangspfade und unterstützen Array-Indizes wie [0] sowie Wildcards wie [*]. Kann leer bleiben, wenn der Wert nur gelöscht werden soll."),
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Neuer Speicherort"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Datenschlüssel für den kopierten oder verschobenen Wert. Fehlende Zielstrukturen werden angelegt; vorhandene Zielwerte werden ersetzt. Bei Listen muss die Anzahl der Platzhalter [*] mit dem bisherigen Speicherort übereinstimmen. Bei „Nur löschen“ ist kein neuer Speicherort nötig."),
                     @ElementPOJOBindingProperty(key = "disableWildCards", falseValue = true),
             })
             public String target;

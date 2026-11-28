@@ -135,19 +135,19 @@ public class PaymentItem {
 
     public Optional<XBezahldienstePaymentItem> toXBezahldienstePaymentItem() throws PaymentException {
         if (StringUtils.isNullOrEmpty(this.getReference())) {
-            throw new PaymentException("Product %s has no reference", this.getId());
+            throw new PaymentException("Für die Zahlungsposition %s fehlt die Referenz.", this.getId());
         }
 
         if (StringUtils.isNullOrEmpty(this.getDescription())) {
-            throw new PaymentException("Product %s has no description", this.getId());
+            throw new PaymentException("Für die Zahlungsposition %s fehlt die Beschreibung.", this.getId());
         }
 
         if (this.getTaxRate() == null) {
-            throw new PaymentException("Product %s has no tax rate", this.getId());
+            throw new PaymentException("Für die Zahlungsposition %s fehlt der Steuersatz.", this.getId());
         }
 
         if (this.getNetPrice() == null) {
-            throw new PaymentException("Product %s  has no net price", this.getId());
+            throw new PaymentException("Für die Zahlungsposition %s fehlt der Nettopreis.", this.getId());
         }
 
         if (this.getQuantity() > 0) {

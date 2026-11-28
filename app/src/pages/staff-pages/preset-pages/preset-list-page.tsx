@@ -153,7 +153,7 @@ export function PresetListPage() {
     const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<Preset>) => (
         <EmptyDataListPlaceholder
             title="Keine Vorlagen vorhanden"
-            description="Vorlagen bündeln wiederverwendbare Inhalte, damit Prozesse und Formulare schneller und einheitlicher erstellt werden können."
+            description="Vorlagen enthalten Formularelemente, die Sie in mehreren Formularen wiederverwenden können."
             addText="Neue Vorlage anlegen"
             onAdd={() => setShowAddPresetDialog(true)}
             addDisabled={!permissions.canCreate}

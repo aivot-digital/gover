@@ -203,7 +203,7 @@ public class UserService implements EntityService<UserEntity, String> {
         );
 
         if (blockingAssignedTaskCount > 0) {
-            throw ResponseException.conflict("Die Mitarbeiter:in kann nicht gelöscht werden, da ihr noch nicht abgeschlossene Aufgaben zugewiesen sind.");
+            throw ResponseException.conflict("Das Konto kann nicht gelöscht werden, da noch nicht abgeschlossene Aufgaben zugewiesen sind.");
         }
 
         keyCloakApiService
@@ -218,7 +218,7 @@ public class UserService implements EntityService<UserEntity, String> {
 
     public UserEntity updatePassword(String id, String password) throws ResponseException {
         var user = retrieve(id)
-                .orElseThrow(() -> ResponseException.notFound("Mitarbeiter:in nicht gefunden"));
+                .orElseThrow(() -> ResponseException.notFound("Das Konto wurde nicht gefunden."));
 
         keyCloakApiService.setUserPassword(id, password, false);
 
@@ -260,7 +260,7 @@ public class UserService implements EntityService<UserEntity, String> {
                 throw responseException;
             }
 
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+            throw ResponseException.internalServerError("Das Konto konnte nicht angelegt werden.", e);
         }
     }
 }

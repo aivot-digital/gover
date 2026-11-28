@@ -9,6 +9,20 @@ import java.util.Optional;
 import java.security.SecureRandom;
 
 public class StringUtils {
+    private static final int MAX_DIAGNOSTIC_CODE_POINTS = 2_000;
+
+    /** Keeps diagnostic text on one line and limits its length in logs and persisted process events. */
+    @Nonnull
+    public static String diagnosticExcerpt(@Nonnull String detail) {
+        var excerpt = new StringBuilder();
+        detail.codePoints().limit(MAX_DIAGNOSTIC_CODE_POINTS).forEach(codePoint ->
+                excerpt.appendCodePoint(Character.isISOControl(codePoint)
+                        || Character.isWhitespace(codePoint)
+                        || Character.getType(codePoint) == Character.FORMAT ? ' ' : codePoint));
+        var truncated = detail.codePointCount(0, detail.length()) > MAX_DIAGNOSTIC_CODE_POINTS;
+        return excerpt.toString().strip() + (truncated ? " [truncated]" : "");
+    }
+
     public static String truncate(String string, int length) {
         if (string.length() > length) {
             return string.trim().substring(0, length).trim();

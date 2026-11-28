@@ -47,7 +47,7 @@ public class HtmlTemplateInputElement extends BaseInputElement<HtmlTemplateInput
                 .stream()
                 .filter(StringUtils::isNotNullOrEmpty)
                 .count();
-        return slotCount + " Slot" + (slotCount == 1 ? "" : "s") + " ausgefüllt";
+        return slotCount + " Anpassung" + (slotCount == 1 ? "" : "en") + " hinterlegt";
     }
 
     @Nonnull

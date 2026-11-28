@@ -1236,7 +1236,7 @@ class ElementDerivationServiceTest {
         var root = createRoot(List.of(firstName, lastName));
 
         var failed = derive(root, new AuthoredElementValues().putLiteral("firstName", "Max"), new ElementDerivationOptions());
-        assertTrue(failed.getElementStates().get("lastName").getError().contains("'not'"));
+        assertTrue(failed.getElementStates().get("lastName").getError().contains("„not“"));
         assertTrue(failed.getElementStates().get("lastName").isDerivationFailed());
         var mapper = JsonMapperTestUtils.createMapper();
         assertTrue(mapper.valueToTree(failed.getElementStates().get("lastName")).get("derivationFailed").asBoolean());

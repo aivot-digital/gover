@@ -256,7 +256,7 @@ export function EmailPage() {
                             color="error"
                             title="E-Mail-Konfiguration konnte nicht geladen werden"
                         >
-                            <Typography>{configurationError}</Typography>
+                            <Typography>Technische Fehlermeldung: {configurationError}</Typography>
                             <Button
                                 variant="outlined"
                                 onClick={() => void loadConfiguration()}
@@ -413,7 +413,7 @@ export function EmailPage() {
                                                         color: 'text.primary',
                                                     }}
                                                 >
-                                                    {testResult.errorMessage}
+                                                    Technische Fehlermeldung: {testResult.errorMessage}
                                                 </Box>
                                             )}
                                         </>

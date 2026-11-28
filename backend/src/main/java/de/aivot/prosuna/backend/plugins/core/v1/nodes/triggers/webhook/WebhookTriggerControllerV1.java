@@ -163,7 +163,7 @@ public class WebhookTriggerControllerV1 {
             startProcess(testClaim, nodeEntity, config, request, payload, files, authToken, authorizationHeader);
         }
 
-        return new Response("Webhook empfangen und verarbeitet.");
+        return new Response("Der Webhook-Aufruf wurde angenommen.");
     }
 
     @Nullable
@@ -231,7 +231,7 @@ public class WebhookTriggerControllerV1 {
                 .findAll(specBuilder.build());
 
         if (res.isEmpty()) {
-            throw ResponseException.notFound("Kein Webhook-Auslöser mit dem angegebenen URL-Segment gefunden.");
+            throw ResponseException.notFound("Für diesen Aufruf wurde kein passender Webhook gefunden.");
         }
 
         return res;
@@ -248,7 +248,7 @@ public class WebhookTriggerControllerV1 {
         // Check if the request method is correct
         if (!request.getMethod().equalsIgnoreCase(config.requestMethod)) {
             throw ResponseException.methodNotAllowed(
-                    "Ungültige Anfragemethode für diesen Webhook. Erwartet wird %s",
+                    "Für diesen Webhook ist die HTTP-Methode %s vorgesehen.",
                     StringUtils.quote(config.requestMethod)
             );
         }
@@ -303,7 +303,7 @@ public class WebhookTriggerControllerV1 {
                     try {
                         bytes = file.getBytes();
                     } catch (IOException e) {
-                        throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+                        throw ResponseException.internalServerErrorWithDetails(e, "Die hochgeladene Datei konnte nicht gelesen werden.", null);
                     }
 
                     var attachment = ProcessInstanceAttachmentEntity.of(
@@ -427,12 +427,12 @@ public class WebhookTriggerControllerV1 {
     private String resolveAttachmentSetDataKey(@Nonnull String fieldName) throws ResponseException {
         var dataKey = StringUtils.toNullableTrimmedString(fieldName);
         if (dataKey == null) {
-            throw ResponseException.badRequest("Ein Webhook-Dateiupload benötigt einen Multipart-Feldnamen.");
+            throw ResponseException.badRequest("Für jede hochgeladene Datei muss ein Multipart-Feldname angegeben werden.");
         }
 
         dataKey = dataKey.replace('.', '_');
         if (dataKey.length() > 255) {
-            throw ResponseException.badRequest("Der Multipart-Feldname %s ist zu lang.", StringUtils.quote(fieldName));
+            throw ResponseException.badRequest("Der Multipart-Feldname %s darf höchstens 255 Zeichen enthalten.", StringUtils.quote(fieldName));
         }
 
         return dataKey;
@@ -479,13 +479,13 @@ public class WebhookTriggerControllerV1 {
                                                    @Nonnull MediaType expectedContentType) throws ResponseException {
         if (StringUtils.isNullOrEmpty(actualContentType)) {
             throw ResponseException.unsupportedMediaType(
-                    "Ungültiger Content-Type für diesen Webhook. Erwartet wird %s.",
+                    "Der erforderliche Inhaltstyp (Content-Type) fehlt. Erwartet: %s.",
                     StringUtils.quote(expectedContentType.toString())
             );
         }
 
         throw ResponseException.unsupportedMediaType(
-                "Ungültiger Content-Type für diesen Webhook. Erwartet wird %s, empfangen wurde %s.",
+                "Der Inhaltstyp (Content-Type) passt nicht zu diesem Webhook. Erwartet: %s. Empfangen: %s.",
                 StringUtils.quote(expectedContentType.toString()),
                 StringUtils.quote(actualContentType)
         );
@@ -568,14 +568,14 @@ public class WebhookTriggerControllerV1 {
                     throw incompleteAuthenticationException();
                 }
                 if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                    throw ResponseException.unauthorized("Fehlender oder ungültiger Autorisierungs-Header für den Webhook-Auslöser.");
+                    throw ResponseException.unauthorized("Die Authentifizierung für diesen Webhook fehlt oder ist ungültig.");
                 }
                 var base64Credentials = authHeader.substring("Basic ".length());
                 var credentials = StringUtils.decodeBase64String(base64Credentials).split(":", 2);
                 if (credentials.length != 2 ||
                         !credentials[0].equals(config.authConfig.authUsername) ||
                         !credentials[1].equals(config.authConfig.authPassword)) {
-                    throw ResponseException.unauthorized("Der Benutzername oder das Passwort ist ungültig für den Webhook-Auslöser.");
+                    throw ResponseException.unauthorized("Benutzername oder Passwort ist für diesen Webhook ungültig.");
                 }
                 break;
             /* Bearer is removed, because it clashed with the default spring boot jwt bearer token handling
@@ -594,7 +594,7 @@ public class WebhookTriggerControllerV1 {
                     throw incompleteAuthenticationException();
                 }
                 if (tokenQueryParam == null || !tokenQueryParam.equals(config.authConfig.authToken)) {
-                    throw ResponseException.unauthorized("Ungültiges Token für den Webhook-Auslöser.");
+                    throw ResponseException.unauthorized("Das Token für diesen Webhook fehlt oder ist ungültig.");
                 }
                 break;
             default:
@@ -604,7 +604,7 @@ public class WebhookTriggerControllerV1 {
 
     @Nonnull
     private static ResponseException incompleteAuthenticationException() {
-        return ResponseException.internalServerError("Die Authentifizierung des Webhook-Auslösers ist nicht vollständig eingerichtet.");
+        return ResponseException.internalServerError("Die Authentifizierung für diesen Webhook ist nicht vollständig eingerichtet.");
     }
 
     public record Response(String message) {
@@ -614,6 +614,6 @@ public class WebhookTriggerControllerV1 {
     private ProcessEntity getProcess(String processSlug) throws ResponseException {
         return processService
                 .retrieveBySlugOrHistory(processSlug)
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen URL-Namespace gefunden."));
+                .orElseThrow(() -> ResponseException.notFound("Der Prozess mit dem angegebenen URL-Namespace wurde nicht gefunden."));
     }
 }

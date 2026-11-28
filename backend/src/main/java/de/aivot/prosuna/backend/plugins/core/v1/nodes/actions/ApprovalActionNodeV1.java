@@ -60,10 +60,10 @@ import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.se
 @Component
 public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActionNodeV1.ApprovalConfiguration> {
     private static final ProcessNodeDeadlineDefinition APPROVAL_DEADLINE = new ProcessNodeDeadlineDefinition(
-            "approval", "Freigabe",
-            "Zeit für die Prüfung und Freigabe.",
-            new ProcessNodePort("approval_overdue", "Fristüberschreitung: Freigabe",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Freigabe beendet wurde."));
+            "approval", "Freigabeentscheidung",
+            "Zeit ab Zuweisung der Aufgabe, innerhalb derer die Freigabeentscheidung getroffen werden soll.",
+            new ProcessNodePort("approval_overdue", "Freigabefrist überschritten",
+                    "Der Vorgang wird hier fortgesetzt, wenn die Frist überschritten und die Freigabeaufgabe automatisch beendet wurde."));
 
     public static final String NODE_KEY = "approval";
 
@@ -116,7 +116,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         return "Die Freigabe wurde" + summary.eventAt("processedAt") + " durch " + summary.actor() + " " + decision + "."
                 + section("Vermerk", summary.data(OUTPUT_REMARK))
                 + section("Freigabekriterien", configuration.criteria)
-                + section("Prüfinhalt", MODE_CUSTOM_CONTENT.equals(configuration.contentMode)
+                + section("Geprüfte Inhalte", MODE_CUSTOM_CONTENT.equals(configuration.contentMode)
                         ? configuration.customContent : null);
     }
 
@@ -159,16 +159,65 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Erstellt eine Mitarbeitendenaufgabe, um einen Vorgang freizugeben oder abzulehnen.";
+        return "Lässt eine zuständige Person Inhalte prüfen und die Freigabe erteilen oder ablehnen.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Mitarbeitendenaufgabe, in der die zuständige Person anhand der konfigurierten Freigabekriterien entscheidet. Die zuständige Person wird aus dem konfigurierten Personenkreis ermittelt. Der Vorgang wartet auf die Entscheidung und wird über den Ausgangsport „Freigabe erteilt“ oder „Freigabe abgelehnt“ fortgesetzt; die Entscheidung wird im Vorgangsverlauf festgehalten. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Als Inhalt der Aufgabe dient entweder eine UI-Definition oder ein eigener Text. Bei einer UI-Definition werden Angaben aus Formularelementen mit Datenschlüssel bei beiden Entscheidungen in die Vorgangsdaten übernommen.
+                Holen Sie eine fachliche Entscheidung ein, bevor ein Vorgang weiterbearbeitet wird. Die zuständige Person prüft die bereitgestellten Inhalte anhand Ihrer Freigabekriterien und erteilt die Freigabe oder lehnt sie ab.
+
+                Über die beiden Ausgänge legen Sie fest, wie der Vorgang nach einer Freigabe oder Ablehnung weitergeht.
+
+                # Was richten Sie ein?
+
+                Beschreiben Sie unter **„Freigabekriterien“**, was geprüft werden soll und unter welchen Voraussetzungen eine Freigabe erteilt werden darf.
+
+                Wählen Sie unter **„Zu prüfende Inhalte“** eine Option:
+
+                - **Datenansicht:** Gestalten Sie mit einer UI-Definition eine Oberfläche mit Feldern und Hinweisen. Sie kann vorhandene Vorgangsdaten anzeigen und Angaben erfassen oder ändern.
+                - **Eigener Text:** Beschreiben Sie den Prüfgegenstand als Text, beispielsweise wenn die Prüfung in einem Fachsystem stattfindet.
+
+                Legen Sie unter **„Verantwortlicher Personenkreis“** fest, welche Organisationseinheiten, Teams oder Mitarbeiter:innen für die Aufgabe infrage kommen. Optional stellen Sie Bevorzugungen für die Zuweisung ein.
+
+                Unter den weiteren Eigenschaften können Sie eine Frist in Tagen festlegen. Entscheiden Sie dort auch, ob die Aufgabe bei einer Fristüberschreitung automatisch beendet werden soll.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna erstellt eine Mitarbeitendenaufgabe und weist sie einer berechtigten Person aus dem gewählten Personenkreis zu. Diese Person sieht die Freigabekriterien und die zu prüfenden Inhalte. Sie kann einen Vermerk ergänzen und **„Freigabe erteilen“** oder **„Freigabe ablehnen“** wählen.
+
+                Bis zur Entscheidung wartet dieser Schritt. Danach wird die Aufgabe abgeschlossen und der Vorgang über **„Freigabe erteilt“** beziehungsweise **„Freigabe abgelehnt“** fortgesetzt.
+
+                Haben Sie eine automatische Beendigung bei Fristüberschreitung eingerichtet, kann die Aufgabe stattdessen ohne fachliche Entscheidung enden. Der Vorgang folgt dann dem Ausgang **„Freigabefrist überschritten“**.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Nach einer Entscheidung stehen das Ergebnis, ein gegebenenfalls erfasster Vermerk sowie Angaben zur entscheidenden Person und zum Zeitpunkt in den Elementdaten bereit. Über die Datenzuordnung können Sie diese Ergebnisse zusätzlich in die Vorgangsdaten übernehmen.
+
+                Bei einer Datenansicht werden die Angaben aus Feldern mit Datenschlüssel in die Vorgangsdaten übernommen. Das gilt sowohl bei einer Freigabe als auch bei einer Ablehnung.
+
+                Der Vorgangsverlauf hält fest, wer die Entscheidung getroffen hat und wie sie ausgefallen ist. Die Zusammenfassung enthält außerdem den Vermerk, die Freigabekriterien und bei einem eigenen Text die beschriebenen Prüfinhalte.
+
+                # Wie sieht ein Beispiel aus?
+
+                Vor dem Versand eines Schreibens soll eine zuständige Person prüfen, ob die fachlichen Voraussetzungen erfüllt sind.
+
+                Beschreiben Sie diese Voraussetzungen als Freigabekriterien und wählen Sie einen Personenkreis aus. Stellen Sie die benötigten Angaben über eine Datenansicht bereit.
+
+                Verbinden Sie **„Freigabe erteilt“** mit dem Versand des Schreibens und **„Freigabe abgelehnt“** mit einer Aufgabe zur Überarbeitung. Die prüfende Person kann im Vermerk erläutern, welche Voraussetzungen noch fehlen.
+
+                # Was ist zu beachten?
+
+                Die Entscheidung trifft eine Person. Die Freigabekriterien werden nicht automatisch fachlich geprüft.
+
+                Eine Ablehnung nimmt Änderungen in der Datenansicht nicht zurück. Angaben aus Feldern mit Datenschlüssel werden bei beiden Entscheidungen übernommen. Modellieren Sie Felder entsprechend, wenn sie nur angezeigt oder bearbeitet werden sollen. Erforderliche Angaben und Feldprüfungen gelten auch beim Ablehnen.
+
+                Eine Bevorzugung bei der Zuweisung garantiert keine bestimmte Person und keine verbindliche Trennung zwischen vorheriger Bearbeitung und Freigabe.
+
+                Ohne automatische Beendigung bleibt eine Aufgabe nach Fristüberschreitung bearbeitbar; die Überschreitung wird angezeigt. Mit automatischer Beendigung ist anschließend keine Freigabeentscheidung mehr möglich. Dieser Fristablauf gilt weder als Freigabe noch als Ablehnung.
                 """;
     }
 
@@ -180,7 +229,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         try {
             layout = ElementPOJOMapper.createFromPOJO(ApprovalConfiguration.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         // Configure the content mode field
@@ -191,8 +240,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                             .setType(ValueFunctionType.NoCode)
                             .setNoCode(new NoCodeStaticValue(MODE_DATA)));
                     contentModeField.setOptions(List.of(
-                            SelectInputElementOption.of(MODE_DATA, "Daten"),
-                            SelectInputElementOption.of(MODE_CUSTOM_CONTENT, "Eigene Inhalte")
+                            SelectInputElementOption.of(MODE_DATA, "Datenansicht"),
+                            SelectInputElementOption.of(MODE_CUSTOM_CONTENT, "Eigener Text")
                     ));
                 });
 
@@ -239,12 +288,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodePort(
                         PORT_APPROVED,
                         "Freigabe erteilt",
-                        "Der Vorgang wird fortgesetzt, wenn die Freigabe erteilt wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die zuständige Person die Freigabe erteilt hat."
                 ),
                 new ProcessNodePort(
                         PORT_REJECTED,
                         "Freigabe abgelehnt",
-                        "Der Vorgang wird fortgesetzt, wenn die Freigabe abgelehnt wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die zuständige Person die Freigabe abgelehnt hat."
                 )
         );
     }
@@ -256,7 +305,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 new ProcessNodeOutput(
                         OUTPUT_DECISION,
                         "Entscheidung",
-                        "Die getroffene Entscheidung, entweder 'approved' oder 'rejected'.",
+                        "Das Ergebnis der Entscheidung: Freigabe erteilt („approved“) oder Freigabe abgelehnt („rejected“).",
                         "\"approved\" | \"rejected\""
                 ),
                 new ProcessNodeOutput(
@@ -267,20 +316,20 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
-                        "Bearbeitet durch",
+                        "Entschieden durch",
                         "Die Kennung des Kontos der Person, die die Entscheidung getroffen hat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PROCESSED_AT,
-                        "Bearbeitet am",
-                        "Der Zeitstempel der Entscheidung im ISO-Format.",
+                        "Entschieden am",
+                        "Der Zeitpunkt, zu dem die Entscheidung getroffen wurde, im technischen ISO-Zeitformat.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
-                        "Werte nach Element-ID",
-                        "Die Werte der Formularelemente unter ihrer jeweiligen Element-ID, unabhängig von einem Datenschlüssel.",
+                        "Feldwerte nach Element-ID",
+                        "Die Werte aus der Aufgabenansicht unter ihrer jeweiligen Element-ID. Dazu gehört auch der Vermerk. Ein Datenschlüssel ist dafür nicht erforderlich.",
                         "Record<string, unknown>"
                 )
         );
@@ -317,7 +366,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
+                        "Für %s konnte keine zuständige Person ermittelt werden. Prüfen Sie den Personenkreis und die Berechtigungen zum Bearbeiten der Aufgabe.",
                         StringUtils.quote(this.resolveNodeName(context.getThisNode()))
                 ));
 
@@ -349,7 +398,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         var contentHeadline = new HeadlineContentElement();
         contentHeadline.setId("approval-content-headline");
-        contentHeadline.setContent("Inhalte");
+        contentHeadline.setContent("Zu prüfende Inhalte");
         children.add(contentHeadline);
 
         if (MODE_DATA.equals(config.contentMode)) {
@@ -365,7 +414,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
         remarkField.setDestinationKey(TASK_VIEW_REMARK_FIELD_ID);
         remarkField.setLabel("Vermerk");
-        remarkField.setHint("Optionaler Vermerk zur Freigabeentscheidung.");
+        remarkField.setHint("Optional. Erläutern Sie Ihre Entscheidung oder halten Sie Hinweise für die weitere Bearbeitung fest.");
         remarkField.setRequired(false);
         remarkField.setWeight(6.0);
         children.add(remarkField);
@@ -378,8 +427,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         layout.setChildren(children);
 
         var events = List.of(
-                new TaskViewEvent("Freigeben", EVENT_APPROVE),
-                new TaskViewEvent("Ablehnen", EVENT_REJECT)
+                new TaskViewEvent("Freigabe erteilen", EVENT_APPROVE),
+                new TaskViewEvent("Freigabe ablehnen", EVENT_REJECT)
         );
         var effectiveValues = elementDataTransformService.buildEffectiveValues(
                 layout, context.getThisTask().getProcessData()
@@ -507,7 +556,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Freigabekriterien"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die fachlichen Kriterien, auf deren Basis die Freigabe erfolgen soll."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie, was die zuständige Person prüfen soll und unter welchen Voraussetzungen sie die Freigabe erteilen darf."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String criteria;
@@ -516,7 +565,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         @InputElementPOJOBinding(id = CONTENT_MODE, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Inhalte"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Freigabe auf Basis modellierter Daten oder freier Inhalte erfolgt."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, welche Informationen die zuständige Person für ihre Entscheidung erhält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
                 @ElementPOJOBindingProperty(key = "displayInline", boolValue = true)
@@ -525,8 +574,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         public static final String DATA_CONTENT = DATA_CONTENT_FIELD_ID;
         @InputElementPOJOBinding(id = DATA_CONTENT, type = ElementType.UiDefinitionInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Daten"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine UI-Definition zur Darstellung der freizugebenden Inhalte."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Ansicht für die Prüfung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Gestalten Sie mit einer UI-Definition die Felder und Hinweise für die Prüfung. Angaben aus Feldern mit Datenschlüssel werden bei Freigabe und Ablehnung in die Vorgangsdaten übernommen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement dataContent;
@@ -535,8 +584,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         @InputElementPOJOBinding(id = CUSTOM_CONTENT, type = ElementType.RichTextInput,
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Inhalte"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die zu prüfenden Inhalte frei, z. B. wenn diese in einem Drittsystem geprüft werden."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Text für die Prüfung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die Inhalte, über die entschieden werden soll, zum Beispiel eine Prüfung in einem Fachsystem."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String customContent;
@@ -545,7 +594,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         @InputElementPOJOBinding(id = ASSIGNMENT_CONTEXT, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
                 @ElementPOJOBindingProperty(key = "headline", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "text", strValue = "Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann."),
+                @ElementPOJOBindingProperty(key = "text", strValue = "Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu."),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = "Organisationseinheit, Team oder Mitarbeiter:in suchen"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })

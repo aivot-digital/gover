@@ -69,18 +69,18 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
         var operation = isAddition ? "plus" : "minus";
         var exampleResult = isAddition ? "27.11.2026" : "17.11.2026";
         var daylightSavingExample = isAddition
-                ? "28.03.2026 um 02:30 Uhr plus 1 Tag ergibt 29.03.2026 um **03:30 Uhr**."
-                : "30.03.2026 um 02:30 Uhr minus 1 Tag ergibt 29.03.2026 um **03:30 Uhr**.";
+                ? "`28.03.2026 um 02:30 Uhr plus 1 Tag` ergibt `29.03.2026 um 03:30 Uhr`."
+                : "`30.03.2026 um 02:30 Uhr minus 1 Tag` ergibt `29.03.2026 um 03:30 Uhr`.";
         return """
                 # Wofür verwenden Sie diese Funktion?
 
-                Mit „%s“ berechnen Sie einen %s Zeitpunkt, beispielsweise einen Termin fünf Tage %s einem Ausgangszeitpunkt.
+                Mit **„%s“** berechnen Sie einen %s Zeitpunkt, beispielsweise einen Termin fünf Tage %s einem Ausgangszeitpunkt.
 
                 # Welche Werte werden benötigt?
 
                 - **Ausgangszeitpunkt:** Das Datum mit Uhrzeit, von dem aus Sie rechnen möchten. Sie können den Zeitpunkt selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Es gibt keine festen Auswahlwerte.
                 - **Anzahl:** Geben Sie eine ganze Zahl ein, beispielsweise `5`. Es gibt keine festen Auswahlwerte. Sie können die Anzahl auch aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
-                - **Einheit:** Wählen Sie Tage, Wochen, Monate oder Jahre. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
+                - **Einheit:** Wählen Sie **„Tage“**, **„Wochen“**, **„Monate“** oder **„Jahre“**. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über **„Andere Wertquelle verwenden …“** können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
 
                 # Welches Ergebnis erhalten Sie?
 
@@ -88,29 +88,29 @@ public class NoCodeAdjustDateTimeOperator extends NoCodeOperator {
 
                 # Beispiel im No-Code-Editor
 
-                Sie möchten einen Termin fünf Tage %s dem 22.11.2026 um 13:30 Uhr berechnen.
+                Sie möchten einen Termin fünf Tage %s dem `22.11.2026 um 13:30 Uhr` berechnen.
 
-                1. Wählen Sie die Funktion „%s“.
-                2. Wählen Sie für „Ausgangszeitpunkt“ die Option „Wert selbst festlegen“ und geben Sie `22.11.2026 13:30:00 Uhr` ein.
-                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `5` ein.
-                4. Wählen Sie für „Einheit“ die Option „Tage“.
+                1. Wählen Sie die Funktion **„%s“**.
+                2. Wählen Sie für **„Ausgangszeitpunkt“** die Option **„Wert selbst festlegen“** und geben Sie `22.11.2026 13:30:00 Uhr` ein.
+                3. Wählen Sie für **„Anzahl“** die Option **„Wert selbst festlegen“** und geben Sie `5` ein.
+                4. Wählen Sie für **„Einheit“** die Option **„Tage“**.
 
                 Der fertige Ausdruck liest sich so:
 
-                **22.11.2026 13:30:00 Uhr %s 5 Tage**
+                `22.11.2026 13:30:00 Uhr %s 5 Tage`
 
-                Das Ergebnis ist **%s um 13:30 Uhr**.
+                Das Ergebnis ist `%s um 13:30 Uhr`.
 
                 # Was ist zu beachten?
 
                 - Gerechnet wird in der für Prosuna eingestellten Zeitzone.
                 - Tage sind Kalendertage. Wochenenden und Feiertage werden mitgezählt. Eine Woche entspricht sieben Tagen.
                 - Bei `0` bleibt der Ausgangszeitpunkt gleich. Eine negative Anzahl kehrt die Rechenrichtung um.
-                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Das gilt auch für den 29. Februar beim Rechnen mit Jahren.
+                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Das gilt auch für den `29. Februar` beim Rechnen mit Jahren.
                 - Die Uhrzeit bleibt nach Möglichkeit gleich. Wird die berechnete Zieluhrzeit bei einer Zeitumstellung übersprungen, wird sie um die übersprungene Zeit nach vorn verschoben. Beispiel für die Zeitzone Berlin: %s
-                - Ein Kalendertag entspricht bei einer Zeitumstellung beispielsweise 23 oder 25 tatsächlich vergangenen Stunden.
+                - Ein Kalendertag entspricht bei einer Zeitumstellung beispielsweise `23` oder `25` tatsächlich vergangenen Stunden.
                 - Durch solche Anpassungen erhalten Sie beim anschließenden Zurückrechnen nicht immer den Ausgangszeitpunkt.
-                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
+                - Liegt das Ergebnis außerhalb der Jahre `1` bis `9999`, erhalten Sie eine Fehlermeldung.
                 """.formatted(
                 getLabel(), resultDirection, relativePosition, resultDirection, relativePosition,
                 getLabel(), operation, exampleResult, daylightSavingExample

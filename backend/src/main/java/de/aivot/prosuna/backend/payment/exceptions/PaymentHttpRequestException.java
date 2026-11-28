@@ -6,7 +6,7 @@ public class PaymentHttpRequestException extends PaymentException {
     public PaymentHttpRequestException(Throwable throwable, PaymentProviderEntity paymentProviderEntity, String requestBody) {
         super(
                 throwable,
-                "Failed to send request for payment provider %s (%s). Request body was %s",
+                "Die Anfrage an den Zahlungsanbieter %s (%s) konnte nicht gesendet werden. Anfragedaten: %s",
                 paymentProviderEntity.getName(),
                 paymentProviderEntity.getKey(),
                 requestBody
@@ -15,7 +15,7 @@ public class PaymentHttpRequestException extends PaymentException {
 
     public PaymentHttpRequestException(int status, PaymentProviderEntity paymentProviderEntity, String requestBody, String responseBody) {
         super(
-                "Failed to send request for payment provider %s (%s). Endpoint returned status %d Request body was %s. Response body was %s",
+                "Die Anfrage an den Zahlungsanbieter %s (%s) ist fehlgeschlagen. HTTP-Statuscode: %d. Anfragedaten: %s. Antwortdaten: %s",
                 paymentProviderEntity.getName(),
                 paymentProviderEntity.getKey(),
                 status,

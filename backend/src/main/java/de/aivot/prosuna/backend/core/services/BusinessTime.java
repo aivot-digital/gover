@@ -44,7 +44,7 @@ public final class BusinessTime {
         // ZonedDateTime silently normalize it into the next valid hour.
         if (validOffsets.isEmpty()) {
             throw new DateTimeException(
-                    "Local date-time %s does not exist in timezone %s"
+                    "Der lokale Zeitpunkt %s existiert in der Zeitzone %s nicht."
                             .formatted(localDateTime, zoneId)
             );
         }

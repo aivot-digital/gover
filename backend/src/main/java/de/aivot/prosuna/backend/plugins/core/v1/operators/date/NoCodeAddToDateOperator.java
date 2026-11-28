@@ -48,13 +48,13 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
         return """
                 # Wofür verwenden Sie diese Funktion?
 
-                Mit „Zum Datum hinzufügen“ berechnen Sie ein späteres Datum, beispielsweise das Ende einer Frist.
+                Mit **„Zum Datum hinzufügen“** berechnen Sie ein späteres Datum, beispielsweise das Ende einer Frist.
 
                 # Welche Werte werden benötigt?
 
-                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können das Datum selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Für die eigene Eingabe wählen Sie unter „Datumsgenauigkeit“ Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Es gibt keine festen Auswahlwerte.
+                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können das Datum selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Für die eigene Eingabe wählen Sie unter **„Datumsgenauigkeit“** Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Es gibt keine festen Auswahlwerte.
                 - **Anzahl:** Geben Sie eine ganze Zahl ein, beispielsweise `5`. Es gibt keine festen Auswahlwerte. Sie können die Anzahl auch aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
-                - **Einheit:** Wählen Sie Tage, Wochen, Monate oder Jahre. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
+                - **Einheit:** Wählen Sie **„Tage“**, **„Wochen“**, **„Monate“** oder **„Jahre“**. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über **„Andere Wertquelle verwenden …“** können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
 
                 # Welches Ergebnis erhalten Sie?
 
@@ -64,28 +64,28 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
 
                 # Beispiel im No-Code-Editor
 
-                Sie möchten das Datum ermitteln, das fünf Tage nach dem 15.08.2026 liegt.
+                Sie möchten das Datum ermitteln, das fünf Tage nach dem `15.08.2026` liegt.
 
-                1. Wählen Sie die Funktion „Zum Datum hinzufügen“.
-                2. Wählen Sie für „Ausgangsdatum“ die Option „Wert selbst festlegen“ und geben Sie `15.08.2026` ein.
-                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `5` ein.
-                4. Wählen Sie für „Einheit“ die Option „Tage“.
+                1. Wählen Sie die Funktion **„Zum Datum hinzufügen“**.
+                2. Wählen Sie für **„Ausgangsdatum“** die Option **„Wert selbst festlegen“** und geben Sie `15.08.2026` ein.
+                3. Wählen Sie für **„Anzahl“** die Option **„Wert selbst festlegen“** und geben Sie `5` ein.
+                4. Wählen Sie für **„Einheit“** die Option **„Tage“**.
 
                 Der fertige Ausdruck liest sich so:
 
-                **15.08.2026 plus 5 Tage**
+                `15.08.2026 plus 5 Tage`
 
-                Das Ergebnis ist **20.08.2026**.
+                Das Ergebnis ist `20.08.2026`.
 
                 # Was ist zu beachten?
 
                 - Tage sind Kalendertage. Wochenenden und Feiertage werden mitgezählt. Eine Woche entspricht sieben Tagen.
                 - Bei der Anzahl `0` bleibt das Datum gleich. Eine negative Anzahl kehrt die Rechenrichtung um: Mit `-5` erhalten Sie ein früheres Datum.
-                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: 31.01.2026 plus 1 Monat ergibt 28.02.2026.
-                - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 plus 1 Jahr ergibt 28.02.2025.
+                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: `31.01.2026 plus 1 Monat` ergibt `28.02.2026`.
+                - Dasselbe gilt für Schaltjahre. Beispiel: `29.02.2024 plus 1 Jahr` ergibt `28.02.2025`.
                 - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
                 - Enthält das Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden.
-                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
+                - Liegt das Ergebnis außerhalb der Jahre `1` bis `9999`, erhalten Sie eine Fehlermeldung.
                 """;
     }
 

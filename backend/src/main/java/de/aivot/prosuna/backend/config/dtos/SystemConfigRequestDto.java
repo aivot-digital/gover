@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record SystemConfigRequestDto(
         @Nonnull
-        @NotNull(message = "Der Wert darf nicht null sein.")
+        @NotNull(message = "Der Wert muss angegeben werden.")
         String value,
         @Nullable
         Boolean changeConfirmed

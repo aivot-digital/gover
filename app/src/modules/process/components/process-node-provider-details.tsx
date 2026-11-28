@@ -12,6 +12,11 @@ import {
     DialogContent,
     Stack,
     type SxProps,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableRow,
     type Theme,
     Typography
 } from '@mui/material';
@@ -37,6 +42,7 @@ import {type PluginDTO, PluginsApiService} from '../../../services/plugins-api-s
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {ProcessNodeOutputTypeDialog} from './process-node-output-type-dialog';
 import {ProcessNodeProviderBadges} from './process-node-provider-badges';
+import {TechnicalInformationSection} from '../../../components/technical-information-section/technical-information-section';
 
 const CORE_PLUGIN_KEY = 'de.aivot.core';
 
@@ -62,17 +68,19 @@ interface ProcessNodeProviderDetailsContentProps {
     ports?: ProcessNodePort[];
     provider: ProcessNodeProvider;
     showDescription?: boolean;
+    headingBaseLevel?: 3 | 4;
     sx?: SxProps<Theme>;
 }
 
 interface ProcessNodeProviderDetailsSectionProps {
     title: string;
+    headingBaseLevel: 3 | 4;
     children: ReactNode;
 }
 
 interface ProcessNodeProviderDetailsRowProps {
     label: string;
-    value: string;
+    value: ReactNode;
     monospace?: boolean;
 }
 
@@ -220,6 +228,7 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
         provider,
         ports,
         showDescription = false,
+        headingBaseLevel = 3,
         sx,
     } = props;
     const canReadPlugins = useHasSystemPermission(Permission.PLUGIN_READ);
@@ -272,136 +281,138 @@ export function ProcessNodeProviderDetailsContent(props: ProcessNodeProviderDeta
         null;
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2.5,
-                ...sx,
-            }}
-        >
-            {
-                showDescription &&
-                <MarkdownContent
-                    markdown={provider.description}
-                    sx={{
-                        typography: 'body2',
-                        color: 'text.secondary',
-                    }}
-                />
-            }
-
-            {
-                isDeprecated &&
-                <Alert severity="warning">
+        <Box sx={sx}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 2.5}}>
+                {
+                    showDescription &&
                     <MarkdownContent
-                        markdown={provider.deprecationNotice}
-                        sx={{typography: 'body2'}}
+                        markdown={provider.description}
+                        headingBaseLevel={headingBaseLevel}
                     />
-                </Alert>
-            }
+                }
 
-            <Stack
-                direction="row"
-                spacing={1}
-                useFlexGap
-                sx={{
-                    justifyContent: 'flex-start',
-                    flexWrap: 'wrap',
-                }}
-            >
                 {
-                    provider
-                        .executionTypes
-                        .map((executionType) => {
-                            const Icon = ProcessNodeExecutionTypeIcons[executionType];
-                            return (
-                                <PsChip
-                                    key={executionType}
-                                    mode="soft"
-                                    label={ProcessNodeExecutionTypeLabels[executionType]}
-                                    color={ProcessNodeExecutionTypeColors[executionType] as any}
-                                    icon={<Icon fontSize="small" />}
+                    isDeprecated &&
+                    <Alert severity="warning">
+                        <MarkdownContent
+                            markdown={provider.deprecationNotice}
+                            headingBaseLevel={headingBaseLevel}
+                            sx={{typography: 'body2'}}
+                        />
+                    </Alert>
+                }
+
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{
+                        justifyContent: 'flex-start',
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    {
+                        provider
+                            .executionTypes
+                            .map((executionType) => {
+                                const Icon = ProcessNodeExecutionTypeIcons[executionType];
+                                return (
+                                    <PsChip
+                                        key={executionType}
+                                        mode="soft"
+                                        label={ProcessNodeExecutionTypeLabels[executionType]}
+                                        color={ProcessNodeExecutionTypeColors[executionType] as any}
+                                        icon={<Icon fontSize="small" />}
+                                    />
+                                )
+                            })
+                    }
+                </Stack>
+
+                <DocumentationLink
+                    url={provider.documentationUrl}
+                    sx={{alignSelf: 'flex-start'}}
+                />
+
+                <ProcessNodeProviderDetailsSection title="Ausgangsports" headingBaseLevel={headingBaseLevel}>
+                    {
+                        ports == null ?
+                            <Typography variant="body2" color="text.secondary">
+                                Die Ausgangsports hängen von der Konfiguration des Prozesselements ab.
+                            </Typography> : ports.length > 0 ?
+                            ports.map((port) => (
+                                <ProcessNodeProviderDetailsListRow
+                                    key={port.key}
+                                    primary={port.label}
+                                    secondary={port.description}
                                 />
-                            )
-                        })
-                }
-            </Stack>
-
-            <DocumentationLink
-                url={provider.documentationUrl}
-                sx={{alignSelf: 'flex-start'}}
-            />
-
-            <ProcessNodeProviderDetailsSection title="Ausgangsports">
-                {
-                    ports == null ?
-                        <Typography variant="body2" color="text.secondary">
-                            Die Ausgangsports hängen von der Konfiguration des Prozesselements ab.
-                        </Typography> : ports.length > 0 ?
-                        ports.map((port) => (
-                            <ProcessNodeProviderDetailsListRow
-                                key={port.key}
-                                primary={port.label}
-                                secondary={port.description}
-                            />
-                        )) :
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            Dieses Prozesselement besitzt keine Ausgangsports.
-                        </Typography>
-                }
-            </ProcessNodeProviderDetailsSection>
-
-            <ProcessNodeProviderDetailsSection title="Ausgangsdaten">
-                {
-                    provider.outputs.length > 0 ?
-                        provider.outputs.map((output) => (
-                            <ProcessNodeOutputCard
-                                key={output.key}
-                                label={output.label}
-                                outputKey={output.key}
-                                description={output.description}
-                                onShowTypeDefinition={() => {
-                                    setTypeDialogOutput(output);
-                                }}
-                            />
-                        )) :
-                        <Typography variant="body2" sx={{
-                            color: "text.secondary"
-                        }}>
-                            Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
-                        </Typography>
-                }
-            </ProcessNodeProviderDetailsSection>
-
-            <ProcessNodeProviderDetailsSection title="Technische Informationen">
-                <ProcessNodeProviderDetailsRow
-                    label="Version der Elementdefinition"
-                    value={provider.componentVersion}
-                    monospace
-                />
-                <ProcessNodeProviderDetailsRow
-                    label="Eindeutiger Schlüssel"
-                    value={provider.key}
-                    monospace
-                />
-                <ProcessNodeProviderDetailsSection title="Herkunft">
-                    <ProcessNodePluginReference
-                        pluginKey={provider.parentPluginKey}
-                        canReadPlugins={canReadPlugins}
-                        loadState={pluginDetails}
-                        plugin={loadedPlugin}
-                        onOpen={() => {
-                            setPluginInfoDialogOpen(true);
-                        }}
-                        onRetry={() => {
-                            setPluginReloadCounter((value) => value + 1);
-                        }}
-                    />
+                            )) :
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
+                                Dieses Prozesselement besitzt keine Ausgangsports.
+                            </Typography>
+                    }
                 </ProcessNodeProviderDetailsSection>
-            </ProcessNodeProviderDetailsSection>
+
+                <ProcessNodeProviderDetailsSection title="Ausgangsdaten" headingBaseLevel={headingBaseLevel}>
+                    {
+                        provider.outputs.length > 0 ?
+                            provider.outputs.map((output) => (
+                                <ProcessNodeOutputCard
+                                    key={output.key}
+                                    label={output.label}
+                                    outputKey={output.key}
+                                    description={output.description}
+                                    onShowTypeDefinition={() => {
+                                        setTypeDialogOutput(output);
+                                    }}
+                                />
+                            )) :
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
+                                Dieses Prozesselement erzeugt keine zusätzlichen Ausgangsdaten.
+                            </Typography>
+                    }
+                </ProcessNodeProviderDetailsSection>
+            </Box>
+
+            <TechnicalInformationSection headingBaseLevel={headingBaseLevel}>
+                <TableContainer>
+                    <Table sx={{
+                        tableLayout: 'fixed',
+                        '& .MuiTableCell-root': {verticalAlign: 'top', overflowWrap: 'anywhere'},
+                    }}>
+                        <TableBody>
+                            <ProcessNodeProviderDetailsRow
+                                label="Version der Elementdefinition"
+                                value={provider.componentVersion}
+                                monospace
+                            />
+                            <ProcessNodeProviderDetailsRow
+                                label="Eindeutiger Schlüssel"
+                                value={provider.key}
+                                monospace
+                            />
+                            <ProcessNodeProviderDetailsRow label="Herkunft" value={
+                                <ProcessNodePluginReference
+                                    pluginKey={provider.parentPluginKey}
+                                    canReadPlugins={canReadPlugins}
+                                    loadState={pluginDetails}
+                                    plugin={loadedPlugin}
+                                    onOpen={() => {
+                                        setPluginInfoDialogOpen(true);
+                                    }}
+                                    onRetry={() => {
+                                        setPluginReloadCounter((value) => value + 1);
+                                    }}
+                                />
+                            }/>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </TechnicalInformationSection>
 
             <PluginInfoDialog
                 open={pluginInfoDialogOpen}
@@ -426,10 +437,12 @@ function ProcessNodeProviderDetailsSection(props: ProcessNodeProviderDetailsSect
     return (
         <Box>
             <Typography
-                variant="subtitle2"
+                component={`h${props.headingBaseLevel}`}
                 sx={{
-                    mb: 1.25,
-                    fontWeight: 700,
+                    mb: 1,
+                    fontSize: '1.125rem',
+                    fontWeight: 600,
+                    lineHeight: 1.5,
                 }}
             >
                 {props.title}
@@ -449,27 +462,18 @@ function ProcessNodeProviderDetailsSection(props: ProcessNodeProviderDetailsSect
 
 function ProcessNodeProviderDetailsRow(props: ProcessNodeProviderDetailsRowProps): ReactNode {
     return (
-        <Box
-            sx={{
-                py: 0.25,
-            }}
-        >
-            <Typography variant="caption" sx={{
-                color: "text.secondary"
-            }}>
+        <TableRow>
+            <TableCell component="th" scope="row" sx={{width: '35%'}}>
                 {props.label}
-            </Typography>
-            <Typography
-                variant="body2"
+            </TableCell>
+            <TableCell
                 sx={{
-                    mt: 0.25,
                     fontFamily: props.monospace ? 'monospace' : undefined,
-                    overflowWrap: 'anywhere',
                 }}
             >
                 {props.value}
-            </Typography>
-        </Box>
+            </TableCell>
+        </TableRow>
     );
 }
 

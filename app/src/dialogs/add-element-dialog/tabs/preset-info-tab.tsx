@@ -60,11 +60,12 @@ export function PresetInfoTab({
                     name: preset.title,
                 }, true));
             })
-            .catch(() => console.error('Fehler beim Laden der Preset-Version'));
+            .catch(() => console.error('Die Version der Vorlage konnte nicht geladen werden.'));
     };
 
     return (
         <SelectionDetailsPanel
+            contentKey={preset.key}
             icon={<MenuOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
             label="Vorlage"
             title={preset.title}

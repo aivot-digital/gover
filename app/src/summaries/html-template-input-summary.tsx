@@ -15,7 +15,7 @@ function buildSummaryValue(value: HtmlTemplateInputValue | null | undefined): st
         .filter((slotValue) => slotValue != null && slotValue.trim().length > 0)
         .length;
 
-    return `${filledSlotCount} Slot${filledSlotCount === 1 ? '' : 's'} ausgefüllt`;
+    return `${filledSlotCount} Anpassung${filledSlotCount === 1 ? '' : 'en'} hinterlegt`;
 }
 
 export function HtmlTemplateInputSummary(

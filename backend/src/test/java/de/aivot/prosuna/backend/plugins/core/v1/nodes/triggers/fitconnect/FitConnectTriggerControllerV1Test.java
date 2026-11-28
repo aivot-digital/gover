@@ -20,6 +20,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
@@ -134,6 +136,9 @@ class FitConnectTriggerControllerV1Test {
         ));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die FIT-Connect-Benachrichtigung enthält kein gültiges JSON.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertNotNull(exception.getCause());
         verify(fixture.authenticationService()).authenticate(
                 eq("secret-key"),
                 eq(AUTHENTICATION),
@@ -158,6 +163,7 @@ class FitConnectTriggerControllerV1Test {
         ));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Die FIT-Connect-Benachrichtigung enthält eine Einreichung für einen anderen Zustellpunkt.", exception.getTitle());
         verify(fixture.importService(), never()).importSubmission(any(), any(), any(), any(), any());
     }
 
@@ -181,6 +187,7 @@ class FitConnectTriggerControllerV1Test {
         ));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Erwartet wird eine FIT-Connect-Benachrichtigung über neue Einreichungen.", exception.getTitle());
         verify(fixture.importService(), never()).importSubmission(any(), any(), any(), any(), any());
     }
 

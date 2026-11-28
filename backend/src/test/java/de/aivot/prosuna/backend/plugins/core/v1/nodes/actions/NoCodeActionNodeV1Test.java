@@ -1,6 +1,8 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.prosuna.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
@@ -10,9 +12,12 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.NoCodeActionNodeV1;
+import de.aivot.prosuna.backend.plugins.core.v1.nodes.flow.DataTypeValidationControlNodeV1;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -21,6 +26,8 @@ import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionSummaryContext;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.utils.ApplicationTimeZone;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NoCodeInputElementItem;
@@ -39,8 +46,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,6 +101,26 @@ class NoCodeActionNodeV1Test {
                 variablesOutput.typeDefinition()
         );
         assertEquals("number", variableCountOutput.typeDefinition());
+    }
+
+    @Test
+    void sharedDataTypesUseTheSameLabelsAsDataValidation() throws Exception {
+        var context = new ProcessNodeDefinitionConfigurationLayoutContext(
+                null, new ProcessEntity(), new ProcessVersionEntity(), processNode()
+        );
+        var conversionLabels = node.getConfigurationLayout(context)
+                .findChild("targetType", SelectInputElement.class).orElseThrow().getOptions().stream()
+                .collect(Collectors.toMap(SelectInputElementOption::getValue, SelectInputElementOption::getLabel));
+        var validationLabels = new DataTypeValidationControlNodeV1().getConfigurationLayout(context)
+                .findChild("expectedType", SelectInputElement.class).orElseThrow().getOptions().stream()
+                .collect(Collectors.toMap(SelectInputElementOption::getValue, SelectInputElementOption::getLabel));
+
+        for (var expected : Map.of("string", "Text", "number", "Zahl", "boolean", "Ja/Nein").entrySet()) {
+            assertEquals(expected.getValue(), conversionLabels.get(expected.getKey()));
+            assertEquals(validationLabels.get(expected.getKey()), conversionLabels.get(expected.getKey()));
+        }
+        assertEquals("Beliebig (ohne Umwandlung)", conversionLabels.get("any"));
+        assertEquals("Beliebig (nur Vorhandensein)", validationLabels.get("any"));
     }
 
     @AfterEach
@@ -210,7 +239,64 @@ class NoCodeActionNodeV1Test {
                 ))
         );
 
-        assertTrue(ex.getMessage().contains("Wildcard"));
+        assertTrue(ex.getMessage().contains("Platzhalter"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("Berechnung 1"), ex.getMessage());
+    }
+
+    @Test
+    void summaryListsEveryWriteInOrderWithoutExposingValues() throws Exception {
+        var value = "Vertrauliche Angabe";
+        var result = init(
+                variable("result.first_value", new NoCodeStaticValue(value)),
+                variable("result.second_value", new NoCodeProcessDataReference("result.first_value")),
+                variable("result.second_value", new NoCodeProcessDataReference("result.second_value"))
+        );
+
+        assertEquals(Map.of("result", Map.of("first_value", value, "second_value", value)), result.getProcessData());
+        assertEquals(3, result.getNodeData().get("variableCount"));
+        var markdown = summary(result, "Ergebnis *bereitstellen*");
+
+        assertEquals(
+                "Die No-Code-Verarbeitung wurde abgeschlossen."
+                        + "\n\nGespeicherte Ergebnisse\n:   3"
+                        + "\n\n- Berechnung 1: result\\.first\\_value"
+                        + "\n\n- Berechnung 2: result\\.second\\_value"
+                        + "\n\n- Berechnung 3: result\\.second\\_value"
+                        + "\n\nKurzbeschreibung\n:   Ergebnis \\*bereitstellen\\*",
+                markdown
+        );
+        assertFalse(markdown.contains(value), markdown);
+    }
+
+    @Test
+    void summaryReportsZeroResultsWithoutClaimingDataChanges() throws Exception {
+        var result = init();
+
+        assertEquals(Map.of(), result.getProcessData());
+        assertEquals(0, result.getNodeData().get("variableCount"));
+        assertEquals(List.of(), result.getNodeData().get("variables"));
+        assertEquals(
+                "Die No-Code-Verarbeitung wurde abgeschlossen."
+                        + "\n\nGespeicherte Ergebnisse\n:   0",
+                summary(result, "")
+        );
+    }
+
+    @Test
+    void invalidNumberConversionNamesTheCalculationAndKeepsTheCause() {
+        var ex = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> init(variable("result.amount", "number", new NoCodeStaticValue("keine Zahl")))
+        );
+
+        assertTrue(ex.getMessage().contains("Berechnung 1"), ex.getMessage());
+        assertTrue(ex.getMessage().contains("„Zahl“"), ex.getMessage());
+        assertFalse(ex.getMessage().contains("NumberFormatException"), ex.getMessage());
+        Throwable rootCause = ex;
+        while (rootCause.getCause() != null) {
+            rootCause = rootCause.getCause();
+        }
+        assertInstanceOf(NumberFormatException.class, rootCause);
     }
 
     @Test
@@ -320,6 +406,19 @@ class NoCodeActionNodeV1Test {
                         configuration(variables)
                 ))
         );
+    }
+
+    private String summary(ProcessNodeExecutionResultTaskCompleted result, String description) {
+        var completedTask = task()
+                .setProcessData(result.getProcessData())
+                .setNodeData(result.getNodeData())
+                .setStatus(ProcessTaskStatus.Completed)
+                .setFinished(Instant.now());
+        return node.generateExecutionSummary(new ProcessNodeExecutionSummaryContext<>(
+                new NoCodeActionNodeV1.NoCodeActionNodeConfiguration(),
+                processNode().setDescription(description), processInstance(), completedTask,
+                null, null, null, result.getViaPort()
+        ));
     }
 
     private static NoCodeActionNodeV1.NoCodeActionNodeConfiguration configuration(NoCodeActionNodeV1.NoCodeActionNodeVariableConfiguration... variables) {

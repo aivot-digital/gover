@@ -33,21 +33,30 @@ public class NoCodeListContainsAllOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob eine Liste alle benötigten Werte enthält, beispielsweise alle erforderlichen Kategorien.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Die Liste, in der gesucht wird. **Gesuchte Werte:** Eine zweite Liste mit allen Werten, die enthalten sein sollen. Beide Listen können Sie selbst als JSON-Liste eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
+
+                - **Liste:** Die Liste, in der gesucht wird.
+                - **Gesuchte Werte:** Eine zweite Liste mit allen Werten, die enthalten sein sollen.
+
+                Beide Listen können Sie selbst als JSON-Liste eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn jeder gesuchte Wert vorkommt; andernfalls **Falsch**. Die erste Liste darf zusätzliche Werte enthalten.
+
+                `Wahr`, wenn jeder gesuchte Wert vorkommt; andernfalls `Falsch`. Die erste Liste darf zusätzliche Werte enthalten.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie in einer Bedingung **„Liste enthält alle Werte“**. Verwenden Sie für **Liste** die Variable „Ausgewählte Kategorien“ mit `["A", "B", "C"]` und für **Gesuchte Werte** die Variable „Erforderliche Kategorien“ mit `["A", "C"]`.
 
-                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ enthält alle Werte aus „Erforderliche Kategorien“`. Das Ergebnis ist **Wahr**.
+                1. Wählen Sie in einer Bedingung **„Liste enthält alle Werte“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Ausgewählte Kategorien“** mit `["A", "B", "C"]` und für **„Gesuchte Werte“** die Variable **„Erforderliche Kategorien“** mit `["A", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ enthält alle Werte aus „Erforderliche Kategorien“`. Das Ergebnis ist `Wahr`.
 
                 # Was ist zu beachten?
-                Die Reihenfolge ist unerheblich. Eine leere Liste gesuchter Werte ergibt **Wahr**. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Mehrfach gesuchte gleiche Werte müssen nicht mehrfach in der ersten Liste vorkommen. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
+
+                Die Reihenfolge ist unerheblich. Eine leere Liste gesuchter Werte ergibt `Wahr`. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Mehrfach gesuchte gleiche Werte müssen nicht mehrfach in der ersten Liste vorkommen. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 

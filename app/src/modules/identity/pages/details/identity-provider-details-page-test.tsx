@@ -52,7 +52,7 @@ export function IdentityProviderDetailsPageTest() {
                             setIdentityData(res[identityProvider.key]);
                         } else {
                             const err: ApiError = {
-                                message: 'Die Identität wurde nicht gesetzt',
+                                message: 'Nach der Anmeldung wurde keine Identität für diesen Identitätsanbieter übermittelt.',
                                 details: `In der Map der Identitäten ist keine Identität mit dem Provider-Key ${identityProvider.key} vorhanden.`,
                                 displayableToUser: true,
                                 status: 404,
@@ -71,7 +71,7 @@ export function IdentityProviderDetailsPageTest() {
                 break;
             default:
             case IdentityResultState.UnknownError:
-                setIdentityError('Unbekannter Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+                setIdentityError('Beim Testen des Identitätsanbieters ist ein Fehler aufgetreten. Bitte starten Sie den Test erneut.');
                 break;
         }
     }, [urlSearchParams, identityProvider]);
@@ -105,7 +105,7 @@ export function IdentityProviderDetailsPageTest() {
             </Typography>
 
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Um die korrekte Funktion und Erscheinung eines Kontos sicherzustellen, können Sie hier einen Test durchführen.
+                Testen Sie hier die Anmeldung über diesen Identitätsanbieter und die Übermittlung der Identitätsangaben.
                 Nach einem erfolgreichen Test werden Sie auf diese Seite zurückgeleitet und können die Daten einsehen, die an Prosuna übermittelt wurden.
             </Typography>
 

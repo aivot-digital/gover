@@ -2,6 +2,7 @@ package de.aivot.prosuna.backend.mail.services;
 
 import org.junit.jupiter.api.Test;
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.AddressException;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MailRecipientAddressTest {
@@ -22,6 +23,7 @@ class MailRecipientAddressTest {
         assertThrows(MessagingException.class, () -> MailService.parseRecipientAddresses("a@example.org\r\nBcc: b@example.org"));
     }
     @Test void reportsInvalidAddressesThroughTheMailExceptionContract() {
-        assertThrows(MessagingException.class, () -> MailService.parseRecipientAddresses("person"));
+        var error = assertThrows(AddressException.class, () -> MailService.parseRecipientAddresses("person"));
+        assertInstanceOf(IllegalArgumentException.class, error.getCause());
     }
 }

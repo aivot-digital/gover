@@ -31,7 +31,7 @@ public class SemiAutomaticMessageConfig {
                 .findChild(LayoutConfig.EXECUTION_TYPE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(executionType -> executionType.setOptions(List.of(
                         SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_AUTOMATIC, "Automatisch versenden"),
-                        SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_MANUAL, "Manuell bearbeiten und versenden")
+                        SelectInputElementOption.of(LayoutConfig.EXECUTION_TYPE_MANUAL, "Vor Versand prüfen und bearbeiten")
                 )));
 
         layout
@@ -135,8 +135,8 @@ public class SemiAutomaticMessageConfig {
                 type = ElementType.Select,
                 properties = {
                         @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie zwischen automatischem Versand und teilautomatisierter Ausführung. Bei teilautomatisierter Ausführung wird die Nachricht anhand der Nachrichtenbausteine vorbereitet und vor dem Versand durch eine Mitarbeiter:in geprüft und bei Bedarf bearbeitet."),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenversand"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Beim automatischen Versand wird die vorbereitete Nachricht ohne manuelle Bearbeitung versendet. Andernfalls erhält eine zuständige Person eine Mitarbeitendenaufgabe, prüft Betreff und Nachricht und kann sie vor dem Versand ändern."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -178,7 +178,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Betreff der Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für den Betreff. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Formulieren Sie den Betreff der Nachricht. Angaben aus dem Vorgang können über Variablen eingefügt werden."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -199,7 +199,7 @@ public class SemiAutomaticMessageConfig {
                 },
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Nachrichtenbaustein für die Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Formulieren Sie die Nachricht. Angaben aus dem Vorgang können über Variablen eingefügt werden."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -211,7 +211,7 @@ public class SemiAutomaticMessageConfig {
                 allowedInputModes = InputMode.Literal,
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand per E-Mail ergänzt wird."),
                         @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
                         @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
                 }
@@ -244,8 +244,8 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für den Betreff"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung des bearbeitbaren Betreffs. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorbelegter Betreff"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Betreff wird in der Mitarbeitendenaufgabe vorbereitet und kann dort geändert werden. Angaben aus dem Vorgang können über Variablen eingefügt werden."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -265,8 +265,8 @@ public class SemiAutomaticMessageConfig {
                         InputMode.LowCode
                 },
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtenbaustein für die Nachricht"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Vorbelegung der bearbeitbaren Nachricht. Unterstützt Template-Tags mit Vorgangsdaten."),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "Vorbelegte Nachricht"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Diese Nachricht wird in der Mitarbeitendenaufgabe vorbereitet und kann dort geändert werden. Angaben aus dem Vorgang können über Variablen eingefügt werden."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 }
         )
@@ -278,7 +278,7 @@ public class SemiAutomaticMessageConfig {
                 allowedInputModes = InputMode.Literal,
                 properties = {
                         @ElementPOJOBindingProperty(key = "label", strValue = "Organisationseinheit für die Signatur"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand an die Nachricht angehängt wird."),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Organisationseinheit, deren Standard-E-Mail-Signatur beim Versand per E-Mail ergänzt wird."),
                         @ElementPOJOBindingProperty(key = "placeholder", strValue = "Keine Organisationseinheit ausgewählt"),
                         @ElementPOJOBindingProperty(key = "dialogTitle", strValue = "Organisationseinheit für die Signatur auswählen")
                 }
@@ -290,7 +290,7 @@ public class SemiAutomaticMessageConfig {
          */
         @InputElementPOJOBinding(id = ASSIGNMENT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der die Nachricht bearbeiten und versenden darf."),
+                @ElementPOJOBindingProperty(key = "text", strValue = "Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu."),
                 @ElementPOJOBindingProperty(key = "placeholder", strValue = "Organisationseinheit, Team oder Mitarbeiter:in suchen"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })

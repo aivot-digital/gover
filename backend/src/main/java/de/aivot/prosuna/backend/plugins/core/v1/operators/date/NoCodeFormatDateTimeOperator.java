@@ -33,28 +33,33 @@ public class NoCodeFormatDateTimeOperator extends NoCodeFormatDateOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Geben Sie einen Zeitpunkt als Text aus, zum Beispiel Datum und Uhrzeit eines Termins in einer Nachricht.
 
                 # Welche Werte werden benötigt?
+
                 - **Zeitpunkt:** Der Zeitpunkt, den Sie ausgeben möchten.
                 - **Ausgabeformat:** Die gewünschte Darstellung.
 
                 Den Zeitpunkt können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für das selbst festgelegte Ausgabeformat wählen Sie eine von drei Vorgaben: nur das Datum, Datum und Uhrzeit oder Datum und Uhrzeit mit Zeitverschiebung. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
 
-                Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein darüber geliefertes Format muss ein gültiges Formatmuster sein, etwa **dd.MM.yyyy HH:mm**.
+                Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein darüber geliefertes Format muss ein gültiges Formatmuster sein, etwa `dd.MM.yyyy HH:mm`.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Einen Text. Der Zeitpunkt wird dafür in der Zeitzone der Anwendung dargestellt; der ursprüngliche Wert bleibt unverändert.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für einen Textwert **„Zeitpunkt formatieren“**.
-                2. Wählen Sie als **„Zeitpunkt“** einen Termin aus einer anderen Wertquelle, der dem **22.11.2026, 09:30:00 Uhr** in der Zeitzone **Europe/Berlin** entspricht.
+                2. Wählen Sie als **„Zeitpunkt“** einen Termin aus einer anderen Wertquelle, der dem `22.11.2026, 09:30:00 Uhr` in der Zeitzone `Europe/Berlin` entspricht.
                 3. Wählen Sie als **„Ausgabeformat“** **„Datum und Uhrzeit“**.
 
-                In dieser Zeitzone erhalten Sie den Text **„22.11.2026 09:30“**. Zugeklappt lesen Sie: **„„Termin“ als Text im Format „Datum und Uhrzeit““**, wenn die gewählte Wertquelle **„Termin“** heißt.
+                In dieser Zeitzone erhalten Sie den Text `22.11.2026 09:30`. Zugeklappt lesen Sie: `„Termin“ als Text im Format „Datum und Uhrzeit“`, wenn die gewählte Wertquelle **„Termin“** heißt.
 
                 # Was ist zu beachten?
-                Die Zeitzone der Anwendung kann zu einem anderen Datum oder einer anderen Uhrzeit führen als in der ursprünglichen Angabe. Das Format **„Datum und Uhrzeit mit Zeitverschiebung“** zeigt zusätzlich die zu diesem Zeitpunkt geltende Verschiebung gegenüber der Weltzeit, zum Beispiel **+01:00**.
+
+                Die Zeitzone der Anwendung kann zu einem anderen Datum oder einer anderen Uhrzeit führen als in der ursprünglichen Angabe. Das Format **„Datum und Uhrzeit mit Zeitverschiebung“** zeigt zusätzlich die zu diesem Zeitpunkt geltende Verschiebung gegenüber der Weltzeit, zum Beispiel `+01:00`.
 
                 Das Ergebnis ist Text. Für weitere Berechnungen oder Zeitpunktvergleiche verwenden Sie den ursprünglichen Zeitpunkt.
                 """;

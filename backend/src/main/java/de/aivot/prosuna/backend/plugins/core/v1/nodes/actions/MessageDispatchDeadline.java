@@ -7,9 +7,9 @@ import de.aivot.prosuna.backend.process.models.ProcessNodePort;
 final class MessageDispatchDeadline {
     static final ProcessNodeDeadlineDefinition DEFINITION = new ProcessNodeDeadlineDefinition(
             "messageDispatch", "Versand der Nachricht",
-            "Zeit für die Vorbereitung und den Versand der Nachricht.",
-            new ProcessNodePort("message_dispatch_overdue", "Fristüberschreitung: Nachrichtenversand",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für den Nachrichtenversand beendet wurde."));
+            "Zeit ab Zuweisung der Mitarbeitendenaufgabe für die Vorbereitung und den Versand der Nachricht.",
+            new ProcessNodePort("message_dispatch_overdue", "Versandfrist überschritten",
+                    "Der Vorgang wird hier fortgesetzt, wenn die Versandfrist überschritten und die Mitarbeitendenaufgabe automatisch beendet wurde."));
 
     private MessageDispatchDeadline() {
     }

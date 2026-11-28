@@ -66,7 +66,7 @@ export function CustomerShellError() {
                         actionDashboard={true}
                     >
                         Sie haben keine Berechtigung, auf diese Seite zuzugreifen.
-                        Bitte wenden Sie sich an Ihre Administratorin oder Ihren Administrator, wenn Sie glauben, dass es sich um einen Fehler handelt.
+                        Wenn Sie Zugriff benötigen, wenden Sie sich an die verantwortliche Stelle.
                     </ErrorDetails>
                 }
 
@@ -97,7 +97,7 @@ export function CustomerShellError() {
                         actionDashboard={true}
                     >
                         {
-                            error.message || 'Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.'
+                            error.message || 'Die Seite konnte nicht geladen werden. Bitte versuchen Sie es erneut.'
                         }
                     </ErrorDetails>
                 }

@@ -25,20 +25,20 @@ public class UserEntity implements LockVersioned {
 
     @Nullable
     @Column(length = 255)
-    @NotNull(message = "Die E-Mail-Adresse darf nicht null sein.")
+    @NotNull(message = "Die E-Mail-Adresse muss angegeben werden.")
     @Email(message = "Die E-Mail-Adresse muss gültig sein.")
     @Size(min = 8, max = 255, message = "Die E-Mail-Adresse muss zwischen 8 und 255 Zeichen lang sein.")
     private String email;
 
     @Nullable
     @Column(length = 255)
-    @NotNull(message = "Der Vorname darf nicht null sein.")
+    @NotNull(message = "Der Vorname muss angegeben werden.")
     @Size(min = 1, max = 255, message = "Der Vorname muss zwischen 1 und 255 Zeichen lang sein.")
     private String firstName;
 
     @Nullable
     @Column(length = 255)
-    @NotNull(message = "Der Nachname darf nicht null sein.")
+    @NotNull(message = "Der Nachname muss angegeben werden.")
     @Size(min = 1, max = 255, message = "Der Nachname muss zwischen 1 und 255 Zeichen lang sein.")
     private String lastName;
 

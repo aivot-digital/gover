@@ -5,6 +5,11 @@ import de.aivot.prosuna.backend.asset.entities.AssetEntity;
 import de.aivot.prosuna.backend.asset.repositories.AssetRepository;
 import de.aivot.prosuna.backend.av.services.AVService;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
+import de.aivot.prosuna.backend.plugins.core.v1.storage.LocalDiskStorageProviderDefinitionPropertiesV1;
+import de.aivot.prosuna.backend.plugins.core.v1.storage.LocalDiskStorageProviderDefinitionV1;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.prosuna.backend.storage.entities.StorageProviderEntity;
 import de.aivot.prosuna.backend.storage.enums.StorageProviderType;
@@ -15,6 +20,7 @@ import de.aivot.prosuna.backend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.prosuna.backend.storage.repositories.StorageProviderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,6 +34,7 @@ import org.springframework.http.HttpStatus;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,7 +42,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -71,6 +80,27 @@ class StorageServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void localDiskFailurePreservesSafeReasonInApiAndTechnicalEvent(@TempDir Path root) throws Exception {
+        var provider = createWritableProvider();
+        var localDisk = new LocalDiskStorageProviderDefinitionV1(new LocalDiskStorageProviderDefinitionPropertiesV1(), storageProviderRepository);
+        var config = new LocalDiskStorageProviderDefinitionV1.Config();
+        config.root = root.toString();
+        when(storageProviderRepository.findById(1)).thenReturn(Optional.of(provider));
+        when(storageProviderDefinitionService.retrieveProviderDefinition("test", 1)).thenReturn(Optional.of(localDisk));
+        when(storageProviderConfigurationService.mapToConfig(provider, localDisk)).thenReturn(config);
+
+        var error = assertThrows(ResponseException.class, () -> storageService.getDocumentContent(1, "/report%25.txt"));
+
+        var reason = "Fehler beim Lesen der Datei „/report%.txt“. Die Datei oder das Verzeichnis wurde nicht gefunden.";
+        assertEquals(reason, error.getTitle());
+        assertEquals(reason, error.getDetails());
+        var history = mock(ProcessInstanceHistoryEventRepository.class);
+        var failure = new ProcessNodeExecutionExceptionUnknown(error, "Die Anlage konnte nicht geladen werden.");
+        new ProcessNodeExecutionLogger(42L, 9L, null, null, history).logException(failure);
+        verify(history).save(argThat(event -> event.getTechnical() && reason.equals(event.getDetails().get("causeMessage"))));
     }
 
     @Test

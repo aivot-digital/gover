@@ -53,7 +53,7 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
 
         var targetUser = userService
                 .retrieve(entity.getUserId())
-                .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Die Mitarbeiter:in wurde nicht gefunden."));
+                .orElseThrow(() -> new ResponseException(HttpStatus.NOT_FOUND, "Das ausgewählte Konto wurde nicht gefunden."));
 
         var targetDepartment = departmentRepository
                 .findById(entity.getDepartmentId())
@@ -66,7 +66,7 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
                 .build();
 
         if (exists(spec)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Diese Mitarbeiter:in ist bereits Teil der Organisationseinheit.");
+            throw new ResponseException(HttpStatus.CONFLICT, "Die ausgewählte Person ist bereits Mitglied der Organisationseinheit.");
         }
 
         return repository.save(entity);

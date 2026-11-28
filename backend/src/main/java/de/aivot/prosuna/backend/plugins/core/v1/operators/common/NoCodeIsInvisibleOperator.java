@@ -25,24 +25,29 @@ public class NoCodeIsInvisibleOperator extends NoCodeIsVisibleOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob ein Formularelement laut seinem berechneten Sichtbarkeitszustand nicht sichtbar ist. So kann eine weitere Bedingung auf dessen Sichtbarkeit aufbauen.
 
                 # Welche Werte werden benötigt?
-                Das Formularelement, dessen Sichtbarkeit geprüft wird. Bei „Formularelement“ werden die Formularelemente des Formulars beziehungsweise der UI-Definition zur Auswahl angeboten. Gespeichert wird die interne Kennung des gewählten Formularelements, nicht sein Inhalt. Über „Andere Wertquelle verwenden …“ kann die Kennung auch aus einer Wertquelle oder Funktion stammen.
+
+                - **Formularelement:** Das Formularelement, dessen Sichtbarkeit geprüft wird. Die Formularelemente des Formulars beziehungsweise der UI-Definition werden zur Auswahl angeboten. Gespeichert wird die interne Kennung des gewählten Formularelements, nicht sein Inhalt. Über **„Andere Wertquelle verwenden …“** kann die Kennung auch aus einer Wertquelle oder Funktion stammen.
 
                 # Welches Ergebnis erhalten Sie?
-                Ein Wahrheitswert: „Wahr“, wenn das Formularelement im berechneten Zustand nicht sichtbar ist, andernfalls „Falsch“.
+
+                Ein Wahrheitswert: `Wahr`, wenn das Formularelement im berechneten Zustand nicht sichtbar ist, andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Ist nicht sichtbar“ als Funktion für eine Bedingung.
-                2. Wählen Sie bei „Formularelement“ das Formularelement aus, dessen Sichtbarkeit geprüft werden soll, beispielsweise „Telefonnummer“.
 
-                Im fertigen Ausdruck sehen Sie den Namen „Telefonnummer“; gespeichert wird die interne Kennung des Formularelements. Ist dieses Formularelement nicht sichtbar, ergibt die Bedingung „Wahr“. Verwenden Sie das Ergebnis beispielsweise für einen zusätzlichen Hinweis.
+                1. Wählen Sie **„Ist nicht sichtbar“** als Funktion für eine Bedingung.
+                2. Wählen Sie bei **„Formularelement“** das Formularelement aus, dessen Sichtbarkeit geprüft werden soll, beispielsweise **„Telefonnummer“**.
+
+                Im fertigen Ausdruck sehen Sie den Namen **„Telefonnummer“**; gespeichert wird die interne Kennung des Formularelements. Ist dieses Formularelement nicht sichtbar, ergibt die Bedingung `Wahr`. Verwenden Sie das Ergebnis beispielsweise für einen zusätzlichen Hinweis.
 
                 # Was ist zu beachten?
-                Geprüft wird der berechnete Sichtbarkeitszustand, nicht, ob das Formularelement gerade im sichtbaren Bildschirmausschnitt liegt. Ist für das Formularelement kein berechneter Zustand vorhanden, wird es als sichtbar behandelt; die Funktion ergibt dann „Falsch“. Passt die gespeicherte Kennung zu keinem Formularelement, weist der Editor mit „Das ausgewählte Formularelement ist nicht verfügbar.“ darauf hin.
 
-                Die Funktion wird nur dort angeboten, wo Formularelemente einen berechneten Zustand haben, etwa in „Sichtbarkeit“, „Validierung“ und „Dynamischer Wert“ von Formularelementen in Formularen und UI-Definitionen. In der Konfiguration von Prozesselementen, etwa für Verzweigungen, steht sie nicht zur Verfügung.
+                Geprüft wird der berechnete Sichtbarkeitszustand, nicht, ob das Formularelement gerade im sichtbaren Bildschirmausschnitt liegt. Ist für das Formularelement kein berechneter Zustand vorhanden, wird es als sichtbar behandelt; die Funktion ergibt dann `Falsch`. Passt die gespeicherte Kennung zu keinem Formularelement, weist der Editor mit **„Das ausgewählte Formularelement ist nicht verfügbar.“** darauf hin.
+
+                Die Funktion wird nur dort angeboten, wo Formularelemente einen berechneten Zustand haben, etwa in **„Sichtbarkeit“**, **„Validierung“** und **„Dynamischer Wert“** von Formularelementen in Formularen und UI-Definitionen. In der Konfiguration von Prozesselementen, etwa für Verzweigungen, steht sie nicht zur Verfügung.
                 """;
     }
 

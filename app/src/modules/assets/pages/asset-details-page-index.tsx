@@ -43,13 +43,13 @@ import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-too
 import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 export const AssetSchema = yup.object({
-    filename: yup.string()
+    filename: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(1, 'Der Name der Datei muss mindestens ein Zeichen lang sein.')
         .max(255, 'Der Name der Datei darf maximal 255 Zeichen lang sein.')
         .required('Der Name der Datei ist ein Pflichtfeld.'),
-    isPrivate: yup.boolean(),
-});
+    isPrivate: yup.boolean().nonNullable('Geben Sie an, ob der öffentliche Zugriff auf die Datei erlaubt ist.').typeError('Geben Sie an, ob der öffentliche Zugriff auf die Datei erlaubt ist.'),
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export function AssetDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -213,7 +213,7 @@ export function AssetDetailsPageIndex() {
 
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
+                dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht gespeichert werden.', true));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -283,7 +283,7 @@ export function AssetDetailsPageIndex() {
                         : 'Änderungen an Datei erfolgreich gespeichert.',
                 ));
             } catch (err) {
-                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
+                dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht gespeichert werden.', true));
             } finally {
                 setIsBusy(false);
             }
@@ -315,7 +315,7 @@ export function AssetDetailsPageIndex() {
                 dispatch(showSuccessSnackbar('Die Datei wurde erfolgreich gelöscht.'));
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Löschen ist ein Fehler aufgetreten.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht gelöscht werden.'));
             })
             .finally(() => setIsBusy(false));
     };
@@ -493,7 +493,7 @@ export function AssetDetailsPageIndex() {
                                                     <CopyToClipboardButton
                                                         text={AssetsApiService.useAssetLinkOfAsset(asset)}
                                                         successMessage="Link in Zwischenablage kopiert!"
-                                                        errorMessage="Fehler beim Kopieren des Links!"
+                                                        errorMessage="Der Link konnte nicht in die Zwischenablage kopiert werden."
                                                     />
                                                 </Stack>
                                             ),

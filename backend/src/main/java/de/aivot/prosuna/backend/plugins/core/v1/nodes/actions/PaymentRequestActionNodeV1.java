@@ -161,20 +161,25 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<PaymentRequestActionNodeV1.PaymentRequestActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var information = summary.data(OUTPUT_PAYMENT_DETAILS);
-        var paidAt = information instanceof XBezahldienstePaymentInformation details
-                ? details.getTransactionTimestamp() : map(information).get("transactionTimestamp");
         var reference = information instanceof XBezahldienstePaymentInformation details
                 ? details.getTransactionReference() : map(information).get("transactionReference");
-        return "Es wurde " + summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID))
-                + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT)) + " zur Zahlung aufgefordert und" + summary.delivery() + " informiert."
-                + " Die Zahlung wurde" + (timestamp(paidAt).isEmpty() ? summary.completedAt() : summary.at(paidAt)) + " bestätigt."
+        var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
+        var sentAt = summary.metadata(ExecutionSummaryMarkdown.SENT_AT);
+        var dispatch = timestamp(sentAt).isEmpty()
+                ? "Die Zahlungsaufforderung richtet sich an " + recipient + "."
+                : "Die Zahlungsaufforderung wurde" + summary.at(sentAt) + " an " + recipient + summary.delivery() + " versendet.";
+        return dispatch
+                + " Die Aufgabe wurde" + summary.completedAt() + " mit bestätigter Zahlung abgeschlossen."
                 + detail("Verwendungszweck", summary.data(OUTPUT_PAYMENT_PURPOSE))
                 + detail("Beschreibung", summary.data(OUTPUT_PAYMENT_DESCRIPTION))
                 + detail("Gesamtbetrag (Euro)", summary.data(OUTPUT_PAYMENT_TOTAL) instanceof Number total
                         ? NumberUtils.formatGermanNumber(new BigDecimal(total.toString()), 2) : summary.data(OUTPUT_PAYMENT_TOTAL))
                 + detail("Zahlungsanbieter", summary.data(OUTPUT_PAYMENT_PROVIDER_NAME))
                 + detail("Zahlungsreferenz", reference)
-                + summaryPaymentItems(context.thisTask().getRuntimeData().get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD));
+                + (PAYMENT_DEADLINE.key().equals(context.thisTask().getDeadlineKey())
+                        ? detail("Zahlungsfrist", timestamp(context.thisTask().getDeadline())) : "")
+                + summaryPaymentItems(map(context.thisTask().getRuntimeData()).get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -242,16 +247,48 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Fordert eine Online-Zahlung von Beteiligten an und wartet auf deren Abschluss.";
+        return "Fordert eine Online-Zahlung an und wartet auf die Zahlungsbestätigung.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Online-Zahlung und sendet den Zahlungslink über die Kommunikationsanbindung der konfigurierten Identität. Bei automatischer Ausführung werden Betreff und Nachricht aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Der Vorgang wartet, bis die Zahlung erfolgreich abgeschlossen ist, und wird dann über den Ausgangsport „Zahlung erfolgreich“ fortgesetzt. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+                Fordern Sie Beteiligte dazu auf, einen Betrag über einen eingerichteten Zahlungsanbieter online zu bezahlen. Prosuna versendet eine Zahlungsaufforderung und setzt den Vorgang fort, sobald die Zahlung bestätigt ist.
+
+                ### Was richten Sie ein?
+
+                Wählen Sie die empfangende Identität des Vorgangs und den Zahlungsanbieter aus. Legen Sie Verwendungszweck, Beschreibung und Zahlungspositionen fest. Für die Positionen geben Sie Einzelpreis, Menge und Steuersatz an. Einzelpreise und Mengen können Sie auch mit No-Code oder Low-Code berechnen. Angaben aus dem Vorgang können in die dafür vorgesehenen Zahlungsfelder eingefügt werden.
+
+                Unter „Nachrichtenversand“ wählen Sie „Automatisch versenden“ oder „Vor Versand prüfen und bearbeiten“. Beim automatischen Versand legen Sie Betreff und Nachricht fest. Bei vorheriger Prüfung hinterlegen Sie die Nachricht zur Vorbelegung und bestimmen den verantwortlichen Personenkreis. Eine berechtigte Person erhält dann eine Mitarbeitendenaufgabe. Der Link zur Zahlung wird automatisch ergänzt.
+
+                Optional legen Sie eigene Nachrichten für die Ansicht für Beteiligte nach bestätigter Zahlung oder bei Fehler und Abbruch fest. Bei vorheriger Prüfung können Sie eine Versandfrist festlegen. Eine Zahlungsfrist können Sie für beide Varianten einrichten.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna berechnet die Zahlungspositionen und den Gesamtbetrag. Bei vorheriger Prüfung stehen diese Zahlungsdaten bereits fest: Die zuständige Person kann Betreff und Nachricht bearbeiten, die Positionen in dieser Aufgabe aber nur ansehen. Beim Versand legt Prosuna die Zahlung beim Zahlungsanbieter an und sendet die Zahlungsaufforderung über den Zustellweg der Identität.
+
+                Danach wartet die Aufgabe auf die Zahlungsbestätigung. Beteiligte öffnen den Link und können zur Online-Zahlung beim Anbieter wechseln. Sobald die Zahlung bestätigt ist, setzt Prosuna den Vorgang über „Zahlung bestätigt“ fort. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Die Elementdaten enthalten unter anderem die empfangende Identität, den Zahlungslink, den Zahlungsanbieter, den Verwendungszweck, den Gesamtbetrag und die Zahlungsinformationen. Die Vorgangsdaten werden dadurch nicht automatisch geändert. Der Vorgangsverlauf zeigt den Versand und den Abschluss mit bestätigter Zahlung.
+
+                Die Ansicht für Beteiligte zeigt den Zahlungsstatus und bietet nach bestätigter Zahlung eine Zahlungsbestätigung als PDF an.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Sie richten zwei Zahlungspositionen mit 20,00 Euro und 5,00 Euro ein, jeweils mit Menge 1 und Steuersatz 0. Prosuna berechnet 25,00 Euro. Eine zuständige Person prüft die vorbereitete Nachricht und versendet die Zahlungsaufforderung. Nach bestätigter Online-Zahlung läuft der Vorgang weiter.
+
+                ### Was ist zu beachten?
+
+                Die berechneten Positionen müssen einen Gesamtbetrag über 0,00 Euro ergeben. Die Zahlungsdaten werden vor einer möglichen manuellen Nachrichtenbearbeitung berechnet.
+
+                Die Zahlungsfrist beginnt mit dem Versand der Zahlungsaufforderung, nicht bereits mit der vorherigen Prüfung. Wird die Aufgabe wegen Fristüberschreitung beendet, läuft der Vorgang über den zugehörigen Fristausgang weiter. Eine spätere Zahlung führt diese beendete Aufgabe nicht nachträglich fort.
+
+                Ist bei einem Neustart derselben Aufgabe bereits eine bestätigte Zahlung aus einem früheren Versuch vorhanden, übernimmt Prosuna diese und fordert keine neue Zahlung an. Prüfen Sie bei unklarem Zahlungsstand den bestehenden Zahlungsvorgang, bevor Sie eine neue Zahlungsaufforderung auslösen.
                 """;
     }
 
@@ -270,7 +307,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             layout = ElementPOJOMapper
                     .createFromPOJO(PaymentRequestActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Einstellungen für „Zahlung anfordern“ konnten nicht geladen werden.", null);
         }
 
         layout.findChild(SemiAutomaticMessageConfig.GROUP_ID, GroupLayoutElement.class)
@@ -279,6 +316,11 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         context.thisNode().getProcessId(),
                         context.thisNode().getProcessVersion()
                 ));
+
+        layout.findChild(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, RichTextInputElement.class)
+                .ifPresent(field -> field.setHint("Formulieren Sie die Zahlungsaufforderung. Angaben aus dem Vorgang können über Variablen eingefügt werden. Der Link zur Zahlung wird automatisch ergänzt."));
+        layout.findChild(SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID, RichTextInputElement.class)
+                .ifPresent(field -> field.setHint("Diese Zahlungsaufforderung wird in der Mitarbeitendenaufgabe vorbereitet und kann dort geändert werden. Angaben aus dem Vorgang können über Variablen eingefügt werden. Der Link zur Zahlung wird automatisch ergänzt."));
 
         return layout;
     }
@@ -296,8 +338,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return List.of(
                 new ProcessNodePort(
                         PORT_PAID,
-                        "Zahlung erfolgreich",
-                        "Der Vorgang wird fortgesetzt, nachdem die Zahlung erfolgreich abgeschlossen wurde."
+                        "Zahlung bestätigt",
+                        "Der Vorgang wird fortgesetzt, nachdem der Zahlungsanbieter die Zahlung bestätigt hat."
                 )
         );
     }
@@ -308,14 +350,14 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
-                        "Identität",
+                        "Empfangende Identität",
                         "Die ID der Identität, an die die Zahlungsaufforderung gesendet wurde.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_URL,
                         "Zahlungslink",
-                        "Der öffentliche Link zur Zahlungsaufgabe.",
+                        "Der Link zur Zahlungsaufgabe in der Ansicht für Beteiligte.",
                         "string"
                 ),
                 new ProcessNodeOutput(
@@ -333,31 +375,31 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_PURPOSE,
                         "Verwendungszweck",
-                        "Der gerenderte Verwendungszweck der Zahlungsanforderung.",
+                        "Der verwendete Verwendungszweck mit eingesetzten Angaben aus dem Vorgang.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_DESCRIPTION,
                         "Beschreibung",
-                        "Die gerenderte Beschreibung der Zahlungsanforderung.",
+                        "Die verwendete Zahlungsbeschreibung mit eingesetzten Angaben aus dem Vorgang.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_TOTAL,
-                        "Gesamtbetrag",
-                        "Der Gesamtbetrag der Zahlungsanforderung.",
+                        "Gesamtbetrag (Euro)",
+                        "Der berechnete Gesamtbetrag der Zahlungsanforderung in Euro.",
                         "number"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_STATUS,
                         "Zahlungsstatus",
-                        "Der Status der Zahlungstransaktion.",
+                        "Der bei dieser Aufgabe gespeicherte Zahlungsstatus.",
                         OUTPUT_PAYMENT_STATUS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYMENT_DETAILS,
                         "Zahlungsdetails",
-                        "Die Zahlungsinformationen des Zahlungsanbieters nach Abschluss der Zahlung.",
+                        "Die bei dieser Aufgabe gespeicherten Zahlungsinformationen des Zahlungsanbieters. Nach bestätigter Zahlung werden sie aktualisiert.",
                         OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION
                 )
         );
@@ -379,14 +421,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             return initManual(context, configuration);
         }
 
-        var executionType = configuration.messageConfig == null
-                ? null
-                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültige Ausführungsart für die Zahlungsaufforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
-                StringUtils.quote(executionType)
+                "Wählen Sie unter „Nachrichtenversand“ aus, ob die Zahlungsaufforderung automatisch versendet oder vor dem Versand geprüft und bearbeitet werden soll."
         );
     }
 
@@ -463,8 +499,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
-                        StringUtils.quote(context.getThisNode().resolveName(this))
+                        "Im verantwortlichen Personenkreis wurde keine berechtigte Person gefunden, die die Zahlungsaufforderung bearbeiten kann."
                 ));
 
         var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
@@ -495,7 +530,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
-        contentField.setLabel("Nachricht der Zahlungsaufforderung");
+        contentField.setLabel("Nachricht");
+        contentField.setHint("Prüfen und bearbeiten Sie die Zahlungsaufforderung vor dem Versand. Der Link zur Zahlung wird automatisch ergänzt.");
         contentField.setRequired(true);
 
         var root = new GroupLayoutElement();
@@ -518,6 +554,15 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
 
     @Nonnull
     @Override
+    public ResponseException unavailableStaffTaskEvent(@Nonnull String event, @Nonnull AuthoredElementValues inputs) {
+        return ResponseException.badRequest(
+                "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: %s.",
+                StringUtils.quote(event)
+        );
+    }
+
+    @Nonnull
+    @Override
     public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(
             @Nonnull ProcessNodeExecutionContextUIStaff<PaymentRequestActionNodeConfig> context,
             @Nonnull AuthoredElementValues update,
@@ -525,7 +570,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     ) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: %s.",
                     StringUtils.quote(event)
             );
         }
@@ -571,12 +616,23 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         }
 
         if (paymentStatus != XBezahldienstStatus.PAYED) {
-            throw new ProcessNodeExecutionExceptionIO(
-                    "Die Zahlungstransaktion %s wurde nicht erfolgreich abgeschlossen. Status: %s%s",
-                    StringUtils.quote(transaction.getKey()),
-                    StringUtils.quote(paymentStatus.getKey()),
-                    StringUtils.isNotNullOrEmpty(transaction.getPaymentError()) ? " Fehler: " + transaction.getPaymentError() : ""
-            );
+            var message = paymentStatus == XBezahldienstStatus.CANCELED
+                    ? "Die Zahlung wurde abgebrochen. Transaktionsschlüssel: %s."
+                    : "Die Zahlung ist fehlgeschlagen. Transaktionsschlüssel: %s.";
+            var key = StringUtils.quote(transaction.getKey());
+            var statusDetail = transaction.getPaymentInformation().getStatusDetail();
+            if (statusDetail != null && !statusDetail.isBlank()) {
+                throw new ProcessNodeExecutionExceptionIO(new ExternalServiceResponseException(statusDetail), message, key);
+            }
+
+            // A processing error can predate the callback that supplied the final payment status.
+            var processingError = transaction.getPaymentError();
+            if (processingError != null && !processingError.isBlank()) {
+                var cause = new PaymentException("Letzter technischer Fehler der Zahlungsabwicklung: %s",
+                        StringUtils.diagnosticExcerpt(processingError));
+                throw new ProcessNodeExecutionExceptionIO(cause, message, key);
+            }
+            throw new ProcessNodeExecutionExceptionIO(message, key);
         }
 
         var nodeData = new LinkedHashMap<>(context.getThisTask().getNodeData());
@@ -674,7 +730,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             );
             return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
-            throw ResponseException.internalServerError(e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Zahlungsansicht konnte nicht erstellt werden.", null);
         }
     }
 
@@ -699,7 +755,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         var recipientIdentity = processInstance.getIdentities().get(recipientIdentityId);
         if (recipientIdentity == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die konfigurierte Empfängeridentität %s ist im Vorgang nicht vorhanden.",
+                    "Die ausgewählte empfangende Identität %s ist in diesem Vorgang nicht vorhanden.",
                     StringUtils.quote(recipientIdentityId)
             );
         }
@@ -718,7 +774,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     @Nonnull
     private PaymentConfigElementValue requirePaymentConfig(@Nonnull PaymentRequestActionNodeConfig configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         if (configuration.payment == null || configuration.payment.paymentProviderKey() == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Zahlungsanforderung muss ein Zahlungsanbieter konfiguriert sein.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie einen Zahlungsanbieter für die Zahlungsanforderung aus.");
         }
         return configuration.payment;
     }
@@ -727,7 +783,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
     private String requireRecipientIdentity(@Nullable String recipientIdentity) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedIdentity = StringUtils.toNullableTrimmedString(recipientIdentity);
         if (normalizedIdentity == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Zahlungsanforderung muss eine Empfängeridentität konfiguriert sein.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie die empfangende Identität für die Zahlungsaufforderung aus.");
         }
         return normalizedIdentity;
     }
@@ -741,7 +797,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den automatischen Versand müssen Betreff und Nachrichtentext konfiguriert sein."
+                    "Legen Sie Betreff und Nachricht für den automatischen Versand fest."
             );
         }
         return content;
@@ -756,7 +812,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den teilautomatisierten Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
+                    "Legen Sie Betreff und Nachricht zur Vorbelegung der Mitarbeitendenaufgabe fest."
             );
         }
         return content;
@@ -781,13 +837,13 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_SUBJECT_FIELD_ID,
-                    new ComputedElementState().setError("Der Betreff der Zahlungsaufforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Geben Sie einen Betreff für die Zahlungsaufforderung an.")
             );
         }
         if (content == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_CONTENT_FIELD_ID,
-                    new ComputedElementState().setError("Die Nachricht der Zahlungsaufforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Geben Sie eine Nachricht für die Zahlungsaufforderung an.")
             );
         }
         if (derivedRuntimeData.hasAnyError()) {
@@ -813,7 +869,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             paymentPayload = paymentPayloadCreationService
                     .createRequest(paymentConfig, DerivedRuntimeElementData.empty(), processExecutionData);
         } catch (PaymentException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(e, "Die Zahlungsanforderung konnte nicht erstellt werden: %s", e.getMessage());
+            throw new ProcessNodeExecutionExceptionUnknown(e, "Die Zahlungsanforderung konnte nicht vorbereitet werden: %s", e.getMessage());
         }
 
         return paymentPayload
@@ -830,7 +886,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             return paymentTransactionService
                     .create(paymentProvider, paymentPayload, paymentUrl);
         } catch (PaymentException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(e, "Die Zahlungstransaktion konnte nicht erstellt werden: %s", e.getMessage());
+            throw new ProcessNodeExecutionExceptionUnknown(e, "Die Zahlung konnte beim Zahlungsanbieter nicht angelegt werden.");
         }
     }
 
@@ -898,7 +954,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .get(PaymentTaskRuntimeDataKeys.PAYMENT_PAYLOAD);
         if (paymentPayloadData == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Für die teilautomatisierte Zahlungsaufforderung wurde keine vorberechnete Zahlung in den Laufzeitdaten gefunden."
+                    "Für diese Zahlungsaufforderung liegen keine vorbereiteten Zahlungsdaten vor."
             );
         }
         if (paymentPayloadData instanceof PaymentPayload paymentPayload) {
@@ -908,9 +964,11 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         try {
             return jsonMapper.convertValue(paymentPayloadData, PaymentPayload.class);
         } catch (RuntimeException e) {
+            // The two-argument overload drops the cause; use the cause-preserving formatted overload.
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die vorberechnete Zahlung der teilautomatisierten Zahlungsaufforderung konnte nicht gelesen werden."
+                    "%s",
+                    "Die vorbereiteten Zahlungsdaten konnten nicht gelesen werden."
             );
         }
     }
@@ -980,13 +1038,13 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
                 .get(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY);
 
         if (transactionKey == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Für die Zahlungsanforderung wurde keine Zahlungstransaktion in den Laufzeitdaten gefunden.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für diese Zahlungsaufforderung ist keine Zahlung hinterlegt.");
         }
 
         return paymentTransactionService
                 .retrieve(String.valueOf(transactionKey))
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionMissingValue(
-                        "Die Zahlungstransaktion %s wurde nicht gefunden.",
+                        "Die hinterlegte Zahlung konnte nicht gefunden werden. Transaktionsschlüssel: %s.",
                         StringUtils.quote(String.valueOf(transactionKey))
                 ));
     }
@@ -1046,10 +1104,10 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
             // The message is shown as Markdown on the payment status page.
             return templateRenderService.interpolate(processExecutionData, template, TemplateOutputFormat.Markdown);
         } catch (RuntimeException e) {
-            throw ResponseException.internalServerError(
+            throw ResponseException.internalServerErrorWithDetails(
                     e,
-                    "Die Vorlage %s konnte nicht gerendert werden.",
-                    StringUtils.quote(template)
+                    "Die Nachricht zur Zahlung konnte nicht vorbereitet werden.",
+                    null
             );
         }
     }
@@ -1082,8 +1140,8 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
          * must have a usable communication binding because the request is sent through the selected identity.
          */
         @InputElementPOJOBinding(id = RECIPIENT_IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfängeridentität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Identität, an die die Zahlungsaufforderung über den ausgewählten Kommunikationsweg gesendet wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Identität"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität des Vorgangs aus, an die die Zahlungsaufforderung versendet werden soll. Prosuna verwendet deren hinterlegten Zustellweg."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
@@ -1094,7 +1152,7 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
          */
         @InputElementPOJOBinding(id = PAYMENT_FIELD_ID, type = ElementType.PaymentConfig, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zahlung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Konfiguration der Zahlungsanforderung."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Legen Sie den Zahlungsanbieter, die Zahlungspositionen und die Meldungen für Beteiligte fest."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public PaymentConfigElementValue payment;

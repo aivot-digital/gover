@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.plugins.ai.v1.nodes;
 
+import de.aivot.prosuna.backend.core.exceptions.HttpConnectionException;
 import de.aivot.prosuna.backend.core.models.HttpServiceHeaders;
 import de.aivot.prosuna.backend.core.services.HttpService;
 import de.aivot.prosuna.backend.core.services.JsonMapperFactory;
@@ -12,6 +13,7 @@ import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.InputVariableSuggestion;
@@ -27,10 +29,14 @@ import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import tools.jackson.core.JacksonException;
 
+import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +49,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +59,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AiProcessDataTransformationActionNodeV1Test {
@@ -106,15 +115,18 @@ class AiProcessDataTransformationActionNodeV1Test {
                         }
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        var result = assertInstanceOf(
-                ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration(
-                        "https://aihub.example/api/completions",
-                        secretId,
-                        "meta-llama/Llama-3.3-70B-Instruct",
-                        "Use formalized applicant data."
-                )))
+        var executionContext = context(configuration(
+                "https://aihub.example/api/completions",
+                secretId,
+                "meta-llama/Llama-3.3-70B-Instruct",
+                "Use formalized applicant data."
+        ));
+        var originalProcessData = Map.of(
+                "person", Map.of("name", "Ada"),
+                "obsolete", "Remove this field"
         );
+        executionContext.getCurrentProcessExecutionData().addProcessData(originalProcessData);
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(executionContext));
 
         assertEquals("success", result.getViaPort());
         assertEquals(
@@ -124,6 +136,11 @@ class AiProcessDataTransformationActionNodeV1Test {
                 ),
                 result.getProcessData()
         );
+        assertEquals(originalProcessData, executionContext.getCurrentProcessExecutionData().getProcessData());
+        assertEquals(Map.of("workflow", "intake"), executionContext.getCurrentProcessExecutionData().getProcessMetadata());
+        assertEquals(Map.of("previous", Map.of("result", "kept")), executionContext.getCurrentProcessExecutionData().getNodeData());
+        assertEquals("Vorgangsdaten mit KI umwandeln", node.getName());
+        assertEquals("Vorgangsdaten ersetzt", node.getPorts(executionContext.getConfigurationOfExecutingNode()).getFirst().label());
         assertEquals("Use formalized applicant data.", result.getNodeData().get("prompt"));
         assertEquals("stop", result.getNodeData().get("finishReason"));
         assertEquals("meta-llama/Llama-3.3-70B-Instruct", result.getNodeData().get("responseModel"));
@@ -259,8 +276,9 @@ class AiProcessDataTransformationActionNodeV1Test {
         assertEquals(2222, ((Number) requestBody.get("max_tokens")).intValue());
     }
 
-    @Test
-    void init_ShouldThrowWhenResponseIsNotAJsonObject() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"[1, 2, 3]", "{\"private\":\"Private answer content\""})
+    void init_ShouldRejectInvalidTransformedJsonWithoutExposingContent(String completionText) throws Exception {
         var secretId = UUID.randomUUID();
         when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
         when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
@@ -287,19 +305,111 @@ class AiProcessDataTransformationActionNodeV1Test {
                             "total_tokens": 14
                           }
                         }
-                        """.getBytes(StandardCharsets.UTF_8)));
+                        """.replace("\"[1, 2, 3]\"", JsonMapperFactory.getInstance().writeValueAsString(completionText))
+                        .getBytes(StandardCharsets.UTF_8)));
+
+        var executionContext = context(configuration(
+                "https://aihub.example/api/completions",
+                secretId,
+                "meta-llama/Llama-3.3-70B-Instruct",
+                "Prompt"
+        ));
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(executionContext)
+        );
+
+        assertEquals("Die KI-Antwort enthält kein gültiges JSON-Objekt für die Vorgangsdaten.", exception.getMessage());
+        assertNotNull(exception.getCause());
+        assertEquals(Map.of("person", Map.of("name", "Ada")), executionContext.getCurrentProcessExecutionData().getProcessData());
+    }
+
+    @Test
+    void init_ShouldReportCommunicationFailureWithoutDetailsAndKeepCause() throws Exception {
+        var secretId = UUID.randomUUID();
+        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI token")));
+        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
+        var cause = new HttpConnectionException(new IOException("Private endpoint and connection details"));
+        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any())).thenThrow(cause);
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration("https://aihub.example/v1", secretId, "model", "Prompt")))
+        );
+
+        assertEquals("Bei der Kommunikation mit dem KI-Dienst ist ein Fehler aufgetreten.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void init_ShouldKeepHttpErrorDetailsAsTechnicalCause() throws Exception {
+        var secretId = UUID.randomUUID();
+        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI token")));
+        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
+        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
+                .thenReturn(ResponseEntity.status(502).body("Private upstream response with customer details".getBytes(StandardCharsets.UTF_8)));
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration("https://aihub.example/v1", secretId, "model", "Prompt")))
+        );
+
+        assertEquals(
+                "Der KI-Dienst hat mit dem HTTP-Statuscode 502 geantwortet. Die Anfrage konnte nicht abgeschlossen werden.",
+                exception.getMessage()
+        );
+        assertNotNull(exception.getCause());
+        assertTrue(exception.getCause().getMessage().contains("Private upstream response with customer details"));
+    }
+
+    @Test
+    void init_ShouldReportInvalidApiResponseWithoutBodyAndKeepParserCause() throws Exception {
+        var secretId = UUID.randomUUID();
+        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI token")));
+        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
+        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
+                .thenReturn(ResponseEntity.ok("Private non-JSON response with customer details".getBytes(StandardCharsets.UTF_8)));
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context(configuration("https://aihub.example/v1", secretId, "model", "Prompt")))
+        );
+
+        assertEquals("Die Antwort des KI-Dienstes konnte nicht verarbeitet werden.", exception.getMessage());
+        assertInstanceOf(JacksonException.class, exception.getCause());
+    }
+
+    @Test
+    void init_ShouldKeepInvalidSecretReferenceCauseWithoutExposingReference() {
+        var configuration = configuration("https://aihub.example/v1", UUID.randomUUID(), "model", "Prompt");
+        configuration.apiKeySecret = "private-reference-%s-%";
+
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(context(configuration))
+        );
+
+        assertEquals("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.", exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        verifyNoInteractions(secretService, httpService);
+    }
+
+    @Test
+    void init_ShouldReportInvalidEndpointWithoutExposingPrivateUrlAndKeepCause() {
+        var exception = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> node.init(context(configuration(
-                        "https://aihub.example/api/completions",
-                        secretId,
-                        "meta-llama/Llama-3.3-70B-Instruct",
+                        "https://private-user:private-secret@aihub.example/%invalid",
+                        UUID.randomUUID(),
+                        "model",
                         "Prompt"
                 )))
         );
 
-        assertTrue(exception.getMessage().contains("JSON-Objekt"));
+        assertEquals("Die API-Basis-URL des KI-Dienstes ist ungültig.", exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        verifyNoInteractions(secretService, httpService);
     }
 
     @Test

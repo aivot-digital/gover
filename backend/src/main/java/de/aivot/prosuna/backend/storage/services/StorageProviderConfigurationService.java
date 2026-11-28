@@ -61,10 +61,9 @@ public class StorageProviderConfigurationService {
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
-                    "Die Konfiguration des Speicheranbieters %s (ID %s) konnte nicht geladen werden. Die folgende Fehlermeldung wurde protokolliert: %s",
+                    "Die Konfiguration des Speicheranbieters %s (ID %s) konnte nicht geladen werden.",
                     StringUtils.quote(provider.getName()),
-                    StringUtils.quote(String.valueOf(provider.getId())),
-                    e.getMessage()
+                    StringUtils.quote(String.valueOf(provider.getId()))
             );
         }
     }

@@ -51,7 +51,7 @@ public record IdentityProviderRequestDTO(
         String endSessionEndpoint,
         @Nonnull
         @NotNull(message = "Die Client-ID des Identitätsanbieters ist erforderlich.")
-        @Size(min = 1, max = 128, message = "Die Client-ID des Identitätsanbieters muss zwischen 1 und 32 Zeichen lang sein.")
+        @Size(min = 1, max = 128, message = "Die Client-ID des Identitätsanbieters muss zwischen 1 und 128 Zeichen lang sein.")
         String clientId,
         @Nullable
         UUID clientSecretKey,

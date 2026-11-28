@@ -81,7 +81,7 @@ export function PresetTab(props: BaseTabProps & {
                     name: preset.title,
                 }, true));
             })
-            .catch(() => console.error('Fehler beim Laden der Preset-Version'));
+            .catch(() => console.error('Die Version der Vorlage konnte nicht geladen werden.'));
     };
 
     if (presets == null) {

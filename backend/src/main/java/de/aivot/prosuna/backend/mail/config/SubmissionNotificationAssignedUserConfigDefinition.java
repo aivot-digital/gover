@@ -42,13 +42,13 @@ public class SubmissionNotificationAssignedUserConfigDefinition implements UserC
     @Nonnull
     @Override
     public String getLabel() {
-        return "Vorgang zugewiesen";
+        return "Vorgang zugewiesen (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Ihnen ein Vorgang zur Bearbeitung zugewiesen wird – oder wenn ein Ihnen bereits zugewiesener Vorgang neu zugeordnet wird.";
+        return "Diese Einstellung wird derzeit nicht verwendet. E-Mail-Benachrichtigungen zur Zuweisung von Vorgängen steuern Sie unter „Prozesse“ über die Einstellung „Vorgangszuweisung geändert“.";
     }
 
     @Override
@@ -65,7 +65,7 @@ public class SubmissionNotificationAssignedUserConfigDefinition implements UserC
         if (value instanceof List<?> list) {
             return String.join(",", (List<String>) list);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

@@ -97,14 +97,14 @@ public class HtmlTemplateInputElementResolver {
     public String resolve(@Nullable HtmlTemplateInputElementValue value, @Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionException {
         if (value == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Es muss eine Konfiguration für die HTML-Vorlage angegeben sein."
+                    "Wählen Sie eine HTML-Dokumentvorlage aus."
             );
         }
 
         var htmlTemplateAssetKeyStr = value.getAssetKey();
         if (StringUtils.isNullOrEmpty(htmlTemplateAssetKeyStr)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Es muss eine Datei für die HTML-Vorlage ausgewählt sein."
+                    "Wählen Sie eine HTML-Dokumentvorlage aus."
             );
         }
         UUID htmlTemplateAssetKey;
@@ -113,7 +113,7 @@ public class HtmlTemplateInputElementResolver {
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Schlüssel %s für die HTML-Vorlage ist ungültig.",
+                    "Der Schlüssel %s für die HTML-Dokumentvorlage ist ungültig.",
                     StringUtils.quote(htmlTemplateAssetKeyStr)
             );
         }
@@ -123,12 +123,12 @@ public class HtmlTemplateInputElementResolver {
             asset = assetService
                     .retrieve(htmlTemplateAssetKey)
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionMissingValue(
-                            "Die ausgewählte Datei für die HTML-Vorlage existiert nicht."
+                            "Die ausgewählte HTML-Dokumentvorlage wurde nicht gefunden."
                     ));
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die Datei für den angegebenen Schlüssel %s konnte nicht geladen werden.",
+                    "Die HTML-Dokumentvorlage %s konnte nicht geladen werden.",
                     StringUtils.quote(htmlTemplateAssetKeyStr)
             );
         }
@@ -139,7 +139,7 @@ public class HtmlTemplateInputElementResolver {
         } catch (ResponseException | IOException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Inhalt der HTML-Vorlage %s konnte nicht geladen werden.",
+                    "Der Inhalt der HTML-Dokumentvorlage %s konnte nicht geladen werden.",
                     StringUtils.quote(htmlTemplateAssetKeyStr)
             );
         }
@@ -168,7 +168,7 @@ public class HtmlTemplateInputElementResolver {
                     : e.getMessage();
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die HTML-Vorlage %s konnte nicht gerendert werden: %s",
+                    "Die HTML-Dokumentvorlage %s konnte nicht verarbeitet werden: %s",
                     StringUtils.quote(htmlTemplateAssetKeyStr),
                     detail
             );
@@ -176,7 +176,7 @@ public class HtmlTemplateInputElementResolver {
             // Not an error of the template, so the message may be internal or missing.
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die HTML-Vorlage %s konnte wegen eines unerwarteten Fehlers nicht gerendert werden.",
+                    "Die HTML-Dokumentvorlage %s konnte wegen eines unerwarteten Fehlers nicht verarbeitet werden.",
                     StringUtils.quote(htmlTemplateAssetKeyStr)
             );
         }
@@ -283,7 +283,7 @@ public class HtmlTemplateInputElementResolver {
         } catch (RuntimeException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Wert für den Slot %s konnte nicht gerendert werden.",
+                    "Der Wert für den Platzhalter (Slot) %s konnte nicht verarbeitet werden.",
                     StringUtils.quote(slotId)
             );
         }
@@ -327,7 +327,7 @@ public class HtmlTemplateInputElementResolver {
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Bild-Slot %s enthält einen ungültigen Dateischlüssel.",
+                    "Der Bildplatzhalter (Slot) %s enthält einen ungültigen Dateischlüssel.",
                     StringUtils.quote(slotId)
             );
         }

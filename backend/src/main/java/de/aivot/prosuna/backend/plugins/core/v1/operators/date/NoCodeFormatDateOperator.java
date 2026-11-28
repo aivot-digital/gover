@@ -42,28 +42,33 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Geben Sie ein Datum als Text aus, zum Beispiel für eine Nachricht oder eine Zusammenfassung.
 
                 # Welche Werte werden benötigt?
+
                 - **Datum:** Der Datumswert, den Sie ausgeben möchten.
                 - **Ausgabeformat:** Die gewünschte Darstellung des Datums.
 
-                Das Datum können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für ein selbst festgelegtes Datum wählen Sie unter „Datumsgenauigkeit“ Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Für das selbst festgelegte Ausgabeformat wählen Sie eine der vier Vorgaben: Tag, Monat und Jahr; Monat und Jahr; Jahr; oder die Reihenfolge Jahr-Monat-Tag. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
+                Das Datum können Sie selbst festlegen, aus einer anderen Wertquelle übernehmen oder mit einer Funktion ermitteln. Für ein selbst festgelegtes Datum wählen Sie unter **„Datumsgenauigkeit“** Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Für das selbst festgelegte Ausgabeformat wählen Sie eine der vier Vorgaben: Tag, Monat und Jahr; Monat und Jahr; Jahr; oder die Reihenfolge Jahr-Monat-Tag. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
 
-                Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein darüber geliefertes Format muss ein gültiges Formatmuster sein, etwa **dd.MM.yyyy**.
+                Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein darüber geliefertes Format muss ein gültiges Formatmuster sein, etwa `dd.MM.yyyy`.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Einen Text im gewählten Format. Der ursprüngliche Datumswert bleibt unverändert.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für einen Textwert **„Datum formatieren“**.
-                2. Legen Sie als **„Datum“** den **22.11.2026** fest oder wählen Sie ein entsprechendes Datumsfeld als Wertquelle.
+                2. Legen Sie als **„Datum“** den `22.11.2026` fest oder wählen Sie ein entsprechendes Datumsfeld als Wertquelle.
                 3. Wählen Sie als **„Ausgabeformat“** **„Tag, Monat und Jahr“**.
 
-                Das Ergebnis ist der Text **„22.11.2026“**. Zugeklappt lesen Sie: **„22.11.2026 als Text im Format „Tag, Monat und Jahr““**.
+                Das Ergebnis ist der Text `22.11.2026`. Zugeklappt lesen Sie: `22.11.2026 als Text im Format „Tag, Monat und Jahr“`.
 
                 # Was ist zu beachten?
-                Ein Datumswert kann auch nur aus Monat und Jahr oder nur aus einem Jahr bestehen. Wählen Sie dann ein Format, das keine fehlenden Bestandteile verlangt. Aus **November 2026** kann beispielsweise **„11.2026“**, aber kein vollständiges Tagesdatum entstehen.
+
+                Ein Datumswert kann auch nur aus Monat und Jahr oder nur aus einem Jahr bestehen. Wählen Sie dann ein Format, das keine fehlenden Bestandteile verlangt. Aus `November 2026` kann beispielsweise `11.2026`, aber kein vollständiges Tagesdatum entstehen.
 
                 Für die Textdarstellung eines Zeitpunkts mit Uhrzeit verwenden Sie **„Zeitpunkt formatieren“**. Das Ergebnis dieser Funktion ist Text und kein neuer Datumswert.
                 """;

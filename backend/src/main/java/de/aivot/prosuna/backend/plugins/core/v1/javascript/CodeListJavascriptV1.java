@@ -74,7 +74,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
         return """
                 Ermöglicht den Zugriff auf in Prosuna hinterlegte Codelisten aus JavaScript-Ausdrücken.
 
-                Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen aus einer Wert- und einer Beschriftungsspalte geladen werden. Spalten werden über ihren Spaltenschlüssel angegeben. Ohne Angabe wird die Schlüsselspalte der Codeliste verwendet. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
+                Eine Codeliste kann entweder als vollständige Liste ihrer Einträge oder als Auswahloptionen aus einer Wert- und einer Beschriftungsspalte geladen werden. Spalten werden über ihren Spaltenschlüssel angegeben. Ohne Wertspalte wird die Schlüsselspalte der Codeliste verwendet; ohne Beschriftungsspalte dient die Wertspalte auch als Beschriftung. Dadurch lassen sich dieselben gepflegten Werte in Skripten, Ausdrücken und Oberflächen wiederverwenden.
                 """;
     }
 

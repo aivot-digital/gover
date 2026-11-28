@@ -81,16 +81,16 @@ public class SecretJavascriptV1 implements JavascriptFunctionProvider {
         try {
             parsedKey = UUID.fromString(key);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UUID format", e);
+            throw new IllegalArgumentException("Der Schlüssel des Geheimnisses ist keine gültige UUID.", e);
         }
 
         var secret = secretService
                 .retrieve(parsedKey)
-                .orElseThrow(() -> new IllegalArgumentException("Secret not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Das Geheimnis wurde nicht gefunden."));
         try {
             return secretService.decrypt(secret);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to decrypt secret", e);
+            throw new RuntimeException("Das Geheimnis konnte nicht entschlüsselt werden.", e);
         }
     }
 }

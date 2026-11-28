@@ -65,7 +65,7 @@ public class GiroPayPaymentRequest {
             if (o != null) {
                 sb.append(o);
             } else {
-                throw new IllegalArgumentException("Cannot generate hash with null values");
+                throw new IllegalArgumentException("Die Prüfsumme der Zahlungsanforderung kann nicht berechnet werden, weil Pflichtangaben fehlen.");
             }
         };
 
@@ -116,63 +116,63 @@ public class GiroPayPaymentRequest {
 
     public void setMerchantId(Integer merchantId) {
         if (merchantId == null) {
-            throw new IllegalArgumentException("Merchant ID cannot be null");
+            throw new IllegalArgumentException("Die Verkäufer-ID muss angegeben werden.");
         }
         this.merchantId = merchantId;
     }
 
     public void setProjectId(Integer projectId) {
         if (projectId == null) {
-            throw new IllegalArgumentException("Project ID cannot be null");
+            throw new IllegalArgumentException("Die Projekt-ID muss angegeben werden.");
         }
         this.projectId = projectId;
     }
 
     public void setMerchantTxId(String merchantTxId) {
         if (merchantTxId == null || merchantTxId.length() > 255) {
-            throw new IllegalArgumentException("Merchant Transaction ID cannot be null or longer than 255 characters");
+            throw new IllegalArgumentException("Die Transaktionskennung muss angegeben werden und darf höchstens 255 Zeichen enthalten.");
         }
         this.merchantTxId = merchantTxId;
     }
 
     public void setAmount(Integer amount) {
         if (amount == null) {
-            throw new IllegalArgumentException("Amount cannot be null");
+            throw new IllegalArgumentException("Der Zahlungsbetrag muss angegeben werden.");
         }
         this.amount = amount;
     }
 
     public void setCurrency(String currency) {
         if (currency == null || currency.length() != 3) {
-            throw new IllegalArgumentException("Currency cannot be null and must be a 3-character string");
+            throw new IllegalArgumentException("Die Währung muss als Code mit genau drei Zeichen angegeben werden.");
         }
         this.currency = currency;
     }
 
     public void setPurpose(String purpose) {
         if (purpose == null || purpose.length() > 27) {
-            throw new IllegalArgumentException("Purpose cannot be null or longer than 27 characters");
+            throw new IllegalArgumentException("Der Verwendungszweck muss angegeben werden und darf höchstens 27 Zeichen enthalten.");
         }
         this.purpose = purpose;
     }
 
     public void setUrlRedirect(String urlRedirect) {
         if (urlRedirect == null || urlRedirect.length() > 2048) {
-            throw new IllegalArgumentException("URL Redirect cannot be null or longer than 2048 characters");
+            throw new IllegalArgumentException("Die Weiterleitungs-URL muss angegeben werden und darf höchstens 2048 Zeichen enthalten.");
         }
         this.urlRedirect = urlRedirect;
     }
 
     public void setUrlNotify(String urlNotify) {
         if (urlNotify == null || urlNotify.length() > 2048) {
-            throw new IllegalArgumentException("URL Notify cannot be null or longer than 2048 characters");
+            throw new IllegalArgumentException("Die Benachrichtigungs-URL muss angegeben werden und darf höchstens 2048 Zeichen enthalten.");
         }
         this.urlNotify = urlNotify;
     }
 
     public void setHash(String hash) {
         if (hash == null || hash.length() != 32) {
-            throw new IllegalArgumentException("Hash cannot be null and must be a 32-character string");
+            throw new IllegalArgumentException("Die Prüfsumme muss angegeben werden und genau 32 Zeichen enthalten.");
         }
         this.hash = hash;
     }

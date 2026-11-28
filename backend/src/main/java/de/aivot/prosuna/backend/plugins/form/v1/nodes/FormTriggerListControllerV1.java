@@ -243,7 +243,7 @@ public class FormTriggerListControllerV1 {
             var process = processService
                     .retrieve(node.getProcessId())
                     .orElseThrow(() -> ResponseException.internalServerError(
-                            "Process with id %d not found".formatted(node.getProcessId())
+                            "Der Prozess mit der ID %d wurde nicht gefunden.".formatted(node.getProcessId())
                     ));
             cache.put(node.getProcessId(), process);
         }
@@ -259,7 +259,7 @@ public class FormTriggerListControllerV1 {
             var version = processVersionService
                     .retrieve(versionId)
                     .orElseThrow(() -> ResponseException.internalServerError(
-                            "Process version with id %s not found".formatted(versionId)
+                            "Die Prozessversion mit der ID %s wurde nicht gefunden.".formatted(versionId)
                     ));
             cache.put(versionId, version);
         }

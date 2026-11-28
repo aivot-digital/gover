@@ -46,7 +46,7 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
         } else {
             var disallowed = describeDisallowedCharacters(value.purpose(), DISALLOWED_PURPOSE_CHARACTER);
             if (disallowed != null) {
-                errorDetails.put("purpose", "Der Buchungstext enthält Zeichen, die nicht übertragen werden: %s. Erlaubt sind Buchstaben ohne Umlaute, ß und Akzente, Ziffern, Leerzeichen, Binde- und Unterstriche.".formatted(disallowed));
+                errorDetails.put("purpose", "Der Verwendungszweck enthält Zeichen, die nicht übertragen werden: %s. Erlaubt sind Buchstaben ohne Umlaute, ß und Akzente, Ziffern, Leerzeichen, Binde- und Unterstriche.".formatted(disallowed));
             }
         }
 
@@ -71,7 +71,7 @@ public class PaymentConfigElement extends BaseInputElement<PaymentConfigElementV
         }
 
         if (value.items() == null || value.items().isEmpty()) {
-            errorDetails.put("items", "Es muss mindestens ein Zahlungsposten angegeben werden.");
+            errorDetails.put("items", "Es muss mindestens eine Zahlungsposition angegeben werden.");
         } else {
             var itemErrors = new ArrayList<Object>();
             var hasItemErrors = false;

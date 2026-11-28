@@ -33,22 +33,29 @@ public class NoCodeRegexFindOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob ein Text eine Textstelle enthält, die zu einem Suchmuster passt, beispielsweise eine vierstellige Jahreszahl.
 
                 # Welche Werte werden benötigt?
-                **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten. **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
+
+                - **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten.
+                - **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
 
                 Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn mindestens eine Textstelle zum Suchmuster passt; andernfalls **Falsch**.
+
+                `Wahr`, wenn mindestens eine Textstelle zum Suchmuster passt; andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie in einer Bedingung **„Text enthält Muster“**. Verwenden Sie für **Text** die Variable „Aktenzeichen“, die `AZ-2026-17` liefert, und geben Sie als **Suchmuster** `[0-9]{4}` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `„Aktenzeichen“ enthält einen Treffer für das Muster „[0-9]{4}“`. Das Ergebnis ist **Wahr**, weil `2026` zum Muster passt.
+                1. Wählen Sie in einer Bedingung **„Text enthält Muster“**.
+                2. Verwenden Sie für **„Text“** die Variable **„Aktenzeichen“**, die `AZ-2026-17` liefert, und geben Sie als **„Suchmuster“** `[0-9]{4}` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Aktenzeichen“ enthält einen Treffer für das Muster „[0-9]{4}“`. Das Ergebnis ist `Wahr`, weil `2026` zum Muster passt.
 
                 # Was ist zu beachten?
+
                 Das Suchmuster ist ein regulärer Ausdruck nach Java-Syntax. Sonderzeichen können eine besondere Bedeutung haben. Ein leeres Suchmuster findet auch in einem leeren Text einen Treffer. Für einen wörtlichen Suchtext verwenden Sie **„Text enthält“**; für die Prüfung des gesamten Textes **„Text passt vollständig zu Muster“**.
                 """;
     }

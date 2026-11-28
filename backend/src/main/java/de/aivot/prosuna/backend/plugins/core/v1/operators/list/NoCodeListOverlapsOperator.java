@@ -32,21 +32,30 @@ public class NoCodeListOverlapsOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob zwei Listen mindestens einen gemeinsamen Wert haben, beispielsweise ob eine Auswahl eine zulässige Kategorie enthält.
 
                 # Welche Werte werden benötigt?
-                **Erste Liste** und **Zweite Liste:** Die beiden Listen, die zusammen betrachtet werden. Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                - **Erste Liste:** Die erste der beiden Listen, die zusammen betrachtet werden.
+                - **Zweite Liste:** Die zweite der beiden Listen, die zusammen betrachtet werden.
+
+                Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, sobald ein Wert in beiden Listen vorkommt; andernfalls **Falsch**.
+
+                `Wahr`, sobald ein Wert in beiden Listen vorkommt; andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie in einer Bedingung **„Listen überschneiden sich“**. Verwenden Sie für **Erste Liste** die Variable „Ausgewählte Kategorien“ mit `["X", "B"]` und für **Zweite Liste** die Variable „Zulässige Kategorien“ mit `["A", "B", "C"]`.
 
-                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ und „Zulässige Kategorien“ haben mindestens einen gemeinsamen Wert`. Das Ergebnis ist **Wahr**.
+                1. Wählen Sie in einer Bedingung **„Listen überschneiden sich“**.
+                2. Verwenden Sie für **„Erste Liste“** die Variable **„Ausgewählte Kategorien“** mit `["X", "B"]` und für **„Zweite Liste“** die Variable **„Zulässige Kategorien“** mit `["A", "B", "C"]`.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Ausgewählte Kategorien“ und „Zulässige Kategorien“ haben mindestens einen gemeinsamen Wert`. Das Ergebnis ist `Wahr`.
 
                 # Was ist zu beachten?
-                Eine leere Liste ergibt **Falsch**. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Um alle gesuchten Werte zu prüfen, verwenden Sie **„Liste enthält alle Werte“**. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
+
+                Eine leere Liste ergibt `Falsch`. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Um alle gesuchten Werte zu prüfen, verwenden Sie **„Liste enthält alle Werte“**. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 

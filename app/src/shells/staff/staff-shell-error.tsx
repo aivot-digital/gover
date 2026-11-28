@@ -47,7 +47,7 @@ export function StaffShellError(props: StaffShellErrorProps) {
                     >
                         <AccessDeniedMessage message={error.message} />
                         {' '}
-                        Bitte wenden Sie sich an Ihre Administratorin oder Ihren Administrator, wenn Sie glauben, dass es sich um einen Fehler handelt.
+                        Wenn Sie Zugriff benötigen, wenden Sie sich an die für Prosuna zuständige Stelle.
                     </ErrorDetails>
                 }
 
@@ -78,7 +78,7 @@ export function StaffShellError(props: StaffShellErrorProps) {
                         actionDashboard={true}
                     >
                         {
-                            error.message || 'Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.'
+                            error.message || 'Die Seite konnte nicht geladen werden. Bitte versuchen Sie es erneut.'
                         }
                     </ErrorDetails>
                 }

@@ -4,7 +4,17 @@ import de.aivot.prosuna.backend.audit.models.AuditLogPayload;
 import de.aivot.prosuna.backend.audit.services.AuditService;
 import de.aivot.prosuna.backend.audit.services.ScopedAuditService;
 import de.aivot.prosuna.backend.communication.permissions.CommunicationProviderPermissionProvider;
+import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
+import de.aivot.prosuna.backend.mail.services.MailConfigurationService;
+import de.aivot.prosuna.backend.mail.services.MailService;
 import de.aivot.prosuna.backend.permissions.services.PermissionService;
+import de.aivot.prosuna.backend.plugins.core.v1.communication.MailCommunicationProviderV1;
+import de.aivot.prosuna.backend.system.services.SystemService;
+import de.aivot.prosuna.backend.theme.services.ThemeService;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.mail.MailAuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderBindingEntity;
 import de.aivot.prosuna.backend.communication.entities.CommunicationProviderEntity;
@@ -35,7 +45,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.inOrder;
@@ -96,6 +108,29 @@ class CommunicationProviderManagementServiceTest {
         when(reference.getCommunicationProviderId()).thenReturn(provider.getId());
         when(reference.getIdentityProviderKey()).thenReturn(identityProvider.getKey());
         when(bindingRepository.findReferenceById(id)).thenReturn(Optional.of(reference));
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void mailConnectionTestExplainsRejectedCredentialsAndLogsTheTransportError(CapturedOutput output) throws Exception {
+        var transport = mock(MailService.class);
+        when(transport.isSendingConfigured()).thenReturn(true);
+        doThrow(new MailAuthenticationException("diagnostic from SMTP"))
+                .when(transport).sendMail(any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any());
+        var mail = new DefaultMailCommunicationService(transport, mock(SystemService.class),
+                mock(VDepartmentShadowedService.class), mock(ThemeService.class));
+        var mailDefinition = new MailCommunicationProviderV1(mail, mock(MailConfigurationService.class));
+        when(definitionService.retrieveProviderDefinition(provider.getCommunicationProviderDefinitionKey(),
+                provider.getCommunicationProviderDefinitionVersion())).thenReturn(Optional.of(mailDefinition));
+        var config = new MailCommunicationProviderV1.Config();
+        config.senderMode = MailCommunicationProviderV1.SENDER_MODE_DEFAULT;
+        when(configurationService.mapProviderConfiguration(provider, mailDefinition)).thenReturn(config);
+
+        var inputs = new AuthoredElementValues().putLiteral(MailCommunicationProviderV1.TEST_RECIPIENT_FIELD_ID, "person@example.org");
+        var result = service.testProvider(provider.getId(), inputs);
+
+        assertFailedTestResult(result, "Die E-Mail an person@example.org konnte nicht versendet werden. Die Anmeldung am SMTP-Server ist fehlgeschlagen.");
+        assertTrue(output.getAll().contains("diagnostic from SMTP"));
     }
 
     @Test

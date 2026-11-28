@@ -184,7 +184,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             }
             dispatch(showSuccessSnackbar('Link wurde in die Zwischenablage kopiert!'));
         } catch {
-            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+            dispatch(showErrorSnackbar('Der Link konnte nicht in die Zwischenablage kopiert werden.'));
         }
     }, [dispatch, flushPendingElementData, form]);
 
@@ -204,7 +204,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
             // TODO: await downloadQrCode(latestLink, `${form.form.slug}-${form.version.version}-prefill.png`);
             dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
         } catch {
-            dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
+            dispatch(showErrorSnackbar('Der QR-Code konnte nicht heruntergeladen werden.'));
         }
     }, [dispatch, flushPendingElementData, form]);
 

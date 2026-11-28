@@ -1,8 +1,9 @@
-import React, {type ReactNode} from 'react';
+import React, {type Key, type ReactNode} from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 interface SelectionDetailsPanelProps {
+    contentKey: Key;
     icon: ReactNode;
     label: ReactNode;
     title: ReactNode;
@@ -116,9 +117,12 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                 </Box>
             </Box>
 
+            {/* Reset reading position and local detail state only when the selected item changes. */}
             <Box
+                key={props.contentKey}
                 sx={{
                     flex: 1,
+                    minHeight: 0,
                     overflowY: 'auto',
                     px: 2.25,
                     pt: 2.25,

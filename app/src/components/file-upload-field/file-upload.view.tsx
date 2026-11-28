@@ -125,7 +125,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                 const fileExtension = file.name.split('.').pop();
 
                 if (fileExtension == null || extensions.every(ext => ext.toLowerCase() !== fileExtension.toLowerCase())) {
-                    dispatch(showErrorSnackbar('Die Datei ' + file.name + ' hat ein ungültiges Dateiformat.'));
+                    dispatch(showErrorSnackbar('Die Datei „' + file.name + '“ hat eine nicht erlaubte Dateiendung.'));
                 } else {
                     cleanedFiles.push(file);
                 }
@@ -150,7 +150,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
         }
 
         if (addedItems < cleanedFiles.length) {
-            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
+            dispatch(showErrorSnackbar('Einige Dateien konnten nicht hinzugefügt werden, da die maximale Anzahl an Dateien erreicht ist.'));
         }
 
         setValue(fileUploadItems.length > 0 ? fileUploadItems : null);

@@ -77,11 +77,11 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         }
 
         if (minItems != null && minItems > 0 && value.size() < minItems) {
-            throw new ValidationException(this, "Mindestens " + minItems + " Einträge erforderlich.");
+            throw new ValidationException(this, "Die erforderliche Mindestanzahl an Einträgen beträgt " + minItems + ".");
         }
 
         if (maxItems != null && maxItems > 0 && value.size() > maxItems) {
-            throw new ValidationException(this, "Maximal " + maxItems + " Einträge erlaubt.");
+            throw new ValidationException(this, "Die zulässige Höchstanzahl an Einträgen beträgt " + maxItems + ".");
         }
 
         if (maxItemLength != null && maxItemLength > 0 && value.stream().anyMatch(entry -> entry.length() > maxItemLength)) {

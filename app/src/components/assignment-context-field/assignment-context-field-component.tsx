@@ -50,7 +50,7 @@ export interface AssignmentContextFieldComponentProps {
 }
 
 const DEFAULT_HEADLINE = 'Verantwortlicher Personenkreis';
-const DEFAULT_TEXT = 'Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.';
+const DEFAULT_TEXT = 'Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.';
 const ASSIGNMENT_LOGIC_SUMMARY = 'Die automatische Zuweisung ermittelt zuerst alle berechtigten Personen aus dem Personenkreis. Danach werden die gewählten Bevorzugungen und abschließend die aktuelle Aufgabenlast berücksichtigt.';
 
 function resolveGeneralAssigneePreference(value: AssignmentContextValue): GeneralAssigneePreference {
@@ -215,7 +215,7 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                                 }}
                             >
                                 <Typography component="li" variant="body2" sx={{mb: 1}}>
-                                    Aus dem ausgewählten Personenkreis werden alle Mitarbeitenden ermittelt, die für diese Aufgabe berechtigt sind.
+                                    Aus dem ausgewählten Personenkreis werden alle Mitarbeiter:innen mit den erforderlichen Berechtigungen ermittelt.
                                 </Typography>
                                 {!props.disableAssignmentContextRepeatExecutionAssigneePreferenceOptions && (
                                     <Typography component="li" variant="body2" sx={{mb: 1}}>
@@ -298,7 +298,7 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
                             <Box component="span" sx={{display: 'block', fontWeight: 600}}>
                                 Hinweis zur aktuellen Zuweisung:
                             </Box>
-                            Für die {pluralize(emptyEligibleUserDomainOptions.length, 'Domäne', 'Domänen')} {emptyEligibleUserDomainLabels} gibt es derzeit keine Person mit dem Recht „Aufgaben bearbeiten“. Diese Auswahl kann gespeichert werden, trägt aktuell aber keine Personen zur automatischen Zuweisung bei.
+                            Für die {pluralize(emptyEligibleUserDomainOptions.length, 'Domäne', 'Domänen')} {emptyEligibleUserDomainLabels} gibt es derzeit keine Person mit den erforderlichen Berechtigungen. Diese Auswahl kann gespeichert werden, trägt aktuell aber keine Personen zur automatischen Zuweisung bei.
                         </Typography>
                     </Box>
                 }

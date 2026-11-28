@@ -16,6 +16,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputEle
 import de.aivot.prosuna.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.prosuna.backend.elements.services.AuthoredInputValueService;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.enums.XBezahldienstStatus;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.prosuna.backend.models.config.ProsunaConfig;
@@ -25,6 +26,7 @@ import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.pdf.enums.FormPdfScope;
 import de.aivot.prosuna.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.prosuna.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
 import de.aivot.prosuna.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.prosuna.backend.payment.models.PaymentPayload;
 import de.aivot.prosuna.backend.payment.services.PaymentTaskAttemptService;
@@ -42,12 +44,18 @@ import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessVersionStatus;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionIO;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultNoop;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
@@ -65,11 +73,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultPaymentRequested;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -82,6 +93,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -173,8 +186,8 @@ class FormTriggerNodeV1Test {
                 .orElse(null);
 
         assertNotNull(output);
-        assertEquals("Eingangszeitstempel", output.label());
-        assertEquals("Der Zeitstempel der Übermittlung.", output.description());
+        assertEquals("Übermittelt am", output.label());
+        assertEquals("Der beim Beginn der Übernahme festgehaltene Übermittlungszeitpunkt im ISO-Format.", output.description());
         assertEquals("string", output.typeDefinition());
     }
 
@@ -280,6 +293,8 @@ class FormTriggerNodeV1Test {
         assertNotNull(slugValidation);
         assertEquals(ValidationFunctionType.NoCode, slugValidation.getType());
         assertEquals(List.of(FormTriggerConfigV1.FORM_SLUG), List.copyOf(slugValidation.getReferencedIds()));
+        assertEquals("Das URL-Segment darf nur Kleinbuchstaben von a bis z, Zahlen und Bindestriche enthalten.",
+                slugValidation.getNoCodeList().getFirst().getMessage());
         var slugExpression = assertInstanceOf(
                 NoCodeExpression.class,
                 slugValidation.getNoCodeList().getFirst().getNoCode()
@@ -333,7 +348,7 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(errors);
         assertEquals(
-                List.of("Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."),
+                List.of("Das URL-Segment wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet. Wählen Sie ein anderes Segment."),
                 errors.get(FormTriggerConfigV1.FORM_SLUG)
         );
     }
@@ -351,10 +366,186 @@ class FormTriggerNodeV1Test {
         assertNotNull(errors);
         assertEquals(
                 List.of(
-                        "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
+                        "Das URL-Segment wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet. Wählen Sie ein anderes Segment."
                 ),
                 errors.get(FormTriggerConfigV1.FORM_SLUG)
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void missingFormHasTheSameReadableErrorOnInitAndResume(boolean resume) {
+        var context = context(new FormTriggerConfigV1(), Map.of());
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> {
+                    if (resume) node.resume(context);
+                    else node.init(context);
+                });
+
+        assertEquals("Hinterlegen Sie ein Formular für den Formulareingang.", error.getMessage());
+        verifyNoInteractions(pdfService, paymentPayloadCreationService, paymentTransactionService);
+    }
+
+    @Test
+    void missingSubmissionExplainsWhyThePdfCopyCannotBeCreated() {
+        var error = assertThrows(ProcessNodeExecutionExceptionMissingValue.class,
+                () -> node.init(context(configuration("antrag-online", validFormLayout()), Map.of())));
+
+        assertEquals("Die übermittelten Formulardaten für die Kopie der Angaben fehlen.", error.getMessage());
+        verifyNoInteractions(pdfService, processInstanceAttachmentSetService, processInstanceAttachmentService);
+    }
+
+    @Test
+    void pdfCreationFailureKeepsItsCauseOutOfTheVisibleMessage() throws Exception {
+        var cause = new IOException("Interner PDF-Dienstfehler mit vertraulichen Details");
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenThrow(cause);
+
+        var error = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> node.init(context(
+                configuration("antrag-online", validFormLayout()),
+                Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()))));
+
+        assertEquals("Die Kopie der Angaben konnte nicht als PDF erstellt werden.", error.getMessage());
+        assertSame(cause, error.getCause());
+        verifyNoInteractions(processInstanceAttachmentSetService, processInstanceAttachmentService);
+    }
+
+    @Test
+    void interruptedPdfCreationKeepsItsCauseAndRestoresTheInterruptFlag() throws Exception {
+        var cause = new InterruptedException("PDF-Erstellung unterbrochen");
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenThrow(cause);
+
+        try {
+            var error = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> node.init(context(
+                    configuration("antrag-online", validFormLayout()),
+                    Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()))));
+
+            assertEquals("Die Erstellung der Kopie der Angaben als PDF wurde unterbrochen.", error.getMessage());
+            assertSame(cause, error.getCause());
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void pdfStorageFailureKeepsTheCauseWithoutExposingServiceDetails(boolean attachmentSetFails) throws Exception {
+        prepareSummaryStorage();
+        var cause = ResponseException.internalServerError("Interner Speicherfehler mit vertraulichen Details");
+        if (attachmentSetFails) {
+            when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class))).thenThrow(cause);
+        } else {
+            when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class))).thenThrow(cause);
+        }
+
+        var error = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> node.init(context(
+                configuration("antrag-online", validFormLayout()),
+                Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()))));
+
+        assertEquals("Die Kopie der Angaben konnte nicht als Anlage zum Vorgang gespeichert werden.", error.getMessage());
+        assertSame(cause, error.getCause());
+    }
+
+    @Test
+    void missingPaymentProviderIdentifiesTheConfiguredProvider() throws Exception {
+        prepareSummaryStorage();
+        var configuration = configuration("antrag-online", validFormLayout());
+        var providerKey = UUID.randomUUID();
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, null, null, null, null, null);
+        when(paymentProviderRepository.findById(providerKey)).thenReturn(Optional.empty());
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class, () -> node.init(context(
+                configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()))));
+
+        assertEquals("Der ausgewählte Zahlungsanbieter wurde nicht gefunden. Zahlungsanbieter: „" + providerKey + "“.",
+                error.getMessage());
+        verifyNoInteractions(paymentPayloadCreationService, paymentTransactionService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void paymentServiceFailureRetainsItsCauseWithoutExposingServiceDetails(boolean creatingAtProvider) throws Exception {
+        prepareSummaryStorage();
+        var configuration = configuration("antrag-online", validFormLayout());
+        var providerKey = UUID.randomUUID();
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, null, null, null, null, null);
+        when(paymentProviderRepository.findById(providerKey)).thenReturn(Optional.of(paymentProvider(providerKey)));
+        var cause = new PaymentException("%s", "Interner Anbieterfehler: 50% mit vertraulichen Details");
+        if (creatingAtProvider) {
+            when(paymentPayloadCreationService.createRequest(any(), any(), any())).thenReturn(Optional.of(new PaymentPayload()));
+            when(paymentTransactionService.create(any(), any(), any())).thenThrow(cause);
+        } else {
+            when(paymentPayloadCreationService.createRequest(any(), any(), any())).thenThrow(cause);
+        }
+
+        var error = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> node.init(context(
+                configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()))));
+
+        assertEquals(creatingAtProvider
+                        ? "Die Zahlungsanforderung konnte beim Zahlungsanbieter nicht angelegt werden."
+                        : "Die Zahlungsanforderung für das Formular konnte nicht erstellt werden.",
+                error.getMessage());
+        assertSame(cause, error.getCause());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void resumeWaitsForPaymentOrRecordsItsConfirmation(boolean confirmed) throws Exception {
+        var context = context(configuration("antrag-online", validFormLayout()),
+                Map.of(FormTriggerNodeV1.DATA_KEY_PAYLOAD, Map.of("name", "Ada")));
+        context.getThisTask().setRuntimeData(Map.of(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, "tx-1"));
+        var transaction = paymentTransaction(UUID.randomUUID(), confirmed ? XBezahldienstStatus.PAYED : XBezahldienstStatus.INITIAL);
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
+
+        var result = node.resume(context);
+
+        if (confirmed) {
+            var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
+            assertEquals(Map.of("name", "Ada"), completed.getProcessData());
+            assertSame(transaction.getPaymentInformation(), completed.getNodeData().get(FormTriggerNodeV1.DATA_KEY_PAYMENT_DETAILS));
+            verify(context.getLogger()).logf(ProcessNodeExecutionLogLevel.Info, false, true,
+                    "Zahlung bestätigt", "Die Zahlung wurde bestätigt. Zahlungsreferenz: %s.", "„tx-1“");
+        } else {
+            assertInstanceOf(ProcessNodeExecutionResultNoop.class, result);
+            verifyNoInteractions(context.getLogger());
+        }
+        verifyNoInteractions(pdfService, processInstanceAttachmentSetService, processInstanceAttachmentService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"FAILED, Fehlgeschlagen, true", "CANCELED, Abgebrochen, false"})
+    void failedPaymentUsesGermanStatusAndKeepsProviderDetailsInItsCause(
+            XBezahldienstStatus status, String label, boolean hasProviderDetails) {
+        var context = context(configuration("antrag-online", validFormLayout()), Map.of());
+        context.getThisTask().setRuntimeData(Map.of(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, "tx-1"));
+        var transaction = paymentTransaction(UUID.randomUUID(), status);
+        var providerDetails = "Interner Anbieterhinweis: 50% mit vertraulichen Details";
+        if (hasProviderDetails) transaction.setPaymentError(providerDetails);
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
+
+        var error = assertThrows(ProcessNodeExecutionExceptionIO.class, () -> node.resume(context));
+
+        assertEquals("Die Zahlung wurde nicht erfolgreich abgeschlossen. Status: " + label + ". Zahlungsreferenz: „tx-1“.",
+                error.getMessage());
+        if (hasProviderDetails) {
+            assertInstanceOf(PaymentException.class, error.getCause());
+            assertEquals(providerDetails, error.getCause().getMessage());
+        } else {
+            assertNull(error.getCause());
+        }
+    }
+
+    @Test
+    void missingPaymentTransactionIdentifiesThePaymentReference() {
+        var context = context(configuration("antrag-online", validFormLayout()), Map.of());
+        context.getThisTask().setRuntimeData(Map.of(FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, "tx-1"));
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.empty());
+
+        var error = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class, () -> node.resume(context));
+
+        assertEquals("Die zum Formulareingang gehörende Zahlungsanforderung wurde nicht gefunden. Zahlungsreferenz: „tx-1“.",
+                error.getMessage());
     }
 
     @Test
@@ -455,7 +646,8 @@ class FormTriggerNodeV1Test {
         when(paymentTransactionService.create(any(), any(), any()))
                 .thenReturn(paymentTransaction(providerKey, XBezahldienstStatus.INITIAL));
 
-        var result = node.init(context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of())));
+        var context = context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()));
+        var result = node.init(context);
 
         if (requestsPayment) {
             assertInstanceOf(ProcessNodeExecutionResultPaymentRequested.class, result);
@@ -464,6 +656,9 @@ class FormTriggerNodeV1Test {
             assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result);
             assertEquals(null, result.getNewDeadlineKey());
             verifyNoInteractions(paymentTransactionService);
+            verify(context.getLogger()).logf(ProcessNodeExecutionLogLevel.Info, false, true,
+                    "Keine Zahlung erforderlich",
+                    "Es wurde keine Zahlungsanforderung erstellt, weil der Gesamtbetrag 0,00 Euro beträgt.");
         }
     }
 
@@ -488,9 +683,10 @@ class FormTriggerNodeV1Test {
         when(paymentTaskAttemptService.findPaidEarlierAttempt(any())).thenReturn(Optional.of(paidAttempt));
         when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
 
+        var context = context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of()));
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration, Map.of(FormTriggerNodeV1.DATA_KEY_UNMAPPED, Map.of())))
+                node.init(context)
         );
 
         assertNull(result.getNewDeadlineKey());
@@ -499,6 +695,8 @@ class FormTriggerNodeV1Test {
         verify(paymentTaskAttemptService).logReuse(any(), same(paidAttempt));
         verify(paymentTransactionService, never()).create(any(), any(), any());
         verifyNoInteractions(paymentPayloadCreationService, paymentProviderRepository);
+        verify(context.getLogger()).logf(ProcessNodeExecutionLogLevel.Info, false, true,
+                "Zahlung bestätigt", "Die Zahlung wurde bestätigt. Zahlungsreferenz: %s.", "„tx-1“");
     }
 
     @Test
@@ -563,7 +761,7 @@ class FormTriggerNodeV1Test {
         )).layout();
 
         var richText = layout.findChild("rtx", RichTextContentElement.class).orElseThrow();
-        assertTrue(richText.getContent().contains("# Zahlung abgeschlossen\n# Zahlung erhalten\nDanke **Ada**."));
+        assertTrue(richText.getContent().contains("# Zahlung bestätigt\n# Zahlung erhalten\nDanke **Ada**."));
     }
 
     @Test
@@ -645,6 +843,42 @@ class FormTriggerNodeV1Test {
                 .orElseThrow();
         assertEquals("Aufgabe abgeschlossen", alert.getTitle());
         assertTrue(view.events().isEmpty());
+    }
+
+    @Test
+    void paymentMessageFailureDoesNotExposeTheTemplateOrParserDetails() throws Exception {
+        var providerKey = UUID.randomUUID();
+        var configuration = configuration("antrag-online", validFormLayout());
+        configuration.payment = new PaymentConfigElementValue(providerKey, null, null, false, null, List.of(),
+                "{{ privateTemplateFunction() }}", null);
+        var task = task().setRuntimeData(Map.of(
+                FormTriggerNodeV1.DATA_KEY_PAYMENT_TRANSACTION_KEY, "tx-1",
+                FormTriggerNodeV1.DATA_KEY_PAYMENT_PAYLOAD, new PaymentPayload()));
+        when(paymentTransactionService.retrieve("tx-1"))
+                .thenReturn(Optional.of(paymentTransaction(providerKey, XBezahldienstStatus.PAYED)));
+        when(paymentProviderRepository.findById(providerKey)).thenReturn(Optional.of(paymentProvider(providerKey)));
+        var providerDefinition = paymentProviderDefinition();
+        when(paymentProviderDefinitionsService.getProviderDefinition("test-provider", 1))
+                .thenReturn(Optional.of(providerDefinition));
+        when(processService.retrieve(PROCESS_ID)).thenReturn(Optional.of(process()));
+
+        var error = assertThrows(ResponseException.class, () -> node.getCompletedCustomerTaskView(
+                new ProcessNodeExecutionContextUICustomer<>(mock(ProcessNodeExecutionLogger.class), processNode(),
+                        processInstance(Map.of()), task, null, null, configuration, null)));
+
+        assertEquals("Die hinterlegte Nachricht zum Zahlungsstatus konnte nicht erstellt werden.", error.getMessage());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertNull(error.getDetails());
+        assertNotNull(error.getCause());
+    }
+
+    private void prepareSummaryStorage() throws Exception {
+        when(pdfService.generateCustomerSummary(any(), any(), any(), any(), any(), any())).thenReturn(new byte[]{1, 2, 3});
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentSetEntity.class).setId(321));
+        when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, ProcessInstanceAttachmentEntity.class)
+                        .setKey(UUID.randomUUID()).setStorageProviderId(7).setStoragePathFromRoot("summary.pdf"));
     }
 
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {

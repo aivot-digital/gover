@@ -122,22 +122,38 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<WriteExternalStorageActionNodeV1.WriteExternalStorageActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
+        var markdown = new StringBuilder("Die Ablage wurde" + summary.completedAt() + " abgeschlossen.");
         var documents = list(summary.metadata(ExecutionSummaryMarkdown.DOCUMENTS));
         if (documents.isEmpty()) {
-            return "Es wurden keine Dokumente beim Speicheranbieter geschrieben.";
-        }
-        var markdown = new StringBuilder();
-        for (var entry : documents) {
-            var document = map(entry);
-            if (!markdown.isEmpty()) {
-                markdown.append("\n\n");
+            if (summary.data(OUTPUT_NAME_COUNT) instanceof Number count && Double.isFinite(count.doubleValue())) {
+                if (count.doubleValue() == 0) {
+                    markdown.append("\n\nEs wurden keine Anlagen gespeichert.");
+                } else if (count.doubleValue() > 0) {
+                    markdown.append(detail("Ausgeführte Speicherungen", count));
+                }
             }
-            markdown.append("Das Dokument „").append(text(document.get("fileName")))
-                    .append("“ wurde erfolgreich beim Speicheranbieter „").append(text(document.get("providerName"))).append("“ geschrieben.")
-                    .append(detail("Dateipfad", document.get("path")))
-                    .append(detail("Datenvariable", document.get("dataKey")))
-                    .append(section("Ursprüngliches Dokument", document(document.get("attachmentKey"), document.get("fileName"))));
         }
+        for (var entry : documents) {
+            var storedDocument = map(entry);
+            var fileName = StringUtils.toNullableTrimmedString(storedDocument.get("fileName"));
+            var providerName = StringUtils.toNullableTrimmedString(storedDocument.get("providerName"));
+            markdown.append("\n\nDie Datei");
+            if (fileName != null) {
+                markdown.append(" „").append(text(fileName)).append("“");
+            }
+            markdown.append(" wurde");
+            if (providerName != null) {
+                markdown.append(" beim Speicheranbieter „").append(text(providerName)).append("“");
+            }
+            markdown.append(" gespeichert.")
+                    .append(detail("Zielpfad", storedDocument.get("path")))
+                    .append(detail("Datenschlüssel des Anlagensatzes", storedDocument.get("dataKey")));
+            var attachmentKey = StringUtils.toNullableTrimmedString(storedDocument.get("attachmentKey"));
+            if (attachmentKey != null) {
+                markdown.append(section("Ursprüngliche Anlage", document(attachmentKey, "Ursprüngliche Anlage ansehen")));
+            }
+        }
+        markdown.append(detail("Kurzbeschreibung", context.thisNode().getDescription()));
         return markdown.toString();
     }
 
@@ -180,16 +196,54 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Speichert die Anlagen eines oder mehrerer Anlagensätze bei Speicheranbietern.";
+        return "Speichert alle Anlagen ausgewählter Anlagensätze bei den festgelegten Speicheranbietern.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Speichert die Anlagen aus einem oder mehreren Anlagensätzen bei den konfigurierten Speicheranbietern, etwa in einem externen Speicher oder in „Dateien und Medien“. Für jeden Anlagensatz werden Speicheranbieter, Zielpfad und optional angepasste Dateinamen festgelegt.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Fehlende oder leere Anlagensätze werden übersprungen, wenn sie als optional markiert sind. Andernfalls schlägt die Aufgabe fehl.
+                Legen Sie Anlagen eines Vorgangs bei einem eingerichteten Speicheranbieter ab, zum Beispiel in einem externen Dateispeicher oder in „Dateien und Medien“. Die ursprünglichen Anlagen bleiben im Vorgang erhalten.
+
+                ### Was richten Sie ein?
+
+                Fügen Sie für jede gewünschte Ablage einen Eintrag hinzu. Wählen Sie darin genau einen Anlagensatz sowie einen beschreibbaren Speicheranbieter und den Zielordner aus. Prosuna ergänzt die Dateinamen automatisch. Der Zielordnerpfad kann Angaben aus dem Vorgang als Vorlagenausdrücke enthalten.
+
+                Mit „Fehlenden oder leeren Anlagensatz überspringen“ legen Sie fest, dass dieser Eintrag ausgelassen werden darf, wenn der Anlagensatz im Vorgang fehlt oder keine Anlagen enthält. Ohne diese Option führen solche Fälle zu einem Fehler.
+
+                Optional aktivieren Sie „Dateinamen anpassen“ und geben einen Basisnamen ohne Dateiendung an. Angaben aus dem Vorgang können über Variablen eingefügt werden. Prosuna übernimmt die ursprüngliche Dateiendung und ergänzt immer eine laufende Nummer, zum Beispiel „Nachweis-1.pdf“.
+
+                Wenn der Speicheranbieter zusätzliche Angaben unterstützt und dafür Felder bereitstellt, können Sie diese unter „Zusätzliche Angaben (Metadaten)“ befüllen. Diese Angaben gelten für alle Dateien desselben Ablageeintrags.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna verarbeitet die Einträge nacheinander, ermittelt die zugehörigen Anlagen und setzt die Werte im Zielordnerpfad ein. Fehlende Ordner werden angelegt. Gehören Anlagen zu einer Gruppe, wird deren Gruppierung unterhalb des Zielordners als weitere Ordnerstruktur übernommen.
+
+                Die Dateien werden mit ihrem vorhandenen oder angepassten Namen beim Speicheranbieter gespeichert. Die Nummerierung beginnt für jeden Ablageeintrag bei 1. Im Zielordnerpfad und im eigenen Basisnamen wird „#“ durch die jeweilige Dateinummer ersetzt.
+
+                Wenn alle Einträge verarbeitet oder zulässigerweise übersprungen wurden, setzt Prosuna den Vorgang über „Ablage abgeschlossen“ fort. Dafür entsteht keine Mitarbeitendenaufgabe.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten stehen die Ablageergebnisse, die tatsächlichen Speicherpfade und Dateinamen sowie die Anzahl der ausgeführten Dateiablagen bereit. Die Ablageergebnisse ordnen die gespeicherten Dateien ihrem Speicheranbieter und Anlagensatz zu. Übersprungene Einträge sind darin nicht enthalten.
+
+                Der Vorgangsverlauf zeigt die gespeicherten Dateien mit Anbieter und Zielpfad. Ein Link führt jeweils zur ursprünglichen Anlage im Vorgang. Auch das Überspringen optionaler Anlagensätze ist erkennbar.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Der Anlagensatz „Nachweise“ enthält zwei PDFs. Sie wählen den Zielordner `/Vorgänge/{{ $$.caseNumber }}/` und den eigenen Basisnamen „Nachweis“. Prosuna legt die Dateien dort als „Nachweis-1.pdf“ und „Nachweis-2.pdf“ ab. Gehört eine Anlage zur Gruppe „Einkommen“, wird sie im entsprechenden Unterordner gespeichert. Die beiden ursprünglichen Anlagen bleiben im Vorgang erhalten.
+
+                ### Was ist zu beachten?
+
+                Dieses Element verarbeitet vollständige Anlagensätze. Eine einzelne Datei aus einem Dateiverweis können Sie hier derzeit nicht auswählen.
+
+                Eine Datei, die am Zielpfad bereits vorhanden ist, wird überschrieben. Prüfen Sie deshalb Zielordner und Dateinamen vor der Verwendung in einem Testvorgang.
+
+                Bei angepassten Dateinamen wird immer eine laufende Nummer ergänzt, auch wenn Sie selbst „#“ verwenden. Aus dem Basisnamen „Nachweis-#“ kann deshalb „Nachweis-1-1.pdf“ entstehen. Die ursprüngliche Dateiendung bleibt erhalten.
+
+                Die Option zum Überspringen gilt nur für fehlende oder leere Anlagensätze. Bei anderen Fehlern bricht die Aufgabe ab. Zuvor gespeicherte Dateien und angelegte Ordner können dann am Ziel bereits vorhanden sein; die Ablage wird nicht vollständig zurückgenommen.
                 """;
     }
 
@@ -201,9 +255,10 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         try {
             layout = ElementPOJOMapper.createFromPOJO(WriteExternalStorageActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für das Speichern eines Anlagensatzes: %s",
-                    e.getMessage()
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Einstellungen für „Anlagen bei Speicheranbieter speichern“ konnten nicht geladen werden.",
+                    null
             );
         }
 
@@ -263,12 +318,12 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
                                 var headline = new HeadlineContentElement();
                                 headline.setId(metadataAttributesHeadlineId(provider.getId()));
-                                headline.setContent("Metadaten");
+                                headline.setContent("Zusätzliche Angaben (Metadaten)");
                                 group.addChild(headline);
 
                                 var description = new RichTextContentElement();
                                 description.setId(metadataAttributesDescriptionId(provider.getId()));
-                                description.setContent("Die gesetzten Metadaten gelten für den Anlagensatz. Beinhaltet dieser mehrere Dateien, so erhalten alle Dateien des Anlagensatzes diese Metadaten.");
+                                description.setContent("Diese Angaben werden für alle Dateien dieses Eintrags an den Speicheranbieter übergeben. Angaben aus dem Vorgang können über Variablen eingefügt werden.");
                                 group.addChild(description);
 
                                 for (var m : provider.getMetadataAttributes()) {
@@ -293,8 +348,8 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Anlagensatz gespeichert",
-                        "Der Vorgang wird hier fortgesetzt, nachdem die Anlagen gespeichert wurden."
+                        "Ablage abgeschlossen",
+                        "Der Vorgang wird hier fortgesetzt, nachdem die Anlagen gespeichert oder fehlende beziehungsweise leere optionale Anlagensätze übersprungen wurden."
                 )
         );
     }
@@ -303,10 +358,10 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse je konfiguriertem Anlagensatz.", OUTPUT_RESULTS_TYPE_DEFINITION),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die Pfade der gespeicherten Dateien im Ziel-Speicheranbieter.", "Array<string>"),
-                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die Dateinamen der gespeicherten Dateien.", "Array<string>"),
-                new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl", "Die Anzahl der gespeicherten Dateien.", "number")
+                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse der tatsächlich verarbeiteten Ablageeinträge mit Speicheranbieter, Anlagensatzschlüssel, Basisordner, gespeicherten Dateipfaden, Dateinamen und Anzahl. Übersprungene Einträge sind nicht enthalten.", OUTPUT_RESULTS_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die tatsächlichen Dateipfade innerhalb der jeweiligen Speicheranbieter. Die Zuordnung zu den Anbietern steht in den Ablageergebnissen.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die vom Speicheranbieter zurückgegebenen Namen der gespeicherten Dateien.", "Array<string>"),
+                new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl gespeicherter Dateien", "Die Gesamtzahl der in dieser Ausführung ausgeführten Speicherungen von Anlagen. Eine Anlage kann bei mehreren Ablagezielen mehrfach gezählt werden.", "number")
         );
     }
 
@@ -332,7 +387,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         var attachmentSetConfigs = configuration.attachmentSets == null ? List.<WriteExternalStorageConfig>of() : configuration.attachmentSets;
         if (attachmentSetConfigs.isEmpty()) {
-            addError(errors, WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, "Es muss mindestens ein Anlagensatz konfiguriert werden.");
+            addError(errors, WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, "Legen Sie mindestens einen Ablageeintrag an.");
         }
 
         for (var i = 0; i < attachmentSetConfigs.size(); i++) {
@@ -340,13 +395,13 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             var attachmentSetConfig = attachmentSetConfigs.get(i);
 
             if (resolveSingleAttachmentSetDataKey(attachmentSetConfig.attachmentSetDataKeys) == null) {
-                addError(errors, WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, "Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex));
+                addError(errors, WriteExternalStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, "Eintrag %d: Wählen Sie genau einen Anlagensatz aus.".formatted(rowIndex));
             }
 
             var storageProviderId = resolveStorageProviderId(attachmentSetConfig.storagePath);
             StorageProviderEntity storageProvider = null;
             if (storageProviderId == null) {
-                addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Es muss ein Speicheranbieter ausgewählt werden.".formatted(rowIndex));
+                addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Wählen Sie einen Speicheranbieter aus.".formatted(rowIndex));
             } else {
                 storageProvider = storageProviderRepository.findById(storageProviderId).orElse(null);
                 if (storageProvider == null) {
@@ -360,7 +415,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
             var targetPath = resolveConfiguredPath(attachmentSetConfig.storagePath);
             if (targetPath == null) {
-                addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der Zielpfad muss angegeben werden.".formatted(rowIndex));
+                addError(errors, WriteExternalStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Geben Sie einen Zielordnerpfad an.".formatted(rowIndex));
             } else {
                 var diagnostics = templateRenderService.validateInterpolationSyntax(targetPath);
                 if (!diagnostics.isEmpty()) {
@@ -381,7 +436,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             )) {
                 var fileNameTemplate = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
                 if (fileNameTemplate == null) {
-                    addError(errors, WriteExternalStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+                    addError(errors, WriteExternalStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Geben Sie einen Dateinamen für die Ablage an.".formatted(rowIndex));
                 }
             }
         }
@@ -418,7 +473,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         var configuration = context.getConfigurationOfExecutingNode();
         var attachmentSetConfigs = configuration.attachmentSets == null ? List.<WriteExternalStorageConfig>of() : configuration.attachmentSets;
         if (attachmentSetConfigs.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Es muss mindestens ein Anlagensatz konfiguriert werden.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Legen Sie mindestens einen Ablageeintrag an.");
         }
 
         var storagePaths = new ArrayList<String>();
@@ -431,7 +486,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             var attachmentSetConfig = attachmentSetConfigs.get(rowIndex);
             var attachmentSetDataKey = resolveSingleAttachmentSetDataKey(attachmentSetConfig.attachmentSetDataKeys);
             if (attachmentSetDataKey == null) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex + 1));
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Wählen Sie genau einen Anlagensatz aus.".formatted(rowIndex + 1));
             }
 
             var attachments = resolveProcessAttachmentsBySetDataKey(
@@ -449,7 +504,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             var renderedTargetFolderPath = interpolateTargetPath(context, resolveConfiguredPath(attachmentSetConfig.storagePath), rowIndex + 1);
             var normalizedTargetFolderPath = normalizeFolderPath(renderedTargetFolderPath);
             if (normalizedTargetFolderPath == null) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben oder leer interpoliert.".formatted(rowIndex + 1));
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Geben Sie einen Zielordnerpfad an.".formatted(rowIndex + 1));
             }
 
             var storageItemMetadata = resolveStorageItemMetadata(context, storageProvider, rowIndex);
@@ -492,10 +547,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 } catch (IOException | ResponseException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Die Anlage %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
+                            "Beim Speichern der Anlage %s beim Speicheranbieter %d ist ein Fehler aufgetreten.",
                             StringUtils.quote(attachment.getFileName()),
-                            storageProviderId,
-                            e.getMessage()
+                            storageProviderId
                     );
                 }
             }
@@ -632,8 +686,13 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                 ProcessNodeExecutionLogLevel.Info,
                 false,
                 true,
+                true,
+                null,
+                null,
+                null,
                 "Optionaler Anlagensatz übersprungen",
-                "Anlagensatz %s enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.",
+                Map.of(),
+                "Für den optionalen Anlagensatz %s waren keine Anlagen zum Speichern vorhanden. Der Eintrag wurde übersprungen.",
                 StringUtils.quote(attachmentSetName)
         );
     }
@@ -649,15 +708,15 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                     TemplateOutputFormat.SingleLineText
             );
             if (renderedTargetPath == null) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben.".formatted(rowIndex));
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Geben Sie einen Zielordnerpfad an.".formatted(rowIndex));
             }
             return renderedTargetPath;
         } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Eintrag %d: Der Zielpfad ist syntaktisch ungültig: %s", rowIndex, e.getMessage());
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Eintrag %d: Der Vorlagenausdruck im Zielordnerpfad konnte nicht verarbeitet werden: %s", rowIndex, e.getMessage());
         } catch (ProcessNodeExecutionException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(e, "Eintrag %d: Der Zielpfad konnte nicht interpoliert werden: %s", rowIndex, e.getMessage());
+            throw new ProcessNodeExecutionExceptionUnknown(e, "Eintrag %d: Der Zielordnerpfad konnte nicht ermittelt werden.", rowIndex);
         }
     }
 
@@ -673,7 +732,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         var fileName = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
         if (fileName == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+            throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Geben Sie einen Dateinamen für die Ablage an.".formatted(rowIndex));
         }
 
         // Text input values have already passed through runtime derivation. Re-rendering the result here would make
@@ -735,14 +794,14 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
                                                  int rowIndex) throws ProcessNodeExecutionException {
         if (resolvedFileName.length() > 255) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Eintrag %d: Der konfigurierte Dateiname bei Speicherung ist zu lang.",
+                    "Eintrag %d: Der fertige Dateiname darf einschließlich Nummer und Dateiendung höchstens 255 Zeichen lang sein.",
                     rowIndex
             );
         }
 
         if (resolvedFileName.contains("/") || resolvedFileName.contains("\\") || resolvedFileName.contains("\r") || resolvedFileName.contains("\n")) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Eintrag %d: Der konfigurierte Dateiname bei Speicherung ist ungültig.",
+                    "Eintrag %d: Der Dateiname darf keine Schrägstriche, umgekehrten Schrägstriche oder Zeilenumbrüche enthalten.",
                     rowIndex
             );
         }
@@ -758,7 +817,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         if (normalizedGroupPath.contains("\\") || normalizedGroupPath.contains("\r") || normalizedGroupPath.contains("\n")) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Eintrag %d: Der Gruppenname der Anlage ist als Ordnername ungültig.",
+                    "Eintrag %d: Die Gruppe der Anlage kann nicht als Unterordner verwendet werden.",
                     rowIndex
             );
         }
@@ -769,7 +828,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             var segment = StringUtils.toNullableTrimmedString(rawSegment);
             if (segment == null || ".".equals(segment) || "..".equals(segment)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Eintrag %d: Der Gruppenname der Anlage ist als Ordnername ungültig.",
+                        "Eintrag %d: Die Gruppe der Anlage kann nicht als Unterordner verwendet werden.",
                         rowIndex
                 );
             }
@@ -959,7 +1018,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Eintrag %d: Der Metadatenwert %s ist syntaktisch ungültig: %s",
+                    "Eintrag %d: Der Vorlagenausdruck für die zusätzliche Angabe %s konnte nicht verarbeitet werden: %s",
                     rowIndex,
                     StringUtils.quote(metadataKey),
                     e.getMessage()
@@ -967,10 +1026,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         } catch (RuntimeException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Eintrag %d: Der Metadatenwert %s konnte nicht interpoliert werden: %s",
+                    "Eintrag %d: Die zusätzliche Angabe %s konnte nicht ermittelt werden.",
                     rowIndex,
-                    StringUtils.quote(metadataKey),
-                    e.getMessage()
+                    StringUtils.quote(metadataKey)
             );
         }
     }
@@ -1000,7 +1058,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     private static Integer resolveRequiredStorageProviderId(@Nullable StoragePathSelectorInputElementValue storagePath) throws ProcessNodeExecutionExceptionMissingValue {
         var storageProviderId = resolveStorageProviderId(storagePath);
         if (storageProviderId == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Speicheranbieter muss ausgewählt werden.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Wählen Sie einen Speicheranbieter aus.");
         }
         return storageProviderId;
     }
@@ -1038,10 +1096,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Der Zielordner %s konnte im Speicheranbieter %d nicht erstellt werden: %s",
+                        "Beim Anlegen des Zielordners %s beim Speicheranbieter %d ist ein Fehler aufgetreten.",
                         StringUtils.quote(folderPath),
-                        storageProviderId,
-                        e.getMessage()
+                        storageProviderId
                 );
             }
         }
@@ -1057,12 +1114,12 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
     @ReplicatingContainerLayoutElementElementPOJOBinding(
             id = WriteExternalStorageActionNodeConfig.ATTACHMENT_SETS_FIELD_ID,
             properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie alle Anlagensätze, die gespeichert werden sollen."),
+            @ElementPOJOBindingProperty(key = "label", strValue = "Ablageeinträge"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Legen Sie für jeden Anlagensatz fest, wo seine Anlagen gespeichert werden sollen."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Anlagensatz #"),
-            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Anlagensatz hinzufügen"),
-            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Anlagensatz entfernen")
+            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Ablageeintrag #"),
+            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Ablageeintrag hinzufügen"),
+            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Ablageeintrag entfernen")
     })
     public static class WriteExternalStorageConfig {
         public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_set_data_keys";
@@ -1073,7 +1130,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz des Vorgangs, dessen Anlagen gespeichert werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie den Anlagensatz aus, dessen Anlagen gespeichert werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "minItems", intValue = 1),
                 @ElementPOJOBindingProperty(key = "maxItems", intValue = 1),
@@ -1082,9 +1139,9 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         public List<String> attachmentSetDataKeys;
 
         @InputElementPOJOBinding(id = STORAGE_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Speicheranbieter, bei welchem der Anlagensatz gespeichert wird."),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad, unter dem der Anlagensatz gespeichert wird. Verwenden Sie \"#\" für die aktuelle Dateinummer im Pfad. Der Pfad unterstützt Variablen und Bedingungen in der Syntax für dynamischen Text."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Ablageziel"),
+                @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Wählen Sie den Speicheranbieter aus, bei dem die Anlagen gespeichert werden sollen."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Zielordner an oder wählen Sie einen vorhandenen Ordner aus. Prosuna ergänzt die Dateinamen automatisch. Der Pfad kann Angaben aus dem Vorgang als Vorlagenausdrücke enthalten. „#“ wird für jede Anlage durch deren Dateinummer ersetzt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
                 @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", falseValue = true)
@@ -1095,8 +1152,8 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
          * If true, missing attachment sets and attachment sets without files are logged and skipped instead of failing execution.
          */
         @InputElementPOJOBinding(id = IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, type = ElementType.Checkbox, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Optionaler Anlagensatz"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Ist diese Option aktiviert, wird ein fehlender oder leerer Anlagensatz übersprungen."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Fehlenden oder leeren Anlagensatz überspringen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Ist der Anlagensatz im Vorgang nicht vorhanden oder enthält er keine Anlagen, wird dieser Eintrag ausgelassen. Fehler beim Lesen oder Speichern von Dateien werden dadurch nicht übersprungen."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         @Nullable
@@ -1104,7 +1161,7 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
 
         @InputElementPOJOBinding(id = CUSTOMIZE_FILE_NAME_FIELD_ID, type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateinamen anpassen"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, wird ein eigener Dateiname bei Speicherung verwendet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Verwenden Sie bei der Ablage eigene Dateinamen. Die ursprünglichen Anlagen im Vorgang werden dadurch nicht umbenannt."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public Boolean customizeFileName;
@@ -1112,8 +1169,8 @@ public class WriteExternalStorageActionNodeV1 implements ProcessNodeDefinition<W
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text,
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei Speicherung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Wert wird als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Dieser dynamische Text unterstützt Variablen und Bedingungen. Beim Speichern wird immer ein Index angehängt, zum Beispiel DATEINAME-1.pdf."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei der Ablage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie einen Basisnamen ohne Dateiendung an. Angaben aus dem Vorgang können über Variablen eingefügt werden. Prosuna übernimmt die ursprüngliche Dateiendung und ergänzt immer eine laufende Nummer, zum Beispiel Nachweis-1.pdf."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public String fileName;

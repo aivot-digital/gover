@@ -1,5 +1,5 @@
 import React, {type PropsWithChildren, useState} from 'react';
-import {act, fireEvent, render, screen, waitForElementToBeRemoved, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {configureStore} from '@reduxjs/toolkit';
 import {Provider as StoreProvider} from 'react-redux';
@@ -81,6 +81,8 @@ describe.each([false, true])('shared HTML5 backend (StrictMode: %s)', (strictMod
             const dialog = screen.getByRole('dialog', {name: 'Testreihenfolge'});
             expect(within(dialog).getAllByRole('listitem')).toHaveLength(2);
             await user.click(within(dialog).getByRole('button', {name: 'Abbrechen'}));
+            // Even a zero-duration exit hides the background until its asynchronous cleanup finishes.
+            await waitFor(() => expect(dialog).not.toBeInTheDocument());
         }
 
         await dragTreeFieldToEnd('second');
@@ -103,6 +105,7 @@ describe.each([false, true])('shared HTML5 backend (StrictMode: %s)', (strictMod
         expect(within(dialog).getAllByRole('listitem').map(item => item.textContent)).toEqual(['Beta', 'Alpha']);
         fireEvent.dragEnd(first, event);
         await user.click(within(dialog).getByRole('button', {name: 'Reihenfolge speichern'}));
+        await waitFor(() => expect(dialog).not.toBeInTheDocument());
         expect(screen.getByRole('status', {name: 'Parameterreihenfolge'})).toHaveTextContent('Beta,Alpha');
 
         await dragTreeFieldToEnd('tree');

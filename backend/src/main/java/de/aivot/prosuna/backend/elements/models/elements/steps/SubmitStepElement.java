@@ -63,7 +63,7 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
                 long expiresAt = expiresNode.longValue();
 
                 if (expiresAt < now) {
-                    throw new ValidationException(this, "Die Captcha-Bestätigung ist abgelaufen. Bitte erneut bestätigen.");
+                    throw new ValidationException(this, "Die Captcha-Bestätigung ist abgelaufen. Bitte bestätigen Sie erneut, dass Sie ein Mensch sind.");
                 }
             }
 
@@ -74,13 +74,13 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
                     .verify(payloadNode);
 
             if (!captchaVerificationStatus) {
-                throw new ValidationException(this, "Captcha-Verifizierung fehlgeschlagen. Bitte erneut bestätigen.");
+                throw new ValidationException(this, "Die Captcha-Bestätigung konnte nicht geprüft werden. Bitte bestätigen Sie erneut, dass Sie ein Mensch sind.");
             }
 
         } catch (ValidationException e) {
             throw e;
         } catch (Exception e) {
-            throw new ValidationException(this, "Verifizierung des Captcha fehlgeschlagen.");
+            throw new ValidationException(this, "Die Captcha-Bestätigung konnte nicht geprüft werden.");
         }
     }
 

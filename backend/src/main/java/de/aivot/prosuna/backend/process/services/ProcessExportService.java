@@ -156,16 +156,16 @@ public class ProcessExportService {
             Instant exportTimestamp,
             @Nonnull
             String createdByVendor,
-            @NotNull
+            @NotNull(message = "Die Importdatei muss einen Prozess enthalten.")
             @Nonnull
             ProcessEntity process,
-            @NotNull
+            @NotNull(message = "Die Importdatei muss eine Prozessversion enthalten.")
             @Nonnull
             ProcessVersionEntity version,
-            @NotNull
+            @NotNull(message = "Die Liste der Prozesselemente fehlt in der Importdatei.")
             @Nonnull
             List<ProcessNodeEntity> nodes,
-            @NotNull
+            @NotNull(message = "Die Liste der Verbindungen fehlt in der Importdatei.")
             @Nonnull
             List<ProcessEdgeEntity> edges
     ) {

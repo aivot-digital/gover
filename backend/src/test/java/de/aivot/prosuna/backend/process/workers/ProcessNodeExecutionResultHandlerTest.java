@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -35,6 +36,8 @@ import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinition;
@@ -87,12 +90,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -101,13 +104,15 @@ class ProcessNodeExecutionResultHandlerTest {
     @ParameterizedTest
     @EnumSource(value = ProcessTaskStatus.class, names = {"Running", "AwaitingStaff", "InProgress"})
     void staffUpdatesPersistTheTimestampOfEachSave(ProcessTaskStatus initialStatus) throws Exception {
-        var savedTasks = spy(new ArrayList<ProcessInstanceTaskEntity>());
         var savedTimestamps = new ArrayList<Instant>();
-        doAnswer(invocation -> {
-            ProcessInstanceTaskEntity savedTask = invocation.getArgument(0);
-            savedTimestamps.add(savedTask.getUpdated());
-            return invocation.callRealMethod();
-        }).when(savedTasks).add(any(ProcessInstanceTaskEntity.class));
+        // Capture timestamp snapshots without relying on mocked JDK collection internals.
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>() {
+            @Override
+            public boolean add(ProcessInstanceTaskEntity savedTask) {
+                savedTimestamps.add(savedTask.getUpdated());
+                return super.add(savedTask);
+            }
+        };
         var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService());
         var instance = processInstance();
         var task = processInstanceTask("staff")
@@ -242,6 +247,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(List.of(instance), savedInstances);
         var event = logger.events.stream().filter(candidate -> candidate.title().equals("Nachricht versendet"))
                 .findFirst().orElseThrow();
+        assertTrue(event.historyRelevant());
+        assertFalse(event.technical());
+        assertTrue(event.auditable());
         assertEquals("invitee@example.test", event.details().get("recipientEmailAddress"));
         assertFalse(event.details().containsKey("recipientIdentity"));
         var messageDetails = (Map<?, ?>) event.details().get("message");
@@ -250,6 +258,12 @@ class ProcessNodeExecutionResultHandlerTest {
                 messageDetails.get("sendingDepartment"));
         assertEquals(withSignatureDepartment ? Map.of("id", 23, "name", "Bürgerbüro") : null,
                 messageDetails.get("signatureDepartment"));
+        var assignmentEvent = logger.events.stream()
+                .filter(candidate -> candidate.title().equals("Aufgabe per E-Mail zugewiesen"))
+                .findFirst().orElseThrow();
+        assertTrue(assignmentEvent.historyRelevant());
+        assertTrue(assignmentEvent.technical());
+        assertTrue(assignmentEvent.auditable());
     }
 
     @Test
@@ -262,9 +276,10 @@ class ProcessNodeExecutionResultHandlerTest {
         var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService(), communicationService, savedInstances);
         var instance = processInstance().setStatus(ProcessInstanceStatus.Failed);
         var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
 
         assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
-                new RecordingProcessNodeExecutionLogger(), null,
+                logger, null,
                 new TestProcessNodeDefinition("Formularanforderung"), new AuthoredElementValues(), processNode("Formularanforderung"),
                 instance, task, null,
                 ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
@@ -284,6 +299,51 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(List.of(task), savedTasks);
         assertEquals(ProcessInstanceStatus.Failed, instance.getStatus());
         assertTrue(savedInstances.isEmpty());
+        assertTrue(logger.events.isEmpty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void customerAssignmentIsHistoryRelevantForAutomaticAndStaffHandoffs(boolean byStaff) throws Exception {
+        var identity = identity("applicant");
+        var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var handler = createHandler(new ArrayList<>(), Map.of(), new RecordingProcessTaskMailService());
+
+        handler.handleResult(logger, byStaff ? user("staff", "Ada Beispiel") : null,
+                new TestProcessNodeDefinition("Angaben anfordern"), new AuthoredElementValues(),
+                processNode("Angaben anfordern"), processInstance(identity), task, null,
+                ProcessNodeExecutionResultTaskAssignedCustomer.of(identity.identityId()));
+
+        assertEquals(ProcessTaskStatus.AwaitingCustomer, task.getStatus());
+        assertEquals(identity.identityId(), task.getAssignedCustomerIdentityId());
+        assertEquals(1, logger.events.size());
+        var event = logger.events.getFirst();
+        assertTrue(event.historyRelevant());
+        assertEquals(!byStaff, event.technical());
+        assertTrue(event.auditable());
+        assertEquals(byStaff ? "Aufgabe neu zugewiesen" : "Aufgabe „Angaben anfordern“ automatisch zugewiesen",
+                event.title());
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"missing"})
+    void invalidCustomerAssignmentDoesNotCreateHistoryEvents(String recipientIdentityId) {
+        var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+        var handler = createHandler(new ArrayList<>(), Map.of(), new RecordingProcessTaskMailService());
+        var result = recipientIdentityId == null
+                ? ProcessNodeExecutionResultTaskAssignedCustomer.withoutIdentity()
+                : ProcessNodeExecutionResultTaskAssignedCustomer.of(recipientIdentityId);
+
+        assertThrows(ProcessNodeExecutionExceptionInvalidAssignment.class, () -> handler.handleResult(
+                logger, null, new TestProcessNodeDefinition("Angaben anfordern"), new AuthoredElementValues(),
+                processNode("Angaben anfordern"), processInstance(), task, null, result));
+
+        assertEquals(ProcessTaskStatus.Running, task.getStatus());
+        assertNull(task.getAssignedCustomerIdentityId());
+        assertTrue(logger.events.isEmpty());
     }
 
     @Test
@@ -383,16 +443,81 @@ class ProcessNodeExecutionResultHandlerTest {
                 .setRetentionTimeValue(1).setRetentionTimeUnit(ProcessRetentionTimeUnit.Weeks)));
         var handler = createCompletionHandler(savedTasks, savedInstances, versions);
         var instance = processInstance();
+        var logger = new RecordingProcessNodeExecutionLogger();
 
-        handler.handleResult(new RecordingProcessNodeExecutionLogger(), null,
+        handler.handleResult(logger, null,
                 new TestProcessNodeDefinition("Complete process"),
                 new AuthoredElementValues(),
-                processNode("Complete process").setProcessVersion(2), instance,
+                processNode("Abschluss nach der Entscheidung").setProcessVersion(2), instance,
                 processInstanceTask(null), null, new ProcessNodeExecutionResultInstanceCompleted());
 
         assertEquals(ProcessInstanceStatus.Completed, instance.getStatus());
         assertTrue(instance.getKeepUntil().isAfter(Instant.now().plusSeconds(6 * 24 * 60 * 60)));
         verify(versions).findById(ProcessVersionEntityId.of(7, 2));
+        assertEquals(List.of(new RecordedLogEvent(ProcessNodeExecutionLogLevel.Info, true, true, false,
+                "Vorgang abgeschlossen",
+                "Der Vorgang wurde abgeschlossen. Abschließendes Prozesselement: „Abschluss nach der Entscheidung“.",
+                Map.of())), logger.events);
+    }
+
+    @Test
+    void handleResult_MissingTerminatingNodeVersionExplainsWhyCompletionFailed() {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(ProcessVersionEntityId.of(7, 2))).thenReturn(Optional.empty());
+        var handler = createCompletionHandler(savedTasks, savedInstances, versions);
+        var instance = processInstance();
+        var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        var error = assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(
+                logger, null, new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(),
+                processNode("Complete process").setProcessVersion(2), instance, task, null,
+                new ProcessNodeExecutionResultInstanceCompleted()));
+
+        assertEquals("Der Vorgang konnte nicht abgeschlossen werden, weil die Prozessversion 2 des abschließenden Prozesselements nicht gefunden wurde.",
+                error.getMessage());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(ProcessTaskStatus.Running, task.getStatus());
+        assertNull(instance.getFinished());
+        assertNull(instance.getKeepUntil());
+        assertNull(task.getFinished());
+        assertTrue(savedTasks.isEmpty());
+        assertTrue(savedInstances.isEmpty());
+        assertTrue(logger.events.isEmpty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void handleResult_IncompleteVersionRetentionExplainsWhichSettingsToCheck(boolean missingUnit) {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var savedInstances = new ArrayList<ProcessInstanceEntity>();
+        var versions = mock(ProcessVersionRepository.class);
+        when(versions.findById(ProcessVersionEntityId.of(7, 2))).thenReturn(Optional.of(new ProcessVersionEntity()
+                .setProcessId(7).setProcessVersion(2)
+                .setRetentionTimeValue(missingUnit ? 1 : null)
+                .setRetentionTimeUnit(missingUnit ? null : ProcessRetentionTimeUnit.Days)));
+        var handler = createCompletionHandler(savedTasks, savedInstances, versions);
+        var instance = processInstance();
+        var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        var error = assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> handler.handleResult(
+                logger, null, new TestProcessNodeDefinition("Complete process"), new AuthoredElementValues(),
+                processNode("Complete process").setProcessVersion(2), instance, task, null,
+                new ProcessNodeExecutionResultInstanceCompleted()));
+
+        assertEquals("Die Aufbewahrungsfrist der Prozessversion 2 ist unvollständig. Prüfen Sie die Fristeinstellungen dieser Prozessversion.",
+                error.getMessage());
+        assertEquals(ProcessInstanceStatus.Running, instance.getStatus());
+        assertEquals(ProcessTaskStatus.Running, task.getStatus());
+        assertNull(instance.getFinished());
+        assertNull(instance.getKeepUntil());
+        assertNull(task.getFinished());
+        assertTrue(savedTasks.isEmpty());
+        assertTrue(savedInstances.isEmpty());
+        assertTrue(logger.events.isEmpty());
     }
 
     @Test
@@ -557,8 +682,9 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessNodeExecutionLogLevel.Info, event.level());
         assertFalse(event.technical());
         assertEquals(true, event.auditable());
+        assertTrue(event.historyRelevant());
         assertEquals(
-                "Die Nachricht mit dem Betreff „Subject“ wurde erfolgreich an die Identität „" + expected + "“ versendet.",
+                "Die Nachricht mit dem Betreff „Subject“ wurde an die Identität „" + expected + "“ versendet.",
                 event.message()
         );
 
@@ -670,19 +796,57 @@ class ProcessNodeExecutionResultHandlerTest {
                 Map.of("id", 17, "name", "Fachbereich Leistungen"),
                 messageDetails.get("sendingDepartment")
         );
+        var waitingEvents = logger.events.stream()
+                .filter(event -> event.title().equals("Zahlung angefordert"))
+                .toList();
+        assertEquals(1, waitingEvents.size());
+        var waitingEvent = waitingEvents.getFirst();
+        assertEquals(ProcessNodeExecutionLogLevel.Info, waitingEvent.level());
+        assertFalse(waitingEvent.technical());
+        assertTrue(waitingEvent.auditable());
+        assertTrue(waitingEvent.historyRelevant());
+        assertEquals("Die Zahlung wurde beim Zahlungsanbieter „Provider“ bereitgestellt. Die Aufgabe wartet auf die Zahlungsbestätigung. Transaktionsschlüssel: „transaction-1“.",
+                waitingEvent.message());
+        assertTrue(logger.events.indexOf(communicationEvent) < logger.events.indexOf(waitingEvent));
     }
 
     @Test
-    void handleResult_MarksTaskFailedWhenCommunicationFails() throws Exception {
+    void handleResult_RecordsPaymentWaitInHistoryWithoutClaimingANotificationWasSent() throws Exception {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService());
+        var task = processInstanceTask(null);
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        handler.handleResult(logger, null, new TestProcessNodeDefinition("Formular"), new AuthoredElementValues(),
+                processNode("Formular"), processInstance(), task, null,
+                new ProcessNodeExecutionResultPaymentRequested("transaction-1", "Provider 50 %"));
+
+        assertEquals(ProcessTaskStatus.AwaitingPayment, task.getStatus());
+        var waitingEvent = logger.events.stream()
+                .filter(event -> event.title().equals("Zahlung angefordert"))
+                .findFirst().orElseThrow();
+        assertEquals("Die Zahlung wurde beim Zahlungsanbieter „Provider 50 %“ bereitgestellt. Die Aufgabe wartet auf die Zahlungsbestätigung. Transaktionsschlüssel: „transaction-1“.",
+                waitingEvent.message());
+        assertTrue(waitingEvent.historyRelevant());
+        assertFalse(waitingEvent.technical());
+        assertTrue(waitingEvent.auditable());
+        assertTrue(logger.events.stream().noneMatch(event -> event.title().equals("Nachricht versendet")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"' Antragstellende ', Antragstellende", ", applicant", "'', applicant", "'   ', applicant"})
+    void handleResult_MarksTaskFailedWhenCommunicationFails(String title, String expected) throws Exception {
         var communicationService = mock(CommunicationService.class);
-        var identity = identity("applicant");
+        var identity = identity("applicant").withTitle(title);
         var message = new CommunicationMessage.Builder()
                 .subject("Subject")
                 .body("Body")
                 .markdownBody("Body")
                 .build();
+        var cause = new CommunicationException("Die Anmeldung am SMTP-Server ist fehlgeschlagen.",
+                new IllegalStateException("private transport diagnostic"));
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class)))
-                .thenThrow(new CommunicationException("Versand fehlgeschlagen"));
+                .thenThrow(cause);
 
         var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
         var handler = createHandler(
@@ -691,10 +855,10 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessTaskMailService(),
                 communicationService
         );
-        var task = processInstanceTask(null);
+        var task = processInstanceTask("assigned-user");
         var logger = new RecordingProcessNodeExecutionLogger();
 
-        assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
+        var error = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
                 logger,
                 null,
                 new TestProcessNodeDefinition("Fallback task"),
@@ -711,6 +875,16 @@ class ProcessNodeExecutionResultHandlerTest {
                         ))
         ));
 
+        assertEquals("Beim Versand der Nachricht an die Identität „" + expected + "“ ist ein Fehler aufgetreten.",
+                error.getMessage());
+        assertSame(cause, error.getCause());
+        var history = mock(ProcessInstanceHistoryEventRepository.class);
+        new ProcessNodeExecutionLogger(42L, 9L, null, null, history).logException(error);
+        verify(history).save(argThat(event -> event.getTechnical() && error.getMessage().equals(event.getMessage())
+                && cause.getMessage().equals(event.getDetails().get("causeMessage"))));
+        assertEquals("assigned-user", task.getAssignedUserId());
+        assertEquals(Map.of("meta", true), task.getNodeData());
+        assertEquals(Map.of("data", true), task.getProcessData());
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
         assertNotNull(task.getFinished());
         assertEquals(1, savedTasks.size());
@@ -803,6 +977,59 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals(ProcessTaskStatus.Failed, task.getStatus());
         assertNotNull(task.getFinished());
         assertEquals(1, savedTasks.size());
+    }
+
+    @Test
+    void handleResult_ProcessLoadFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        var communicationService = mock(CommunicationService.class);
+        var processService = mock(ProcessService.class);
+        var cause = ResponseException.internalServerError("Internal process details");
+        when(processService.retrieve(7)).thenThrow(cause);
+        var identity = identity("applicant");
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(
+                savedTasks,
+                Map.of(),
+                new RecordingProcessTaskMailService(),
+                communicationService,
+                new ArrayList<>(),
+                processService,
+                new TestDepartmentService(department())
+        );
+        var task = processInstanceTask("assigned-user");
+        var logger = new RecordingProcessNodeExecutionLogger();
+
+        var error = assertThrows(ProcessNodeExecutionExceptionUnknown.class, () -> handler.handleResult(
+                logger,
+                null,
+                new TestProcessNodeDefinition("Fallback task"),
+                new AuthoredElementValues(),
+                processNode("Nachricht"),
+                processInstance(identity),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setCommunicationRequest(new ProcessNodeExecutionResultCommunicationRequest(
+                                identity.identityId(),
+                                new CommunicationMessage.Builder()
+                                        .subject("Subject")
+                                        .body("Body")
+                                        .markdownBody("Body")
+                                        .build(),
+                                null
+                        ))
+        ));
+
+        assertEquals("Der Prozess 7 des Vorgangs konnte nicht geladen werden.", error.getMessage());
+        assertSame(cause, error.getCause());
+        verifyNoInteractions(communicationService);
+        assertEquals("assigned-user", task.getAssignedUserId());
+        assertEquals(ProcessTaskStatus.Failed, task.getStatus());
+        assertNotNull(task.getFinished());
+        assertEquals(1, savedTasks.size());
+        assertEquals(0, logger.events.stream()
+                .filter(event -> event.title().equals("Nachricht versendet"))
+                .count());
     }
 
     @Test
@@ -1613,6 +1840,7 @@ class ProcessNodeExecutionResultHandlerTest {
                     level,
                     isTechnical,
                     isAuditable,
+                    false,
                     title,
                     String.format(format, args),
                     Map.of()
@@ -1631,6 +1859,7 @@ class ProcessNodeExecutionResultHandlerTest {
                     level,
                     isTechnical,
                     isAuditable,
+                    false,
                     title,
                     String.format(format, args),
                     details
@@ -1649,7 +1878,15 @@ class ProcessNodeExecutionResultHandlerTest {
                          Map<String, Object> details,
                          String format,
                          Object... args) {
-            logf(level, isTechnical, isAuditable, title, details, format, args);
+            events.add(new RecordedLogEvent(
+                    level,
+                    isTechnical,
+                    isAuditable,
+                    isHistoryRelevant,
+                    title,
+                    String.format(format, args),
+                    details
+            ));
         }
 
         @Override
@@ -1667,6 +1904,7 @@ class ProcessNodeExecutionResultHandlerTest {
             ProcessNodeExecutionLogLevel level,
             boolean technical,
             boolean auditable,
+            boolean historyRelevant,
             String title,
             String message,
             Map<String, Object> details

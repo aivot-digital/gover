@@ -25,12 +25,12 @@ public class TeamMembershipEntity implements LockVersioned {
 
     @Nonnull
     @Column(name = "team_id", nullable = false)
-    @NotNull(message = "Die ID des Teams darf nicht null sein.")
+    @NotNull(message = "Die ID des Teams muss angegeben werden.")
     private Integer teamId;
 
     @Nonnull
     @Column(name = "user_id", length = 36, nullable = false)
-    @NotNull(message = "Die Konto-ID darf nicht null sein.")
+    @NotNull(message = "Die Konto-ID muss angegeben werden.")
     @NotBlank(message = "Die Konto-ID darf nicht leer sein.")
     private String userId;
 

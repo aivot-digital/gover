@@ -350,11 +350,11 @@ public class AuthController {
             res = httpService
                     .postFormUrlEncoded(tokenUri, payload);
         } catch (HttpConnectionException e) {
-            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungscode ungültig", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Anmeldung konnte nicht abgeschlossen werden.", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         if (res.statusCode() != 200) {
-            throw ResponseException.internalServerErrorWithDetails("Unerwartete Rückmeldung beim Einlösen des Authentifizierungscodes: " + res.statusCode(), GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails("Die Anmeldung konnte nicht abgeschlossen werden. HTTP-Statuscode des Identitätsanbieters: " + res.statusCode(), GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
 
         TokenResponse tokenResponse;
@@ -363,7 +363,7 @@ public class AuthController {
                     .getInstance()
                     .readValue(res.body(), TokenResponse.class);
         } catch (JacksonException e) {
-            throw ResponseException.internalServerErrorWithDetails(e, "Authentifizierungsdaten konnten nicht verarbeitet werden", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Anmeldedaten konnten nicht verarbeitet werden.", GENERIC_TOKEN_EXCHANGE_ERROR_DESCRIPTION);
         }
         return tokenResponse;
     }
@@ -648,7 +648,7 @@ public class AuthController {
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
-            throw ResponseException.internalServerError(e, "Der SHA-256-Algorithmus wird nicht unterstützt.");
+            throw ResponseException.internalServerError(e, "Die Anmeldung konnte wegen eines technischen Fehlers nicht vorbereitet werden.");
         }
         var hash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
         return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);

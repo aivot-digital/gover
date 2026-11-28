@@ -70,12 +70,12 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                     return;
                 }
 
-                dispatch(showApiErrorSnackbar(err, 'HTML-Vorlage konnte nicht geladen werden'));
+                dispatch(showApiErrorSnackbar(err, 'Die HTML-Dokumentvorlage konnte nicht geladen werden.'));
 
                 if (isApiError(err) && err.displayableToUser) {
                     setTemplateLoadError(err.message);
                 } else {
-                    setTemplateLoadError('Die HTML-Vorlage konnte nicht geladen werden.');
+                    setTemplateLoadError('Die HTML-Dokumentvorlage konnte nicht geladen werden.');
                 }
             })
             .finally(() => {
@@ -96,7 +96,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 label={label}
                 hint={hint ?? undefined}
                 error={error ?? templateLoadError ?? undefined}
-                selectLabel="HTML-Vorlage auswählen"
+                selectLabel="HTML-Dokumentvorlage auswählen"
                 value={assetKey}
                 onChange={(val) => {
                     onChange({
@@ -107,7 +107,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 disabled={disabled || isLoadingTemplate}
                 required={required ?? undefined}
                 mimetype="text/html"
-                placeholder="Keine HTML-Vorlage ausgewählt"
+                placeholder="Keine HTML-Dokumentvorlage ausgewählt"
                 externalAction={
                     <Button
                         variant="outlined"
@@ -117,7 +117,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                         }}
                         disabled={disabled || assetKey == null || isStringNullOrEmpty(assetKey) || isLoadingTemplate || templateLoadError != null}
                     >
-                        Anpassen
+                        Inhalte anpassen
                     </Button>
                 }
             />

@@ -55,6 +55,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.list;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.map;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 
 @Component
 public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNodeV1.NoCodeActionNodeConfiguration> {
@@ -93,8 +96,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<NoCodeActionNodeV1.NoCodeActionNodeConfiguration> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die No-Code-Logik wurde erfolgreich ausgeführt."
-                + detail("Kurzbeschreibung", context.thisNode().getDescription());
+        var markdown = new StringBuilder("Die No-Code-Verarbeitung wurde abgeschlossen.");
+        markdown.append(detail("Gespeicherte Ergebnisse", summary.data(OUTPUT_NAME_VARIABLE_COUNT)));
+        for (var entry : list(summary.data(OUTPUT_NAME_VARIABLES))) {
+            var result = map(entry);
+            markdown.append("\n\n- Berechnung ").append(text(result.get("rowIndex")))
+                    .append(": ").append(text(result.get("resolvedPath")));
+        }
+        return markdown.append(detail("Kurzbeschreibung", context.thisNode().getDescription())).toString();
     }
 
     @Nonnull
@@ -136,16 +145,64 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Berechnet Werte mit No-Code-Ausdrücken und schreibt sie in die Vorgangsdaten.";
+        return "Berechnet Werte mit No-Code-Ausdrücken und speichert die Ergebnisse direkt in den Vorgangsdaten.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Wertet die konfigurierten No-Code-Ausdrücke der Reihe nach aus und schreibt jedes Ergebnis an den festgelegten Pfad in den Vorgangsdaten. Jeder Ausdruck kann die Ergebnisse vorheriger Zeilen verwenden; die übrigen Vorgangsdaten bleiben erhalten.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Für jedes Ergebnis wird ein erwarteter Datentyp festgelegt. Lässt sich ein Ergebnis nicht in diesen Datentyp umwandeln, schlägt die Aufgabe fehl.
+                Mit diesem Prozesselement berechnen oder übernehmen Sie Werte automatisch, zum Beispiel einen Gesamtbetrag, eine zusammengesetzte Bezeichnung oder ein Datum. Stellen Sie die benötigten No-Code-Ausdrücke mit den verfügbaren Operatoren zusammen.
+
+                Sie können mehrere Berechnungen in einem Schritt ausführen und ihre Ergebnisse für die weitere Bearbeitung bereitstellen.
+
+                # Was richten Sie ein?
+
+                Legen Sie unter **„Berechnungen“** die benötigten Einträge an. Für jeden Eintrag geben Sie den **„Speicherort des Ergebnisses“**, das **„Ergebnisformat“** und einen **„No-Code-Ausdruck“** an.
+
+                Ein Speicherort ist ein Datenschlüssel wie `berechnung.gesamtbetrag` oder `person.bezeichnung`. Mit einem konkreten Listenindex wie `positionen[0].betrag` können Sie einen bestimmten Eintrag beschreiben. Der Präfix `$.` kennzeichnet den Zugriff auf die Vorgangsdatenebene und wird in der Oberfläche bereits angezeigt. Geben Sie den Datenschlüssel ohne diesen Präfix ein.
+
+                Mit **„Beliebig (ohne Umwandlung)“** bleibt das berechnete Ergebnis in seinem bisherigen Format. Alternativ können Sie es in **„Text“**, **„Zahl“**, **„Ja/Nein“**, **„Datum“**, **„Uhrzeit“** oder **„Datum und Uhrzeit“** umwandeln lassen.
+
+                Ordnen Sie die Berechnungen in der gewünschten Reihenfolge an. Eine spätere Berechnung kann ein früheres Ergebnis über dessen Speicherort in den Vorgangsdaten verwenden.
+
+                # Was passiert bei der Ausführung?
+
+                Prosuna verarbeitet die Berechnungen automatisch von oben nach unten. Der Ausdruck wird ausgewertet, das Ergebnis bei Bedarf umgewandelt und anschließend am festgelegten Speicherort eingetragen.
+
+                Ein vorhandener Wert an diesem Speicherort wird ersetzt. Wenn mehrere Berechnungen denselben Speicherort verwenden, bleibt nach dem Abschluss der zuletzt eingetragene Wert bestehen.
+
+                Kann ein Ausdruck nicht ausgewertet, ein Ergebnis nicht umgewandelt oder nicht gespeichert werden, schlägt die Aufgabe fehl. Die Ergebnisse werden dann nicht als erfolgreicher Teilabschluss an den nächsten Schritt übergeben.
+
+                Nach erfolgreichem Abschluss wird der Vorgang über **„Berechnung abgeschlossen“** fortgesetzt.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Die Ergebnisse stehen direkt an den festgelegten Speicherorten in den Vorgangsdaten bereit. Eine zusätzliche Ausgangsdatenzuordnung ist dafür nicht erforderlich.
+
+                In den Elementdaten werden außerdem die Ergebnisdaten je Berechnung und die Anzahl gespeicherter Ergebnisse festgehalten. Die Anzahl bezeichnet Schreibvorgänge; derselbe Speicherort kann mehrfach gezählt werden.
+
+                Die Zusammenfassung im Vorgangsverlauf nennt die Anzahl und die Speicherorte der Ergebnisse. Eine hinterlegte Kurzbeschreibung wird ebenfalls angezeigt. Die gespeicherten Werte können Sie in den Elementdaten und die Unterschiede zwischen den Vorgangsdatenständen unter **„Datenänderungen“** ansehen.
+
+                # Wie sieht ein Beispiel aus?
+
+                Aus der Anzahl `3` und dem Einzelpreis `10` soll zunächst ein Betrag berechnet werden. Stellen Sie dafür einen Ausdruck zur Multiplikation zusammen, wählen Sie **„Zahl“** als Ergebnisformat und `berechnung.betrag` als Speicherort. Das Ergebnis ist `30`.
+
+                Eine zweite Berechnung liest `berechnung.betrag`, addiert Versandkosten von `5` und speichert `35` unter `berechnung.gesamtbetrag`. Stellen Sie diese Berechnung hinter die erste, damit der Betrag bereits zur Verfügung steht.
+
+                # Was ist zu beachten?
+
+                Ein Ergebnisformat wandelt einen Wert um, verlangt aber keinen gefüllten Wert. Ergibt der Ausdruck `null`, bleibt das Ergebnis auch bei **„Zahl“** oder **„Datum“** `null`.
+
+                Ein bestehender Zielwert wird überschrieben. Wenn Sie ein ganzes Objekt oder eine Liste als Ergebnis übernehmen, ersetzen Sie damit die bisherige Struktur an diesem Speicherort.
+
+                Die Ergebnisumwandlung verwendet technische Formate: Zahltext benötigt einen Dezimalpunkt, zum Beispiel `1.5`. Für Datumsangaben verwenden Sie zum Beispiel `2026-11-27`, für Uhrzeiten `09:30` oder `09:30:00`. Zeitstempel werden anhand der Zeitzone der Anwendung verarbeitet.
+
+                Übernehmen Sie Objekte und Listen mit **„Beliebig (ohne Umwandlung)“**, wenn ihre Struktur erhalten bleiben soll. **„Text“** erzeugt daraus eine technische Textdarstellung und keine JSON-Ausgabe.
+
+                Die Reihenfolge ist Teil Ihrer Berechnung. Ein mehrfach verwendeter Speicherort kann einen bereits berechneten Wert ersetzen; die Anzahl gespeicherter Ergebnisse sagt nicht aus, wie viele unterschiedliche Werte sich verändert haben.
                 """;
     }
 
@@ -157,7 +214,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         try {
             layout = ElementPOJOMapper.createFromPOJO(NoCodeActionNodeConfiguration.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Einstellungen für die No-Code-Berechnung konnten nicht geladen werden.");
         }
 
         layout
@@ -167,13 +224,13 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                             .setType(ValueFunctionType.NoCode)
                             .setNoCode(new NoCodeStaticValue(TARGET_TYPE_ANY)));
                     variableTargetTypeInput.setOptions(List.of(
-                            SelectInputElementOption.of(TARGET_TYPE_ANY, "Beliebig"),
-                            SelectInputElementOption.of(TARGET_TYPE_STRING, "Text"),
-                            SelectInputElementOption.of(TARGET_TYPE_NUMBER, "Zahl"),
-                            SelectInputElementOption.of(TARGET_TYPE_BOOLEAN, "Ja/Nein"),
-                            SelectInputElementOption.of(TARGET_TYPE_DATE, "Datum"),
-                            SelectInputElementOption.of(TARGET_TYPE_TIME, "Uhrzeit"),
-                            SelectInputElementOption.of(TARGET_TYPE_DATETIME, "Datum und Uhrzeit")
+                            SelectInputElementOption.of(TARGET_TYPE_ANY, formatLabel(TARGET_TYPE_ANY)),
+                            SelectInputElementOption.of(TARGET_TYPE_STRING, formatLabel(TARGET_TYPE_STRING)),
+                            SelectInputElementOption.of(TARGET_TYPE_NUMBER, formatLabel(TARGET_TYPE_NUMBER)),
+                            SelectInputElementOption.of(TARGET_TYPE_BOOLEAN, formatLabel(TARGET_TYPE_BOOLEAN)),
+                            SelectInputElementOption.of(TARGET_TYPE_DATE, formatLabel(TARGET_TYPE_DATE)),
+                            SelectInputElementOption.of(TARGET_TYPE_TIME, formatLabel(TARGET_TYPE_TIME)),
+                            SelectInputElementOption.of(TARGET_TYPE_DATETIME, formatLabel(TARGET_TYPE_DATETIME))
                     ));
                 });
 
@@ -196,8 +253,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Variablen berechnet",
-                        "Der Vorgang wird hier fortgesetzt, nachdem alle Einträge berechnet wurden."
+                        "Berechnung abgeschlossen",
+                        "Der Vorgang wird hier fortgesetzt, nachdem die No-Code-Verarbeitung erfolgreich abgeschlossen und die Ergebnisse übernommen wurden."
                 )
         );
     }
@@ -208,14 +265,14 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLES,
-                        "Variablen",
-                        "Die berechneten Variablen als Liste aufgelöster Zielpfade.",
+                        "Berechnete Ergebnisse",
+                        "Ergebnisdaten je Schreibvorgang mit Berechnungsnummer, konfiguriertem und tatsächlichem Speicherort, Ergebnisformat und Wert. Bei aufgelösten Listenpositionen sind die zugehörigen Indizes enthalten.",
                         OUTPUT_VARIABLES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLE_COUNT,
-                        "Anzahl Variablen",
-                        "Die Anzahl der tatsächlich geschriebenen Zielwerte.",
+                        "Anzahl gespeicherter Ergebnisse",
+                        "Anzahl der geschriebenen Ergebnisse. Mehrfach beschriebene Speicherorte zählen mehrfach; die Anzahl ist kein Änderungsvergleich.",
                         "number"
                 )
         );
@@ -263,7 +320,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         var sourceRoot = context.getCurrentProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?>)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Vorgangsdatenwurzel ($) ist kein Objekt."
+                    "Die Vorgangsdaten haben ein ungültiges Format. Für die No-Code-Berechnung wird am Wurzelpfad ($) ein Objekt erwartet."
             );
         }
 
@@ -275,7 +332,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var definition = variableDefinitions.get(i);
             var rowIndex = i + 1;
 
-            var targetPath = normalizeDestinationKey(definition.name(), rowIndex, "Variablenname");
+            var targetPath = normalizeDestinationKey(definition.name(), rowIndex, "Speicherort des Ergebnisses");
             var rowEvaluationData = ProcessExecutionData.of(MapUtils.deepCopy(workingExecutionData));
             var wildcardBindings = resolveTargetWildcardBindings(rowEvaluationData, targetPath);
 
@@ -329,7 +386,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     : StringUtils.toNullableTrimmedString(row.name);
             if (variableName == null) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "In der Zeile ist kein gültiger Variablenname angegeben."
+                        "Berechnung %d: Geben Sie den Speicherort des Ergebnisses an.",
+                        result.size() + 1
                 );
             }
 
@@ -347,7 +405,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
             if (expressionOperand == null) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "In der Zeile ist kein gültiger No-Code-Ausdruck angegeben."
+                        "Berechnung %d: Legen Sie einen No-Code-Ausdruck fest.",
+                        result.size() + 1
                 );
             }
 
@@ -400,7 +459,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         } catch (RuntimeException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der No-Code-Ausdruck in Zeile %d konnte nicht ausgewertet werden: %s",
+                    "Berechnung %d: Der No-Code-Ausdruck konnte nicht ausgewertet werden: %s",
                     rowIndex,
                     e.getMessage()
             );
@@ -431,7 +490,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         var normalizedPath = StringUtils.toNullableTrimmedString(rawPath);
         if (normalizedPath == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Pfadangabe %s in Zeile %d darf nicht leer sein.",
+                    "Das Feld %s in Berechnung %d benötigt einen Speicherort.",
                     StringUtils.quote(fieldLabel),
                     rowIndex
             );
@@ -444,7 +503,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     rawPath,
                     rowIndex,
                     fieldLabel,
-                    "Pfade müssen relativ zur Vorgangsdatenwurzel angegeben werden. Ein führendes $. ist optional, andere $-Präfixe sind nicht erlaubt."
+                    "Der Speicherort muss in den Vorgangsdaten liegen. Ein führendes $. ist zulässig, andere $-Präfixe nicht."
             );
         }
 
@@ -453,7 +512,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     rawPath,
                     rowIndex,
                     fieldLabel,
-                    "Pfade dürfen nur auf Vorgangsdaten ($) zeigen."
+                    "Geben Sie einen Speicherort innerhalb der Vorgangsdaten an."
             );
         }
 
@@ -465,7 +524,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     rawPath,
                     rowIndex,
                     fieldLabel,
-                    "Verwenden Sie einen Pfad wie person.name, items[0].name oder items[*].name."
+                    "Verwenden Sie einen Datenpfad wie person.name oder positionen[0].betrag."
             );
         }
 
@@ -477,7 +536,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                                                                                           @Nonnull String fieldLabel,
                                                                                           @Nonnull String detail) {
         return new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültiger Pfad in %s (Zeile %d): %s. Pfad: %s",
+                "Der Speicherort im Feld %s in Berechnung %d ist ungültig. %s Angegebener Pfad: %s",
                 StringUtils.quote(fieldLabel),
                 rowIndex,
                 detail,
@@ -499,7 +558,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         } catch (IllegalArgumentException | IllegalStateException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: %s",
+                    "Berechnung %d: Das Ergebnis konnte nicht am Speicherort übernommen werden: %s",
                     rowIndex,
                     e.getMessage()
             );
@@ -521,7 +580,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "In Zeile %d ist der Zieltyp %s ungültig.",
+                "Berechnung %d: Das Ergebnisformat %s wird nicht unterstützt. Wählen Sie ein angebotenes Format.",
                 rowIndex,
                 StringUtils.quote(targetType)
         );
@@ -545,13 +604,19 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 default -> value;
             };
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw e;
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Berechnung %d: Das Ergebnis konnte nicht in das Format %s umgewandelt werden. %s",
+                    rowIndex,
+                    StringUtils.quote(formatLabel(targetType)),
+                    e.getMessage()
+            );
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Wert in Zeile %d konnte nicht in den Zieltyp %s umgewandelt werden.",
+                    "Berechnung %d: Das Ergebnis konnte nicht in das Format %s umgewandelt werden.",
                     rowIndex,
-                    StringUtils.quote(targetType)
+                    StringUtils.quote(formatLabel(targetType))
             );
         }
     }
@@ -570,15 +635,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Leere Zeichenkette kann nicht in eine Zahl umgewandelt werden."
+                        "Ein leerer Text kann nicht in eine Zahl umgewandelt werden."
                 );
             }
             return new BigDecimal(trimmed);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht in eine Zahl umgewandelt werden.",
-                StringUtils.quote(value.getClass().getSimpleName())
+                "Ein Wert vom Typ %s kann nicht in das Format %s umgewandelt werden.",
+                StringUtils.quote(valueTypeLabel(value)),
+                StringUtils.quote(formatLabel(TARGET_TYPE_NUMBER))
         );
     }
 
@@ -597,15 +663,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 case "true", "1", "ja", "yes", "on" -> true;
                 case "false", "0", "nein", "no", "off", "" -> false;
                 default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Zeichenkette %s kann nicht in einen Ja/Nein-Wert umgewandelt werden.",
+                        "Der Text %s kann nicht in einen Ja/Nein-Wert umgewandelt werden.",
                         StringUtils.quote(s)
                 );
             };
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht in einen Ja/Nein-Wert umgewandelt werden.",
-                StringUtils.quote(value.getClass().getSimpleName())
+                "Ein Wert vom Typ %s kann nicht in das Format %s umgewandelt werden.",
+                StringUtils.quote(valueTypeLabel(value)),
+                StringUtils.quote(formatLabel(TARGET_TYPE_BOOLEAN))
         );
     }
 
@@ -670,8 +737,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht in eine Uhrzeit umgewandelt werden.",
-                StringUtils.quote(value.getClass().getSimpleName())
+                "Ein Wert vom Typ %s kann nicht in das Format %s umgewandelt werden.",
+                StringUtils.quote(valueTypeLabel(value)),
+                StringUtils.quote(formatLabel(TARGET_TYPE_TIME))
         );
     }
 
@@ -709,7 +777,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Leere Zeichenkette kann nicht in ein Datum umgewandelt werden."
+                        "Ein leerer Text kann nicht in ein Datum umgewandelt werden."
                 );
             }
 
@@ -730,7 +798,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                                     .toString();
                         } catch (Exception ignoredInstant) {
                             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                                    "Die Zeichenkette %s kann nicht in ein Datum umgewandelt werden.",
+                                    "Der Text %s kann nicht in ein Datum umgewandelt werden.",
                                     StringUtils.quote(s)
                             );
                         }
@@ -740,8 +808,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht in ein Datum umgewandelt werden.",
-                StringUtils.quote(value.getClass().getSimpleName())
+                "Ein Wert vom Typ %s kann nicht in das Format %s umgewandelt werden.",
+                StringUtils.quote(valueTypeLabel(value)),
+                StringUtils.quote(formatLabel(TARGET_TYPE_DATE))
         );
     }
 
@@ -766,7 +835,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var trimmed = s.trim();
             if (trimmed.isEmpty()) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Leere Zeichenkette kann nicht in Datum und Uhrzeit umgewandelt werden."
+                        "Ein leerer Text kann nicht in Datum und Uhrzeit umgewandelt werden."
                 );
             }
 
@@ -779,7 +848,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     );
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Die Zeichenkette %s kann nicht in Datum und Uhrzeit umgewandelt werden.",
+                            "Der Text %s kann nicht in Datum und Uhrzeit umgewandelt werden.",
                             StringUtils.quote(s)
                     );
                 }
@@ -787,8 +856,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Der Typ %s kann nicht in Datum und Uhrzeit umgewandelt werden.",
-                StringUtils.quote(value.getClass().getSimpleName())
+                "Ein Wert vom Typ %s kann nicht in das Format %s umgewandelt werden.",
+                StringUtils.quote(valueTypeLabel(value)),
+                StringUtils.quote(formatLabel(TARGET_TYPE_DATETIME))
         );
     }
 
@@ -812,6 +882,50 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         return value.atOffset(validOffsets.getFirst()).toInstant();
     }
 
+    @Nonnull
+    private static String formatLabel(@Nonnull String format) {
+        return switch (format) {
+            case TARGET_TYPE_ANY -> "Beliebig (ohne Umwandlung)";
+            case TARGET_TYPE_STRING -> "Text";
+            case TARGET_TYPE_NUMBER -> "Zahl";
+            case TARGET_TYPE_BOOLEAN -> "Ja/Nein";
+            case TARGET_TYPE_DATE -> "Datum";
+            case TARGET_TYPE_TIME -> "Uhrzeit";
+            case TARGET_TYPE_DATETIME -> "Datum und Uhrzeit";
+            default -> format;
+        };
+    }
+
+    @Nonnull
+    private static String valueTypeLabel(@Nonnull Object value) {
+        if (value instanceof String) {
+            return formatLabel(TARGET_TYPE_STRING);
+        }
+        if (value instanceof Number) {
+            return formatLabel(TARGET_TYPE_NUMBER);
+        }
+        if (value instanceof Boolean) {
+            return formatLabel(TARGET_TYPE_BOOLEAN);
+        }
+        if (value instanceof Map<?, ?>) {
+            return "Objekt";
+        }
+        if (value instanceof List<?>) {
+            return "Liste";
+        }
+        if (value instanceof LocalDate || value instanceof YearMonth || value instanceof Year) {
+            return formatLabel(TARGET_TYPE_DATE);
+        }
+        if (value instanceof LocalTime) {
+            return formatLabel(TARGET_TYPE_TIME);
+        }
+        if (value instanceof Instant || value instanceof OffsetDateTime
+                || value instanceof ZonedDateTime || value instanceof LocalDateTime) {
+            return formatLabel(TARGET_TYPE_DATETIME);
+        }
+        return value.getClass().getSimpleName();
+    }
+
     private record VariableDefinition(
             @Nonnull String name,
             @Nonnull String targetType,
@@ -825,18 +939,18 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     }
 
     @ReplicatingContainerLayoutElementElementPOJOBinding(id = VARIABLES_FIELD_ID, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "No-Code-Aktion"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Pro Eintrag werden ein Variablenname und der zu berechnende No-Code-Ausdruck definiert."),
+            @ElementPOJOBindingProperty(key = "label", strValue = "Berechnungen"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Legen Sie für jede Berechnung einen No-Code-Ausdruck, das Ergebnisformat und den Speicherort fest. Die Berechnungen werden von oben nach unten ausgeführt."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Eintrag #"),
-            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Eintrag hinzufügen"),
-            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Eintrag entfernen"),
+            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Berechnung"),
+            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Berechnung hinzufügen"),
+            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Berechnung entfernen"),
             @ElementPOJOBindingProperty(key = "sortable", boolValue = true)
     })
     public static class NoCodeActionNodeVariableConfiguration {
         @InputElementPOJOBinding(id = VARIABLE_NAME_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Variablenname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Zielpfad in den Vorgangsdaten gespeichert. Pfade verwenden Datenvariablen-Syntax mit Punktnotation und Array-Indizes, z. B. person.name oder items[0].name."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Speicherort des Ergebnisses"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Datenschlüssel, unter dem das Ergebnis in den Vorgangsdaten gespeichert wird, zum Beispiel berechnung.gesamtbetrag oder positionen[0].betrag. Der bereits angezeigte Präfix $. steht für die Vorgangsdatenebene. Ein vorhandener Wert an diesem Speicherort wird ersetzt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
                 @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true)
@@ -844,8 +958,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         public String name;
 
         @InputElementPOJOBinding(id = VARIABLE_TARGET_TYPE_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Zieltyp"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Gibt an, in welchen Typ das Ergebnis umgewandelt wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Ergebnisformat"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob das Ergebnis unverändert übernommen oder in das gewählte Format umgewandelt werden soll. Ein Nullwert bleibt bei jedem Format ein Nullwert."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0)
         })
@@ -853,7 +967,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
         @InputElementPOJOBinding(id = VARIABLE_EXPRESSION_FIELD_ID, type = ElementType.NoCodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "No-Code-Ausdruck"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausdruck wird beim Ausführen des Prozesselements ausgewertet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Stellen Sie den Ausdruck für diese Berechnung zusammen. Ergebnisse vorheriger Berechnungen können Sie über ihren Speicherort in den Vorgangsdaten verwenden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })

@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.domain.Specification;
 
 public class CustomLinkFilter implements Filter<CustomLink> {
-    @NotNull
+    @NotNull(message = "Wählen Sie einen Typ für die Custom-Links aus.")
     private CustomLinkType type;
     private String label;
     private Boolean enabled;

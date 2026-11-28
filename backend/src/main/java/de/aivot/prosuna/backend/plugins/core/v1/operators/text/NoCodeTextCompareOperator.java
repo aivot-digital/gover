@@ -87,33 +87,40 @@ public class NoCodeTextCompareOperator extends NoCodeOperator {
         };
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 %s
 
                 # Welche Werte werden benötigt?
-                **Text:** Der zu prüfende Text. **%s:** Der Text, mit dem verglichen wird.
+
+                - **Text:** Der zu prüfende Text.
+                - **%s:** Der Text, mit dem verglichen wird.
 
                 Beide Texte können Sie frei eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn die beschriebene Bedingung zutrifft; andernfalls **Falsch**.
+
+                `Wahr`, wenn die beschriebene Bedingung zutrifft; andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie in einer Bedingung **„%s“**. Verwenden Sie für **Text** die Variable „%s“, die `%s` liefert, und geben Sie als **%s** `%s` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `%s`. Das Ergebnis ist **Wahr**. Um die umgekehrte Bedingung zu prüfen, setzen Sie diesen Ausdruck in **„Nicht“** ein.
+                1. Wählen Sie in einer Bedingung **„%s“**.
+                2. Verwenden Sie für **„Text“** die Variable **„%s“**, die `%s` liefert, und geben Sie als **„%s“** `%s` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `%s`. Das Ergebnis ist `Wahr`. Um die umgekehrte Bedingung zu prüfen, setzen Sie diesen Ausdruck in **„Nicht“** ein.
 
                 # Was ist zu beachten?
+
                 Der Vergleich erfolgt wörtlich. Punkte, Klammern und andere Sonderzeichen haben keine besondere Bedeutung. Leerzeichen am Anfang und Ende beider Texte zählen beim Vergleich mit. %s
 
                 Fehlende Werte werden als leerer Text behandelt. %s
                 """.formatted(
                 purpose, comparisonLabel, getLabel(), source, exampleText, comparisonLabel, otherText, reading,
                 mode == Mode.EQUALS_IGNORE_CASE
-                        ? "Groß- und Kleinschreibung werden ignoriert; beispielsweise passen „Müller“ und „MÜLLER“ zusammen, „Müller“ und „Mueller“ dagegen nicht."
+                        ? "Groß- und Kleinschreibung werden ignoriert; beispielsweise passen `Müller` und `MÜLLER` zusammen, `Müller` und `Mueller` dagegen nicht."
                         : "Groß- und Kleinschreibung werden unterschieden.",
                 mode == Mode.EQUALS_IGNORE_CASE
-                        ? "Zwei leere Texte ergeben Wahr."
-                        : "Ein leerer Suchtext ergibt Wahr, auch bei einem leeren Text."
+                        ? "Zwei leere Texte ergeben `Wahr`."
+                        : "Ein leerer Suchtext ergibt `Wahr`, auch bei einem leeren Text."
         );
     }
 

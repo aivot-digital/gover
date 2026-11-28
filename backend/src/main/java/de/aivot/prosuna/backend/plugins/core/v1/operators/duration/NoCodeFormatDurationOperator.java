@@ -33,26 +33,31 @@ public class NoCodeFormatDurationOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Geben Sie eine Zeitdauer als lesbaren Text aus, zum Beispiel die Bearbeitungszeit in Stunden und Minuten.
 
                 # Welche Werte werden benötigt?
+
                 - **Zeitdauer in Sekunden:** Die gesamte Zeitdauer als Sekundenwert. Sie können diesen frei eingeben; es gibt keine festen Auswahlwerte.
                 - **Größte Einheit:** Wählen Sie **„Stunden“** oder **„Tage“**. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich.
 
                 Beide Eingaben können auch aus einer anderen Wertquelle oder einer Funktion stammen. Ein Zeitdauer-Feld liefert bereits einen Sekundenwert.
 
                 # Welches Ergebnis erhalten Sie?
-                Einen Text mit den benötigten Einheiten. Mit **„Stunden“** kann die Stundenzahl über **24** liegen; mit **„Tage“** werden volle Tage zusätzlich ausgewiesen. Einheiten mit dem Wert **0** werden weggelassen. Eine Zeitdauer von **0 Sekunden** ergibt den Text **„0 Sekunden“**.
+
+                Einen Text mit den benötigten Einheiten. Mit **„Stunden“** kann die Stundenzahl über `24` liegen; mit **„Tage“** werden volle Tage zusätzlich ausgewiesen. Einheiten mit dem Wert `0` werden weggelassen. Eine Zeitdauer von `0 Sekunden` ergibt den Text `0 Sekunden`.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie für einen Textwert **„Zeitdauer formatieren“**.
-                2. Legen Sie als **„Zeitdauer in Sekunden“** **99000** fest oder übernehmen Sie einen entsprechenden Wert aus einem Zeitdauer-Feld.
+                2. Legen Sie als **„Zeitdauer in Sekunden“** `99000` fest oder übernehmen Sie einen entsprechenden Wert aus einem Zeitdauer-Feld.
                 3. Wählen Sie als **„Größte Einheit“** **„Tage“**.
 
-                Das Ergebnis ist der Text **„1 Tag 3 Stunden 30 Minuten“**. Zugeklappt lesen Sie: **„99000 Sekunden als Text mit größter Einheit Tage“**.
+                Das Ergebnis ist der Text `1 Tag 3 Stunden 30 Minuten`. Zugeklappt lesen Sie: `99000 Sekunden als Text mit größter Einheit Tage`.
 
                 # Was ist zu beachten?
-                Ein Tag entspricht immer **24 Stunden**; Kalenderdaten und Zeitumstellungen werden nicht berücksichtigt. Ein leerer Wert für **„Größte Einheit“** verwendet **„Stunden“**. Fehlende oder leere Sekundenwerte werden als **0** behandelt. Der Sekundenwert muss eine ganze Zahl sein; auch **0.999999999** führt zu einer Fehlermeldung.
+
+                Ein Tag entspricht immer `24 Stunden`; Kalenderdaten und Zeitumstellungen werden nicht berücksichtigt. Ein leerer Wert für **„Größte Einheit“** verwendet **„Stunden“**. Fehlende oder leere Sekundenwerte werden als `0` behandelt. Der Sekundenwert muss eine ganze Zahl sein; auch `0.999999999` führt zu einer Fehlermeldung.
 
                 Das Ergebnis ist Text. Verwenden Sie für weitere Berechnungen den ursprünglichen Sekundenwert.
                 """;

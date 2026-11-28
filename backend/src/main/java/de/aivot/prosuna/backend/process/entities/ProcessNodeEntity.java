@@ -31,11 +31,11 @@ public class ProcessNodeEntity implements LockVersioned {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID muss angegeben werden.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessversion darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion muss angegeben werden.")
     private Integer processVersion;
 
     @Nullable
@@ -48,41 +48,41 @@ public class ProcessNodeEntity implements LockVersioned {
 
     @Nonnull
     @NotBlank(message = "Der Datenschlüssel darf nicht leer sein.")
-    @NotNull(message = "Der Datenschlüssel darf nicht null sein.")
+    @NotNull(message = "Der Datenschlüssel muss angegeben werden.")
     @Size(min = 1, max = 32, message = "Der Datenschlüssel muss zwischen 1 und 32 Zeichen lang sein.")
     @Pattern(regexp = ProcessNodeDataKeyUtils.REGEX, message = ProcessNodeDataKeyUtils.FORMAT_ERROR)
     private String dataKey;
 
     @Nonnull
     @NotBlank(message = "Der Schlüssel der Prozesselement-Definition darf nicht leer sein.")
-    @NotNull(message = "Der Schlüssel der Prozesselement-Definition darf nicht null sein.")
+    @NotNull(message = "Der Schlüssel der Prozesselement-Definition muss angegeben werden.")
     @Size(min = 1, max = 128, message = "Der Schlüssel der Prozesselement-Definition muss zwischen 1 und 128 Zeichen lang sein.")
     private String processNodeDefinitionKey;
 
     @Nonnull
-    @NotNull(message = "Die Version der Prozesselement-Definition darf nicht null sein.")
+    @NotNull(message = "Die Version der Prozesselement-Definition muss angegeben werden.")
     private Integer processNodeDefinitionVersion;
 
     @Nonnull
-    @NotNull(message = "Die Konfiguration darf nicht null sein.")
+    @NotNull(message = "Die Konfiguration muss angegeben werden.")
     @Convert(converter = AuthoredElementValuesConverter.class)
     @Column(columnDefinition = "jsonb")
     private AuthoredElementValues configuration;
 
     @Nonnull
-    @NotNull(message = "Die Zuordnungen der Ausgangsdaten dürfen nicht null sein.")
+    @NotNull(message = "Die Zuordnungen der Ausgangsdaten müssen angegeben werden.")
     @Convert(converter = JsonObjectConverter.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> outputMappings;
 
     @Nonnull
-    @NotNull(message = "Die Fristen dürfen nicht null sein.")
+    @NotNull(message = "Die Fristen müssen angegeben werden.")
     @Convert(converter = ProcessNodeDeadlinesConverter.class)
     @Column(columnDefinition = "jsonb", nullable = false)
     private Map<
             @NotBlank(message = "Der Schlüssel der Frist darf nicht leer sein.")
             @Size(max = 32, message = "Der Schlüssel der Frist darf maximal 32 Zeichen lang sein.") String,
-            @NotNull(message = "Die Konfiguration einer Frist darf nicht null sein.") @Valid ProcessNodeDeadlineConfiguration
+            @NotNull(message = "Die Konfiguration einer Frist muss angegeben werden.") @Valid ProcessNodeDeadlineConfiguration
             > deadlines = new LinkedHashMap<>();
 
     @Nullable

@@ -50,7 +50,7 @@ public class CaptchaController {
             return altchaService.createChallenge();
         } catch (Exception e) {
             throw ResponseException.internalServerError(
-                    "Captcha-Challenge konnte nicht erstellt werden.", e
+                    "Die Sicherheitsabfrage konnte nicht erstellt werden.", e
             );
         }
     }

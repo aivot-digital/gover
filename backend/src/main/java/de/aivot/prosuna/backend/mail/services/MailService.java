@@ -28,6 +28,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.util.ByteArrayDataSource;
@@ -288,7 +289,7 @@ public class MailService {
         if (template.getUserConfigKey() != null) {
             var def = userConfigService
                     .getDefinition(template.getUserConfigKey())
-                    .orElseThrow(() -> ResponseException.internalServerError("User config definition not found: " + template.getUserConfigKey()));
+                    .orElseThrow(() -> ResponseException.internalServerError("Die Benachrichtigungseinstellung wurde nicht gefunden."));
 
             var config = userConfigService
                     .retrieve(template.getUserConfigKey(), user.getId());
@@ -572,7 +573,9 @@ public class MailService {
             try {
                 address.setAddress(EmailAddressUtils.normalizeTransportAddress(address.getAddress()));
             } catch (IllegalArgumentException exception) {
-                throw new MessagingException("Die E-Mail-Adresse einer empfangenden Person ist ungültig.", exception);
+                var invalidAddress = new AddressException("Die E-Mail-Adresse einer empfangenden Person ist ungültig.");
+                invalidAddress.setNextException(exception);
+                throw invalidAddress;
             }
         }
         return addresses;

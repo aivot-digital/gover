@@ -123,7 +123,7 @@ describe('HtmlTemplateInputComponent', () => {
             />,
         );
 
-        expect(await screen.findByRole('alert')).toHaveTextContent('Die HTML-Vorlage konnte nicht geladen werden.');
+        expect(await screen.findByRole('alert')).toHaveTextContent('Die HTML-Dokumentvorlage konnte nicht geladen werden.');
         await waitFor(() => expect(dispatch).toHaveBeenCalledTimes(1));
         expect(screen.queryByText('disabled')).not.toBeInTheDocument();
     });

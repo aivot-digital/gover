@@ -28,6 +28,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -160,6 +163,42 @@ class CodeListServiceTest {
     // endregion
 
     // region Creating and updating lists
+
+    @ParameterizedTest
+    @ValueSource(strings = {"003", "003,secret,extra", "003,\"secret\"x"})
+    void importCsvReportsThePhysicalStartLineAfterMultilineFieldsAndBlankLines(String invalidRecord) {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        var input = csv("code,name\r\n001,\"two\r\nlines\"\r\n\r\n" + invalidRecord);
+
+        var error = assertThrows(ResponseException.class, () -> service.importCSV("test", input));
+
+        assertEquals("Der CSV-Datensatz ab Zeile 5 konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", error.getTitle());
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+    }
+
+    @Test
+    void importCsvReportsTheRecordStartWhenTheStreamFailsDuringARecord() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        var unreadable = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("internal read error");
+            }
+        };
+        var input = new SequenceInputStream(csv("code,name\n001,\"two\nlines\"\n\n002,"), unreadable);
+
+        var error = assertThrows(ResponseException.class, () -> service.importCSV("test", input));
+
+        assertEquals("Der CSV-Datensatz ab Zeile 5 konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", error.getTitle());
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+    }
+
+    @Test
+    void importCsvReportsAnInvalidFirstRecordOnLineOne() {
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(createManualCodeList()));
+        var error = assertThrows(ResponseException.class, () -> service.importCSV("test", csv("code,\"name\"x")));
+        assertEquals("Der CSV-Datensatz ab Zeile 1 konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", error.getTitle());
+    }
 
     @Test
     void createClearsClientProvidedId() throws Exception {

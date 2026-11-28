@@ -123,7 +123,7 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
         var existing = processDefinitionEdgeRepository.findByFromNodeIdAndViaPort(edge.getFromNodeId(), edge.getViaPort());
         if (existing.isPresent() && !Objects.equals(existing.get().getId(), edge.getId())) {
             // Usually another editor connected the port meanwhile, so the client is told to reload rather than to fix its input.
-            throw ResponseException.conflict("Dieser Ausgangsport wurde zwischenzeitlich bereits verbunden. Laden Sie den Prozess neu, um den aktuellen Stand zu sehen.");
+            throw ResponseException.conflict("Dieser Ausgangsport ist bereits verbunden. Laden Sie die Prozessversion neu, um den aktuellen Stand zu sehen.");
         }
     }
 

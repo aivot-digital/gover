@@ -18,17 +18,17 @@ export const assignmentContextGeneralAssigneePreferenceOptions: Array<Assignment
     {
         value: 'previousProcessStepAssignee',
         label: 'Zuständige Person des vorherigen Prozessschritts bevorzugen',
-        subLabel: 'Nutzt die Person aus dem vorherigen Prozessschritt, sofern sie weiterhin berechtigt ist.',
+        subLabel: 'Bevorzugt die zuständige Person des vorherigen Prozessschritts, sofern sie zum Personenkreis gehört und die erforderlichen Berechtigungen besitzt.',
     },
     {
         value: 'uninvolvedUser',
         label: 'Bisher unbeteiligte Mitarbeiter:in bevorzugen',
-        subLabel: 'Wählt möglichst eine Person, die in diesem Vorgang noch nicht beteiligt war.',
+        subLabel: 'Bevorzugt eine Person, der in diesem Vorgang bisher keine Aufgabe zugewiesen wurde.',
     },
     {
         value: 'processInstanceAssignee',
         label: 'Zuständige Person des Vorgangs bevorzugen',
-        subLabel: 'Nutzt die zentrale Vorgangszuweisung, sofern diese Person zum Personenkreis gehört.',
+        subLabel: 'Bevorzugt die zuständige Person des Vorgangs, sofern sie zum Personenkreis gehört und die erforderlichen Berechtigungen besitzt.',
     },
 ];
 
@@ -41,12 +41,12 @@ export const assignmentContextRepeatExecutionAssigneePreferenceOptions: Array<As
     {
         value: 'previousIterationAssignee',
         label: 'Zuletzt zuständige Mitarbeiter:in bevorzugen',
-        subLabel: 'Nutzt die Person aus der vorherigen Ausführung dieser Aufgabe, sofern sie weiterhin berechtigt ist.',
+        subLabel: 'Bevorzugt die zuständige Person der vorherigen Ausführung dieses Prozesselements, sofern sie zum Personenkreis gehört und die erforderlichen Berechtigungen besitzt.',
     },
     {
         value: 'differentFromPreviousIterationAssignee',
         label: 'Andere Mitarbeiter:in bevorzugen',
-        subLabel: 'Vermeidet nach Möglichkeit die Person aus der vorherigen Ausführung dieser Aufgabe.',
+        subLabel: 'Vermeidet nach Möglichkeit die zuständige Person der vorherigen Ausführung dieses Prozesselements.',
     },
 ];
 

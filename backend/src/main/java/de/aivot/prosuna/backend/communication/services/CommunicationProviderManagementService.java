@@ -27,6 +27,8 @@ import de.aivot.prosuna.backend.lib.models.LockVersioned;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.domain.Sort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,8 @@ import java.util.UUID;
 
 @Service
 public class CommunicationProviderManagementService {
+    private static final Logger logger = LoggerFactory.getLogger(CommunicationProviderManagementService.class);
+
     private final CommunicationProviderRepository providerRepository;
     private final CommunicationProviderBindingRepository bindingRepository;
     private final CommunicationProviderDefinitionService definitionService;
@@ -240,6 +244,9 @@ public class CommunicationProviderManagementService {
         try {
             return testProviderTyped(provider, definition, inputs);
         } catch (CommunicationException e) {
+            if (e.getCause() != null) {
+                logger.warn("Connection test for communication provider {} failed", providerId, e);
+            }
             return createFailedTestResult(e.getMessage());
         } catch (RuntimeException e) {
             throw ResponseException.internalServerError(

@@ -460,7 +460,7 @@ public class CustomerProcessInstanceTaskViewController {
             Thread.currentThread().interrupt();
             throw ResponseException.internalServerError(e, "Die PDF-Erstellung der Zahlungsbestätigung wurde unterbrochen.");
         } catch (IOException | URISyntaxException | TemplateProcessingException e) {
-            throw ResponseException.internalServerError(e, "Fehler beim Erzeugen der Zahlungsbestätigung: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Zahlungsbestätigung konnte nicht als PDF erstellt werden.");
         }
 
         response.setContentType("application/pdf");

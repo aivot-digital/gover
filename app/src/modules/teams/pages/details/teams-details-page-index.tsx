@@ -21,12 +21,12 @@ import {useHasTeamPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const TeamSchema = yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name des Teams muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name des Teams darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Teams ist ein Pflichtfeld.'),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export function TeamsDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -110,7 +110,7 @@ export function TeamsDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Das Team konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -132,7 +132,7 @@ export function TeamsDetailsPageIndex() {
                     })
                     .catch(err => {
                         console.error(err);
-                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(isLockVersionConflictError(err) ? showLockConflictSnackbar(err.message) : showErrorSnackbar('Das Team konnte nicht gespeichert werden.'));
                     })
                     .finally(() => {
                         setIsBusy(false);
@@ -153,7 +153,7 @@ export function TeamsDetailsPageIndex() {
                 });
                 dispatch(showSuccessSnackbar('Das Team wurde erfolgreich gelöscht.'));
             })
-            .catch(() => dispatch(showErrorSnackbar('Beim Löschen ist ein Fehler aufgetreten.')))
+            .catch(() => dispatch(showErrorSnackbar('Das Team konnte nicht gelöscht werden.')))
             .finally(() => setIsBusy(false));
     };
 

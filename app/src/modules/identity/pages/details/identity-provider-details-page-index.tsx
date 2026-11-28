@@ -45,23 +45,23 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
 
 export const formSchema = yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name des Identitätsanbieters muss mindestens 3 Zeichen lang sein.')
         .max(64, 'Der Name des Identitätsanbieters darf maximal 64 Zeichen lang sein.')
         .required('Der Name des Identitätsanbieters ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung des Identitätsanbieters ist ein Pflichtfeld.'),
-    iconAssetKey: yup.string(),
-    metadataIdentifier: yup.string()
+    iconAssetKey: yup.string().nonNullable('Wählen Sie eine gültige Datei für das Logo aus.').typeError('Wählen Sie eine gültige Datei für das Logo aus.'),
+    metadataIdentifier: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(1, 'Der Metadaten-Identifikator ist ein Pflichtfeld.')
         .max(64, 'Der Metadaten-Identifikator darf maximal 64 Zeichen lang sein.')
         .required('Der Metadaten-Identifikator ist ein Pflichtfeld.'),
-    uniqueIdAttribute: yup.string()
+    uniqueIdAttribute: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .max(255, 'Das identifizierende Attribut darf maximal 255 Zeichen lang sein.')
         .required('Das identifizierende Attribut ist ein Pflichtfeld.')
@@ -75,41 +75,41 @@ export const formSchema = yup.object({
                 return attributes?.some(attribute => attribute?.keyInData === value) === true;
             },
         ),
-    authorizationEndpoint: yup.string()
+    authorizationEndpoint: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(1, 'Der Autorisierungsendpunkt ist ein Pflichtfeld.')
         .max(255, 'Der Autorisierungsendpunkt darf maximal 255 Zeichen lang sein.')
         .matches(urlRegex, 'Der Autorisierungsendpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .required('Der Autorisierungsendpunkt ist ein Pflichtfeld.'),
-    tokenEndpoint: yup.string()
+    tokenEndpoint: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(1, 'Der Tokenendpunkt ist ein Pflichtfeld.')
         .max(255, 'Der Tokenendpunkt darf maximal 255 Zeichen lang sein.')
         .matches(urlRegex, 'Der Tokenendpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .required('Der Tokenendpunkt ist ein Pflichtfeld.'),
-    userinfoEndpoint: yup.string()
+    userinfoEndpoint: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .max(255, 'Der Userinfo-Endpunkt darf maximal 255 Zeichen lang sein.')
         .matches(urlRegex, 'Der Userinfo-Endpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .nullable(),
-    endSessionEndpoint: yup.string()
+    endSessionEndpoint: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .max(255, 'Der End-Session-Endpunkt darf maximal 255 Zeichen lang sein.')
         .matches(urlRegex, 'Der End-Session-Endpunkt muss eine absolute oder relative URL sein (z.B. https://... oder /../...)')
         .nullable(),
-    clientId: yup.string()
+    clientId: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(1, 'Die Client-ID ist ein Pflichtfeld.')
         .max(128, 'Die Client-ID darf maximal 128 Zeichen lang sein.')
         .required('Die Client-ID ist ein Pflichtfeld.'),
-    attributes: yup.array()
+    attributes: yup.array().nonNullable('Die Einträge haben ein ungültiges Format.').typeError('Die Einträge haben ein ungültiges Format.')
         .of(
             yup.object({
-                label: yup.string().trim(),
-                description: yup.string().trim(),
-                keyInData: yup.string().trim(),
-                displayAttribute: yup.boolean().nullable(),
-            }).test('row-completeness', 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.', function (row) {
+                label: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+                description: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+                keyInData: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+                displayAttribute: yup.boolean().typeError('Geben Sie an, ob das Attribut angezeigt werden soll.').nullable(),
+            }).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.').test('row-completeness', 'Bitte füllen Sie alle Felder aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
                 const {label, description, keyInData} = row;
@@ -128,20 +128,20 @@ export const formSchema = yup.object({
                 return true;
             }),
         ),
-    defaultScopes: yup.array()
+    defaultScopes: yup.array().nonNullable('Die Einträge haben ein ungültiges Format.').typeError('Die Einträge haben ein ungültiges Format.')
         .of(
-            yup.string()
+            yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.')
                 .trim()
                 .test('not-empty-if-present', 'Ein Scope darf nicht leer sein.', val => {
                     return val == null || val.trim().length > 0;
                 }),
         ),
-    additionalParams: yup.array()
+    additionalParams: yup.array().nonNullable('Die Einträge haben ein ungültiges Format.').typeError('Die Einträge haben ein ungültiges Format.')
         .of(
             yup.object({
-                key: yup.string().trim(),
-                value: yup.string().trim(),
-            }).test('row-completeness', 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.', function (row) {
+                key: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+                value: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.').trim(),
+            }).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.').test('row-completeness', 'Bitte füllen Sie Schlüssel und Wert aus oder löschen Sie die Zeile.', function (row) {
                 if (!row) return true;
 
                 const {key, value} = row;
@@ -160,7 +160,7 @@ export const formSchema = yup.object({
                 return true;
             }),
         ),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -204,8 +204,8 @@ export function IdentityProviderDetailsPageIndex() {
     const dynamicFormSchema = useMemo(() => {
         return formSchema.shape({
             iconAssetKey: isSystemProvider
-                ? yup.string().nullable()
-                : yup.string()
+                ? yup.string().typeError('Wählen Sie eine gültige Datei für das Logo aus.').nullable()
+                : yup.string().typeError('Wählen Sie eine gültige Datei für das Logo aus.')
                     .required('Die Logo-Grafik ist eine Pflichtkonfiguration.'),
         });
     }, [isSystemProvider]);
@@ -320,10 +320,10 @@ export function IdentityProviderDetailsPageIndex() {
                 })
                 .catch(err => {
                     if (err.status === 409) {
-                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
+                        dispatch(showErrorSnackbar('Der Identitätsanbieter wird noch von veröffentlichten Formularen verwendet.'));
                     } else {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Der Identitätsanbieter konnte nicht gespeichert werden.'));
                     }
                 })
                 .finally(() => {
@@ -342,10 +342,10 @@ export function IdentityProviderDetailsPageIndex() {
                     if (isLockVersionConflictError(err)) {
                         dispatch(showLockConflictSnackbar(err.message));
                     } else if (err.status === 409) {
-                        dispatch(showErrorSnackbar('Es existieren noch veröffentlichte Formulare, die diesen Identitätsanbieter verwenden'));
+                        dispatch(showErrorSnackbar('Der Identitätsanbieter wird noch von veröffentlichten Formularen verwendet.'));
                     } else {
                         console.error(err);
-                        dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showErrorSnackbar('Der Identitätsanbieter konnte nicht gespeichert werden.'));
                     }
                 })
                 .finally(() => {
@@ -393,7 +393,7 @@ export function IdentityProviderDetailsPageIndex() {
             }
         } catch (error) {
             console.error(error);
-            dispatch(showErrorSnackbar('Fehler beim Prüfen der Löschbarkeit.'));
+            dispatch(showErrorSnackbar('Es konnte nicht geprüft werden, ob der Identitätsanbieter gelöscht werden kann.'));
         } finally {
             setIsBusy(false);
         }
@@ -432,7 +432,7 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Kontos
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Identitätsanbieters
                             gelesen und umgesetzt haben.
                         </Typography>
                         <Typography gutterBottom>
@@ -455,12 +455,11 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Identitätsanbieter deaktivieren, wird das Konto automatisch aus
-                            Formularen mit dem Status "In Bearbeitung" entfernt.
+                            Nach dem Speichern der Deaktivierung können sich Beteiligte in Formularen nicht mehr
+                            über diesen Identitätsanbieter anmelden.
                         </Typography>
                         <Typography gutterBottom>
-                            Bitte beachten Sie, dass Sie den Identitätsanbieter speichern müssen, um diese Änderung zu
-                            übernehmen.
+                            Speichern Sie den Identitätsanbieter, um diese Änderung zu übernehmen.
                         </Typography>
                     </>
                 ),
@@ -643,7 +642,7 @@ export function IdentityProviderDetailsPageIndex() {
                             sx={{width: '100%'}}
                         >
                             <strong>Hinweis:</strong>{' '}
-                            Die Konfigurationen für die offiziellen Konten von Bund und Ländern werden von Prosuna
+                            Die Konfigurationen für die vorkonfigurierten Identitätsanbieter von Bund und Ländern werden von Prosuna
                             bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }

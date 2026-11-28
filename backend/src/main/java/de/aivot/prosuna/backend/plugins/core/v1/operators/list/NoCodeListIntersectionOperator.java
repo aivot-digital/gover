@@ -33,20 +33,29 @@ public class NoCodeListIntersectionOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Ermitteln Sie die gemeinsamen Werte zweier Listen, beispielsweise zulässige Kategorien aus einer Auswahl.
 
                 # Welche Werte werden benötigt?
-                **Erste Liste** und **Zweite Liste:** Die beiden Listen, die zusammen betrachtet werden. Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
+
+                - **Erste Liste:** Die erste der beiden Listen, die zusammen betrachtet werden.
+                - **Zweite Liste:** Die zweite der beiden Listen, die zusammen betrachtet werden.
+
+                Sie können jede Liste selbst als JSON-Liste eingeben, beispielsweise `["A", "B"]`, oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine neue Liste mit den Werten, die in beiden Listen vorkommen. Jeder gemeinsame Wert steht nur einmal im Ergebnis.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Gemeinsame Werte zweier Listen“**. Verwenden Sie für **Erste Liste** die Variable „Ausgewählte Kategorien“ mit `["B", "A", "B"]` und für **Zweite Liste** die Variable „Zulässige Kategorien“ mit `["A", "B", "C"]`.
+
+                1. Wählen Sie **„Gemeinsame Werte zweier Listen“**.
+                2. Verwenden Sie für **„Erste Liste“** die Variable **„Ausgewählte Kategorien“** mit `["B", "A", "B"]` und für **„Zweite Liste“** die Variable **„Zulässige Kategorien“** mit `["A", "B", "C"]`.
 
                 Zugeklappt und in der Vorschau lesen Sie: `gemeinsame Werte von „Ausgewählte Kategorien“ und „Zulässige Kategorien“`. Das Ergebnis ist `["B", "A"]`. Mit **„Anzahl der Listeneinträge“** können Sie anschließend die gemeinsamen Werte zählen.
 
                 # Was ist zu beachten?
+
                 Die Reihenfolge und die Darstellung der Werte folgen der ersten Liste. Ist eine der Listen leer, ist auch das Ergebnis leer. Fehlt eine Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }

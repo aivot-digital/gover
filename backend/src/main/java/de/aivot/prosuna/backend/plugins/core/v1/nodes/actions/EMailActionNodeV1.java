@@ -49,6 +49,7 @@ import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
@@ -59,6 +60,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 @Component
 public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
@@ -108,8 +110,36 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<EMailActionNodeV1.EMailActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die E-Mail-Nachricht wurde" + summary.completedAt() + " erfolgreich versendet."
-                + detail("Betreff", summary.data(OUTPUT_NAME_SUBJECT));
+        var recipients = summaryRecipients(summary.data(OUTPUT_NAME_TO));
+        var bcc = summaryRecipients(summary.data(OUTPUT_NAME_BCC));
+        var subject = StringUtils.toNullableTrimmedString(summary.data(OUTPUT_NAME_SUBJECT));
+        var content = summary.data(OUTPUT_NAME_CONTENT);
+        var description = StringUtils.toNullableTrimmedString(context.thisNode().getDescription());
+        return "Die E-Mail wurde" + summary.completedAt() + " versendet."
+                + (recipients == null ? "" : detail("E-Mail-Adressen", recipients))
+                + (bcc == null ? "" : detail("Blindkopie (BCC)", bcc))
+                + (subject == null ? "" : detail("Betreff der E-Mail", subject))
+                + (content == null || content.toString().isBlank() ? "" : section("Nachricht", content))
+                + (description == null ? "" : detail("Kurzbeschreibung", description));
+    }
+
+    @Nullable
+    private static String summaryRecipients(@Nullable Object value) {
+        final List<?> entries;
+        if (value instanceof String[] array) {
+            entries = Arrays.asList(array);
+        } else if (value instanceof List<?> list) {
+            entries = list;
+        } else {
+            return StringUtils.toNullableTrimmedString(value);
+        }
+        if (entries.stream().noneMatch(entry -> StringUtils.toNullableTrimmedString(entry) != null)) {
+            return null;
+        }
+        // Rejoin stored fragments: legacy results also split commas inside quoted display names.
+        return StringUtils.toNullableTrimmedString(String.join(",", entries.stream()
+                .map(entry -> entry == null ? "" : entry.toString())
+                .toList()));
     }
 
     @Nonnull
@@ -154,16 +184,56 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Versendet eine E-Mail an konfigurierte Adressen, automatisch oder nach Bearbeitung in einer Mitarbeitendenaufgabe.";
+        return "Versendet eine E-Mail an festgelegte Adressen – automatisch oder nach Prüfung durch eine zuständige Person.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Versendet eine E-Mail an die konfigurierten E-Mail-Adressen, optional mit ganzen Anlagensätzen als Anhang. Bei automatischer Ausführung werden Betreff und Inhalt aus den Nachrichtenbausteinen erzeugt und sofort versendet. Bei teilautomatisierter Ausführung bearbeitet die zuständige Person Betreff und Inhalt vor dem Versand in einer Mitarbeitendenaufgabe.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Nach erfolgreichem Versand wird der Vorgang fortgesetzt. Bei automatischer Ausführung schlägt die Aufgabe bei einem Versandfehler oder einem fehlenden oder leeren Anlagensatz fehl. Bei teilautomatisierter Ausführung bleibt die Mitarbeitendenaufgabe in diesen Fällen offen.
+                Versenden Sie eine E-Mail an angegebene Adressen, zum Beispiel eine Eingangsbestätigung oder ein erstelltes Dokument. Die E-Mail kann automatisch versendet oder vorher von einer zuständigen Person geprüft und bearbeitet werden.
+
+                Für dieses Element ist keine Identität erforderlich. Soll die Nachricht über die bei einer Identität hinterlegte Kommunikationsanbindung versendet werden, verwenden Sie „Nachricht an Identität senden“.
+
+                ### Was richten Sie ein?
+
+                Geben Sie die E-Mail-Adressen an. Trennen Sie mehrere Adressen durch Kommas. Unter „Blindkopie (BCC)“ können Sie zusätzliche Adressen hinterlegen, die für die anderen empfangenden Personen und Organisationen nicht sichtbar sind. Angaben aus dem Vorgang können über Variablen eingefügt werden.
+
+                Wählen Sie unter „Nachrichtenversand“ zwischen „Automatisch versenden“ und „Vor Versand prüfen und bearbeiten“. Hinterlegen Sie für den automatischen Versand einen Betreff und eine Nachricht. Für die manuelle Prüfung sind ein vorbelegter Betreff, eine vorbelegte Nachricht und der verantwortliche Personenkreis erforderlich. Die zuständige Person kann Betreff und Nachricht vor dem Versand ändern.
+
+                Optional wählen Sie eine Organisationseinheit, deren Standard-E-Mail-Signatur ergänzt wird. Logo und Farben richten sich nach dem Erscheinungsbild der verwaltenden Organisationseinheit des Prozesses, ersatzweise nach dem Standarderscheinungsbild.
+
+                Sollen Anlagen angehängt werden, wählen Sie die entsprechenden Anlagensätze des Vorgangs. Alle Anlagen dieser Sätze werden mit ihren vorhandenen Dateinamen angehängt. Ohne Auswahl wird die E-Mail ohne Anhänge versendet.
+
+                ### Was passiert bei der Ausführung?
+
+                Beim automatischen Versand stellt Prosuna die Nachricht aus den konfigurierten Angaben zusammen und übergibt sie mit den ausgewählten Anlagen an den Mailserver.
+
+                Bei „Vor Versand prüfen und bearbeiten“ erhält eine berechtigte Person aus dem festgelegten Personenkreis eine Mitarbeitendenaufgabe. Sie prüft und bearbeitet Betreff und Nachricht und wählt anschließend „E-Mail versenden“. Empfangsadressen, Blindkopien und Anhänge werden aus der Konfiguration übernommen und können in dieser Aufgabe nicht geändert werden. Unvollständige Entwürfe können automatisch gespeichert werden; beim Versand sind Betreff und Nachricht erforderlich.
+
+                Nach erfolgreicher Übergabe an den Mailserver wird der Vorgang über „E-Mail versendet“ fortgesetzt. Bei einem Fehler bleibt eine bereits zugewiesene Mitarbeitendenaufgabe offen. Bei automatischer Ausführung schlägt die Aufgabe fehl.
+
+                Für die Mitarbeitendenaufgabe kann eine Versandfrist eingerichtet werden. Wird die Aufgabe bei Fristüberschreitung automatisch beendet, setzt Prosuna den Vorgang über „Versandfrist überschritten“ fort, ohne die E-Mail zu versenden.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Nach dem Versand stehen in den Elementdaten die Empfangsangaben, Blindkopien, der Betreff, die geschriebene Nachricht als Markdown und die Datenschlüssel der verwendeten Anlagensätze bereit. Die beim Versand ergänzte Signatur und Gestaltung gehören nicht zum gespeicherten Nachrichtentext. Das Element selbst verändert keine Vorgangsdaten.
+
+                Im Vorgangsverlauf sehen Sie den abgeschlossenen Versand mit den gespeicherten Empfangsangaben, dem Betreff und der Nachricht. Ein automatisches Ende wegen Fristüberschreitung wird gesondert ausgewiesen.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Eine Eingangsbestätigung soll an die unter `$.kontakt.email` gespeicherte Adresse gehen. Sie wählen diese Variable für „E-Mail-Adressen“, hinterlegen den Betreff „Ihre Angaben sind eingegangen“ und formulieren die Nachricht mit Angaben aus dem Vorgang. Zusätzlich wählen Sie den Anlagensatz „Erstellte Dokumente“ aus. Prosuna versendet die Nachricht mit allen Anlagen dieses Satzes. Bei manueller Prüfung kann die zuständige Person vorher den Betreff und die Nachricht anpassen.
+
+                ### Was ist zu beachten?
+
+                Der E-Mail-Versand muss für die Prosuna-Instanz eingerichtet sein. Ein ausgewählter Anlagensatz muss im Vorgang vorhanden sein und Anlagen enthalten; andernfalls wird der Versand abgebrochen.
+
+                Dieses Element bestätigt die Übergabe an den Mailserver. Ob die E-Mail im Postfach angekommen oder gelesen wurde, prüft es nicht. Ein gemeldeter Versandfehler schließt eine bereits teilweise erfolgte Übermittlung nicht sicher aus.
+
+                Hier wählen Sie vollständige Anlagensätze. Einzelne Dateien auswählen, für den Versand umbenennen oder in der Mitarbeitendenaufgabe neue Anhänge hochladen können Sie mit diesem Element derzeit nicht.
                 """;
     }
 
@@ -176,9 +246,10 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             layout = ElementPOJOMapper
                     .createFromPOJO(EMailActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    "Fehler beim Erstellen des Konfigurations-Layouts für den E-Mail-Versand: %s",
-                    e.getMessage()
+            throw ResponseException.internalServerErrorWithDetails(
+                    e,
+                    "Die Einstellungen für „E-Mail versenden“ konnten nicht geladen werden.",
+                    null
             );
         }
 
@@ -205,7 +276,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 new ProcessNodePort(
                         PORT_NAME,
                         "E-Mail versendet",
-                        "Der Vorgang wird hier fortgesetzt, nachdem die E-Mail versendet wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem die E-Mail an den Mailserver übergeben wurde."
                 )
         );
     }
@@ -216,33 +287,33 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_NAME_TO,
-                        "Empfangende Personen und Organisationen",
-                        "Die Adressen der Personen und Organisationen, an die die E-Mail versendet wurde.",
+                        "E-Mail-Adressen",
+                        "Die beim Versand verwendeten Empfangsangaben.",
                         "Array<string>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_BCC,
-                        "Empfangende Personen und Organisationen (BCC)",
-                        "Die Adressen der Personen und Organisationen, die eine Blindkopie der E-Mail erhalten haben.",
+                        "Blindkopie (BCC)",
+                        "Die beim Versand verwendeten Empfangsangaben für Blindkopien. Ohne Blindkopie bleibt dieser Wert leer.",
                         "Array<string> | null"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_SUBJECT,
-                        "Betreff",
+                        "Betreff der E-Mail",
                         "Der Betreff der versendeten E-Mail.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_CONTENT,
-                        "Inhalt",
-                        "Der Inhalt der versendeten E-Mail als Markdown.",
+                        "Nachricht",
+                        "Die versendete Nachricht als Markdown, ohne die beim Versand ergänzte E-Mail-Signatur.",
                         "string",
                         true
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS,
-                        "Anlagensätze",
-                        "Die Datenschlüssel der als E-Mail-Anlagen versendeten Anlagensätze.",
+                        "Anlagensätze für Anhänge",
+                        "Die Datenschlüssel der Anlagensätze, deren Anlagen an die E-Mail angehängt wurden.",
                         "Array<string>"
                 )
         );
@@ -259,14 +330,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             return initManual(context, configuration);
         }
 
-        var executionType = configuration.messageConfig == null
-                ? null
-                : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültige Ausführungsart für den E-Mail-Versand. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
-                StringUtils.quote(executionType)
+                "Wählen Sie, ob die E-Mail automatisch oder nach manueller Prüfung versendet werden soll."
         );
     }
 
@@ -298,7 +363,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
+                        "Für die E-Mail-Aufgabe %s konnte keine berechtigte Person aus dem festgelegten Personenkreis ermittelt werden.",
                         StringUtils.quote(context.getThisNode().getName() != null ? context.getThisNode().getName() : getName())
                 ));
 
@@ -327,7 +392,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
-        contentField.setLabel("Inhalt der E-Mail");
+        contentField.setLabel("Nachricht");
+        contentField.setHint("Prüfen und bearbeiten Sie die Nachricht vor dem Versand.");
         contentField.setRequired(true);
         root.getChildren().add(contentField);
 
@@ -339,7 +405,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return ProcessNodeStaffView.of(
                 context,
                 root,
-                List.of(new TaskViewEvent("Absenden", STAFF_TASK_SEND_EVENT)),
+                List.of(new TaskViewEvent("E-Mail versenden", STAFF_TASK_SEND_EVENT)),
                 taskViewData
         );
     }
@@ -353,7 +419,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                                                                          @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         if (!STAFF_TASK_SEND_EVENT.equals(event)) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Das Ereignis %s wird von diesem Prozesselement nicht unterstützt.",
+                    "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: %s.",
                     StringUtils.quote(event)
             );
         }
@@ -370,14 +436,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         var subject = StringUtils.toNullableTrimmedString(update.getLiteral(STAFF_TASK_SUBJECT_FIELD_ID));
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(STAFF_TASK_SUBJECT_FIELD_ID, new ComputedElementState()
-                    .setError("Der Betreff der E-Mail darf nicht leer sein.")
+                    .setError("Geben Sie einen Betreff für die E-Mail ein.")
             );
         }
 
         var content = StringUtils.toNullableTrimmedString(update.getLiteral(STAFF_TASK_CONTENT_FIELD_ID));
         if (content == null) {
             derivedRuntimeData.getElementStates().put(STAFF_TASK_CONTENT_FIELD_ID, new ComputedElementState()
-                    .setError("Der Inhalt der E-Mail darf nicht leer sein.")
+                    .setError("Geben Sie eine Nachricht für die E-Mail ein.")
             );
         }
 
@@ -394,6 +460,15 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     }
 
     @Nonnull
+    @Override
+    public ResponseException unavailableStaffTaskEvent(@Nonnull String event, @Nonnull AuthoredElementValues inputs) {
+        return ResponseException.badRequest(
+                "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: %s.",
+                StringUtils.quote(event)
+        );
+    }
+
+    @Nonnull
     private SemiAutomaticMessageConfig.AutomaticContent requireAutomaticContent(
             @Nonnull EMailActionNodeConfig configuration
     ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
@@ -402,7 +477,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den automatischen E-Mail-Versand müssen Betreff und Nachrichtentext konfiguriert sein."
+                    "Hinterlegen Sie einen Betreff und eine Nachricht für den automatischen E-Mail-Versand."
             );
         }
         return content;
@@ -417,7 +492,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 || StringUtils.toNullableTrimmedString(content.subject) == null
                 || StringUtils.toNullableTrimmedString(content.content) == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den teilautomatisierten E-Mail-Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
+                    "Hinterlegen Sie einen vorbelegten Betreff und eine vorbelegte Nachricht für die manuelle Prüfung."
             );
         }
         return content;
@@ -430,7 +505,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         try {
             return requireManualContent(configuration);
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw ResponseException.internalServerError(e, e.getMessage());
+            throw ResponseException.internalServerErrorWithDetails(e, e.getMessage(), null);
         }
     }
 
@@ -442,7 +517,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         if (recipientsStr == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Geben Sie eine E-Mail-Adresse für die empfangende Person oder Organisation an."
+                    "Geben Sie mindestens eine E-Mail-Adresse an."
             );
         }
         var recipients = recipientsStr.split(",");
@@ -459,13 +534,13 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
 
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Inhalt für die E-Mail wurde nicht angegeben."
+                    "Für den E-Mail-Versand ist eine Nachricht erforderlich."
             );
         }
 
         if (!mailService.isSendingConfigured()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Der E-Mail-Versand ist nicht konfiguriert."
+                    "Der E-Mail-Versand ist in Prosuna nicht eingerichtet."
             );
         }
 
@@ -477,7 +552,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         final var department = vDepartmentShadowedService
                 .retrieve(process.getDepartmentId())
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Organisationseinheit %d des Prozesses %d wurde nicht gefunden.",
+                        "Die verwaltende Organisationseinheit des Prozesses wurde nicht gefunden. Organisationseinheit: %d; Prozess: %d.",
                         process.getDepartmentId(),
                         process.getId()
                 ));
@@ -513,14 +588,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         } catch (MailException exception) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     exception,
-                    "Beim Versenden der E-Mail ist ein Fehler aufgetreten: %s",
-                    exception.getMessage()
+                    "Beim Versand der E-Mail ist ein Fehler aufgetreten."
             );
         } catch (MessagingException | ResponseException | RuntimeException exception) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     exception,
-                    "Beim Erstellen der E-Mail ist ein Fehler aufgetreten: %s",
-                    exception.getMessage()
+                    "Beim Vorbereiten oder Versenden der E-Mail ist ein Fehler aufgetreten."
             );
         }
 
@@ -546,15 +619,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             return processService
                     .retrieve(processInstance.getProcessId())
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Der Prozess %d für den E-Mail-Versand wurde nicht gefunden.",
+                            "Der Prozess für den E-Mail-Versand wurde nicht gefunden. Prozess: %d.",
                             processInstance.getProcessId()
                     ));
         } catch (ResponseException exception) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     exception,
-                    "Der Prozess %d für den E-Mail-Versand konnte nicht geladen werden: %s",
-                    processInstance.getProcessId(),
-                    exception.getMessage()
+                    "Der Prozess für den E-Mail-Versand konnte nicht geladen werden. Prozess: %d.",
+                    processInstance.getProcessId()
             );
         }
     }
@@ -582,9 +654,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 } catch (IOException | ResponseException exception) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             exception,
-                            "Der Inhalt der Anlage %s konnte nicht geladen werden: %s",
-                            StringUtils.quote(attachment.getFileName()),
-                            exception.getMessage()
+                            "Die Anlage %s konnte für den E-Mail-Versand nicht geladen werden.",
+                            StringUtils.quote(attachment.getFileName())
                     );
                 }
             }
@@ -650,8 +721,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         @InputElementPOJOBinding(id = RECIPIENT_FIELD_ID, type = ElementType.Text,
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Personen und Organisationen"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Kommagetrennte E-Mail-Adressen der empfangenden Personen und Organisationen."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "E-Mail-Adressen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die E-Mail-Adressen an, an die die Nachricht versendet werden soll. Trennen Sie mehrere Adressen durch Kommas. Angaben aus dem Vorgang können über Variablen eingefügt werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String to;
@@ -659,15 +730,15 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         @InputElementPOJOBinding(id = BCC_RECIPIENT_FIELD_ID, type = ElementType.Text,
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Personen und Organisationen (BCC)"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adressen der Personen und Organisationen, die eine Blindkopie (BCC) erhalten sollen."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Blindkopie (BCC)"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie zusätzliche E-Mail-Adressen für eine Blindkopie an. Trennen Sie mehrere Adressen durch Kommas. Diese Adressen sind für die anderen empfangenden Personen und Organisationen nicht sichtbar."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public String bcc;
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze des Vorgangs, deren Anlagen später als E-Mail-Anlagen hinzugefügt werden sollen."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze für Anhänge"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Anlagensätze aus, deren Anlagen vollständig an die E-Mail angehängt werden sollen. Ohne Auswahl wird die E-Mail ohne Anhänge versendet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
         public List<String> attachmentSetDataKeys;

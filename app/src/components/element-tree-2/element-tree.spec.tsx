@@ -47,7 +47,7 @@ describe('ElementTree section expansion', () => {
             await user.click(screen.getByRole('button', {name: 'Neuen Abschnitt hinzufügen'}));
             const dialog = screen.getByRole('dialog', {name: 'Formularabschnitt hinzufügen'});
             const optionRow = within(dialog).getByText(sectionLabel).closest('div')!.parentElement!.parentElement!;
-            await user.click(within(optionRow).getByRole('button', {name: 'Hinzufügen'}));
+            await user.click(within(optionRow).getByRole('button', {name: `${sectionLabel}: Hinzufügen`}));
             await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
             expect(screen.getByRole('button', {name: 'Einklappen'})).toBeInTheDocument();

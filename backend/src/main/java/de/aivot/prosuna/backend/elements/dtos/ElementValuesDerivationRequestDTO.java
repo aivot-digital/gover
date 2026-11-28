@@ -12,7 +12,7 @@ import jakarta.validation.constraints.NotNull;
  * must not be able to submit their own element trees through endpoints that only check read access.
  */
 public record ElementValuesDerivationRequestDTO(
-        @Nonnull @NotNull AuthoredElementValues authoredElementValues,
-        @Nonnull @NotNull ElementDerivationOptions derivationOptions
+        @Nonnull @NotNull(message = "Die Eingabedaten der Formularelemente müssen angegeben werden.") AuthoredElementValues authoredElementValues,
+        @Nonnull @NotNull(message = "Die Einstellungen zur Ableitung der Formulardaten müssen angegeben werden.") ElementDerivationOptions derivationOptions
 ) {
 }

@@ -1,4 +1,4 @@
-import React, {type ReactNode} from 'react';
+import React, {type MouseEvent, type ReactNode} from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
@@ -9,7 +9,7 @@ interface SelectionListRowProps {
     titleAdornment?: ReactNode;
     description?: ReactNode;
     selected?: boolean;
-    onShowDetails?: () => void;
+    onShowDetails?: (event: MouseEvent<HTMLButtonElement>) => void;
     detailsLabel?: string;
     detailsIcon?: ReactNode;
     primaryActionLabel: string;

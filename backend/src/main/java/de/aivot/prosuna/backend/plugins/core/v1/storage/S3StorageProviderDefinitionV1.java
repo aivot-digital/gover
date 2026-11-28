@@ -133,7 +133,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         for (var attribute : attributes) {
             if (attribute.getKey() == null) {
                 throw ResponseException.badRequest(
-                        "Der Feldname eines Metadaten-Attributs darf nicht null sein."
+                        "Geben Sie einen Feldnamen für das Metadaten-Attribut an."
                 );
             }
 

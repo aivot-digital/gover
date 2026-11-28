@@ -73,110 +73,116 @@ public class NoCodeTemporalCompareOperator extends NoCodeOperator {
             case DATE -> """
                     # Wofür verwenden Sie diese Funktion?
 
-                    Mit „Datumswerte vergleichen“ prüfen Sie beispielsweise, ob ein Datum spätestens an einem bestimmten Stichtag liegt.
+                    Mit **„Datumswerte vergleichen“** prüfen Sie beispielsweise, ob ein Datum spätestens an einem bestimmten Stichtag liegt.
 
                     # Welche Werte werden benötigt?
 
-                    Sie benötigen „Datum“, „Vergleichsart“ und „Vergleichsdatum“.
+                    - **Datum:** Die erste Angabe für den Vergleich.
+                    - **Vergleichsart:** Der Vergleich, der geprüft werden soll.
+                    - **Vergleichsdatum:** Die Angabe, mit der verglichen wird.
 
                     Beide Datumsangaben können Sie selbst festlegen, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Die Funktion gibt dafür keine Auswahlwerte vor.
 
-                    Für „Vergleichsart“ stehen sechs Auswahlwerte bereit. Zusätzliche eigene Einträge sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Vergleichsart auch übernehmen oder mit einer Funktion ermitteln.
+                    Für **„Vergleichsart“** stehen sechs Auswahlwerte bereit. Zusätzliche eigene Einträge sind nicht möglich. Über **„Andere Wertquelle verwenden …“** können Sie die Vergleichsart auch übernehmen oder mit einer Funktion ermitteln.
 
                     # Welches Ergebnis erhalten Sie?
 
-                    Sie erhalten **Wahr**, wenn der gewählte Vergleich zutrifft, andernfalls **Falsch**.
+                    Sie erhalten `Wahr`, wenn der gewählte Vergleich zutrifft, andernfalls `Falsch`.
 
                     # Beispiel im No-Code-Editor
 
                     Sie möchten prüfen, ob ein Termin heute stattfindet oder bereits vergangen ist.
 
-                    1. Wählen Sie „Datumswerte vergleichen“.
-                    2. Übernehmen Sie für „Datum“ den Wert eines Datumsfeldes, beispielsweise „Termin“.
-                    3. Wählen Sie für „Vergleichsart“ die Option „früher als oder gleich“.
-                    4. Wählen Sie für „Vergleichsdatum“ die Option „Mit Funktion ermitteln“ und anschließend „Heutiges Datum“.
+                    1. Wählen Sie **„Datumswerte vergleichen“**.
+                    2. Übernehmen Sie für **„Datum“** den Wert eines Datumsfeldes, beispielsweise **„Termin“**.
+                    3. Wählen Sie für **„Vergleichsart“** die Option **„früher als oder gleich“**.
+                    4. Wählen Sie für **„Vergleichsdatum“** die Option **„Mit Funktion ermitteln“** und anschließend **„Heutiges Datum“**.
 
                     Der Ausdruck liest sich so:
 
-                    **Wert von „Termin“ ist früher als oder gleich (heutiges Datum)**
+                    `Wert von „Termin“ ist früher als oder gleich (heutiges Datum)`
 
-                    Bei einer Auswertung am 22.11.2026 ergibt ein Termin am 22.11.2026 **Wahr**, ein Termin am 23.11.2026 **Falsch**.
+                    Bei einer Auswertung am `22.11.2026` ergibt ein Termin am `22.11.2026` `Wahr`, ein Termin am `23.11.2026` `Falsch`.
 
                     # Was ist zu beachten?
 
                     Beide Angaben müssen dieselben Bestandteile enthalten: entweder Tag, Monat und Jahr, nur Monat und Jahr oder nur das Jahr. Das gilt für alle Vergleichsarten.
 
-                    Für selbst festgelegte Werte wählen Sie unter „Datumsgenauigkeit“ die benötigten Bestandteile.
+                    Für selbst festgelegte Werte wählen Sie unter **„Datumsgenauigkeit“** die benötigten Bestandteile.
                     """;
             case TIME -> """
                     # Wofür verwenden Sie diese Funktion?
 
-                    Mit „Uhrzeiten vergleichen“ prüfen Sie beispielsweise, ob eine eingetragene Beginnzeit vor einer bestimmten Uhrzeit liegt.
+                    Mit **„Uhrzeiten vergleichen“** prüfen Sie beispielsweise, ob eine eingetragene Beginnzeit vor einer bestimmten Uhrzeit liegt.
 
                     # Welche Werte werden benötigt?
 
-                    Sie benötigen „Uhrzeit“, „Vergleichsart“ und „Vergleichsuhrzeit“.
+                    - **Uhrzeit:** Die erste Angabe für den Vergleich.
+                    - **Vergleichsart:** Der Vergleich, der geprüft werden soll.
+                    - **Vergleichsuhrzeit:** Die Angabe, mit der verglichen wird.
 
                     Beide Uhrzeiten können Sie selbst festlegen, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Die Funktion gibt dafür keine Auswahlwerte vor.
 
-                    Für „Vergleichsart“ stehen sechs Auswahlwerte bereit. Zusätzliche eigene Einträge sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Vergleichsart auch übernehmen oder mit einer Funktion ermitteln.
+                    Für **„Vergleichsart“** stehen sechs Auswahlwerte bereit. Zusätzliche eigene Einträge sind nicht möglich. Über **„Andere Wertquelle verwenden …“** können Sie die Vergleichsart auch übernehmen oder mit einer Funktion ermitteln.
 
                     # Welches Ergebnis erhalten Sie?
 
-                    Sie erhalten **Wahr**, wenn der gewählte Vergleich zutrifft, andernfalls **Falsch**.
+                    Sie erhalten `Wahr`, wenn der gewählte Vergleich zutrifft, andernfalls `Falsch`.
 
                     # Beispiel im No-Code-Editor
 
-                    Sie möchten prüfen, ob eine Beginnzeit vor 17 Uhr liegt.
+                    Sie möchten prüfen, ob eine Beginnzeit vor `17 Uhr` liegt.
 
-                    1. Wählen Sie „Uhrzeiten vergleichen“.
-                    2. Übernehmen Sie für „Uhrzeit“ den Wert eines Uhrzeitfeldes, beispielsweise „Beginn“.
-                    3. Wählen Sie für „Vergleichsart“ die Option „früher als“.
-                    4. Wählen Sie für „Vergleichsuhrzeit“ die Option „Wert selbst festlegen“ und geben Sie `17:00:00 Uhr` ein.
+                    1. Wählen Sie **„Uhrzeiten vergleichen“**.
+                    2. Übernehmen Sie für **„Uhrzeit“** den Wert eines Uhrzeitfeldes, beispielsweise **„Beginn“**.
+                    3. Wählen Sie für **„Vergleichsart“** die Option **„früher als“**.
+                    4. Wählen Sie für **„Vergleichsuhrzeit“** die Option **„Wert selbst festlegen“** und geben Sie `17:00:00 Uhr` ein.
 
                     Der Ausdruck liest sich so:
 
-                    **Wert von „Beginn“ ist früher als 17:00:00 Uhr**
+                    `Wert von „Beginn“ ist früher als 17:00:00 Uhr`
 
-                    Eine Beginnzeit von 09:00 Uhr ergibt **Wahr**, eine Beginnzeit von 17:00 Uhr **Falsch**.
+                    Eine Beginnzeit von `09:00 Uhr` ergibt `Wahr`, eine Beginnzeit von `17:00 Uhr` `Falsch`.
 
                     # Was ist zu beachten?
 
-                    Verglichen werden Stunden, Minuten und Sekunden innerhalb eines Tages. 01:00 Uhr gilt als früher als 23:00 Uhr.
+                    Verglichen werden Stunden, Minuten und Sekunden innerhalb eines Tages. `01:00 Uhr` gilt als früher als `23:00 Uhr`.
 
-                    Für eine zeitliche Reihenfolge über mehrere Tage verwenden Sie „Zeitpunkte vergleichen“. Liefert eine Wertquelle einen Zeitpunkt, wird dessen Uhrzeit in der für Prosuna eingestellten Zeitzone verglichen. Das gilt auch für gespeicherten Text wie `2026-11-22T12:30:00Z`, der in der Zeitzone Berlin als `13:30:00` Uhr gilt.
+                    Für eine zeitliche Reihenfolge über mehrere Tage verwenden Sie **„Zeitpunkte vergleichen“**. Liefert eine Wertquelle einen Zeitpunkt, wird dessen Uhrzeit in der für Prosuna eingestellten Zeitzone verglichen. Das gilt auch für gespeicherten Text wie `2026-11-22T12:30:00Z`, der in der Zeitzone Berlin als `13:30:00` Uhr gilt.
                     """;
             case DATETIME -> """
                     # Wofür verwenden Sie diese Funktion?
 
-                    Mit „Zeitpunkte vergleichen“ prüfen Sie beispielsweise, ob ein Termin bereits erreicht oder überschritten ist.
+                    Mit **„Zeitpunkte vergleichen“** prüfen Sie beispielsweise, ob ein Termin bereits erreicht oder überschritten ist.
 
                     # Welche Werte werden benötigt?
 
-                    Sie benötigen „Zeitpunkt“, „Vergleichsart“ und „Vergleichszeitpunkt“.
+                    - **Zeitpunkt:** Die erste Angabe für den Vergleich.
+                    - **Vergleichsart:** Der Vergleich, der geprüft werden soll.
+                    - **Vergleichszeitpunkt:** Die Angabe, mit der verglichen wird.
 
                     Beide Zeitpunkte können Sie selbst festlegen, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Die Funktion gibt dafür keine Auswahlwerte vor.
 
-                    Für „Vergleichsart“ stehen sechs Auswahlwerte bereit. Zusätzliche eigene Einträge sind nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Vergleichsart auch übernehmen oder mit einer Funktion ermitteln.
+                    Für **„Vergleichsart“** stehen sechs Auswahlwerte bereit. Zusätzliche eigene Einträge sind nicht möglich. Über **„Andere Wertquelle verwenden …“** können Sie die Vergleichsart auch übernehmen oder mit einer Funktion ermitteln.
 
                     # Welches Ergebnis erhalten Sie?
 
-                    Sie erhalten **Wahr**, wenn der gewählte Vergleich zutrifft, andernfalls **Falsch**.
+                    Sie erhalten `Wahr`, wenn der gewählte Vergleich zutrifft, andernfalls `Falsch`.
 
                     # Beispiel im No-Code-Editor
 
                     Sie möchten prüfen, ob ein Termin bereits erreicht ist.
 
-                    1. Wählen Sie „Zeitpunkte vergleichen“.
-                    2. Übernehmen Sie für „Zeitpunkt“ den Wert eines Datums- und Zeitfeldes, beispielsweise „Termin“.
-                    3. Wählen Sie für „Vergleichsart“ die Option „früher als oder gleich“.
-                    4. Wählen Sie für „Vergleichszeitpunkt“ die Option „Mit Funktion ermitteln“ und anschließend „Aktueller Zeitpunkt“.
+                    1. Wählen Sie **„Zeitpunkte vergleichen“**.
+                    2. Übernehmen Sie für **„Zeitpunkt“** den Wert eines Datums- und Zeitfeldes, beispielsweise **„Termin“**.
+                    3. Wählen Sie für **„Vergleichsart“** die Option **„früher als oder gleich“**.
+                    4. Wählen Sie für **„Vergleichszeitpunkt“** die Option **„Mit Funktion ermitteln“** und anschließend **„Aktueller Zeitpunkt“**.
 
                     Der Ausdruck liest sich so:
 
-                    **Wert von „Termin“ ist früher als oder gleich (aktueller Zeitpunkt)**
+                    `Wert von „Termin“ ist früher als oder gleich (aktueller Zeitpunkt)`
 
-                    Bei einer Auswertung am 22.11.2026 um 13:30 Uhr ergibt ein Termin desselben Tages um 13:00 Uhr **Wahr**, ein Termin um 14:00 Uhr **Falsch**.
+                    Bei einer Auswertung am `22.11.2026 um 13:30 Uhr` ergibt ein Termin desselben Tages um `13:00 Uhr` `Wahr`, ein Termin um `14:00 Uhr` `Falsch`.
 
                     # Was ist zu beachten?
 

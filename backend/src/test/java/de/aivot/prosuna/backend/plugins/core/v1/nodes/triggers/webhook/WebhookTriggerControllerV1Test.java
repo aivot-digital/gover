@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +52,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -131,6 +133,7 @@ class WebhookTriggerControllerV1Test {
         );
 
         assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getStatus());
+        assertEquals("Der Inhaltstyp (Content-Type) passt nicht zu diesem Webhook. Erwartet: „application/json“. Empfangen: „text/plain“.", exception.getTitle());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
     }
 
@@ -158,6 +161,7 @@ class WebhookTriggerControllerV1Test {
         );
 
         assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, exception.getStatus());
+        assertEquals("Der Inhaltstyp (Content-Type) passt nicht zu diesem Webhook. Erwartet: „application/xml“. Empfangen: „application/json“.", exception.getTitle());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
     }
 
@@ -183,7 +187,7 @@ class WebhookTriggerControllerV1Test {
                 null
         );
 
-        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        assertEquals("Der Webhook-Aufruf wurde angenommen.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
     }
@@ -242,7 +246,7 @@ class WebhookTriggerControllerV1Test {
                 null
         );
 
-        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        assertEquals("Der Webhook-Aufruf wurde angenommen.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
     }
@@ -274,7 +278,7 @@ class WebhookTriggerControllerV1Test {
                 null
         );
 
-        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        assertEquals("Der Webhook-Aufruf wurde angenommen.", response.message());
         assertEquals(2, fixture.createdAttachmentSets().size());
         assertEquals("case_documents", fixture.createdAttachmentSets().get(0).getDataKey());
         assertEquals("other", fixture.createdAttachmentSets().get(1).getDataKey());
@@ -304,6 +308,34 @@ class WebhookTriggerControllerV1Test {
         assertEquals("first.pdf", fileItems.getFirst().getOriginalFileName());
         assertEquals(1, fileItems.getFirst().getSize());
         assertTrue(fileItems.getFirst().getUri().startsWith("process-instance-attachment:"));
+    }
+
+    @Test
+    void handleFormDataShouldKeepItsReadFailureCauseWithoutExposingInternalDetails() throws Exception {
+        var fixture = createControllerFixture(
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM
+        );
+        var request = formDataRequest(Map.of());
+        var file = mock(MultipartFile.class);
+        var cause = new IOException("Internal storage details");
+        when(file.getBytes()).thenThrow(cause);
+        var files = new LinkedMultiValueMap<String, MultipartFile>();
+        files.add("documents", file);
+        when(request.getMultiFileMap()).thenReturn(files);
+
+        var exception = assertThrows(ResponseException.class, () -> fixture.controller().handleFormData(
+                request, PROCESS_SLUG, "example-slug", null, null, null
+        ));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Die hochgeladene Datei konnte nicht gelesen werden.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertSame(cause, exception.getCause());
+        var failedInstance = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), failedInstance.capture());
+        assertEquals(ProcessInstanceStatus.Failed, failedInstance.getValue().getStatus());
+        verify(fixture.processInstanceService(), never()).save(any(ProcessInstanceEntity.class));
     }
 
     @Test
@@ -405,7 +437,7 @@ class WebhookTriggerControllerV1Test {
                 null
         );
 
-        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        assertEquals("Der Webhook-Aufruf wurde angenommen.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
     }
@@ -423,6 +455,7 @@ class WebhookTriggerControllerV1Test {
             );
 
             assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+            assertEquals("Die Authentifizierung für diesen Webhook ist nicht vollständig eingerichtet.", exception.getTitle());
             verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
         }
     }
@@ -458,6 +491,36 @@ class WebhookTriggerControllerV1Test {
     }
 
     @Test
+    void handleWithoutBodyShouldCheckBasicCredentialsBeforeAcceptingTheCall() throws ResponseException {
+        var fixture = createControllerFixture(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET, null);
+        fixture.config().authRequired = true;
+        fixture.config().authConfig = authConfig(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC);
+        fixture.config().authConfig.authUsername = "test-user";
+        fixture.config().authConfig.authPassword = "test-password";
+
+        var missing = assertThrows(ResponseException.class, () -> fixture.controller().handleWithoutBody(
+                getRequest(), PROCESS_SLUG, "example-slug", null, null, null
+        ));
+        assertEquals(HttpStatus.UNAUTHORIZED, missing.getStatus());
+        assertEquals("Die Authentifizierung für diesen Webhook fehlt oder ist ungültig.", missing.getTitle());
+
+        var wrongHeader = "Basic " + Base64.getEncoder().encodeToString("test-user:wrong".getBytes(StandardCharsets.UTF_8));
+        var wrong = assertThrows(ResponseException.class, () -> fixture.controller().handleWithoutBody(
+                getRequest(), PROCESS_SLUG, "example-slug", null, null, wrongHeader
+        ));
+        assertEquals(HttpStatus.UNAUTHORIZED, wrong.getStatus());
+        assertEquals("Benutzername oder Passwort ist für diesen Webhook ungültig.", wrong.getTitle());
+        verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
+
+        var validHeader = "Basic " + Base64.getEncoder().encodeToString("test-user:test-password".getBytes(StandardCharsets.UTF_8));
+        var response = fixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, null, validHeader);
+
+        assertEquals("Der Webhook-Aufruf wurde angenommen.", response.message());
+        verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
+        verify(fixture.processInstanceService()).save(any(ProcessInstanceEntity.class));
+    }
+
+    @Test
     void handleWithoutBodyShouldCheckTheTokenOfCompleteAuthentication() throws ResponseException {
         var fixture = createControllerFixture(WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_GET, null);
         fixture.config().authRequired = true;
@@ -469,11 +532,12 @@ class WebhookTriggerControllerV1Test {
                 () -> fixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, "wrong", null)
         );
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+        assertEquals("Das Token für diesen Webhook fehlt oder ist ungültig.", exception.getTitle());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
 
         var response = fixture.controller().handleWithoutBody(getRequest(), PROCESS_SLUG, "example-slug", null, "secret", null);
 
-        assertEquals("Webhook empfangen und verarbeitet.", response.message());
+        assertEquals("Der Webhook-Aufruf wurde angenommen.", response.message());
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
     }
 

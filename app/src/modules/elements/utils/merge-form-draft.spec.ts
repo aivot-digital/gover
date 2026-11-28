@@ -95,7 +95,7 @@ describe('mergeFormDraft', () => {
         const {conflicts} = mergeFormDraft(request, {});
         expect(conflicts).toHaveLength(1);
         expect(conflicts[0]).toMatchObject({
-            group: {label: 'Offenes Formularelement › Text „Rufname“'}, propertyLabel: 'Titel', mine: 'Rufname', theirs: 'Taufname',
+            group: {label: 'Offenes Formularelement › Texteingabe „Rufname“'}, propertyLabel: 'Titel', mine: 'Rufname', theirs: 'Taufname',
         });
         const mine = mergeFormDraft(request, {[conflicts[0].id]: 'mine'}).value;
         expect(mine).toMatchObject({layout: request.theirs, panel: {mine: edited, base: target}});

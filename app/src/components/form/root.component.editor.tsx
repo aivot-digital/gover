@@ -38,7 +38,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
             .then(setDepartments)
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Organisationseinheiten!'));
+                dispatch(showErrorSnackbar('Die Organisationseinheiten konnten nicht geladen werden.'));
             });
 
     }, [dispatch]);

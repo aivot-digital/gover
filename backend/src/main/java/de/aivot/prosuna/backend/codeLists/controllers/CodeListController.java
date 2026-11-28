@@ -284,7 +284,7 @@ public class CodeListController {
         try {
             return service.importCSV(codeListKey, file.getInputStream());
         } catch (IOException e) {
-            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
+            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", e);
         }
     }
 

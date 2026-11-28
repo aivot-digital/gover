@@ -42,13 +42,13 @@ public class SubmissionNotificationReceivedUserConfigDefinition implements UserC
     @Nonnull
     @Override
     public String getLabel() {
-        return "Neuer Vorgang gestartet";
+        return "Neuer Vorgang gestartet (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, sobald ein neuer Vorgang gestartet wird, wenn Sie zu der für das Formular benachrichtigten Organisationseinheit gehören (betreuend, sonst verantwortlich, sonst verwaltend).";
+        return "Diese Einstellung wird derzeit nicht verwendet. Beim Start eines Vorgangs werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override
@@ -65,7 +65,7 @@ public class SubmissionNotificationReceivedUserConfigDefinition implements UserC
         if (value instanceof List<?> list) {
             return String.join(",", (List<String>) list);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

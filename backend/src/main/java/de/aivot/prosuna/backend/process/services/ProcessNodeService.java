@@ -484,7 +484,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         try {
             config = ElementPOJOMapper.mapToPOJO(derivedData.getEffectiveValues(), provider.getNodeConfigurationClass());
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Ableitung der Konfiguration des Prozesselements ist fehlgeschlagen: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht verarbeitet werden.");
         }
 
         var details = new ProcessConfigurationDetails<NodeConfig>(
@@ -1193,7 +1193,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                     problems.add(
                             "Es gibt keine Verbindung von diesem Prozesselement über den Ausgangsport " +
                                     StringUtils.quote(ports.label()) +
-                                    ". Jeder Ausgangsport muss mit einem anderen Prozesselement verbunden sein."
+                                    ". Verbinden Sie diesen Ausgangsport mit einem Prozesselement."
                     );
                 }
             }

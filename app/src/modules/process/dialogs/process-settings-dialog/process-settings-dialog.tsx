@@ -75,7 +75,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     const canManageProcessAccess = useHasDepartmentPermission(renderProcess.departmentId, Permission.PROCESS_DEFINITION_UPDATE);
     const missingUpdatePermissionTooltip = formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_UPDATE);
     // Only users with a delegated update grant reach this tab without canManageProcessAccess, so do not claim the permission is missing.
-    const managingDepartmentRequiredTooltip = `Die Prozessberechtigungen können Sie nur mit der Berechtigung „Prozess bearbeiten“ (${Permission.PROCESS_DEFINITION_UPDATE}) in der verwaltenden Organisationseinheit des Prozesses ändern.`;
+    const managingDepartmentRequiredTooltip = `Zum Ändern der Prozessberechtigungen benötigen Sie die Berechtigung „Prozess bearbeiten“ (${Permission.PROCESS_DEFINITION_UPDATE}) in der verwaltenden Organisationseinheit des Prozesses oder systemweit.`;
     const accessTabDisabledSx = !canUpdateProcess ? {
         color: 'text.disabled',
         cursor: 'not-allowed',

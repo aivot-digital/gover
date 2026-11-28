@@ -84,9 +84,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private static final ProcessNodeDeadlineDefinition MESSAGE_DISPATCH_DEADLINE = MessageDispatchDeadline.DEFINITION;
     private static final ProcessNodeDeadlineDefinition FORM_SUBMISSION_DEADLINE = new ProcessNodeDeadlineDefinition(
             "formSubmission", "Übermittlung der Angaben",
-            "Zeit zum Ausfüllen des Formulars und Übermitteln der Angaben ab Versand der Nachricht.",
-            new ProcessNodePort("form_submission_overdue", "Fristüberschreitung: Übermittlung der Angaben",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Übermittlung der Angaben beendet wurde."));
+            "Zeit ab Versand der Nachricht, innerhalb derer die angeforderten Angaben übermittelt werden sollen.",
+            new ProcessNodePort("form_submission_overdue", "Übermittlungsfrist überschritten",
+                    "Der Vorgang wird hier fortgesetzt, wenn die Übermittlungsfrist überschritten und die Aufgabe automatisch beendet wurde."));
 
     public static final String NODE_KEY = "form_request";
     private static final String RECIPIENT_MODE_EXISTING = "existing";
@@ -137,8 +137,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<FormRequestActionNodeV1.NodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
         var recipient = summary.identity(summary.data(OUTPUT_RECIPIENT_IDENTITY_ID));
-        return "Es wurde " + recipient + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
-                + " zur Übermittlung von Angaben aufgefordert und" + summary.delivery() + " informiert."
+        return "Die Nachricht mit dem Formularlink wurde" + summary.at(summary.metadata(ExecutionSummaryMarkdown.SENT_AT))
+                + summary.delivery() + " versendet."
                 + " Die angeforderten Angaben wurden" + summary.eventAt("started") + " durch " + recipient + " übermittelt.";
     }
 
@@ -191,9 +191,55 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     @Override
     public String getDescription() {
         return """
-                Erstellt eine Aufgabe für Beteiligte und sendet einen Link zum konfigurierten Formular an eine Identität des Vorgangs. Alternativ wird eine neue Identität angefordert; die Einladung geht dann an die konfigurierte E-Mail-Adresse. Bei automatischer Ausführung werden Betreff und Inhalt der Nachricht aus den Nachrichtenbausteinen erzeugt, bei teilautomatisierter Ausführung bearbeitet die zuständige Person sie vor dem Versand in einer Mitarbeitendenaufgabe.
+                # Wofür verwenden Sie dieses Prozesselement?
 
-                Der Vorgang wartet auf die Übermittlung der Angaben. Angaben aus Formularelementen mit Datenschlüssel werden in die Vorgangsdaten übernommen. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Frist über einen eigenen Ausgangsport fortgesetzt.
+                Fordern Sie weitere Angaben oder Nachweise von Beteiligten für einen bestehenden Vorgang an. Die empfangende Person oder Organisation erhält eine Nachricht mit einem Link zum Formular. Der Vorgang wartet anschließend auf die Übermittlung.
+
+                # Was richten Sie ein?
+
+                Wählen Sie eine **„Vorhandene Identität“** des Vorgangs oder laden Sie eine **„Neue Person oder Organisation“** per E-Mail ein.
+
+                Für neue Beteiligte hinterlegen Sie die **„E-Mail-Adresse für die Einladung“** und konfigurieren genau eine **„Erforderliche Identität“**. Legen Sie fest, wie diese beim Aufrufen der Aufgabe angegeben werden kann.
+
+                Gestalten Sie unter **„Formular“** die benötigten Felder und Hinweise. Vorhandene Vorgangsdaten können über die Datenschlüssel der Felder vorbelegt werden.
+
+                Richten Sie Betreff und Nachricht ein. Entscheiden Sie unter **„Nachrichtenversand“**, ob Prosuna die Nachricht automatisch versendet oder eine zuständige Person sie vorher in einer Mitarbeitendenaufgabe prüft und bearbeitet. Der Link zum Formular wird automatisch ergänzt.
+
+                Optional legen Sie Fristen für den Nachrichtenversand und die anschließende Übermittlung fest. Die Versandfrist steht nur bei manueller Vorbereitung zur Verfügung.
+
+                # Was passiert bei der Ausführung?
+
+                Beim automatischen Versand wird die Nachricht aus den konfigurierten Angaben erstellt und versendet.
+
+                Bei manueller Vorbereitung weist Prosuna die Mitarbeitendenaufgabe einer berechtigten Person aus dem konfigurierten Personenkreis zu. Diese prüft Betreff und Nachricht, ändert sie bei Bedarf und wählt **„Nachricht versenden“**.
+
+                Eine vorhandene Identität wird über ihren hinterlegten Zustellweg benachrichtigt. Bei neuen Beteiligten geht die Einladung zunächst an die konfigurierte E-Mail-Adresse. Vor der Bearbeitung wird die erforderliche Identität angegeben.
+
+                Danach können die Beteiligten das Formular ausfüllen und **„Angaben übermitteln“** wählen. Nach erfolgreicher Übermittlung folgt der Vorgang dem Ausgang **„Angaben übermittelt“**.
+
+                # Welches Ergebnis steht danach bereit?
+
+                Angaben aus Feldern mit Datenschlüssel werden in die Vorgangsdaten übernommen.
+
+                In den Elementdaten stehen zusätzlich die Formulardaten mit Datenschlüssel, Feldwerte nach Element-ID, übermittelte Anlagen, die empfangende Identität und der Übermittlungszeitpunkt bereit. Über die Datenzuordnung können Sie einzelne Ergebnisse zusätzlich in den Vorgangsdaten bereitstellen.
+
+                Im Vorgangsverlauf werden die Versandvorbereitung, der Versand und die Übergabe an Beteiligte sowie die Übermittlung festgehalten. Nach erfolgreicher Übermittlung nennt die Zusammenfassung auch den Versandzeitpunkt und, soweit verfügbar, den Zustellweg.
+
+                # Wie sieht ein Beispiel aus?
+
+                Für eine Veranstaltungsanmeldung fehlt ein Nachweis. Wählen Sie die Identität der anmeldenden Person und erstellen Sie ein Formular mit einem Uploadfeld sowie einem Feld für ergänzende Hinweise.
+
+                Lassen Sie die zuständige Person die Nachricht vor dem Versand prüfen. Verbinden Sie **„Angaben übermittelt“** mit dem nächsten Bearbeitungsschritt. Sobald die Person den Nachweis und ihre Hinweise übermittelt hat, wird der Vorgang dort fortgesetzt.
+
+                # Was ist zu beachten?
+
+                Die E-Mail-Adresse für die Einladung dient der Zustellung der Nachricht. Sie wird nicht automatisch als Identität des Vorgangs übernommen. Die Beteiligten geben die konfigurierte Identität beim Aufrufen der Aufgabe gesondert an. Je nach Einstellung erfolgt dies über einen Identitätsanbieter oder durch direkte E-Mail-Eingabe.
+
+                Ist die unter dem konfigurierten Schlüssel erwartete Identität bereits im Vorgang vorhanden, wird sie erneut verwendet. Dann erfolgt der Versand über ihren hinterlegten Zustellweg. Bei einer an ein Anbieterkonto gebundenen Identität ist für die Bearbeitung die Anmeldung mit dem passenden Konto erforderlich.
+
+                Versand und Übermittlung haben getrennte Fristen. Ohne automatische Beendigung wird eine Überschreitung angezeigt und die Aufgabe bleibt bearbeitbar. Mit **„Aufgabe bei Fristüberschreitung beenden“** endet der Schritt und der Vorgang folgt dem zugehörigen Fristausgang. Ein Fristablauf gilt nicht als Übermittlung der angeforderten Angaben.
+
+                Das Element fordert die von Ihnen gestalteten Angaben an. Es erstellt nicht automatisch ein Korrekturformular aus dem Ergebnis einer vorherigen Datenprüfung. Nach erfolgreicher Übermittlung zeigt der Link eine Bestätigung; eine erneute Einsicht in die Formularangaben wird darüber nicht angeboten.
                 """;
     }
 
@@ -218,14 +264,14 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             layout = ElementPOJOMapper
                     .createFromPOJO(NodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+            throw ResponseException.internalServerError(e, "Die Konfiguration des Prozesselements konnte nicht geladen werden.");
         }
 
         layout.findChild(NodeConfig.RECIPIENT_MODE_FIELD_ID, SelectInputElement.class)
                 .ifPresent(field -> {
                     field.setOptions(List.of(
-                            SelectInputElementOption.of(RECIPIENT_MODE_EXISTING, "Existierende Identität"),
-                            SelectInputElementOption.of(RECIPIENT_MODE_NEW, "Neue Identität")
+                            SelectInputElementOption.of(RECIPIENT_MODE_EXISTING, "Vorhandene Identität"),
+                            SelectInputElementOption.of(RECIPIENT_MODE_NEW, "Neue Person oder Organisation")
                     ));
                     field.setValue(new ElementValueFunctions()
                             .setType(ValueFunctionType.NoCode)
@@ -251,9 +297,9 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                             context.thisNode().getProcessVersion()
                     );
                     group.findChild(SemiAutomaticMessageConfig.AutomaticContent.CONTENT_FIELD_ID, RichTextInputElement.class)
-                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt."));
+                            .ifPresent(field -> field.setHint("Beschreiben Sie, welche Angaben benötigt werden. Der Link zum Formular wird automatisch ergänzt."));
                     group.findChild(SemiAutomaticMessageConfig.ManualContent.CONTENT_FIELD_ID, RichTextInputElement.class)
-                            .ifPresent(field -> field.setHint("Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt."));
+                            .ifPresent(field -> field.setHint("Beschreiben Sie, welche Angaben benötigt werden. Der Link zum Formular wird automatisch ergänzt."));
                 });
 
         return layout;
@@ -284,32 +330,32 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         return List.of(
                 new ProcessNodeOutput(
                         OUTPUT_RECIPIENT_IDENTITY_ID,
-                        "Identität",
-                        "Die ID der bestehenden oder bei der Übermittlung neu angegebenen Identität.",
+                        "Empfangende Identität",
+                        "Die Kennung der Identität, unter der die angeforderten Angaben übermittelt wurden.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_PAYLOAD,
-                        "Zugeordnete Formulardaten",
-                        "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
+                        "Formulardaten mit Datenschlüssel",
+                        "Die übermittelten Angaben aus Formularfeldern mit Datenschlüssel, aufgebaut nach diesen Datenschlüsseln.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_UNMAPPED,
-                        "Formular-Rohdaten",
-                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht.",
+                        "Feldwerte nach Element-ID",
+                        "Die übermittelten Feldwerte unter ihrer jeweiligen Element-ID. Ein Datenschlüssel ist dafür nicht erforderlich.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_ATTACHMENTS,
-                        "Anlagen",
-                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden.",
+                        "Übermittelte Anlagen",
+                        "Die mit den endgültigen Formularangaben übermittelten Anlagen dieser Aufgabe.",
                         OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_STARTED,
-                        "Eingangszeitstempel",
-                        "Der Zeitpunkt der Übermittlung der Angaben",
+                        "Übermittelt am",
+                        "Der Zeitpunkt, zu dem die angeforderten Angaben übermittelt wurden.",
                         "string"
                 )
         );
@@ -324,7 +370,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var errors = new LinkedHashMap<String, List<String>>();
         var mode = StringUtils.toNullableTrimmedString(configuration.recipientMode);
         if (mode != null && !RECIPIENT_MODE_EXISTING.equals(mode) && !RECIPIENT_MODE_NEW.equals(mode)) {
-            errors.put(NodeConfig.RECIPIENT_MODE_FIELD_ID, List.of("Wählen Sie eine gültige Empfängerart aus."));
+            errors.put(NodeConfig.RECIPIENT_MODE_FIELD_ID, List.of("Wählen Sie eine vorhandene Identität oder eine neue Person oder Organisation aus."));
         }
         if (!RECIPIENT_MODE_NEW.equals(mode)) {
             return errors.isEmpty() ? null : errors;
@@ -332,18 +378,18 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
 
         var identities = configuration.newIdentities;
         if (identities == null || identities.size() != 1 || identities.getFirst() == null) {
-            errors.put(NodeConfig.NEW_IDENTITIES_FIELD_ID, List.of("Konfigurieren Sie genau eine verpflichtende Identität."));
+            errors.put(NodeConfig.NEW_IDENTITIES_FIELD_ID, List.of("Konfigurieren Sie genau eine verpflichtende Identität für die eingeladenen Beteiligten."));
         } else {
             var slot = identities.getFirst();
             if (!isValidNewIdentityId(slot.getId()) || StringUtils.isNullOrEmpty(slot.getTitle())
                     || Boolean.TRUE.equals(slot.getIsOptional())) {
-                errors.put(NodeConfig.NEW_IDENTITIES_FIELD_ID, List.of("Die neue Identität benötigt einen Schlüssel aus 1 bis 32 Buchstaben, Zahlen oder Unterstrichen, einen Titel und muss verpflichtend sein."));
+                errors.put(NodeConfig.NEW_IDENTITIES_FIELD_ID, List.of("Vergeben Sie einen Schlüssel mit 1 bis 32 Zeichen aus A–Z, a–z, 0–9 und Unterstrichen sowie einen Titel. Die Identität muss verpflichtend sein."));
             }
         }
 
         if (!context.isDeferred(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID)
                 && !EmailAddressUtils.isValidTransportAddress(configuration.recipientEmailAddress)) {
-            errors.put(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID, List.of("Bitte geben Sie eine gültige E-Mail-Adresse ein."));
+            errors.put(NodeConfig.RECIPIENT_EMAIL_ADDRESS_FIELD_ID, List.of("Geben Sie eine gültige E-Mail-Adresse für die Einladung an."));
         }
         return errors.isEmpty() ? null : errors;
     }
@@ -398,9 +444,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 ? null
                 : StringUtils.toNullableTrimmedString(configuration.messageConfig.executionType);
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültige Ausführungsart für die Datenanforderung. Erwartet werden entweder %s oder %s. Übergeben wurde: %s",
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_AUTOMATIC),
-                StringUtils.quote(SemiAutomaticMessageConfig.LayoutConfig.EXECUTION_TYPE_MANUAL),
+                "Wählen Sie aus, ob die Nachricht automatisch oder nach manueller Bearbeitung versendet werden soll. Konfigurierter Wert: %s.",
                 StringUtils.quote(executionType)
         );
     }
@@ -451,7 +495,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement %s konnte keine geeignete Person für die Bearbeitung im konfigurierten Personenkreis ermittelt werden.",
+                        "Für %s konnte keine zuständige Person ermittelt werden. Prüfen Sie den Personenkreis und die Berechtigungen zum Bearbeiten der Aufgabe.",
                         StringUtils.quote(context.getThisNode().resolveName(this))
                 ));
 
@@ -472,13 +516,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var configuration = context.getConfigurationOfExecutingNode();
         var subjectField = new TextInputElement();
         subjectField.setId(STAFF_TASK_SUBJECT_FIELD_ID);
-        subjectField.setLabel("Betreff der Aufforderung");
+        subjectField.setLabel("Betreff der Nachricht");
         subjectField.setRequired(true);
 
         var contentField = new RichTextInputElement();
         contentField.setId(STAFF_TASK_CONTENT_FIELD_ID);
-        contentField.setLabel("Nachricht der Aufforderung");
-        contentField.setHint("Der Text der Nachricht. Ein Link zum Übermitteln der angeforderten Angaben wird automatisch ergänzt.");
+        contentField.setLabel("Nachricht");
+        contentField.setHint("Beschreiben Sie, welche Angaben benötigt werden. Der Link zum Formular wird automatisch ergänzt.");
         contentField.setRequired(true);
 
         var root = new GroupLayoutElement();
@@ -497,7 +541,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 if (!hasIdentity(context.getThisProcessInstance(), recipientId)) {
                     var recipientField = new TextInputElement();
                     recipientField.setId(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID);
-                    recipientField.setLabel("E-Mail-Adresse der Einladung");
+                    recipientField.setLabel("E-Mail-Adresse für die Einladung");
                     recipientField.setDisabled(true);
                     root.getChildren().addFirst(recipientField);
                     taskViewData.putLiteral(STAFF_TASK_RECIPIENT_EMAIL_FIELD_ID, requireInvitationEmailForStaffView(configuration));
@@ -510,7 +554,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         return ProcessNodeStaffView.of(
                 context,
                 root,
-                List.of(new TaskViewEvent("Aufforderung versenden", STAFF_TASK_SEND_EVENT)),
+                List.of(new TaskViewEvent("Nachricht versenden", STAFF_TASK_SEND_EVENT)),
                 taskViewData
         );
     }
@@ -532,7 +576,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var configuration = context.getConfigurationOfExecutingNode();
         if (!SemiAutomaticMessageConfig.isManual(configuration.messageConfig)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Aufforderung kann nur bei teilautomatisierter Ausführung über eine Mitarbeitendenaufgabe versendet werden."
+                    "Die Nachricht kann nur nach manueller Bearbeitung über eine Mitarbeitendenaufgabe versendet werden."
             );
         }
 
@@ -583,7 +627,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 recipientTitle,
                 "Versand vorbereitet",
                 Map.of(),
-                "Der Versand der Aufforderung mit dem Betreff %s an %s wurde %s vorbereitet.",
+                "Der Versand der Nachricht mit dem Betreff %s an %s wurde %s vorbereitet.",
                 StringUtils.quote(request.message().subject()),
                 recipientDescription,
                 triggeringUser != null ? "durch " + ProcessHistoryLabels.quotedUser(triggeringUser) : "automatisch"
@@ -623,7 +667,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 .subject(subject)
                 .body(MarkdownRenderer.renderPlainText(content))
                 .markdownBody(content)
-                .callToActions(List.of(new CommunicationMessageCallToAction("Angaben übermitteln", customerLink)))
+                .callToActions(List.of(new CommunicationMessageCallToAction("Formular öffnen", customerLink)))
                 .signatureDepartment(SemiAutomaticMessageConfig.resolveSignatureDepartment(
                         configuration.messageConfig,
                         vDepartmentShadowedService
@@ -706,7 +750,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         // Completed views are available without another identity check, so only expose a receipt, not submitted data.
         var confirmation = new AlertContentElement()
                 .setTitle("Angaben übermittelt")
-                .setText("Sie haben die angeforderten Angaben erfolgreich übermittelt.")
+                .setText("Die angeforderten Angaben wurden erfolgreich übermittelt.")
                 .setAlertType(AlertType.Success);
         confirmation.setId("form-request-completed-" + context.getThisTask().getId());
         var layout = new GroupLayoutElement();
@@ -880,7 +924,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
     private String requireRecipientIdentity(@Nullable String recipientIdentity) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedIdentity = StringUtils.toNullableTrimmedString(recipientIdentity);
         if (normalizedIdentity == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die Datenanforderung muss eine Empfängeridentität konfiguriert sein.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie die empfangende Identität aus.");
         }
         return normalizedIdentity;
     }
@@ -895,7 +939,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         if (RECIPIENT_MODE_NEW.equals(mode)) {
             return RECIPIENT_MODE_NEW;
         }
-        throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die konfigurierte Empfängerart ist ungültig.");
+        throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie eine vorhandene Identität oder eine neue Person oder Organisation aus.");
     }
 
     @Nonnull
@@ -904,21 +948,21 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         if (configuration.newIdentities == null || configuration.newIdentities.size() != 1
                 || configuration.newIdentities.getFirst() == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für neue Identitäten muss genau eine Identität konfiguriert sein."
+                    "Konfigurieren Sie genau eine verpflichtende Identität für die eingeladenen Beteiligten."
             );
         }
         var slot = configuration.newIdentities.getFirst();
         if (!isValidNewIdentityId(slot.getId()) || StringUtils.isNullOrEmpty(slot.getTitle())
                 || Boolean.TRUE.equals(slot.getIsOptional())) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die neue Identität benötigt einen Schlüssel aus 1 bis 32 Buchstaben, Zahlen oder Unterstrichen, einen Titel und muss verpflichtend sein."
+                    "Vergeben Sie einen Schlüssel mit 1 bis 32 Zeichen aus A–Z, a–z, 0–9 und Unterstrichen sowie einen Titel. Die Identität muss verpflichtend sein."
             );
         }
         var hasProvider = Optional.ofNullable(slot.getOptions()).orElse(List.of()).stream()
                 .anyMatch(option -> option != null && option.getIdentityProviderKey() != null);
         if (!Boolean.TRUE.equals(slot.getAllowsMail()) && !hasProvider) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für die neue Identität muss ein Identitätsanbieter oder die direkte E-Mail-Eingabe aktiviert sein."
+                    "Aktivieren Sie für die erforderliche Identität mindestens einen Identitätsanbieter oder die direkte E-Mail-Eingabe."
             );
         }
         return slot;
@@ -931,7 +975,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
             return EmailAddressUtils.normalizeTransportAddress(emailAddress);
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die E-Mail-Adresse der Einladung ist ungültig."
+                    "Geben Sie eine gültige E-Mail-Adresse für die Einladung an."
             );
         }
     }
@@ -981,7 +1025,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var content = configuration.messageConfig == null ? null : configuration.messageConfig.automaticContent;
         if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den automatischen Versand müssen Betreff und Nachrichtentext konfiguriert sein."
+                    "Geben Sie einen Betreff und einen Nachrichtentext für den automatischen Versand ein."
             );
         }
         return content;
@@ -994,7 +1038,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         var content = configuration.messageConfig == null ? null : configuration.messageConfig.manualContent;
         if (content == null || StringUtils.isNullOrEmpty(content.subject) || StringUtils.isNullOrEmpty(content.content)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den teilautomatisierten Versand müssen Nachrichtenbausteine für Betreff und Nachrichtentext konfiguriert sein."
+                    "Geben Sie einen vorbelegten Betreff und eine vorbelegte Nachricht für die manuelle Bearbeitung ein."
             );
         }
         return content;
@@ -1019,13 +1063,13 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         if (subject == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_SUBJECT_FIELD_ID,
-                    new ComputedElementState().setError("Der Betreff der Datenanforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Geben Sie einen Betreff für die Nachricht ein.")
             );
         }
         if (content == null) {
             derivedRuntimeData.getElementStates().put(
                     STAFF_TASK_CONTENT_FIELD_ID,
-                    new ComputedElementState().setError("Die Nachricht der Datenanforderung darf nicht leer sein.")
+                    new ComputedElementState().setError("Geben Sie einen Nachrichtentext ein.")
             );
         }
         if (derivedRuntimeData.hasAnyError()) {
@@ -1050,7 +1094,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
         @InputElementPOJOBinding(id = RECIPIENT_MODE_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "presentation", strValue = "radio"),
                 @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Person oder Organisation"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Datenanforderung an eine existierende Identität oder per E-Mail an eine neue Identität gesendet wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine im Vorgang vorhandene Identität oder laden Sie eine neue Person oder Organisation per E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String recipientMode;
@@ -1060,8 +1104,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
          * one that is not present in the process instance prevents dispatch.
          */
         @InputElementPOJOBinding(id = RECIPIENT_IDENTITY_ID_FIELD_ID, type = ElementType.ProcessIdentityIdInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Identität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität aus, an welche die Nachricht gesendet wird."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Empfangende Identität"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Identität des Vorgangs, die die angeforderten Angaben übermitteln soll. Die Nachricht wird über deren hinterlegten Zustellweg versendet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "requiresCommunication", boolValue = true)
         })
@@ -1074,8 +1118,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
                 dynamicText = true,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode},
                 properties = {
-                        @ElementPOJOBindingProperty(key = "label", strValue = "E-Mail-Adresse"),
-                        @ElementPOJOBindingProperty(key = "hint", strValue = "E-Mail-Adresse der empfangenden Person oder Organisation. Über diese Adresse wird die Identität bestätigt und der Zugang zur Aufgabe bereitgestellt."),
+                        @ElementPOJOBindingProperty(key = "label", strValue = "E-Mail-Adresse für die Einladung"),
+                        @ElementPOJOBindingProperty(key = "hint", strValue = "An diese Adresse wird die Einladung mit dem Link zur Aufgabe gesendet. Die erforderliche Identität wird anschließend beim Aufrufen der Aufgabe angegeben."),
                         @ElementPOJOBindingProperty(key = "required", boolValue = true)
                 })
         public String recipientEmailAddress;
@@ -1084,8 +1128,8 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
          * Exactly one required identity is collected before the first submission and reused on later executions.
          */
         @InputElementPOJOBinding(id = NEW_IDENTITIES_FIELD_ID, type = ElementType.IdentityConfig, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Neue Identität"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie die Identität, die vor der Bearbeitung der Aufgabe angegeben werden muss. Ist die Identität aufgrund erneuter Ausführung (Schleife) schon bekannt, wird die existierende Identität verwendet."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Erforderliche Identität"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Legen Sie fest, welche Identität vor der Bearbeitung angegeben werden muss. Konfigurieren Sie genau eine verpflichtende Identität. Ist sie bei einer späteren Ausführung bereits im Vorgang vorhanden, wird sie erneut verwendet."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxSlots", intValue = 1),
                 @ElementPOJOBindingProperty(key = "optionalSlotsAllowed", falseValue = true)
@@ -1097,7 +1141,7 @@ public class FormRequestActionNodeV1 implements ProcessNodeDefinition<FormReques
          */
         @InputElementPOJOBinding(id = UI_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Formular"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Konfiguration des Formulars."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Gestalten Sie die Felder und Hinweise für die angeforderten Angaben. Felder mit Datenschlüssel werden aus den Vorgangsdaten vorbelegt und nach der Übermittlung dorthin übernommen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public GroupLayoutElement uiDefinition;

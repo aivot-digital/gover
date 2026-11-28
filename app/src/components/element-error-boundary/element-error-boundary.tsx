@@ -35,7 +35,7 @@ export class ElementErrorBoundary extends React.Component<ElementErrorBoundaryPr
                     color="error"
                 >
                     <Typography>
-                        Das Element konnte nicht erfolgreich angezeigt werden. Bitte überprüfen Sie die Elementstruktur.
+                        Das Formularelement konnte nicht angezeigt werden. Wenn das Problem bestehen bleibt, wenden Sie sich an die verantwortliche Stelle.
                     </Typography>
 
                     <Accordion
@@ -46,7 +46,7 @@ export class ElementErrorBoundary extends React.Component<ElementErrorBoundaryPr
                         <AccordionSummary
                             expandIcon={<ExpandMoreIcon/>}
                         >
-                            Mehr Informationen
+                            Technische Informationen
                         </AccordionSummary>
                         <AccordionDetails>
                             <Typography variant="subtitle1">

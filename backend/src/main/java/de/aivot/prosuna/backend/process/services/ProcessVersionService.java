@@ -171,7 +171,7 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         for (var node : nodes) {
             var provider = processNodeDefinitionService
                     .getProcessNodeDefinition(node)
-                    .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
+                    .orElseThrow(() -> ResponseException.internalServerError("Für das Prozesselement ist kein Funktionsanbieter verfügbar. Prozesselement-ID: " + node.getId()));
 
             val(node, provider, process, entity)
                     .ifPresent(nodeProblems::add);

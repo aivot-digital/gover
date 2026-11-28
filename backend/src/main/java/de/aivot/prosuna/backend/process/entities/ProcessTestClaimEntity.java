@@ -31,11 +31,11 @@ public class ProcessTestClaimEntity {
     private Integer processTestConfigId;
 
     @Nonnull
-    @NotNull(message = "Die Prozess-ID darf nicht null sein.")
+    @NotNull(message = "Die Prozess-ID muss angegeben werden.")
     private Integer processId;
 
     @Nonnull
-    @NotNull(message = "Die Prozessversion darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion muss angegeben werden.")
     private Integer processVersion;
 
     @Nonnull

@@ -59,7 +59,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
         // Retrieve the payment provider definition
         var def = storageProviderDefinitionService
                 .retrieveProviderDefinition(entity.getStorageProviderDefinitionKey(), entity.getStorageProviderDefinitionVersion())
-                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter ist nicht vorhanden"));
+                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Speicheranbieter wurde nicht gefunden."));
 
         // Validate the configuration of the provider
         validateProvider(def, entity);
@@ -137,7 +137,7 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
 
         // A resynchronization is requested through requestSync, not by sending the pending status.
         if (existingEntity.getSystemProvider()) {
-            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden");
+            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht bearbeitet werden.");
         }
 
         // Only the switch is checked, so a default provider that is already read-only can still be edited.

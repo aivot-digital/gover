@@ -14,13 +14,13 @@ import java.util.UUID;
 
 public record PresetCreateRequestDTO(
         @Nonnull
-        @NotNull(message = "Der Titel darf nicht null sein.")
+        @NotNull(message = "Der Titel muss angegeben werden.")
         @NotBlank(message = "Der Titel darf nicht leer sein.")
         @Size(min = 3, max = 255, message = "Der Titel muss zwischen 3 und 255 Zeichen lang sein.")
         String title,
 
         @Nonnull
-        @NotNull(message = "Das Root-Element darf nicht null sein.")
+        @NotNull(message = "Das oberste Formularelement der Vorlage muss angegeben werden.")
         GroupLayoutElement rootElement
 ) implements RequestDTO<PresetEntity> {
 

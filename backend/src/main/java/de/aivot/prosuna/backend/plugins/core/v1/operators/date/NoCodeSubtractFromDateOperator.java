@@ -30,13 +30,13 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
         return """
                 # Wofür verwenden Sie diese Funktion?
 
-                Mit „Vom Datum abziehen“ berechnen Sie ein früheres Datum, beispielsweise einen Stichtag vor einem Termin.
+                Mit **„Vom Datum abziehen“** berechnen Sie ein früheres Datum, beispielsweise einen Stichtag vor einem Termin.
 
                 # Welche Werte werden benötigt?
 
-                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können das Datum selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Für die eigene Eingabe wählen Sie unter „Datumsgenauigkeit“ Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Es gibt keine festen Auswahlwerte.
+                - **Ausgangsdatum:** Das Datum, von dem aus Sie rechnen möchten. Sie können das Datum selbst eingeben, aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln. Für die eigene Eingabe wählen Sie unter **„Datumsgenauigkeit“** Tag, Monat und Jahr, Monat und Jahr oder nur das Jahr. Es gibt keine festen Auswahlwerte.
                 - **Anzahl:** Geben Sie eine ganze Zahl ein, beispielsweise `5`. Es gibt keine festen Auswahlwerte. Sie können die Anzahl auch aus einer verfügbaren Wertquelle übernehmen oder mit einer Funktion ermitteln.
-                - **Einheit:** Wählen Sie Tage, Wochen, Monate oder Jahre. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über „Andere Wertquelle verwenden …“ können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
+                - **Einheit:** Wählen Sie **„Tage“**, **„Wochen“**, **„Monate“** oder **„Jahre“**. Zusätzliche eigene Einträge sind in dieser Auswahl nicht möglich. Über **„Andere Wertquelle verwenden …“** können Sie die Einheit auch übernehmen oder mit einer Funktion ermitteln.
 
                 # Welches Ergebnis erhalten Sie?
 
@@ -46,28 +46,28 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
 
                 # Beispiel im No-Code-Editor
 
-                Sie möchten das Datum ermitteln, das fünf Tage vor dem 15.08.2026 liegt.
+                Sie möchten das Datum ermitteln, das fünf Tage vor dem `15.08.2026` liegt.
 
-                1. Wählen Sie die Funktion „Vom Datum abziehen“.
-                2. Wählen Sie für „Ausgangsdatum“ die Option „Wert selbst festlegen“ und geben Sie `15.08.2026` ein.
-                3. Wählen Sie für „Anzahl“ die Option „Wert selbst festlegen“ und geben Sie `5` ein.
-                4. Wählen Sie für „Einheit“ die Option „Tage“.
+                1. Wählen Sie die Funktion **„Vom Datum abziehen“**.
+                2. Wählen Sie für **„Ausgangsdatum“** die Option **„Wert selbst festlegen“** und geben Sie `15.08.2026` ein.
+                3. Wählen Sie für **„Anzahl“** die Option **„Wert selbst festlegen“** und geben Sie `5` ein.
+                4. Wählen Sie für **„Einheit“** die Option **„Tage“**.
 
                 Der fertige Ausdruck liest sich so:
 
-                **15.08.2026 minus 5 Tage**
+                `15.08.2026 minus 5 Tage`
 
-                Das Ergebnis ist **10.08.2026**.
+                Das Ergebnis ist `10.08.2026`.
 
                 # Was ist zu beachten?
 
                 - Tage sind Kalendertage. Wochenenden und Feiertage werden mitgezählt. Eine Woche entspricht sieben Tagen.
                 - Bei der Anzahl `0` bleibt das Datum gleich. Eine negative Anzahl kehrt die Rechenrichtung um: Mit `-5` erhalten Sie ein späteres Datum.
-                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: 31.03.2026 minus 1 Monat ergibt 28.02.2026.
-                - Dasselbe gilt für Schaltjahre. Beispiel: 29.02.2024 minus 1 Jahr ergibt 28.02.2023.
+                - Gibt es den Tag im Zielmonat nicht, wird der letzte Tag dieses Monats verwendet. Beispiel: `31.03.2026 minus 1 Monat` ergibt `28.02.2026`.
+                - Dasselbe gilt für Schaltjahre. Beispiel: `29.02.2024 minus 1 Jahr` ergibt `28.02.2023`.
                 - Durch die Anpassung an Monatsenden erhalten Sie beim anschließenden Zurückrechnen nicht immer das Ausgangsdatum.
                 - Enthält das Datum nur Monat und Jahr, können Sie Monate oder Jahre verwenden. Enthält es nur ein Jahr, können Sie nur Jahre verwenden.
-                - Liegt das Ergebnis außerhalb der Jahre 1 bis 9999, erhalten Sie eine Fehlermeldung.
+                - Liegt das Ergebnis außerhalb der Jahre `1` bis `9999`, erhalten Sie eine Fehlermeldung.
                 """;
     }
 

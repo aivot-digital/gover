@@ -134,7 +134,7 @@ export function AssetDetailsPageNew() {
 
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.', true));
+                dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht gespeichert werden.', true));
             })
             .finally(() => {
                 setIsBusy(false);

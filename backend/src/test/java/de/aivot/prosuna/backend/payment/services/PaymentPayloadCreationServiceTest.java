@@ -9,6 +9,7 @@ import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryServi
 import de.aivot.prosuna.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.prosuna.backend.nocode.services.NoCodeEvaluationService;
 import de.aivot.prosuna.backend.payment.exceptions.PaymentException;
+import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class PaymentPayloadCreationServiceTest {
     @ParameterizedTest
@@ -506,6 +509,23 @@ class PaymentPayloadCreationServiceTest {
     }
 
     @Test
+    void shouldReportTemplateFailureWithoutTemplateContentsAndKeepCause() {
+        var renderer = mock(TemplateRenderService.class);
+        var processData = new ProcessExecutionData();
+        var cause = new IllegalArgumentException("Private template syntax and customer content");
+        when(renderer.interpolate(processData, "FEE", TemplateOutputFormat.SingleLineText)).thenThrow(cause);
+        var service = new PaymentPayloadCreationService(renderer, null, null);
+
+        var exception = assertThrows(
+                PaymentException.class,
+                () -> service.createRequest(requestorConfig(null), null, processData)
+        );
+
+        assertEquals("Ein Zahlungstext mit Vorlagenausdrücken konnte nicht ausgewertet werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
     void shouldRejectRequestsWithoutPayableItems() {
         var config = new PaymentConfigElementValue(
                 null,
@@ -535,10 +555,11 @@ class PaymentPayloadCreationServiceTest {
                 null
         );
 
-        assertThrows(
+        var exception = assertThrows(
                 PaymentException.class,
                 () -> createService().createRequest(config, null, new ProcessExecutionData())
         );
+        assertEquals("Die Zahlungsanforderung enthält keine zahlbaren Positionen.", exception.getMessage());
     }
 
     private static PaymentConfigElementValueRequestorMapping emptyRequestorMapping(

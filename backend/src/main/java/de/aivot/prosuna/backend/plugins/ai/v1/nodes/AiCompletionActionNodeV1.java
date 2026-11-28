@@ -17,12 +17,12 @@ import de.aivot.prosuna.backend.elements.models.elements.layout.ConfigLayoutElem
 import de.aivot.prosuna.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.prosuna.backend.enums.ElementType;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
-import de.aivot.prosuna.backend.markdown.utils.MarkdownTemplateValues;
 import de.aivot.prosuna.backend.plugins.ai.AiPlugin;
 import de.aivot.prosuna.backend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeType;
 import de.aivot.prosuna.backend.process.enums.TemplateOutputFormat;
+import de.aivot.prosuna.backend.process.exceptions.ExternalServiceResponseException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
@@ -53,11 +53,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
-import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 
 /**
  * Executes a prompt against the AI Completions API and exposes the response as node outputs.
@@ -99,11 +97,9 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Override
     public String generateExecutionSummary(@Nonnull ProcessNodeExecutionSummaryContext<AiCompletionActionNodeV1.AiCompletionActionNodeConfig> context) {
         var summary = new ExecutionSummaryMarkdown(context);
-        return "Die KI-Anfrage wurde erfolgreich ausgeführt."
+        return "Die KI-Anfrage wurde" + summary.completedAt() + " abgeschlossen."
                 + detail("Verwendetes Modell", summary.data(OUTPUT_RESPONSE_MODEL))
-                + detail("Kurzbeschreibung", context.thisNode().getDescription())
-                // The answer can repeat customer input from the prompt, so its links must not hide their target.
-                + section("Antwort der KI", MarkdownTemplateValues.revealLinkTargets(Objects.toString(summary.data(OUTPUT_COMPLETION), null)));
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -139,22 +135,50 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     @Override
     public String getName() {
-        return "KI-Anfrage";
+        return "KI-Antwort erzeugen";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet einen Prompt an eine KI und stellt die Antwort in den Elementdaten bereit.";
+        return "Sendet eine Anfrage an ein KI-Modell und stellt die Textantwort als Elementdaten bereit.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet den konfigurierten Prompt an eine OpenAI-kompatible Chat-Completions-API und stellt die Antwort in den Elementdaten bereit. Konfiguriert werden HTTP-Endpunkt, API-Schlüssel, Modell und Prompt; als HTTP-Endpunkt wird die Basis-URL der API angegeben, an die `/chat/completions` angehängt wird.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Vorgangsdaten werden nur übermittelt, soweit der Prompt sie über Variablen einbindet. Meldet die API einen Fehler oder liefert sie keine Antwort, schlägt die Aufgabe fehl.
+                Lassen Sie ein KI-Modell eine Anfrage beantworten oder einen Text bearbeiten, zum Beispiel eine Zusammenfassung erstellen oder einen Text umformulieren. Die Textantwort steht für nachfolgende Schritte bereit.
+
+                ### Was richten Sie ein?
+
+                Geben Sie die API-Basis-URL und die genaue Modellkennung Ihres KI-Dienstes an. Wählen Sie ein in Prosuna gespeichertes Geheimnis mit dem zugehörigen API-Schlüssel aus. Der Dienst muss eine OpenAI-kompatible Chat-Completions-API mit den von Prosuna verwendeten Anfrageparametern unterstützen.
+
+                Formulieren Sie unter „Anfrage an die KI“ die gewünschte Aufgabe. Dieser Anfragetext wird auch Prompt genannt. Ergänzen Sie benötigte Angaben über Variablen im Text. Sie können die gesamte Anfrage und die Modellkennung auch aus einer Variablen, mit No-Code oder mit Low-Code bestimmen.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna wertet die Eingaben aus und sendet den vorbereiteten Anfragetext an den KI-Dienst. Weitere Vorgangsdaten werden diesem Aufruf nicht automatisch beigefügt.
+
+                Sobald eine nicht leere Textantwort vorliegt, wird der Vorgang über „KI-Antwort erhalten“ fortgesetzt. Meldet die Schnittstelle einen HTTP-Fehler oder kann ihre Antwort nicht verarbeitet werden, schlägt die Aufgabe fehl.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Der gesendete Anfragetext und die KI-Antwort stehen als Elementdaten bereit. Liefert der Dienst zusätzliche Angaben, werden auch die gemeldete Modellkennung, der Abschlussgrund und der Token-Verbrauch gespeichert. Tokens sind Texteinheiten, mit denen der KI-Dienst die verarbeitete Textmenge zählt.
+
+                In nachfolgenden Schritten können Sie die KI-Antwort über eine Variable verwenden. Über die Datenzuordnung unter „Ausgangsdaten“ können Sie einzelne Ergebnisse zusätzlich in die Vorgangsdaten übernehmen. Ohne eine solche Zuordnung verändert dieses Element die Vorgangsdaten nicht.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Sie möchten den Text aus `$.beschreibung` zusammenfassen. Tragen Sie als Anfrage ein: „Fassen Sie den folgenden Text in drei Sätzen zusammen: {{ $.beschreibung }}“.
+
+                Hat das Prozesselement den Datenschlüssel `zusammenfassung`, steht die empfangene Antwort anschließend unter `_.zusammenfassung.completion` bereit. Ein nachfolgender Schritt kann diese Antwort beispielsweise zur Prüfung anzeigen.
+
+                ### Was ist zu beachten?
+
+                Das Element prüft die Antwort weder auf fachliche Richtigkeit noch auf Vollständigkeit. Planen Sie bei Bedarf einen anschließenden Prüfungsschritt ein. Die Antwortlänge ist durch die Systemeinstellung und die Grenzen des gewählten Modells begrenzt.
                 """;
     }
 
@@ -171,10 +195,10 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         try {
             return ElementPOJOMapper.createFromPOJO(AiCompletionActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
+            throw ResponseException.internalServerErrorWithDetails(
                     e,
-                    "Fehler bei der Erstellung des Konfigurationslayouts: %s",
-                    e.getMessage()
+                    "Die Konfiguration des Prozesselements konnte nicht geladen werden.",
+                    null
             );
         }
     }
@@ -186,7 +210,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "KI-Antwort erhalten",
-                        "Der Vorgang wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
+                        "Der Vorgang wird hier fortgesetzt, nachdem eine KI-Antwort als Text empfangen und gespeichert wurde."
                 )
         );
     }
@@ -195,11 +219,11 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell.", "string"),
-                new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte KI-Antwort als Text.", "string"),
-                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der Grund, aus dem die Erzeugung der ersten KI-Antwort beendet wurde.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.", OUTPUT_USAGE_TYPE_DEFINITION)
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Gesendeter Anfragetext", "Der nach Auswertung der Eingaben an die KI gesendete Text.", "string"),
+                new ProcessNodeOutput(OUTPUT_COMPLETION, "KI-Antwort", "Die erste nicht leere Textantwort des KI-Dienstes.", "string"),
+                new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Abschlussgrund", "Der vom KI-Dienst gemeldete Grund für das Ende der ersten Antwortoption. Diese Angabe ist keine fachliche Bewertung der Antwort.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Verwendetes Modell", "Die vom KI-Dienst für diese Antwort gemeldete Modellkennung.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_USAGE, "Token-Verbrauch", "Die vom KI-Dienst gemeldeten Token-Anzahlen für Anfrage, Antwort und Gesamtverbrauch.", OUTPUT_USAGE_TYPE_DEFINITION)
         );
     }
 
@@ -213,7 +237,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         if (!context.isDeferred(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpunkt-URL muss angegeben werden."));
+                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Geben Sie die API-Basis-URL an."));
             } else {
                 try {
                     parseEndpointUri(configuration.endpointUrl);
@@ -225,7 +249,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         if (!context.isDeferred(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Geheimnis für den API-Schlüssel muss ausgewählt werden."));
+                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Wählen Sie ein gespeichertes Geheimnis mit dem API-Schlüssel aus."));
             } else {
                 try {
                     var secretId = UUID.fromString(configuration.apiKeySecret.trim());
@@ -239,12 +263,12 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         }
 
         if (!context.isDeferred(AiCompletionActionNodeConfig.MODEL_FIELD_ID) && StringUtils.isNullOrEmpty(configuration.model)) {
-            errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
+            errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, List.of("Geben Sie eine Modellkennung an."));
         }
 
         if (!context.isDeferred(AiCompletionActionNodeConfig.PROMPT_FIELD_ID)) {
             if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-                errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Der Prompt muss angegeben werden."));
+                errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Geben Sie eine Anfrage an die KI ein."));
             }
         }
 
@@ -263,16 +287,16 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die Endpunkt-URL für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage fehlt die API-Basis-URL.");
         }
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage wurde kein Geheimnis mit dem API-Schlüssel ausgewählt.");
         }
         if (StringUtils.isNullOrEmpty(configuration.model)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Modell für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage fehlt die Modellkennung.");
         }
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Prompt für den KI-Aufruf wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Die Anfrage an die KI ist leer. Prüfen Sie die Eingabe oder die verwendete Variable beziehungsweise Regel.");
         }
 
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
@@ -281,7 +305,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
+                    "Die Anfrage an die KI ist leer. Prüfen Sie die Eingabe oder die verwendete Variable beziehungsweise Regel."
             );
         }
 
@@ -297,8 +321,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (HttpConnectionException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die API konnte nicht erreicht werden: %s",
-                    e.getMessage()
+                    "Bei der Kommunikation mit dem KI-Dienst ist ein Fehler aufgetreten."
             );
         }
 
@@ -306,9 +329,9 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         var rawBody = decodeResponseBody(response);
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new ProcessNodeExecutionExceptionUnknown(
-                    "Die API hat mit dem HTTP-Status %d geantwortet. Antwort: %s",
-                    statusCode,
-                    StringUtils.quote(truncateForError(rawBody))
+                    new ExternalServiceResponseException(rawBody),
+                    "Der KI-Dienst hat mit dem HTTP-Statuscode %d geantwortet. Die Anfrage konnte nicht abgeschlossen werden.",
+                    statusCode
             );
         }
 
@@ -318,14 +341,13 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die Antwort der KI konnte nicht verarbeitet werden: %s",
-                    e.getMessage()
+                    "Die Antwort des KI-Dienstes konnte nicht verarbeitet werden."
             );
         }
 
         var completionTexts = extractCompletionTexts(completionResponse.choices);
         if (completionTexts.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Text.");
+            throw new ProcessNodeExecutionExceptionUnknown("Der KI-Dienst hat keinen Antworttext geliefert.");
         }
 
         var nodeData = createNodeData(renderedPrompt, completionTexts, completionResponse);
@@ -338,7 +360,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private URI parseEndpointUri(@Nullable String endpointUrl) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var normalizedUrl = StringUtils.toNullableTrimmedString(endpointUrl);
         if (normalizedUrl == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL für den KI-Aufruf ist leer.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Für die KI-Anfrage fehlt die API-Basis-URL.");
         }
 
         try {
@@ -349,7 +371,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                     .toUri();
 
             if (!uri.isAbsolute() || StringUtils.isNullOrEmpty(uri.getScheme()) || StringUtils.isNullOrEmpty(uri.getHost())) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Endpunkt-URL muss eine absolute URL sein.");
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die API-Basis-URL muss eine vollständige URL mit Hostnamen sein.");
             }
 
             return uri;
@@ -358,8 +380,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die Endpunkt-URL ist ungültig: %s",
-                    normalizedUrl
+                    "Die API-Basis-URL des KI-Dienstes ist ungültig."
             );
         }
     }
@@ -368,14 +389,14 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private String resolveApiKey(@Nullable String apiKeySecretKey) throws ProcessNodeExecutionException {
         var normalizedSecretKey = StringUtils.toNullableTrimmedString(apiKeySecretKey);
         if (normalizedSecretKey == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Das Geheimnis für den API-Schlüssel wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Für die KI-Anfrage wurde kein Geheimnis mit dem API-Schlüssel ausgewählt.");
         }
 
         UUID secretId;
         try {
             secretId = UUID.fromString(normalizedSecretKey);
         } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Das ausgewählte Geheimnis für den API-Schlüssel ist ungültig.");
         }
 
         SecretEntity secret = secretService
@@ -393,8 +414,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Geheimnis entschlüsselt werden: %s",
-                    e.getMessage()
+                    "Der API-Schlüssel konnte nicht aus dem ausgewählten Geheimnis gelesen werden."
             );
         }
     }
@@ -423,8 +443,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Der Request-Body für den KI-Aufruf konnte nicht serialisiert werden: %s",
-                    e.getMessage()
+                    "Die Anfrage an den KI-Dienst konnte nicht vorbereitet werden."
             );
         }
     }
@@ -484,17 +503,6 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 .toList();
     }
 
-    @Nullable
-    private static String truncateForError(@Nullable String rawBody) {
-        if (rawBody == null) {
-            return null;
-        }
-        if (rawBody.length() <= 300) {
-            return rawBody;
-        }
-        return rawBody.substring(0, 300).trim() + "...";
-    }
-
     /**
      * Configuration of the AI completion node.
      */
@@ -506,11 +514,11 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         public static final String PROMPT_FIELD_ID = "prompt";
 
         /**
-         * Absolute URL of the AI completions endpoint. The node uses this URL as-is and does not render it as a template.
+         * Absolute API base URL. The chat completions path is appended without rendering the URL as a template.
          */
         @InputElementPOJOBinding(id = ENDPOINT_URL_FIELD_ID, type = ElementType.Text, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Endpunkt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Basis-URL der API. Der Pfad /chat/completions wird automatisch angehängt."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "API-Basis-URL"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Basis-URL einer OpenAI-kompatiblen Chat-Completions-API an, zum Beispiel https://ki.example/v1. Der Pfad /chat/completions wird automatisch ergänzt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
@@ -521,7 +529,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
          */
         @InputElementPOJOBinding(id = API_KEY_SECRET_FIELD_ID, type = ElementType.SecretSelectInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "API-Schlüssel"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein hinterlegtes Geheimnis aus, das den Bearer-Token für die KI enthält."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie ein in Prosuna gespeichertes Geheimnis aus, das den API-Schlüssel dieses KI-Dienstes enthält."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
@@ -532,7 +540,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
          */
         @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Text,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Modellkennung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die genaue Kennung eines Modells an, das über die gewählte API verfügbar ist."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
@@ -546,8 +555,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 // The prompt goes to a language model, not to a Markdown renderer.
                 dynamicTextFormat = TemplateOutputFormat.PlainText,
                 allowedInputModes = {InputMode.Literal, InputMode.Variable, InputMode.NoCode, InputMode.LowCode}, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Prompt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Prompt-Vorlage mit Template-Ausdrücken. Die Vorlage wird vor dem API-Aufruf mit den aktuellen Vorgangsdaten gerendert."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Anfrage an die KI"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie, was die KI bearbeiten soll. Dieser Anfragetext wird auch Prompt genannt. Binden Sie benötigte Angaben aus dem Vorgang über Variablen ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String prompt;

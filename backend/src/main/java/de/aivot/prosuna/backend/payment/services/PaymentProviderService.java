@@ -55,7 +55,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 paymentProviderEntity.getPaymentProviderDefinitionVersion()
         ).orElseThrow(() -> new ResponseException(
                 HttpStatus.BAD_REQUEST,
-                "Der ausgewählte Zahlungsanbieter in Version %d ist nicht vorhanden"
+                "Der ausgewählte Zahlungsanbieter ist in Version %d nicht verfügbar."
                         .formatted(paymentProviderEntity.getPaymentProviderDefinitionVersion())
         ));
 
@@ -118,7 +118,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 !Objects.equals(existingEntity.getPaymentProviderDefinitionVersion(), entity.getPaymentProviderDefinitionVersion())) {
             throw new ResponseException(
                     HttpStatus.BAD_REQUEST,
-                    "Der ausgewählte Zahlungsanbieter und seine Version können nach der Erstellung nicht mehr geändert werden"
+                    "Der ausgewählte Zahlungsanbieter und seine Version können nach der Erstellung nicht mehr geändert werden."
             );
         }
 
@@ -127,7 +127,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
                 existingEntity.getPaymentProviderDefinitionVersion()
         ).orElseThrow(() -> new ResponseException(
                 HttpStatus.BAD_REQUEST,
-                "Der ausgewählte Zahlungsanbieter in Version %d ist nicht vorhanden"
+                "Der ausgewählte Zahlungsanbieter ist in Version %d nicht verfügbar."
                         .formatted(existingEntity.getPaymentProviderDefinitionVersion())
         ));
 

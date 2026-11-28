@@ -33,24 +33,30 @@ public class NoCodeSplitOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Teilen Sie einen Text in einzelne Teile auf, beispielsweise mehrere durch Kommas getrennte Kategorien.
 
                 # Welche Werte werden benötigt?
-                **Text:** Der aufzuteilende Text. **Trennzeichen:** Das Zeichen oder die Zeichenfolge zwischen den Textteilen, beispielsweise ein Komma.
+
+                - **Text:** Der aufzuteilende Text.
+                - **Trennzeichen:** Das Zeichen oder die Zeichenfolge zwischen den Textteilen, beispielsweise ein Komma.
 
                 Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine Liste mit den Textteilen in ihrer ursprünglichen Reihenfolge.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie **„Text aufteilen“**.
-                2. Geben Sie bei „Text“ `Max Mustermann` ein.
-                3. Drücken Sie im Feld „Trennzeichen“ einmal die Leertaste.
 
-                Zugeklappt und in der Vorschau lesen Sie `„Max Mustermann“ aufgeteilt an einem Leerzeichen`. Das Ergebnis ist `["Max", "Mustermann"]`. Verwenden Sie diese Liste beispielsweise in „Anzahl der Listeneinträge“, um die beiden Wörter zu zählen.
+                1. Wählen Sie **„Text aufteilen“**.
+                2. Geben Sie bei **„Text“** `Max Mustermann` ein.
+                3. Drücken Sie im Feld **„Trennzeichen“** einmal die Leertaste.
+
+                Zugeklappt und in der Vorschau lesen Sie `„Max Mustermann“ aufgeteilt an einem Leerzeichen`. Das Ergebnis ist `["Max", "Mustermann"]`. Verwenden Sie diese Liste beispielsweise in **„Anzahl der Listeneinträge“**, um die beiden Wörter zu zählen.
 
                 # Was ist zu beachten?
+
                 Das Trennzeichen wird wörtlich verwendet. Sonderzeichen wie Punkte haben keine besondere Bedeutung. Leerzeichen am Anfang und Ende beider Eingaben zählen mit. Leerzeichen, die zum Trennzeichen gehören, werden beim Aufteilen entfernt. Leere Teile zwischen Trennzeichen bleiben erhalten, leere Teile am Textende werden entfernt. Ohne Trennzeichen erhalten Sie eine Liste mit dem gesamten Text als einzigem Eintrag.
                 """;
     }

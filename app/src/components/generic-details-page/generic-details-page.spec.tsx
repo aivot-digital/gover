@@ -292,7 +292,7 @@ describe('Generic details page events', () => {
         }
         act(() => page.controlRef.current!.refresh());
         if (failure === 'not found') {
-            expect(await screen.findByText('Diese Ressource konnte leider nicht (mehr) gefunden werden')).toBeInTheDocument();
+            expect(await screen.findByText('Der Eintrag wurde nicht gefunden')).toBeInTheDocument();
         } else {
             expect(await screen.findByRole('alert')).toHaveTextContent('Failure 500');
         }

@@ -427,7 +427,7 @@ function createLayoutErrorState(error: unknown): ProcessFlowEditorLayoutError {
 
     return {
         message: 'Beim Berechnen der Prozessansicht ist ein Fehler aufgetreten.',
-        details: error instanceof Error ? [error.message] : [],
+        details: error instanceof Error ? [`Technische Fehlermeldung: ${error.message}`] : [],
         causeHint: 'Das kann durch eine inkonsistente Prozessdefinition oder einen technischen Fehler beim Berechnen des Layouts passieren.',
         recoveryHint: 'Bitte wenden Sie sich mit der angezeigten Fehlermeldung an den Support. Der Prozessfluss muss geprüft werden, bevor er wieder dargestellt werden kann.',
     };

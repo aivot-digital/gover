@@ -25,6 +25,7 @@ import {
     ProcessNodeProviderDetailsContent,
 } from '../components/process-node-provider-details';
 import {ProcessNodeProviderBadges} from '../components/process-node-provider-badges';
+import {useNormalizedReactId} from '../../../hooks/use-normalized-react-id';
 
 const PROCESS_NODE_TYPE_ORDER = [
     ProcessNodeType.Trigger,
@@ -148,6 +149,8 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     } = props;
 
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const detailsTriggerRef = useRef<HTMLButtonElement | null>(null);
+    const detailsId = `${useNormalizedReactId()}-details`;
     const [currentTab, setCurrentTab] = useState(0);
     const [search, setSearch] = useState('');
     const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
@@ -226,20 +229,30 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                 setSearch('');
                 setSelectedProviderId(null);
                 setExpandedGroups(DEFAULT_EXPANDED_GROUPS);
+                detailsTriggerRef.current = null;
             }}
             detailsPanel={selectedProvider != null ? (
-                <SelectNodeProviderDetails
-                    provider={selectedProvider}
-                    showMajorVersion={providerKeysWithMultipleVersions.has(selectedProvider.key)}
-                    primaryActionLabel={renderPrimaryActionLabel}
-                    primaryActionIcon={renderPrimaryActionIcon}
-                    onAdd={() => {
-                        handleAddProvider(selectedProvider);
-                    }}
-                    onClose={() => {
-                        setSelectedProviderId(null);
-                    }}
-                />
+                <Box
+                    id={detailsId}
+                    role="region"
+                    aria-label={`Details: ${selectedProvider.name}`}
+                    sx={{display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%'}}
+                >
+                    <SelectNodeProviderDetails
+                        provider={selectedProvider}
+                        showMajorVersion={providerKeysWithMultipleVersions.has(selectedProvider.key)}
+                        primaryActionLabel={renderPrimaryActionLabel}
+                        primaryActionIcon={renderPrimaryActionIcon}
+                        onAdd={() => {
+                            handleAddProvider(selectedProvider);
+                        }}
+                        onClose={() => {
+                            setSelectedProviderId(null);
+                            if (detailsTriggerRef.current?.isConnected) detailsTriggerRef.current.focus({preventScroll: true});
+                            if (document.activeElement !== detailsTriggerRef.current) searchInputRef.current?.focus({preventScroll: true});
+                        }}
+                    />
+                </Box>
             ) : undefined}
         >
             <Box
@@ -390,9 +403,11 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                                                     provider={provider}
                                                     showMajorVersion={providerKeysWithMultipleVersions.has(provider.key)}
                                                     isSelected={selectedProviderId === getProviderId(provider)}
+                                                    detailsId={detailsId}
                                                     primaryActionLabel={renderPrimaryActionLabel}
                                                     primaryActionIcon={renderPrimaryActionIcon}
-                                                    onShowDetails={() => {
+                                                    onShowDetails={(event) => {
+                                                        detailsTriggerRef.current = event.currentTarget;
                                                         setSelectedProviderId(getProviderId(provider));
                                                     }}
                                                     onAdd={() => {
@@ -420,9 +435,10 @@ interface SelectNodeProviderDialogRowProps {
     provider: ProcessNodeProvider;
     showMajorVersion: boolean;
     isSelected: boolean;
+    detailsId: string;
     primaryActionLabel: string;
     primaryActionIcon: ReactNode;
-    onShowDetails: () => void;
+    onShowDetails: (event: React.MouseEvent<HTMLButtonElement>) => void;
     onAdd: () => void;
 }
 
@@ -431,6 +447,7 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
         provider,
         showMajorVersion,
         isSelected,
+        detailsId,
         primaryActionLabel,
         primaryActionIcon,
         onShowDetails,
@@ -449,7 +466,11 @@ function SelectNodeProviderDialogRow(props: SelectNodeProviderDialogRowProps): R
             description={provider.abstractDescription}
             selected={isSelected}
             primaryActionLabel={primaryActionLabel}
+            primaryActionAriaLabel={`${provider.name}: ${primaryActionLabel}`}
             primaryActionIcon={primaryActionIcon}
+            detailsAriaLabel={`${provider.name}: Details anzeigen`}
+            detailsExpanded={isSelected}
+            detailsControls={isSelected ? detailsId : undefined}
             onShowDetails={onShowDetails}
             onPrimaryAction={onAdd}
         />
@@ -485,6 +506,7 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
 
     return (
         <SelectionDetailsPanel
+            contentKey={getProviderId(provider)}
             icon={<ProviderIcon sx={{fontSize: 20}}/>}
             iconBackgroundColor={typeBgColor}
             iconColor={typeTextColor}
@@ -499,7 +521,7 @@ function SelectNodeProviderDetails(props: SelectNodeProviderDetailsProps): React
             onPrimaryAction={onAdd}
             onClose={onClose}
         >
-            <ProcessNodeProviderDetailsContent provider={provider} showDescription/>
+            <ProcessNodeProviderDetailsContent provider={provider} showDescription headingBaseLevel={4}/>
         </SelectionDetailsPanel>
     );
 }

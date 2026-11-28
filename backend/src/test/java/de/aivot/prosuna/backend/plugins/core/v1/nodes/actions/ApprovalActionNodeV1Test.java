@@ -42,6 +42,8 @@ import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.mockito.Mockito;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
@@ -122,7 +124,7 @@ class ApprovalActionNodeV1Test {
         var processData = new ProcessExecutionData()
                 .addProcessData(Map.of("approvalValue", "Freizugebender Inhalt"));
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionInvalidAssignment.class,
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
@@ -133,6 +135,10 @@ class ApprovalActionNodeV1Test {
                         processData,
                         nodeConfiguration(configurationWithPreferenceOnlyAssignmentContext())
                 ))
+        );
+        assertEquals(
+                "Für „Freigabe“ konnte keine zuständige Person ermittelt werden. Prüfen Sie den Personenkreis und die Berechtigungen zum Bearbeiten der Aufgabe.",
+                exception.getMessage()
         );
     }
 
@@ -164,8 +170,8 @@ class ApprovalActionNodeV1Test {
         assertNull(data.getLiteral("approvalRemark"));
         assertEquals(
                 List.of(
-                        new TaskViewEvent("Freigeben", "approve"),
-                        new TaskViewEvent("Ablehnen", "reject")
+                        new TaskViewEvent("Freigabe erteilen", "approve"),
+                        new TaskViewEvent("Freigabe ablehnen", "reject")
                 ),
                 view.events()
         );
@@ -217,12 +223,20 @@ class ApprovalActionNodeV1Test {
         assertFalse(data.containsKey("internalState"));
     }
 
-    @Test
-    void onEventFromStaffTaskView_CompletesTaskViaSelectedPort() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+            "approve, approved, <p>Passt</p>",
+            "reject, rejected,"
+    })
+    void onEventFromStaffTaskView_CompletesTaskViaSelectedPort(String event, String expectedDecision, String remark) throws Exception {
         var processData = Map.<String, Object>of(
                 "approvalValue", "Freizugebender Inhalt",
                 "unrelatedValue", "bleibt erhalten"
         );
+        var update = authored("approvalValue", "Geprüfter Inhalt");
+        if (remark != null) {
+            update.putLiteral("approvalRemark", remark);
+        }
 
         var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
@@ -235,24 +249,21 @@ class ApprovalActionNodeV1Test {
                         nodeConfiguration(dataModeConfiguration()),
                         currentProcessData(processData)
                 ),
-                authored(
-                        "approvalValue", "Freigegebener Inhalt",
-                        "approvalRemark", "<p>Passt</p>"
-                ),
-                "approve"
+                update,
+                event
         );
 
         assertTrue(result.isPresent());
 
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
-        assertEquals("approved", completed.getViaPort());
-        assertEquals("approved", completed.getNodeData().get("decision"));
-        assertEquals("<p>Passt</p>", completed.getNodeData().get("remark"));
+        assertEquals(expectedDecision, completed.getViaPort());
+        assertEquals(expectedDecision, completed.getNodeData().get("decision"));
+        assertEquals(remark, completed.getNodeData().get("remark"));
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
         assertInstanceOf(Instant.class, completed.getNodeData().get("processedAt"));
         assertEquals(
                 Map.of(
-                        "approvalValue", "Freigegebener Inhalt",
+                        "approvalValue", "Geprüfter Inhalt",
                         "unrelatedValue", "bleibt erhalten"
                 ),
                 completed.getProcessData()

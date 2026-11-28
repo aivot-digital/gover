@@ -1736,7 +1736,7 @@ export function ProcessDetailsPage(): ReactNode {
             children: (
                 <Typography>
                     Möchten Sie die Testsitzung wirklich beenden?
-                    Die Bearbeitung des Prozesses wird dadurch wieder freigegeben.
+                    Die Bearbeitung der Prozessstruktur wird dadurch wieder freigegeben.
                     Beim Beenden der Testsitzung werden die zu dieser Testsitzung gehörenden Testvorgänge gelöscht.
                 </Typography>
             ),

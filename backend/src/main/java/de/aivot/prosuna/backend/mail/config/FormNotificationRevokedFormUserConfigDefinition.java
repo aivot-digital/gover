@@ -42,13 +42,13 @@ public class FormNotificationRevokedFormUserConfigDefinition implements UserConf
     @Nonnull
     @Override
     public String getLabel() {
-        return "Formular zurückgezogen";
+        return "Formular zurückgezogen (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn ein Formular in einer Ihrer betreuenden, verantwortlichen oder verwaltenden Organisationseinheiten zurückgezogen wird.";
+        return "Diese Einstellung wird derzeit nicht verwendet. Beim Zurückziehen eines Formulars werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override
@@ -65,7 +65,7 @@ public class FormNotificationRevokedFormUserConfigDefinition implements UserConf
         if (value instanceof List<?> list) {
             return String.join(",", (List<String>) list);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

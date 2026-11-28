@@ -332,7 +332,7 @@ public class pmPaymentPaymentProviderDefinitionV1 implements PaymentProviderDefi
 
         var paymentProviderOAuthUrl = (String) effectiveValues.get(OAUTH_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderOAuthUrl)) {
-            throw new PaymentMissingDataException("OAuth URL", paymentProviderEntity);
+            throw new PaymentMissingDataException("OAuth-URL", paymentProviderEntity);
         }
         var normalizedPaymentProviderOAuthUrl = StringUtils
                 .normalizeUrl(paymentProviderOAuthUrl)

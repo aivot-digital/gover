@@ -51,29 +51,29 @@ type PaymentProviderEditable = Pick<PaymentProviderResponseDTO, PaymentProviderE
 type PaymentProviderYupSchemaType = yup.ObjectSchema<PaymentProviderEditable>;
 
 export const BasePaymentProviderYupSchema: PaymentProviderYupSchemaType = yup.object({
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name des Zahlungsanbieters muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name des Zahlungsanbieters darf maximal 96 Zeichen lang sein.')
         .required('Der Name des Zahlungsanbieters ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(10, 'Die Beschreibung muss mindestens 10 Zeichen lang sein.')
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.')
         .required('Die Beschreibung des Zahlungsanbieters ist ein Pflichtfeld.'),
-    providerKey: yup.string()
+    providerKey: yup.string().typeError('Wählen Sie einen gültigen Zahlungsanbieter aus.')
         .trim()
         .required('Der Zahlungsanbieter ist ein Pflichtfeld.'),
-    providerVersion: yup.number()
+    providerVersion: yup.number().typeError('Wählen Sie eine gültige Version des Zahlungsanbieters aus.')
         .min(1, 'Die Version des Zahlungsanbieters muss mindestens 1 sein.')
         .required('Die Version des Zahlungsanbieters ist ein Pflichtfeld.'),
-    isEnabled: yup.boolean()
+    isEnabled: yup.boolean().nonNullable('Geben Sie an, ob der Zahlungsanbieter aktiviert ist.').typeError('Geben Sie an, ob der Zahlungsanbieter aktiviert ist.')
         .default(false),
-    isTestProvider: yup.boolean()
+    isTestProvider: yup.boolean().nonNullable('Geben Sie an, ob der Zahlungsanbieter im Testbetrieb verwendet wird.').typeError('Geben Sie an, ob der Zahlungsanbieter im Testbetrieb verwendet wird.')
         .default(false),
-    config: yup.object()
+    config: yup.object().typeError('Die Angaben haben ein ungültiges Format.')
         .required('Die Konfiguration des Zahlungsanbieters ist ein Pflichtfeld.'),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 export function PaymentProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -161,8 +161,8 @@ export function PaymentProviderDetailsPageIndex() {
         const configSchema: yup.ObjectSchema<{
             config: Record<string, any>;
         }> = yup.object({
-            config: yup.object(configSchemaFields),
-        });
+            config: yup.object(configSchemaFields).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.'),
+        }).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
         const newSchema: PaymentProviderYupSchemaType = BasePaymentProviderYupSchema
             .concat(configSchema);
@@ -223,7 +223,7 @@ export function PaymentProviderDetailsPageIndex() {
                     }, 0);
                 })
                 .catch(err => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Der Zahlungsanbieter konnte nicht gespeichert werden.'));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -242,9 +242,9 @@ export function PaymentProviderDetailsPageIndex() {
                         dispatch(showLockConflictSnackbar(err.message));
                     } else if (err.status === 409) {
                         handleInputChange('isEnabled')(true);
-                        dispatch(showApiErrorSnackbar(err, 'Es existieren noch veröffentlichte Formulare, die diesen Zahlungsanbieter verwenden'));
+                        dispatch(showApiErrorSnackbar(err, 'Der Zahlungsanbieter wird noch von veröffentlichten Formularen verwendet.'));
                     } else {
-                        dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                        dispatch(showApiErrorSnackbar(err, 'Der Zahlungsanbieter konnte nicht gespeichert werden.'));
                     }
                 })
                 .finally(() => {
@@ -291,7 +291,7 @@ export function PaymentProviderDetailsPageIndex() {
                 setShowConfirmDialog(true);
             }
         } catch (error) {
-            dispatch(showApiErrorSnackbar(error, 'Fehler beim Prüfen der Löschbarkeit.'));
+            dispatch(showApiErrorSnackbar(error, 'Es konnte nicht geprüft werden, ob der Zahlungsanbieter gelöscht werden kann.'));
         } finally {
             setIsBusy(false);
         }

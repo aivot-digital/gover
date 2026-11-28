@@ -24,21 +24,21 @@ public class ProcessVersionEntity implements LockVersioned {
 
     @Id
     @Nonnull
-    @NotNull(message = "Die ID des Prozesses darf nicht null sein.")
+    @NotNull(message = "Die ID des Prozesses muss angegeben werden.")
     private Integer processId;
 
     @Id
     @Nonnull
-    @NotNull(message = "Die Prozessversion darf nicht null sein.")
+    @NotNull(message = "Die Prozessversion muss angegeben werden.")
     private Integer processVersion;
 
     @Nonnull
-    @NotNull(message = "Der Status der Prozessversion darf nicht null sein.")
+    @NotNull(message = "Der Status der Prozessversion muss angegeben werden.")
     @Column(columnDefinition = "int2")
     private ProcessVersionStatus status;
 
     @Nonnull
-    @NotNull(message = "Der öffentliche Titel der Prozessversion darf nicht null sein.")
+    @NotNull(message = "Der öffentliche Titel der Prozessversion muss angegeben werden.")
     @NotBlank(message = "Der öffentliche Titel der Prozessversion darf nicht leer sein.")
     @Length(min=3, max = 96, message = "Der öffentliche Titel der Prozessversion muss zwischen 3 und 96 Zeichen lang sein.")
     private String publicTitle;

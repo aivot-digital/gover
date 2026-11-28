@@ -45,31 +45,31 @@ const XRepositoryMetadataHint = 'Geben Sie die versionsspezifische URN ein und r
 const CsvMetadataHint = 'Wählen Sie eine CSV-Datei aus. Die Metadaten werden automatisch abgerufen, um die Spaltenstruktur der Codeliste zu laden.';
 
 const CodeListSchema = yup.object({
-    key: yup.string()
+    key: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .notOneOf(['new'], 'Der Schlüssel „new“ ist für die Anlage neuer Codelisten reserviert.')
         .matches(/^[^/]+$/, 'Der Schlüssel darf keinen Schrägstrich enthalten.')
         .max(255, 'Der Schlüssel darf maximal 255 Zeichen lang sein.')
         .required('Der Schlüssel ist ein Pflichtfeld.'),
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .min(3, 'Der Name muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name darf maximal 96 Zeichen lang sein.')
         .required('Der Name ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .nullable()
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.'),
-    sourceType: yup.string()
+    sourceType: yup.string().typeError('Wählen Sie eine gültige Quelle für die Codeliste aus.')
         .required('Die Quelle ist ein Pflichtfeld.'),
-    sourceRef: yup.string()
+    sourceRef: yup.string().nonNullable('Bitte geben Sie einen Text ein.').typeError('Bitte geben Sie einen Text ein.')
         .when('sourceType', {
             is: (sourceType: CodeListSourceType) => isCodeListSyncable(sourceType),
             then: (schema) => schema.trim().required('Die Quellenreferenz ist ein Pflichtfeld.'),
             otherwise: (schema) => schema,
         }),
     // Row checks are reported for the whole table, because the form manager shows errors per field.
-    columnMappings: yup.array()
+    columnMappings: yup.array().nonNullable('Die Einträge haben ein ungültiges Format.').typeError('Die Einträge haben ein ungültiges Format.')
         .test('complete', 'Jede Spalte benötigt einen Spaltenschlüssel und einen Anzeigenamen.', (mappings) => (mappings ?? [])
             .every((mapping) => mapping.key?.trim() && mapping.name?.trim()))
         .test('unique-keys', 'Jeder Spaltenschlüssel darf nur einmal vergeben werden.', (mappings) => {
@@ -85,14 +85,14 @@ const CodeListSchema = yup.object({
             then: (schema) => schema.min(1, 'Manuelle Codelisten benötigen mindestens eine Spalte.'),
             otherwise: (schema) => schema,
         }),
-    keyColumnKey: yup.string()
+    keyColumnKey: yup.string().typeError('Wählen Sie eine gültige Schlüsselspalte aus.')
         .nullable()
         .test('bound-key', 'Bitte wählen Sie eine zugeordnete Spalte als Schlüsselspalte aus.', function (value) {
             const list = this.parent as CodeList;
             if (list.sourceType === CodeListSourceType.Plugin) return true;
             return value != null && list.columnMappings.some(mapping => mapping.key === value && mapping.index != null);
         }),
-});
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.');
 
 function sanitizeCodeList(codeList: CodeList): CodeList {
     return {
@@ -323,7 +323,7 @@ export function CodeListDetailsPageIndex() {
                     }, 0);
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Die Codeliste konnte nicht gespeichert werden.'));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -341,7 +341,7 @@ export function CodeListDetailsPageIndex() {
                     dispatch(showSuccessSnackbar('Änderungen an der Codeliste erfolgreich gespeichert.'));
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Die Codeliste konnte nicht gespeichert werden.'));
                 })
                 .finally(() => {
                     setIsBusy(false);

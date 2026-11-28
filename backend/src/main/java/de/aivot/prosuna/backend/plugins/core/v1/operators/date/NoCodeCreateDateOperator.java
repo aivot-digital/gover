@@ -28,9 +28,11 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Bilden Sie ein Datum, wenn Tag, Monat und Jahr einzeln vorliegen, zum Beispiel für einen jährlich festgelegten Termin.
 
                 # Welche Werte werden benötigt?
+
                 - **Tag:** Der Tag des Monats als ganze Zahl.
                 - **Monat:** Der gewünschte Monat.
                 - **Jahr:** Das Jahr als ganze Zahl.
@@ -38,17 +40,20 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                 Tag und Jahr können Sie selbst eingeben; dafür gibt es keine vorgegebenen Auswahlwerte. Für einen selbst festgelegten Monat wählen Sie einen der zwölf Monate aus. Zusätzlich können alle drei Eingaben aus einer anderen Wertquelle oder einer Funktion stammen.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Ein vollständiges Datum mit Tag, Monat und Jahr. Dieses können Sie beispielsweise mit **„Datumswerte vergleichen“** prüfen oder mit **„Datum formatieren“** als Text ausgeben.
 
                 # Beispiel im No-Code-Editor
+
                 1. Wählen Sie im Eingabefeld **„Datum“** von **„Datumswerte vergleichen“** die Funktion **„Datum bilden“**.
-                2. Geben Sie als **„Tag“** **15** ein, wählen Sie als **„Monat“** **„August“** und geben Sie als **„Jahr“** **2026** ein.
+                2. Geben Sie als **„Tag“** `15` ein, wählen Sie als **„Monat“** **„August“** und geben Sie als **„Jahr“** `2026` ein.
                 3. Vergleichen Sie das Ergebnis beispielsweise mit einem Datum aus einem Formularelement.
 
-                Das gebildete Datum ist **15.08.2026**. Zugeklappt lesen Sie: **„Datum aus Tag 15, Monat „August“ und Jahr 2026“**.
+                Das gebildete Datum ist `15.08.2026`. Zugeklappt lesen Sie: `Datum aus Tag 15, Monat „August“ und Jahr 2026`.
 
                 # Was ist zu beachten?
-                Die Kombination muss ein tatsächlich existierendes Datum ergeben. Der **31. Februar** wird beispielsweise abgelehnt. Das Jahr muss zwischen 1 und 9999 liegen. Die Funktion bildet einen Datumswert; für eine bestimmte Textdarstellung verwenden Sie **„Datum formatieren“**.
+
+                Die Kombination muss ein tatsächlich existierendes Datum ergeben. Der `31. Februar` wird beispielsweise abgelehnt. Das Jahr muss zwischen `1` und `9999` liegen. Die Funktion bildet einen Datumswert; für eine bestimmte Textdarstellung verwenden Sie **„Datum formatieren“**.
                 """;
     }
 

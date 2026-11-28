@@ -8,6 +8,7 @@ import de.aivot.prosuna.backend.elements.models.elements.form.input.HtmlTemplate
 import de.aivot.prosuna.backend.elements.models.elements.form.input.HtmlTemplateInputElementValue;
 import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.plugins.core.v1.nodes.actions.PdfActionNodeV1;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -17,6 +18,8 @@ import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -32,8 +35,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -45,6 +50,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -132,6 +138,76 @@ class PdfActionNodeV1Test {
         );
 
         verify(pdfService, never()).generatePdfFromHtml(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void portsAndOutputsDescribeTheCreatedPdf() {
+        var ports = node.getPorts(codeConfiguration("<html></html>"));
+        assertEquals(1, ports.size());
+        assertEquals("output", ports.getFirst().key());
+        assertEquals("Dokument erstellt", ports.getFirst().label());
+        assertEquals("Der Vorgang wird hier fortgesetzt, nachdem das PDF erstellt und als Anlage gespeichert wurde.",
+                ports.getFirst().description());
+        assertEquals("Dateityp (MIME)", node.getOutputs().stream()
+                .filter(output -> "mimeType".equals(output.key())).findFirst().orElseThrow().label());
+        assertEquals("Dateiverweise", node.getOutputs().stream()
+                .filter(output -> "files".equals(output.key())).findFirst().orElseThrow().label());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void init_ExplainsMissingFileNameBeforeCallingTheRenderer(String fileName) throws Exception {
+        var configuration = codeConfiguration("<html><body>Dokument</body></html>");
+        configuration.fileName = fileName;
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionMissingValue.class,
+                () -> node.init(context(configuration, new ProcessExecutionData())));
+
+        assertEquals("Geben Sie einen Dateinamen für das PDF-Dokument an.", exception.getMessage());
+        verify(pdfService, never()).generatePdfFromHtml(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void init_RendererFailureKeepsItsCauseWithoutExposingInternalDetails() throws Exception {
+        var cause = new IOException("Gotenberg internal host rejected 100% of content");
+        when(pdfService.generatePdfFromHtml(anyString(), anyString(), anyString())).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context("<html><body>Dokument</body></html>")));
+
+        assertEquals("Das PDF-Dokument konnte nicht erstellt werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+        verify(processInstanceAttachmentService, never()).create(any(ProcessInstanceAttachmentEntity.class));
+    }
+
+    @Test
+    void init_AttachmentFailureKeepsItsCauseWithoutExposingStorageDetails() throws Exception {
+        var cause = ResponseException.internalServerError("internal storage path 100%", new IOException("storage unavailable"));
+        when(processInstanceAttachmentService.create(any(ProcessInstanceAttachmentEntity.class))).thenThrow(cause);
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(context("<html><body>Dokument</body></html>")));
+
+        assertEquals("Das erstellte PDF-Dokument konnte nicht als Anlage zum Vorgang gespeichert werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void init_InterruptedRendererKeepsItsCauseAndRestoresTheInterruptFlag() throws Exception {
+        var cause = new InterruptedException("internal renderer interrupted");
+        when(pdfService.generatePdfFromHtml(anyString(), anyString(), anyString())).thenThrow(cause);
+
+        try {
+            var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                    () -> node.init(context("<html><body>Dokument</body></html>")));
+
+            assertEquals("Die PDF-Erstellung wurde unterbrochen.", exception.getMessage());
+            assertSame(cause, exception.getCause());
+            assertTrue(Thread.currentThread().isInterrupted());
+            verify(processInstanceAttachmentService, never()).create(any(ProcessInstanceAttachmentEntity.class));
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     @Test

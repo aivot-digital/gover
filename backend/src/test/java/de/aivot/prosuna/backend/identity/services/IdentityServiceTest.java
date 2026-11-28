@@ -225,7 +225,7 @@ class IdentityServiceTest {
                 identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, invalidOrigin, null, null)
         );
 
-        assertEquals("Der Referer-Header ist ungültig.", exception.getMessage());
+        assertEquals("Die Rücksprungadresse für die Anmeldung ist ungültig.", exception.getMessage());
     }
 
     @Test
@@ -339,7 +339,7 @@ class IdentityServiceTest {
                 identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, null, null)
         );
 
-        assertEquals("Der Referer-Header ist ungültig oder nicht erlaubt.", exception.getMessage());
+        assertEquals("Die Rücksprungadresse für die Anmeldung ist ungültig oder nicht erlaubt.", exception.getMessage());
     }
 
     @Test
@@ -475,7 +475,7 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
-        assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Identitätsanbieter null (" + providerKey + "): 400", exception.getMessage());
+        assertEquals("Der Identitätsanbieter null (" + providerKey + ") hat beim Abrufen der Anmeldedaten mit dem unerwarteten HTTP-Statuscode 400 geantwortet.", exception.getMessage());
     }
 
     @Test
@@ -610,7 +610,7 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
-        assertEquals("Der state-Parameter ist ungültig.", exception.getMessage());
+        assertEquals("Die Sicherheitsprüfung der Anmeldung ist fehlgeschlagen. Starten Sie die Anmeldung erneut.", exception.getMessage());
     }
 
     @Test
@@ -626,7 +626,7 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, cacheEntityId, VALID_FLOW_SECRET, "auth-code", VALID_STATE)
         );
 
-        assertEquals("Für die Anmeldung " + cacheEntityId + " wurde kein state-Nonce gespeichert.", exception.getMessage());
+        assertEquals("Die Sicherheitsdaten für die Anmeldung " + cacheEntityId + " fehlen.", exception.getMessage());
     }
 
     @Test
@@ -669,7 +669,7 @@ class IdentityServiceTest {
                 identityService.createErrorRedirectURL(cacheEntityId, VALID_FLOW_SECRET, VALID_STATE, "access_denied", null)
         );
 
-        assertEquals("Für die Anmeldung " + cacheEntityId + " wurde keine Ursprungs-URL gespeichert.", exception.getMessage());
+        assertEquals("Die Rücksprungadresse für die Anmeldung " + cacheEntityId + " fehlt.", exception.getMessage());
     }
 
     @Test

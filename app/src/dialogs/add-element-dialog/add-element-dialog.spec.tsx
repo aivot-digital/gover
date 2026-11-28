@@ -39,7 +39,7 @@ describe('AddElementDialog', () => {
             onClose={vi.fn()} onAddElements={onAddElements}/>);
 
         expect(screen.getAllByText('Einzelauswahl', {exact: true})).toHaveLength(1);
-        await user.click(screen.getByRole('button', {name: 'Hinzufügen'}));
+        await user.click(screen.getByRole('button', {name: 'Einzelauswahl: Hinzufügen'}));
         expect(onAddElements).toHaveBeenCalledWith([expect.objectContaining({
             type: ElementType.Select, presentation: SelectFieldPresentation.Radio,
         })]);
@@ -62,7 +62,7 @@ describe('AddElementDialog', () => {
             );
 
             const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
-            expect(within(dialog).getByText('Text', {exact: true})).toBeInTheDocument();
+            expect(within(dialog).getByText('Texteingabe', {exact: true})).toBeInTheDocument();
             expect(within(dialog).queryByText('Geheimnis-Auswahl')).not.toBeInTheDocument();
 
             await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Geheimnis');
@@ -93,7 +93,7 @@ describe('AddElementDialog', () => {
         );
 
         const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
-        expect(within(dialog).getByRole('button', {name: 'Hinzufügen'})).toBeEnabled();
+        expect(within(dialog).getByRole('button', {name: 'Gruppierung: Hinzufügen'})).toBeEnabled();
         expect(within(dialog).queryByText('Funktionseingabe')).not.toBeInTheDocument();
         expect(within(dialog).queryByText('Sonstige')).not.toBeInTheDocument();
     });
@@ -104,7 +104,7 @@ describe('AddElementDialog', () => {
         ['repeating sections', ElementType.ReplicatingContainer],
         ['the introduction', ElementType.IntroductionStep],
         ['summaries', ElementType.SummaryLayout],
-    ])('offers the Markdown field in customer forms inside %s', async (_, parentType) => {
+    ])('offers formatted text input in customer forms inside %s', async (_, parentType) => {
         const user = userEvent.setup();
         render(
             <AddElementDialog
@@ -118,8 +118,8 @@ describe('AddElementDialog', () => {
         );
 
         const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
-        await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Markdown');
-        expect(await within(dialog).findByText('Markdown-Eingabe', {exact: true})).toBeInTheDocument();
+        await user.type(within(dialog).getByRole('searchbox', {name: 'Element suchen'}), 'Formatierung');
+        expect(await within(dialog).findByText('Texteingabe mit Formatierung', {exact: true})).toBeInTheDocument();
     });
 
     it('focuses search on every opening and restores focus after closing with Escape', async () => {
@@ -166,6 +166,125 @@ describe('AddElementDialog', () => {
         expect(elementsTab).toHaveAttribute('aria-selected', 'true');
         expect(elementsTab).toHaveFocus();
         expect(screen.getByRole('searchbox', {name: 'Element suchen'})).not.toHaveFocus();
+    });
+
+    it('opens another element description at the top while keeping search and focus in the list', async () => {
+        const user = userEvent.setup();
+        const onAddElements = vi.fn();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+                                 displayContext={ElementDisplayContext.CustomerFacing}
+                                 limitElementTypes={[ElementType.Text, ElementType.Number]}
+                                 onClose={vi.fn()} onAddElements={onAddElements}/>);
+
+        const dialog = screen.getByRole('dialog', {name: 'Formularelement hinzufügen'});
+        const search = within(dialog).getByRole('searchbox', {name: 'Element suchen'});
+        await user.type(search, 'Erfasst');
+        const detailsButtonFor = (name: string) => within(dialog).getByRole('button', {
+            name: `${name}: Details anzeigen`,
+        });
+        const textDetails = detailsButtonFor('Texteingabe');
+        const numberDetails = detailsButtonFor('Zahl');
+        const listBody = textDetails.closest('.MuiAccordion-root')!.parentElement as HTMLElement;
+        listBody.scrollTop = 160;
+        expect(textDetails).toHaveAttribute('aria-expanded', 'false');
+        await user.click(textDetails);
+        expect(textDetails).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('region', {name: 'Details: Texteingabe'}))
+            .toHaveAttribute('id', textDetails.getAttribute('aria-controls'));
+        const detailsBody = () => within(dialog).getByRole('button', {name: 'Details schließen'})
+            .parentElement!.previousElementSibling as HTMLElement;
+        detailsBody().scrollTop = 320;
+        expect(detailsBody().scrollTop).toBe(320);
+
+        await user.click(numberDetails);
+
+        expect(within(dialog).getByRole('heading', {name: 'Zahl', level: 3})).toBeVisible();
+        expect(detailsBody().scrollTop).toBe(0);
+        expect(numberDetails).toHaveFocus();
+        expect(numberDetails).toHaveAttribute('aria-expanded', 'true');
+        expect(textDetails).toHaveAttribute('aria-expanded', 'false');
+        expect(textDetails).not.toHaveAttribute('aria-controls');
+        expect(search).toHaveValue('Erfasst');
+        expect(listBody.scrollTop).toBe(160);
+        expect(textDetails).toBeVisible();
+        expect(numberDetails).toBeVisible();
+
+        detailsBody().scrollTop = 200;
+        await user.click(numberDetails);
+        expect(detailsBody().scrollTop).toBe(200);
+        await user.click(textDetails);
+        expect(detailsBody().scrollTop).toBe(0);
+        expect(onAddElements).not.toHaveBeenCalled();
+    });
+
+    it('opens details with the keyboard and returns focus to the opening button when closing', async () => {
+        const user = userEvent.setup();
+        const onAddElements = vi.fn();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+                                 displayContext={ElementDisplayContext.CustomerFacing}
+                                 limitElementTypes={[ElementType.Text, ElementType.Number]}
+                                 onClose={vi.fn()} onAddElements={onAddElements}/>);
+
+        const trigger = screen.getByRole('button', {name: 'Texteingabe: Details anzeigen'});
+        trigger.focus();
+        await user.keyboard('{Enter}');
+
+        const details = screen.getByRole('region', {name: 'Details: Texteingabe'});
+        expect(details).toHaveAttribute('id', trigger.getAttribute('aria-controls'));
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        await user.click(within(details).getByRole('button', {name: 'Details schließen'}));
+
+        expect(trigger).toHaveFocus();
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('region', {name: 'Details: Texteingabe'})).not.toBeInTheDocument();
+        expect(onAddElements).not.toHaveBeenCalled();
+    });
+
+    it('returns focus to search when the details trigger was removed by filtering', async () => {
+        const user = userEvent.setup();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+                                 displayContext={ElementDisplayContext.CustomerFacing}
+                                 limitElementTypes={[ElementType.Text, ElementType.Number]}
+                                 onClose={vi.fn()} onAddElements={vi.fn()}/>);
+
+        await user.click(screen.getByRole('button', {name: 'Texteingabe: Details anzeigen'}));
+        const search = screen.getByRole('searchbox', {name: 'Element suchen'});
+        await user.type(search, 'Zahl');
+        await waitFor(() => expect(screen.queryByRole('button', {
+            name: 'Texteingabe: Details anzeigen',
+        })).not.toBeInTheDocument());
+        await user.click(within(screen.getByRole('region', {name: 'Details: Texteingabe'}))
+            .getByRole('button', {name: 'Details schließen'}));
+
+        expect(search).toHaveFocus();
+        expect(search).toHaveValue('Zahl');
+    });
+
+    it('returns focus to search when the opening button remains inside a collapsed group', async () => {
+        const user = userEvent.setup();
+        const onAddElements = vi.fn();
+        render(<AddElementDialog show parentType={ElementType.GroupLayout} allParents={[]}
+                                 displayContext={ElementDisplayContext.CustomerFacing}
+                                 limitElementTypes={[ElementType.Text]}
+                                 onClose={vi.fn()} onAddElements={onAddElements}/>);
+        const trigger = screen.getByRole('button', {name: 'Texteingabe: Details anzeigen'});
+        const group = trigger.closest('.MuiAccordion-root') as HTMLElement;
+        const groupToggle = within(within(group).getByRole('heading')).getByRole('button');
+        const search = screen.getByRole('searchbox', {name: 'Element suchen'});
+        await user.click(trigger);
+        await user.click(groupToggle);
+        await waitFor(() => expect(trigger).not.toBeVisible());
+        expect(trigger.isConnected).toBe(true);
+        // JSDOM allows focusing hidden elements, unlike the browser.
+        const focusTrigger = vi.spyOn(trigger, 'focus').mockImplementation(() => undefined);
+
+        await user.click(screen.getByRole('button', {name: 'Details schließen'}));
+
+        expect(focusTrigger).toHaveBeenCalledWith({preventScroll: true});
+        expect(search).toHaveFocus();
+        expect(groupToggle).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('region', {name: 'Details: Texteingabe'})).not.toBeInTheDocument();
+        expect(onAddElements).not.toHaveBeenCalled();
     });
 });
 

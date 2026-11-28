@@ -1,13 +1,18 @@
 package de.aivot.prosuna.backend.plugins.core.v1.nodes.terminators;
 
 import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.NumberInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeConfigurationValidationPhase;
 import de.aivot.prosuna.backend.process.enums.ProcessRetentionTimeUnit;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionBrokenImplementation;
 import de.aivot.prosuna.backend.process.models.ProcessRetentionTime;
 import de.aivot.prosuna.backend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeConfigurationValidationContext;
+import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,6 +31,21 @@ import static org.mockito.Mockito.when;
 
 class DefaultTerminationNodeV1Test {
     private final DefaultTerminationNodeV1 node = new DefaultTerminationNodeV1();
+
+    @Test
+    void configurationExplainsWhenToProvideAnOverrideAndItsUnit() throws Exception {
+        var layout = node.getConfigurationLayout(new ProcessNodeDefinitionConfigurationLayoutContext(
+                null, new ProcessEntity().setId(7), new ProcessVersionEntity().setProcessVersion(1),
+                new ProcessNodeEntity().setId(11)));
+        var value = layout.findChild("retention_value", NumberInputElement.class).orElseThrow();
+        var unit = layout.findChild("retention_unit", SelectInputElement.class).orElseThrow();
+
+        assertTrue(value.getHint().contains("positive ganze Zahl"));
+        assertTrue(value.getHint().contains("beide Felder leer"));
+        assertTrue(value.getHint().contains("Aufbewahrungsfrist der Prozessversion"));
+        assertTrue(value.getHint().contains("höchstens 100 Jahre"));
+        assertEquals("Wählen Sie eine Zeiteinheit, wenn Sie eine abweichende Aufbewahrungsfrist angeben.", unit.getHint());
+    }
 
     @Test
     void init_UsesVersionRetentionWhenNoOverrideIsConfigured() throws Exception {
@@ -55,14 +75,19 @@ class DefaultTerminationNodeV1Test {
     void validateConfiguration_RejectsIncompleteFractionalAndUnknownOverrides() {
         var config = new DefaultTerminationNodeV1.DefaultTerminationNodeV1Config();
         config.retentionValue = 1;
-        assertNotNull(node.validateConfiguration(validationContext(config)));
+        assertEquals("Wählen Sie für die abweichende Aufbewahrungsfrist eine Zeiteinheit aus.",
+                node.validateConfiguration(validationContext(config)).get("retention_unit").getFirst());
         config.retentionUnit = "days";
         config.retentionValue = 1.5;
-        assertNotNull(node.validateConfiguration(validationContext(config)));
+        assertEquals("Geben Sie für die abweichende Aufbewahrungsfrist eine positive ganze Zahl an.",
+                node.validateConfiguration(validationContext(config)).get("retention_value").getFirst());
         config.retentionValue = 1;
         config.retentionUnit = "invalid";
-        assertNotNull(node.validateConfiguration(validationContext(config)));
-        assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> node.init(context(config)));
+        assertEquals("Wählen Sie für die abweichende Aufbewahrungsfrist eine Zeiteinheit aus.",
+                node.validateConfiguration(validationContext(config)).get("retention_unit").getFirst());
+        var error = assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> node.init(context(config)));
+        assertEquals("Die abweichende Aufbewahrungsfrist ist unvollständig oder ungültig. Geben Sie eine positive ganze Zahl und eine Zeiteinheit an.",
+                error.getMessage());
     }
 
     @ParameterizedTest
@@ -75,9 +100,10 @@ class DefaultTerminationNodeV1Test {
 
         assertNull(node.validateConfiguration(validationContext(config)));
         config.retentionValue = maximum + 1;
-        assertEquals("Die abweichende Aufbewahrungsfrist überschreitet die zulässige Höchstdauer von 100 Jahren.",
+        assertEquals("Die abweichende Aufbewahrungsfrist darf höchstens 100 Jahre betragen.",
                 node.validateConfiguration(validationContext(config)).get("retention_value").getFirst());
-        assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> node.init(context(config)));
+        var error = assertThrows(ProcessNodeExecutionExceptionBrokenImplementation.class, () -> node.init(context(config)));
+        assertEquals("Die abweichende Aufbewahrungsfrist darf höchstens 100 Jahre betragen.", error.getMessage());
     }
 
     @SuppressWarnings("unchecked")

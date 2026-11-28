@@ -42,7 +42,7 @@ export function ProcessListRowMenu(props: ProcessListRowMenuProps) {
                 disabledTooltip={
                     canUpdateInManagingDepartment
                         ? formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE)
-                        : 'Nur die verwaltende Organisationseinheit kann diesen Prozess übertragen.'
+                        : 'Zum Übertragen benötigen Sie die Berechtigung „Prozess bearbeiten“ in der verwaltenden Organisationseinheit oder systemweit.'
                 }
                 onClick={() => {
                     onMoveProcessToDepartment(process);

@@ -31,25 +31,25 @@ import {mapFormManagerErrorsToComputedErrors, prosunaSchemaToYup} from '../../..
 import {getLatestProviderDefinitions} from '../../../utils/provider-definition-utils';
 
 const communicationProviderSchema = yup.object({
-    id: yup.number().required(),
-    communicationProviderDefinitionKey: yup.string()
+    id: yup.number().typeError('Die Kennung des Kommunikationsanbieters ist ungültig.').required('Die Kennung des Kommunikationsanbieters muss angegeben werden.'),
+    communicationProviderDefinitionKey: yup.string().typeError('Wählen Sie einen gültigen Kommunikationsanbieter aus.')
         .trim()
         .required('Der Kommunikationsanbieter ist ein Pflichtfeld.'),
-    communicationProviderDefinitionVersion: yup.number()
+    communicationProviderDefinitionVersion: yup.number().typeError('Wählen Sie eine gültige Version des Kommunikationsanbieters aus.')
         .min(1, 'Die Version muss mindestens 1 sein.')
         .required('Die Version ist ein Pflichtfeld.'),
-    name: yup.string()
+    name: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .max(64, 'Der Name darf maximal 64 Zeichen lang sein.')
         .required('Der Name ist ein Pflichtfeld.'),
-    description: yup.string()
+    description: yup.string().typeError('Bitte geben Sie einen Text ein.')
         .trim()
         .max(255, 'Die Beschreibung darf maximal 255 Zeichen lang sein.')
         .required('Die Beschreibung ist ein Pflichtfeld.'),
-    configuration: yup.object().required(),
-    isEnabled: yup.boolean().required(),
-    isTestProvider: yup.boolean().required(),
-}) as yup.ObjectSchema<CommunicationProvider>;
+    configuration: yup.object().typeError('Die Konfiguration des Kommunikationsanbieters hat ein ungültiges Format.').required('Die Konfiguration des Kommunikationsanbieters muss angegeben werden.'),
+    isEnabled: yup.boolean().typeError('Geben Sie an, ob der Kommunikationsanbieter aktiviert ist.').required('Geben Sie an, ob der Kommunikationsanbieter aktiviert ist.'),
+    isTestProvider: yup.boolean().typeError('Geben Sie an, ob der Kommunikationsanbieter im Testbetrieb verwendet wird.').required('Geben Sie an, ob der Kommunikationsanbieter im Testbetrieb verwendet wird.'),
+}).nonNullable('Die Angaben haben ein ungültiges Format.').typeError('Die Angaben haben ein ungültiges Format.') as yup.ObjectSchema<CommunicationProvider>;
 
 export function CommunicationProviderDetailsPageIndex() {
     const navigate = useNavigate();
@@ -77,14 +77,14 @@ export function CommunicationProviderDetailsPageIndex() {
         }
 
         return communicationProviderSchema.shape({
-            configuration: yup.object()
+            configuration: yup.object().typeError('Die Angaben haben ein ungültiges Format.')
                 .transform((authoredValues) => ({
                     // Derived defaults participate in validation, but must not be persisted as authored input.
                     ...toLiteralAuthoredElementValues(derivedConfigurationData.effectiveValues, layout),
                     ...(authoredValues ?? {}),
                 }))
                 .shape(prosunaSchemaToYup(layout, derivedConfigurationData.elementStates))
-                .required(),
+                .required('Die Konfiguration des Kommunikationsanbieters muss angegeben werden.'),
         }) as yup.ObjectSchema<CommunicationProvider>;
     }, [derivedConfigurationData, layout]);
     const {

@@ -19,10 +19,14 @@ import {
 import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 import {createReusableUiDefinitionOptions} from './reusable-ui-definition-utils';
 import {ReusableUiDefinitionsTab} from './tabs/reusable-ui-definitions-tab';
+import {useNormalizedReactId} from '../../hooks/use-normalized-react-id';
+import {getElementNameForType} from '../../data/element-type/element-names';
 
 
 export function AddElementDialog(props: AddElementDialogProps) {
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const detailsTriggerRef = useRef<HTMLButtonElement | null>(null);
+    const detailsId = `${useNormalizedReactId()}-details`;
     const [currentTab, setCurrentTab] = useState(0);
     const [showElementInfo, setShowElementInfo] = useState<ElementType>();
     const [showPresetInfo, setShowPresetInfo] = useState<Preset>();
@@ -51,6 +55,16 @@ export function AddElementDialog(props: AddElementDialogProps) {
 
     const handleClose = () => {
         props.onClose();
+    };
+
+    const closeElementDetails = () => {
+        setShowElementInfo(undefined);
+        if (detailsTriggerRef.current?.isConnected) {
+            detailsTriggerRef.current.focus({preventScroll: true});
+        }
+        if (document.activeElement !== detailsTriggerRef.current) {
+            searchInputRef.current?.focus({preventScroll: true});
+        }
     };
 
     const handleAddElement = (element: AnyElement) => {
@@ -90,20 +104,31 @@ export function AddElementDialog(props: AddElementDialogProps) {
                 setShowElementInfo(undefined);
                 setShowPresetInfo(undefined);
                 setShowMarketplaceModuleId(undefined);
+                detailsTriggerRef.current = null;
             }}
             detailsPanel={
                 showElementDetailsPanel ? (
-                    <ElementInfoTab
-                        type={showElementInfo}
-                        parentElement={props.parentElement}
-                        onAddElement={handleAddElement}
-                        primaryActionLabel={renderPrimaryActionLabel}
-                        primaryActionIcon={renderPrimaryActionIcon}
-                        primaryActionDisabledReason={getSingleUseSectionAddDisabledReason(props.parentElement, showElementInfo)}
-                        onClose={() => {
-                            setShowElementInfo(undefined);
+                    <Box
+                        id={detailsId}
+                        role="region"
+                        aria-label={`Details: ${getElementNameForType(showElementInfo)}`}
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            minHeight: 0,
+                            height: '100%',
                         }}
-                    />
+                    >
+                        <ElementInfoTab
+                            type={showElementInfo}
+                            parentElement={props.parentElement}
+                            onAddElement={handleAddElement}
+                            primaryActionLabel={renderPrimaryActionLabel}
+                            primaryActionIcon={renderPrimaryActionIcon}
+                            primaryActionDisabledReason={getSingleUseSectionAddDisabledReason(props.parentElement, showElementInfo)}
+                            onClose={closeElementDetails}
+                        />
+                    </Box>
                 ) : showPresetDetailsPanel ? (
                     <PresetInfoTab
                         preset={showPresetInfo}
@@ -144,7 +169,11 @@ export function AddElementDialog(props: AddElementDialogProps) {
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}
-                        showElementInfo={setShowElementInfo}
+                        showElementInfo={(type, trigger) => {
+                            detailsTriggerRef.current = trigger;
+                            setShowElementInfo(type);
+                        }}
+                        detailsId={detailsId}
                         highlightedElement={showElementInfo}
                         limitElementTypes={props.limitElementTypes}
                         displayContext={props.displayContext}

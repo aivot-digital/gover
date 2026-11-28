@@ -56,6 +56,8 @@ import java.util.*;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.section;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.safeUrl;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.document;
 
 @Component
 public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1Config> {
@@ -148,15 +150,21 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         var url = endpoint == null ? safeUrl(configuration.url) : endpoint.toString();
         var code = summary.data(OUTPUT_NAME_STATUS_CODE);
         var category = code instanceof Number number ? switch (number.intValue() / 100) {
-            case 2 -> "Erfolgreich";
+            case 2 -> "Erfolgreiche HTTP-Antwort";
             case 3 -> "Weiterleitung";
-            case 4 -> "Clientfehler";
-            case 5 -> "Serverfehler";
+            case 4 -> "Fehler bei der Anfrage";
+            case 5 -> "Fehler beim angesprochenen Server";
             default -> "Information";
         } : "";
-        return "Die externe HTTP-Schnittstelle" + (url.isEmpty() ? "" : " (Endpunkt: " + url + ")")
-                + " wurde" + summary.completedAt() + " aufgerufen."
-                + section("Response-Code", text(code) + (category.isEmpty() ? "" : " (" + category + ")"));
+        var attachmentKey = StringUtils.toNullableTrimmedString(summary.data(OUTPUT_NAME_ATTACHMENT_KEY));
+        return "Die HTTP-Schnittstelle wurde" + summary.completedAt() + " aufgerufen."
+                + section("Endpunkt", url)
+                + section("HTTP-Statuscode", text(code) + (category.isEmpty() ? "" : " (" + category + ")"))
+                + (attachmentKey == null ? "" : section("Antwortanlage", document(attachmentKey, "Antwortanlage ansehen")))
+                + detail("Dateiname", summary.data(OUTPUT_NAME_FILE_NAME))
+                + detail("Dateityp (MIME-Typ)", summary.data(OUTPUT_NAME_MIME_TYPE))
+                + detail("Dateigröße in Bytes", summary.data(OUTPUT_NAME_SIZE_BYTES))
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -192,22 +200,54 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     @Nonnull
     @Override
     public String getName() {
-        return "Externer HTTP-Aufruf";
+        return "HTTP-Schnittstelle aufrufen";
     }
 
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Sendet eine HTTP-Anfrage an ein Fachsystem oder einen externen Dienst und stellt die Antwort bereit.";
+        return "Ruft eine HTTP-Schnittstelle auf, übermittelt bei Bedarf Daten und stellt die Antwort im Vorgang bereit.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Sendet eine HTTP-Anfrage mit der konfigurierten Methode, Authentifizierung und dem gewählten Inhalt, etwa JSON, Formulardaten oder ganze Anlagensätze. Die Antwort steht je nach Konfiguration als Text oder JSON in den Elementdaten bereit oder wird als Datei in einem neuen Anlagensatz gespeichert.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Ohne weitere Konfiguration gilt nur der Statuscode `200` als erfolgreich. Bei jedem anderen Statuscode schlägt die Aufgabe fehl.
+                Verbinden Sie einen Vorgang mit einem Fachsystem oder einem anderen Dienst, der eine HTTP-Schnittstelle bereitstellt. Sie können dort Informationen abrufen oder Daten aus dem Vorgang übermitteln und die Antwort in weiteren Schritten verwenden.
+
+                ### Was richten Sie ein?
+
+                Geben Sie die Adresse der HTTP-Schnittstelle an und wählen Sie die vom Zielsystem verlangte HTTP-Methode. Falls ein Zugang erforderlich ist, richten Sie Basic mit Nutzername und gespeichertem Passwort oder einen Bearer-Token ein. Zusätzliche HTTP-Header können Sie gesondert ergänzen.
+
+                Für POST, PUT und PATCH wählen Sie das Format des Anfrageinhalts. JSON kann aus einem Vorgangsdatenpfad gelesen oder mit Low-Code zusammengestellt werden. Bei Formulardaten legen Sie Feldnamen und Werte fest. Mit „Formulardaten mit Dateien (Multipart)“ können Sie zusätzlich vollständige Anlagensätze übertragen. „Ohne Anfrageinhalt“ sendet keine Daten im Anfragekörper. GET und DELETE werden hier ebenfalls ohne Anfrageinhalt ausgeführt.
+
+                Tragen Sie die zugelassenen HTTP-Statuscodes ein, zum Beispiel 200 oder 201. Legen Sie anschließend fest, ob die Antwort als JSON, Text oder Datei verarbeitet werden soll. Für eine Datei geben Sie den gewünschten Namen einschließlich Dateiendung an.
+
+                ### Was passiert bei der Ausführung?
+
+                Prosuna setzt die benötigten Angaben aus dem Vorgang ein, sendet die Anfrage und wartet auf die Antwort. JSON-Antworten werden eingelesen, Textantworten als Text übernommen. Eine als Datei empfangene Antwort wird als Anlage zum Vorgang gespeichert.
+
+                Wenn der Statuscode zugelassen ist und die Antwort verarbeitet werden konnte, setzt Prosuna den Vorgang über „Antwort verarbeitet“ fort. Andernfalls schlägt die Aufgabe fehl. Für diesen Schritt entsteht keine Mitarbeitendenaufgabe.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                In den Elementdaten stehen der HTTP-Statuscode und die Antwortheader bereit. Bei JSON- und Textantworten stehen dort zusätzlich der Antworttext und die Antwortdaten. Bei einer Datei stehen stattdessen Angaben zur gespeicherten Anlage und ein Dateiverweis bereit.
+
+                Die Ergebnisse werden nicht automatisch in die Vorgangsdaten übernommen. Weitere Prozesselemente können die Elementdaten verwenden. Der Vorgangsverlauf zeigt den aufgerufenen Endpunkt und den erhaltenen HTTP-Statuscode.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Ein Fachsystem soll die Angaben zur Person erhalten. Sie wählen POST, das Format JSON und den Vorgangsdatenpfad „person“. Die Schnittstelle antwortet mit 201 und einer JSON-Antwort mit der externen Kennung. Wenn Sie 201 zugelassen haben, stellt Prosuna die Antwort in den Elementdaten für den nächsten Schritt bereit.
+
+                ### Was ist zu beachten?
+
+                Die Einstellungen müssen zu den Vorgaben der angesprochenen Schnittstelle passen. Ein zugelassener HTTP-Statuscode bedeutet nicht automatisch, dass die gewünschte fachliche Bearbeitung im Zielsystem abgeschlossen ist. Prüfen Sie bei Bedarf die Antwortdaten in einem nachfolgenden Schritt.
+
+                Ein Bearer-Token muss bei der Ausführung gültig sein. Dieses Element beschafft oder erneuert ihn nicht selbst.
+
+                Wenn die Aufgabe nach dem Absenden fehlschlägt, kann die Anfrage im Zielsystem bereits eine Änderung ausgelöst haben. Prüfen Sie das Ergebnis dort, bevor Sie einen solchen Aufruf wiederholen.
                 """;
     }
 
@@ -251,8 +291,8 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,
-                        "HTTP erfolgreich",
-                        "Der Vorgang wird hier fortgesetzt, wenn die Antwort einen erlaubten HTTP-Statuscode liefert."
+                        "Antwort verarbeitet",
+                        "Der Vorgang wird hier fortgesetzt, wenn der Statuscode zugelassen ist und die Antwort wie festgelegt verarbeitet wurde."
                 )
         );
     }
@@ -262,16 +302,16 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
                 new ProcessNodeOutput(OUTPUT_NAME_STATUS_CODE, "HTTP-Statuscode", "Der Statuscode der HTTP-Antwort.", "number"),
-                new ProcessNodeOutput(OUTPUT_NAME_HEADERS, "HTTP-Header", "Die Header der HTTP-Antwort.", OUTPUT_HEADERS_TYPE_DEFINITION),
-                new ProcessNodeOutput(OUTPUT_NAME_RAW_BODY, "Antwort-Rohtext", "Der Antwort-Body als Text für JSON- und Text-Antworten.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_PROCESSED_RESPONSE, "Verarbeitete Antwort", "Die verarbeitete Antwort für JSON- und Text-Antworten.", "unknown"),
-                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname", "Der Dateiname der gespeicherten Antwortdatei.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "MIME-Typ", "Der MIME-Typ der gespeicherten Antwortdatei.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_HEADERS, "Antwortheader", "Die Header der HTTP-Antwort mit ihren jeweiligen Werten.", OUTPUT_HEADERS_TYPE_DEFINITION),
+                new ProcessNodeOutput(OUTPUT_NAME_RAW_BODY, "Antworttext", "Der als Text gelesene Antwortinhalt bei JSON- und Textantworten.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_PROCESSED_RESPONSE, "Antwortdaten", "Der eingelesene JSON-Wert beziehungsweise der Antworttext. Eine zusätzliche Nachbearbeitung findet hier nicht statt.", "unknown"),
+                new ProcessNodeOutput(OUTPUT_NAME_FILE_NAME, "Dateiname der Antwortanlage", "Der Dateiname der gespeicherten Antwortanlage.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_MIME_TYPE, "Dateityp (MIME-Typ)", "Der von der Schnittstelle angegebene Dateityp der Antwortdatei; ohne Angabe wird application/octet-stream verwendet.", "string | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße in Bytes", "Die Größe der gespeicherten Antwortdatei in Bytes.", "number | null"),
                 new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anlagenschlüssel", "Der Schlüssel der gespeicherten Anlage.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters der gespeicherten Anlage.", "number | null"),
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter-ID", "Die ID des Speicheranbieters der gespeicherten Anlage.", "number | null"),
                 new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad der gespeicherten Anlage.", "string | null"),
-                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Anlagen-Feldes.", OUTPUT_FILES_TYPE_DEFINITION)
+                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateiverweise", "Eine Liste mit dem Dateiverweis auf die gespeicherte Antwortanlage. Bei JSON- und Textantworten bleibt diese Liste leer.", OUTPUT_FILES_TYPE_DEFINITION)
         );
     }
 
@@ -314,14 +354,18 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         try {
             response = executeRequest(context, configuration, method, uri, headers);
         } catch (HttpConnectionException e) {
-            throw new ProcessNodeExecutionExceptionIO(e);
+            // The two-argument overload drops the cause; use the cause-preserving formatted overload.
+            throw new ProcessNodeExecutionExceptionIO(
+                    e,
+                    "%s",
+                    "Bei der Kommunikation mit der HTTP-Schnittstelle ist ein Fehler aufgetreten."
+            );
         } catch (ProcessNodeExecutionException e) {
             throw e;
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Vorbereiten oder Ausführen der HTTP-Anfrage: %s",
-                    e.getMessage()
+                    "Die HTTP-Anfrage konnte nicht vorbereitet oder ausgeführt werden."
             );
         }
 
@@ -396,10 +440,10 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
             if (!statusCodeAllowed) {
                 throw new ProcessNodeExecutionExceptionIO(
-                        "Der HTTP-Statuscode %d ist nicht in der Liste der erlaubten Statuscodes: %s. Die Antwort des Servers war: %s",
+                        new ExternalServiceResponseException(decodeResponseBody(response)),
+                        "Die HTTP-Schnittstelle hat mit dem Statuscode %d geantwortet. Für diese Aufgabe sind folgende Statuscodes zugelassen: %s.",
                         statusCode,
-                        allowedStatusCodes.stream().map(String::valueOf).toList(),
-                        decodeResponseBody(response)
+                        allowedStatusCodes.stream().map(String::valueOf).toList()
                 );
             }
 
@@ -429,8 +473,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Die HTTP-Antwortdatei konnte nicht als Anlage gespeichert werden: %s",
-                        e.getMessage()
+                        "Die als Datei empfangene HTTP-Antwort konnte nicht als Anlage zum Vorgang gespeichert werden."
                 );
             }
 
@@ -445,8 +488,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Die HTTP-Antwortdatei konnte nicht für das Datei-Anlagen-Feld aufbereitet werden: %s",
-                        e.getMessage()
+                        "Der Dateiverweis für die als Datei empfangene HTTP-Antwort konnte nicht bereitgestellt werden."
                 );
             }
 
@@ -461,18 +503,17 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (JacksonException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die HTTP-Antwort konnte nicht als %s verarbeitet werden: %s",
-                    responseType.equals(HttpActionNodeV1Config.ResponseConfig.RESPONSE_BODY_TYPE_OPT_JSON) ? "JSON" : "Text",
-                    e.getMessage()
+                    "Die Antwort der HTTP-Schnittstelle konnte nicht als %s verarbeitet werden.",
+                    responseType.equals(HttpActionNodeV1Config.ResponseConfig.RESPONSE_BODY_TYPE_OPT_JSON) ? "JSON" : "Text"
             );
         }
 
         if (!statusCodeAllowed) {
             throw new ProcessNodeExecutionExceptionIO(
-                    "Der HTTP-Statuscode %d ist nicht in der Liste der erlaubten Statuscodes: %s. Die Antwort des Servers war: %s",
+                    new ExternalServiceResponseException(rawBody),
+                    "Die HTTP-Schnittstelle hat mit dem Statuscode %d geantwortet. Für diese Aufgabe sind folgende Statuscodes zugelassen: %s.",
                     statusCode,
-                    allowedStatusCodes.stream().map(String::valueOf).toList(),
-                    rawBody
+                    allowedStatusCodes.stream().map(String::valueOf).toList()
             );
         }
 
@@ -486,7 +527,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                          @Nullable String url) throws ProcessNodeExecutionException {
         var renderedUrl = url;
         if (StringUtils.isNullOrEmpty(renderedUrl)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Die URL für die HTTP-Anfrage wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Geben Sie die Zieladresse (URL) für den HTTP-Aufruf an.");
         }
 
         try {
@@ -497,8 +538,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Die URL für die HTTP-Anfrage ist ungültig: %s",
-                    renderedUrl
+                    "Die Zieladresse (URL) für den HTTP-Aufruf ist ungültig."
             );
         }
     }
@@ -547,12 +587,12 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             case HttpActionNodeV1Config.AUTH_METHOD_OPT_BASIC_NUTZERNAME_UND_PASSWORT -> {
                 var basicAuthConfig = configuration.basicAuthConfig;
                 if (basicAuthConfig == null) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Basic-Authentifizierung ist nicht vollständig konfiguriert.");
+                    throw new ProcessNodeExecutionExceptionInvalidConfiguration("Geben Sie den Nutzernamen und das gespeicherte Passwort für die Basic-Authentifizierung an.");
                 }
 
                 var username = basicAuthConfig.username;
                 if (StringUtils.isNullOrEmpty(username)) {
-                    throw new ProcessNodeExecutionExceptionMissingValue("Der Nutzername für die Basic-Authentifizierung wurde nicht angegeben.");
+                    throw new ProcessNodeExecutionExceptionMissingValue("Geben Sie den Nutzernamen für die Basic-Authentifizierung an.");
                 }
 
                 var password = readSecretValue(basicAuthConfig.passwordSecretKey);
@@ -561,12 +601,12 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             case HttpActionNodeV1Config.AUTH_METHOD_OPT_BEARER_HEADERTOKEN -> {
                 var bearerAuthConfig = configuration.bearerAuthConfig;
                 if (bearerAuthConfig == null) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die Bearer-Authentifizierung ist nicht vollständig konfiguriert.");
+                    throw new ProcessNodeExecutionExceptionInvalidConfiguration("Geben Sie den Bearer-Token für den Zugang zur HTTP-Schnittstelle an.");
                 }
 
                 var bearerToken = bearerAuthConfig.bearerToken;
                 if (StringUtils.isNullOrEmpty(bearerToken)) {
-                    throw new ProcessNodeExecutionExceptionMissingValue("Der Bearer-Token wurde nicht angegeben.");
+                    throw new ProcessNodeExecutionExceptionMissingValue("Geben Sie den Bearer-Token für den Zugang zur HTTP-Schnittstelle an.");
                 }
 
                 headers.withAuthorizationBearer(bearerToken.trim());
@@ -582,7 +622,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private String readSecretValue(@Nullable String rawSecretKey) throws ProcessNodeExecutionException {
         var secretKeyString = StringUtils.toNullableTrimmedString(rawSecretKey);
         if (secretKeyString == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Geheimnis-Schlüssel für das Passwort wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Wählen Sie das gespeicherte Geheimnis mit dem Passwort für die Basic-Authentifizierung aus.");
         }
 
         UUID secretKey;
@@ -608,9 +648,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Das Geheimnis mit dem Schlüssel %s konnte nicht entschlüsselt werden: %s",
-                    StringUtils.quote(secretKeyString),
-                    e.getMessage()
+                    "Das gespeicherte Passwort für die Basic-Authentifizierung konnte nicht gelesen werden."
             );
         }
     }
@@ -620,7 +658,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                                  @Nonnull HttpActionNodeV1Config.RequestData requestData) throws Exception {
         var jsonConfig = requestData.requestContentTypeJsonConfig;
         if (jsonConfig == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Die JSON-Anfragedaten sind nicht vollständig konfiguriert.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Legen Sie fest, welche Daten als JSON-Anfrageinhalt gesendet werden sollen.");
         }
 
         var jsonSource = StringUtils.toNullableTrimmedString(jsonConfig.requestJsonSource);
@@ -648,7 +686,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                                                      @Nullable String rawProcessDataKey) throws ProcessNodeExecutionException {
         var processDataKey = normalizeProcessDataKey(rawProcessDataKey);
         if (processDataKey == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Datenschlüssel für den JSON-Anfragekörper wurde nicht angegeben.");
+            throw new ProcessNodeExecutionExceptionMissingValue("Geben Sie den Vorgangsdatenpfad für den JSON-Anfrageinhalt an.");
         }
 
         if (processDataKey.isEmpty()) {
@@ -663,7 +701,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     e,
-                    "Der Datenschlüssel %s ist ungültig.",
+                    "Der Vorgangsdatenpfad %s für den JSON-Anfrageinhalt ist ungültig.",
                     StringUtils.quote(rawProcessDataKey)
             );
         }
@@ -710,9 +748,8 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                     } catch (IOException | ResponseException e) {
                         throw new ProcessNodeExecutionExceptionUnknown(
                                 e,
-                                "Der Inhalt der Anlage %s konnte nicht geladen werden: %s",
-                                StringUtils.quote(attachment.getFileName()),
-                                e.getMessage()
+                                "Der Inhalt der Anlage %s konnte für die HTTP-Anfrage nicht geladen werden.",
+                                StringUtils.quote(attachment.getFileName())
                         );
                     }
                 }
@@ -739,7 +776,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             var name = interpolateNullable(context, readRowValue(row, "name"), TemplateOutputFormat.SingleLineText);
             var value = interpolateNullable(context, readRowValue(row, "value"), TemplateOutputFormat.PlainText);
             if (StringUtils.isNullOrEmpty(name)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Jede Datenfeld-Zeile benötigt einen Namen.");
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration("Geben Sie für jedes Formularfeld einen Feldnamen an.");
             }
 
             fields.put(name.trim(), value == null ? "" : value);
@@ -962,7 +999,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             Integer statusCode = parseStatusCode(rawStatusCodeString);
             if (statusCode == null || statusCode < 100 || statusCode > 599) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der erlaubte HTTP-Statuscode %s ist ungültig.",
+                        "Der zugelassene HTTP-Statuscode %s ist ungültig. Geben Sie eine ganze Zahl von 100 bis 599 an.",
                         StringUtils.quote(rawStatusCodeString)
                 );
             }
@@ -1007,7 +1044,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             return processDataKey.substring(2);
         }
         if (processDataKey.startsWith("_") || processDataKey.startsWith("$$")) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Der JSON-Anfragekörper darf nur aus Vorgangsdaten gelesen werden.");
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration("Wählen Sie für den JSON-Anfrageinhalt einen Pfad aus der Vorgangsdatenebene.");
         }
 
         return processDataKey;

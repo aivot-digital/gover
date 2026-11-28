@@ -7,6 +7,7 @@ import de.aivot.prosuna.backend.javascript.services.JavascriptEngineFactoryServi
 import de.aivot.prosuna.backend.plugins.core.v1.javascript.NumberJavascriptV1;
 import de.aivot.prosuna.backend.plugins.core.v1.javascript.SecretJavascriptV1;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
@@ -27,7 +28,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,6 +66,17 @@ class HtmlTemplateInputElementResolverTest {
         when(assetService.retrieve(key)).thenThrow(new IllegalStateException("Unavailable"));
         assertEquals(key.toString(), resolver.getTemplateName(template));
         assertNull(resolver.getTemplateName(null));
+    }
+
+    @Test
+    void resolveReportsWhenTheSelectedHtmlDocumentTemplateWasNotFound() throws Exception {
+        var key = UUID.randomUUID();
+        when(assetService.retrieve(key)).thenReturn(Optional.empty());
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionMissingValue.class,
+                () -> resolver.resolve(new HtmlTemplateInputElementValue().setAssetKey(key.toString()), new ProcessExecutionData()));
+
+        assertEquals("Die ausgewählte HTML-Dokumentvorlage wurde nicht gefunden.", exception.getMessage());
     }
 
     @Test
@@ -226,8 +240,14 @@ class HtmlTemplateInputElementResolverTest {
     void resolveShouldStillRejectInvalidAuthoredTemplateSyntax() throws Exception {
         var value = template("{{ unclosed");
 
-        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> resolver.resolve(value, new ProcessExecutionData()));
+
+        assertTrue(exception.getMessage().startsWith("Die HTML-Dokumentvorlage „" + value.getAssetKey() + "“ konnte nicht verarbeitet werden:"));
+        assertTrue(exception.getMessage().contains("Zeile 1:"));
+        assertTrue(exception.getMessage().contains("{{ unclosed"));
+        var cause = assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        assertTrue(cause.getMessage().contains("Zeile 1:"));
     }
 
     @Test
@@ -322,14 +342,18 @@ class HtmlTemplateInputElementResolverTest {
     @Test
     void resolveShouldReportUnexpectedRenderingErrorsWithoutTheirMessage() throws Exception {
         var templateRenderService = mock(TemplateRenderService.class);
+        var cause = new UnsupportedOperationException("internal detail");
         when(templateRenderService.interpolate(any(), any(), any(JavascriptExecutionContext.class)))
-                .thenThrow(new UnsupportedOperationException("internal detail"));
+                .thenThrow(cause);
         var failingResolver = new HtmlTemplateInputElementResolver(assetService, storageService, templateRenderService);
+        var value = template("<p>Text</p>");
 
         var exception = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
-                () -> failingResolver.resolve(template("<p>Text</p>"), new ProcessExecutionData())
+                () -> failingResolver.resolve(value, new ProcessExecutionData())
         );
+        assertEquals("Die HTML-Dokumentvorlage „" + value.getAssetKey() + "“ konnte wegen eines unerwarteten Fehlers nicht verarbeitet werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
         assertFalse(exception.getMessage().contains("internal detail"));
     }
 
@@ -338,8 +362,24 @@ class HtmlTemplateInputElementResolverTest {
         var value = template("<p data-slot=\"text\" data-slot-type=\"text\">Default</p>")
                 .setSlots(Map.of("text", "{{ unclosed"));
 
-        assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> resolver.resolve(value, new ProcessExecutionData()));
+
+        assertEquals("Der Wert für den Platzhalter (Slot) „text“ konnte nicht verarbeitet werden.", exception.getMessage());
+        var cause = assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+        assertTrue(cause.getMessage().contains("Zeile 1:"));
+    }
+
+    @Test
+    void resolveNamesAnInvalidImagePlaceholderAndKeepsItsCause() throws Exception {
+        var value = template("<img data-slot=\"logo-100%\" data-slot-type=\"image\" src=\"default.png\">")
+                .setSlots(Map.of("logo-100%", "invalid-key"));
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> resolver.resolve(value, new ProcessExecutionData()));
+
+        assertEquals("Der Bildplatzhalter (Slot) „logo-100%“ enthält einen ungültigen Dateischlüssel.", exception.getMessage());
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
     }
 
     private HtmlTemplateInputElementValue template(String html) throws Exception {

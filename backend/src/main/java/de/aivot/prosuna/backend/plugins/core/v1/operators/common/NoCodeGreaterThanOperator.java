@@ -29,22 +29,30 @@ public class NoCodeGreaterThanOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob eine Zahl über der Vergleichszahl liegt, etwa beim Vergleich einer Menge mit einem Grenzwert.
 
                 # Welche Werte werden benötigt?
-                „Zahl“ und „Vergleichszahl“. Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über „Andere Wertquelle verwenden …“ können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
+
+                - **Zahl:** Die Zahl, die Sie prüfen möchten.
+                - **Vergleichszahl:** Die Zahl, mit der Sie die erste Zahl vergleichen möchten.
+
+                Beide können Sie frei eingeben; es gibt keine vorgegebenen Auswahlwerte. Über **„Andere Wertquelle verwenden …“** können Sie Zahlen aus Wertquellen oder Funktionen übernehmen.
 
                 # Welches Ergebnis erhalten Sie?
-                Ein Wahrheitswert: „Wahr“, wenn die erste Zahl über der Vergleichszahl liegt, andernfalls „Falsch“.
+
+                Ein Wahrheitswert: `Wahr`, wenn die erste Zahl über der Vergleichszahl liegt, andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                1. Wählen Sie „Größer als“ als Funktion für eine Bedingung.
-                2. Tragen Sie bei „Zahl“ `10` und bei „Vergleichszahl“ `5` ein.
+
+                1. Wählen Sie **„Größer als“** als Funktion für eine Bedingung.
+                2. Tragen Sie bei **„Zahl“** `10` und bei **„Vergleichszahl“** `5` ein.
                 3. Verwenden Sie die Bedingung beispielsweise für die Sichtbarkeit eines Formularelements.
 
-                Der Ausdruck `10 ist größer als 5` ergibt „Wahr“. Statt der ersten festen Zahl können Sie eine passende Wertquelle wählen.
+                Der Ausdruck `10 ist größer als 5` ergibt `Wahr`. Statt der ersten festen Zahl können Sie eine passende Wertquelle wählen.
 
                 # Was ist zu beachten?
+
                 Verwenden Sie Zahlen. Zahlen als Text werden numerisch verglichen, mit Dezimalpunkt oder Dezimalkomma wie `1.5` oder `1,5`; Tausendertrennzeichen werden nicht unterstützt. Fehlende Werte und leerer Text werden wie die Zahl `0` behandelt. Andere Werte, etwa sonstige Texte, Wahrheitswerte oder Datumswerte, führen zu einer Fehlermeldung. Für fachliche Datums-, Uhrzeit- oder Zeitpunktvergleiche verwenden Sie die dafür vorgesehenen Funktionen.
                 """;
     }

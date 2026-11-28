@@ -31,23 +31,30 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Prüfen Sie, ob ein bestimmter Wert zu einer Liste gehört, beispielsweise ob eine ausgewählte Stadt unterstützt wird.
 
                 # Welche Werte werden benötigt?
-                **Liste:** Die Liste, in der gesucht wird. **Gesuchter Wert:** Der einzelne Wert, den Sie suchen.
+
+                - **Liste:** Die Liste, in der gesucht wird.
+                - **Gesuchter Wert:** Der einzelne Wert, den Sie suchen.
 
                 Die Liste können Sie selbst als JSON-Liste eingeben, beispielsweise `[1, 2, 3]`. Es gibt keine vorgegebenen Auswahlwerte. Alternativ verwenden Sie eine andere Wertquelle oder eine Funktion, die eine Liste liefert. Den gesuchten Wert können Sie frei eingeben oder aus einer anderen Wertquelle beziehungsweise Funktion übernehmen.
 
                 # Welches Ergebnis erhalten Sie?
-                **Wahr**, wenn der gesuchte Wert mindestens einmal vorkommt; andernfalls **Falsch**.
+
+                `Wahr`, wenn der gesuchte Wert mindestens einmal vorkommt; andernfalls `Falsch`.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie in einer Bedingung **„Liste enthält Wert“**. Verwenden Sie für **Liste** die Variable „Unterstützte Städte“ mit `["Berlin", "Hamburg"]` und geben Sie als **Gesuchter Wert** `Hamburg` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `„Unterstützte Städte“ enthält „Hamburg“`. Das Ergebnis ist **Wahr**.
+                1. Wählen Sie in einer Bedingung **„Liste enthält Wert“**.
+                2. Verwenden Sie für **„Liste“** die Variable **„Unterstützte Städte“** mit `["Berlin", "Hamburg"]` und geben Sie als **„Gesuchter Wert“** `Hamburg` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `„Unterstützte Städte“ enthält „Hamburg“`. Das Ergebnis ist `Wahr`.
 
                 # Was ist zu beachten?
-                Eine leere Liste ergibt **Falsch**. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
+
+                Eine leere Liste ergibt `Falsch`. Fehlt die Liste oder ist sie leerer Text oder `null`, gilt sie als leer. Werte, die keine Liste sind, etwa Zahlen, Objekte oder Text, der keine JSON-Liste ist, führen zu einer Fehlermeldung. Eine Zahl gilt als gleich mit einem Text derselben Zahl, etwa `2` mit `"2"` oder `"2,0"`. Verwenden Sie möglichst einheitliche Werttypen. Ein fehlender Wert kann nur zu einem ebenfalls fehlenden Listeneintrag passen.
                 """;
     }
 

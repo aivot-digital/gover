@@ -3,6 +3,7 @@ package de.aivot.prosuna.backend.plugins.core.v1.nodes.actions;
 import de.aivot.prosuna.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.prosuna.backend.department.services.VDepartmentShadowedService;
 import de.aivot.prosuna.backend.elements.models.AuthoredElementValues;
+import de.aivot.prosuna.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.prosuna.backend.elements.models.EffectiveElementValues;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.AssignmentContextInputElementValue;
@@ -21,11 +22,14 @@ import de.aivot.prosuna.backend.identity.models.IdentityDataMap;
 import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionType;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.prosuna.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.prosuna.backend.process.models.ProcessExecutionData;
 import de.aivot.prosuna.backend.process.models.ProcessNodeExecutionLogger;
@@ -44,9 +48,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.HttpStatus;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,6 +73,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -101,7 +109,7 @@ class CommunicationMessageActionNodeV1Test {
                 node.getExecutionTypes()
         );
         assertEquals(
-                "Sendet eine Nachricht über die Kommunikationsanbindung einer Identität des Vorgangs.",
+                "Versendet eine Nachricht über den hinterlegten Zustellweg einer Identität – automatisch oder nach manueller Prüfung.",
                 node.getAbstract()
         );
         assertEquals(
@@ -116,6 +124,23 @@ class CommunicationMessageActionNodeV1Test {
                 ),
                 node.getOutputs().stream().map(output -> output.typeDefinition()).toList()
         );
+        assertEquals(
+                List.of("identityId", "communicationProviderBindingId", "subject", "body", "attachmentSetDataKeys", "sentAt", "sendResult"),
+                node.getOutputs().stream().map(output -> output.key()).toList()
+        );
+        var outputLabels = node.getOutputs().stream().collect(java.util.stream.Collectors.toMap(
+                output -> output.key(), output -> output.label()
+        ));
+        assertEquals("Empfangende Identität", outputLabels.get("identityId"));
+        assertEquals("Nachricht", outputLabels.get("body"));
+        assertEquals("Vorbereitet am", outputLabels.get("sentAt"));
+        assertEquals("Versandergebnis", outputLabels.get("sendResult"));
+        var preparedAt = node.getOutputs().stream().filter(output -> output.key().equals("sentAt")).findFirst().orElseThrow();
+        assertTrue(preparedAt.description().contains("Der tatsächliche Versand folgt danach"));
+        var port = node.getPorts(configuration("automatic")).getFirst();
+        assertEquals("output", port.key());
+        assertEquals("Nachricht versendet", port.label());
+        assertTrue(port.description().contains("über den hinterlegten Zustellweg versendet"));
     }
 
     @Test
@@ -136,13 +161,15 @@ class CommunicationMessageActionNodeV1Test {
                 CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID,
                 ProcessIdentityIdInputElement.class
         ).orElseThrow();
-        assertEquals("Identität", identity.getLabel());
-        assertEquals("Wählen Sie die Identität aus, an welche die Nachricht gesendet wird.", identity.getHint());
+        assertEquals("Empfangende Identität", identity.getLabel());
+        assertTrue(identity.getHint().contains("für diese Identität hinterlegten Zustellweg"));
         var attachments = layout.findChild(
                 CommunicationMessageActionNodeV1.Configuration.ATTACHMENTS_FIELD_ID,
                 ProcessInstanceAttachmentSetSelectElement.class
         ).orElseThrow();
-        assertEquals("Anlagensätze, deren Dateien mit der Nachricht versendet werden.", attachments.getHint());
+        assertEquals("Anlagensätze für Anhänge", attachments.getLabel());
+        assertTrue(attachments.getHint().contains("vollständig"));
+        assertTrue(attachments.getHint().contains("Ohne Auswahl wird die Nachricht ohne Anhänge versendet"));
         assertTrue(layout.findChild(
                 SemiAutomaticMessageConfig.GROUP_ID,
                 GroupLayoutElement.class
@@ -154,7 +181,7 @@ class CommunicationMessageActionNodeV1Test {
         ).orElseThrow();
         assertEquals(List.of(
                 SelectInputElementOption.of("automatic", "Automatisch versenden"),
-                SelectInputElementOption.of("manual", "Manuell bearbeiten und versenden")
+                SelectInputElementOption.of("manual", "Vor Versand prüfen und bearbeiten")
         ), executionType.getOptions());
 
         assertNotNull(layout.findChild(
@@ -170,6 +197,8 @@ class CommunicationMessageActionNodeV1Test {
                 SemiAutomaticMessageConfig.ManualContent.ASSIGNMENT_FIELD_ID,
                 AssignmentContextInputElement.class
         ).orElseThrow();
+        assertEquals("Wählen Sie Organisationseinheiten, Teams oder Mitarbeiter:innen aus. Prosuna weist die Aufgabe einer berechtigten Person aus diesem Personenkreis zu.",
+                assignment.getText());
         assertEquals(List.of("orgUnit", "team", "user"), assignment.getAllowedTypes());
         assertEquals(PROCESS_ID, assignment.getProcessAccessConstraint().getProcessId());
         assertEquals(PROCESS_VERSION, assignment.getProcessAccessConstraint().getProcessVersion());
@@ -304,12 +333,20 @@ class CommunicationMessageActionNodeV1Test {
         when(departmentService.retrieve(17)).thenReturn(Optional.of(signatureDepartment));
         var executionData = new ProcessExecutionData().addProcessData(Map.of("name", "Ada"));
         var context = staffContext(configuration, executionData, processInstance(), task());
+        var repository = mock(ProcessInstanceHistoryEventRepository.class);
+        when(context.getLogger()).thenReturn(new ProcessNodeExecutionLogger(PROCESS_INSTANCE_ID, TASK_ID, "staff-1", null, repository));
 
         var view = node.getStaffTaskView(context);
         var layout = (GroupLayoutElement) view.layout();
-        assertTrue(Boolean.TRUE.equals(layout.findChild("subject", TextInputElement.class).orElseThrow().getRequired()));
-        assertTrue(Boolean.TRUE.equals(layout.findChild("body", RichTextInputElement.class).orElseThrow().getRequired()));
+        var subjectField = layout.findChild("subject", TextInputElement.class).orElseThrow();
+        assertTrue(Boolean.TRUE.equals(subjectField.getRequired()));
+        assertEquals("Betreff der Nachricht", subjectField.getLabel());
+        var bodyField = layout.findChild("body", RichTextInputElement.class).orElseThrow();
+        assertTrue(Boolean.TRUE.equals(bodyField.getRequired()));
+        assertEquals("Nachricht", bodyField.getLabel());
+        assertEquals("Prüfen und bearbeiten Sie die Nachricht vor dem Versand.", bodyField.getHint());
         assertEquals("send", view.events().getFirst().event());
+        assertEquals("Nachricht versenden", view.events().getFirst().label());
 
         var defaults = view.data();
         assertEquals("Entwurf für Ada", defaults.getLiteral("subject"));
@@ -323,6 +360,15 @@ class CommunicationMessageActionNodeV1Test {
         assertEquals("Bearbeitet", result.getCommunicationRequest().message().subject());
         assertEquals("Finaler Inhalt", result.getCommunicationRequest().message().body());
         assertSame(signatureDepartment, result.getCommunicationRequest().message().signatureDepartment());
+        var events = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(repository, times(2)).save(events.capture());
+        var requestEvent = events.getAllValues().stream().filter(event -> event.getTitle().equals("Versand angefordert"))
+                .findFirst().orElseThrow();
+        assertEquals("Der Versand der Nachricht mit dem Betreff „Bearbeitet“ wurde durch „Ada Beispiel“ angefordert.", requestEvent.getMessage());
+        assertEquals("staff-1", requestEvent.getConcernedUserId());
+        assertTrue(requestEvent.getHistoryRelevant());
+        assertTrue(requestEvent.getAudit());
+        assertFalse(requestEvent.getTechnical());
     }
 
     @Test
@@ -330,7 +376,7 @@ class CommunicationMessageActionNodeV1Test {
         var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var context = staffContext(configuration("manual"), new ProcessExecutionData(), processInstance(), task());
 
-        assertThrows(
+        var validationException = assertThrows(
                 ResponseException.class,
                 () -> node.onEventFromStaffTaskView(
                         context,
@@ -338,10 +384,93 @@ class CommunicationMessageActionNodeV1Test {
                         "send"
                 )
         );
-        assertThrows(
+        var validation = assertInstanceOf(DerivedRuntimeElementData.class, validationException.getDetails());
+        assertEquals("Geben Sie einen Betreff für die Nachricht ein.", validation.getElementStates().get("subject").getError());
+        assertEquals("Geben Sie eine Nachricht ein.", validation.getElementStates().get("body").getError());
+        var actionException = assertThrows(
                 ProcessNodeExecutionExceptionUnknown.class,
-                () -> node.onEventFromStaffTaskView(context, authored(), "unknown")
+                () -> node.onEventFromStaffTaskView(context, authored(), "unknown 100%")
         );
+        var expectedMessage = "Die ausgewählte Aktion ist für diese Aufgabe nicht verfügbar. Aktion: „unknown 100%“.";
+        assertEquals(expectedMessage, actionException.getMessage());
+        var controllerException = node.unavailableStaffTaskEvent("unknown 100%", authored());
+        assertEquals(HttpStatus.BAD_REQUEST, controllerException.getStatus());
+        assertEquals(expectedMessage, controllerException.getTitle());
+        assertNull(controllerException.getDetails());
+    }
+
+    @Test
+    void missingIdentityAndAutomaticMessageHaveReadableConfigurationErrors() {
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var configuration = configuration("automatic");
+        configuration.identityId = " ";
+        var identityException = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, new ProcessExecutionData(), processInstance(), task())));
+        assertEquals("Wählen Sie eine empfangende Identität aus.", identityException.getMessage());
+
+        configuration.identityId = "applicant";
+        configuration.messageConfig.automaticContent.subject = null;
+        var contentException = assertThrows(ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(initContext(configuration, new ProcessExecutionData(), processInstance(), task())));
+        assertEquals("Hinterlegen Sie einen Betreff und eine Nachricht für den automatischen Versand.", contentException.getMessage());
+    }
+
+    @Test
+    void selectedIdentityMissingFromTheInstanceIsNamedInTheError() {
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var configuration = configuration("automatic");
+        configuration.identityId = "missing-100%";
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionMissingValue.class,
+                () -> node.init(initContext(configuration, new ProcessExecutionData(), processInstance(), task())));
+
+        assertEquals("Die ausgewählte Identität „missing-100%“ ist im Vorgang nicht vorhanden.", exception.getMessage());
+    }
+
+    @Test
+    void missingManualDefaultsHaveASafeStaffViewErrorWithTheOriginalConfigurationCause() {
+        var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
+        var configuration = configuration("manual");
+        configuration.messageConfig.manualContent.subject = null;
+        var context = staffContext(configuration, new ProcessExecutionData(), processInstance(), task());
+
+        var exception = assertThrows(ResponseException.class, () -> node.getStaffTaskView(context));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+        assertEquals("Hinterlegen Sie einen vorbelegten Betreff und eine vorbelegte Nachricht für die manuelle Prüfung.", exception.getTitle());
+        assertNull(exception.getDetails());
+        assertInstanceOf(ProcessNodeExecutionExceptionInvalidConfiguration.class, exception.getCause());
+        assertEquals(exception.getTitle(), exception.getCause().getMessage());
+    }
+
+    @Test
+    void attachmentReadFailureKeepsItsUnknownExceptionTypeAndCauseWithoutExposingStorageDetails() throws Exception {
+        var attachmentSets = mock(ProcessInstanceAttachmentSetService.class);
+        var attachments = mock(ProcessInstanceAttachmentService.class);
+        var storage = mock(StorageService.class);
+        var node = new CommunicationMessageActionNodeV1(attachmentSets, attachments, storage,
+                mock(AssignmentContextAssigneeResolverService.class), mock(VDepartmentShadowedService.class));
+        var configuration = configuration("automatic");
+        configuration.attachmentSetDataKeys = List.of("documents");
+        when(attachmentSets.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
+                .thenReturn(List.of(new ProcessInstanceAttachmentSetEntity().setId(11)));
+        when(attachments.findAllByAttachmentSetId(11)).thenReturn(List.of(
+                new ProcessInstanceAttachmentEntity().setFileName("notice-100%.pdf")
+                        .setStorageProviderId(12).setStoragePathFromRoot("internal-path")
+        ));
+        var cause = new IOException("internal storage location 100%");
+        when(storage.getDocumentContent(12, "internal-path")).thenReturn(new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw cause;
+            }
+        });
+
+        var exception = assertThrows(ProcessNodeExecutionExceptionUnknown.class,
+                () -> node.init(initContext(configuration, new ProcessExecutionData(), processInstance(), task())));
+
+        assertEquals("Die Anlage „notice-100%.pdf“ konnte für den Nachrichtenversand nicht geladen werden.", exception.getMessage());
+        assertSame(cause, exception.getCause());
     }
 
     @Test
@@ -349,7 +478,7 @@ class CommunicationMessageActionNodeV1Test {
         var node = createNode(mock(AssignmentContextAssigneeResolverService.class));
         var invalidConfiguration = configuration("unexpected");
 
-        assertThrows(
+        var exception = assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
                 () -> node.init(initContext(
                         invalidConfiguration,
@@ -358,6 +487,7 @@ class CommunicationMessageActionNodeV1Test {
                         task()
                 ))
         );
+        assertEquals("Wählen Sie, ob die Nachricht automatisch oder nach manueller Prüfung versendet werden soll.", exception.getMessage());
 
         var exported = authored(
                 CommunicationMessageActionNodeV1.Configuration.IDENTITY_ID_FIELD_ID,

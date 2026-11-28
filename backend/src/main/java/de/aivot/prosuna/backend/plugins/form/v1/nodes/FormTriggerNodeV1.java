@@ -78,15 +78,17 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.detail;
 import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.text;
+import static de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown.timestamp;
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
     private static final ProcessNodeDeadlineDefinition PAYMENT_DEADLINE = new ProcessNodeDeadlineDefinition(
             "payment", "Zahlung",
-            "Zeit zur Zahlung ab Erstellung der Zahlungsanforderung.",
+            "Zeit für die Zahlung ab Erstellung der Zahlungsanforderung. Bei einem Gesamtbetrag von 0,00 Euro beginnt keine Zahlungsfrist.",
             new ProcessNodePort("payment_overdue", "Fristüberschreitung: Zahlung",
-                    "Fortsetzung, wenn die Aufgabe wegen Überschreitung der Frist für die Zahlung beendet wurde."));
+                    "Der Vorgang wird hier fortgesetzt, wenn die Aufgabe bei Ablauf der Zahlungsfrist automatisch beendet wird."));
 
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
@@ -174,8 +176,14 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         if (title == null || title.isBlank()) {
             title = context.thisNode().getName();
         }
-        return "Der Vorgang wurde" + summary.eventAt("started") + " durch die Übermittlung des Formulars"
-                + (title == null || title.isBlank() ? "" : " „" + text(title) + "“") + " ausgelöst.";
+        var submittedAt = summary.data(DATA_KEY_STARTED);
+        if (timestamp(submittedAt).isEmpty()) {
+            submittedAt = context.thisProcessInstance().getStarted();
+        }
+        return "Der Vorgang wurde" + summary.at(submittedAt) + " durch die Übermittlung des Formulars"
+                + (title == null || title.isBlank() ? "" : " „" + text(title) + "“") + " ausgelöst."
+                + (summary.data(DATA_KEY_PAYMENT_DETAILS) == null ? "" : " Die Zahlung wurde bestätigt.")
+                + detail("Kurzbeschreibung", context.thisNode().getDescription());
     }
 
     @Nonnull
@@ -205,18 +213,48 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     @Override
     public String getAbstract() {
-        return "Startet einen neuen Vorgang, sobald Beteiligte Angaben über ein Formular übermitteln.";
+        return "Startet einen neuen Vorgang mit den Angaben aus einem übermittelten Formular.";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
         return """
-                Startet einen neuen Vorgang, sobald Beteiligte das Formular erfolgreich übermittelt haben. Das Formular ist Bestandteil des Auslösers und wird direkt in dessen Konfiguration gestaltet.
+                ### Wofür verwenden Sie dieses Prozesselement?
 
-                Die Vorgangsdaten enthalten anschließend nur die Angaben aus Formularelementen mit Datenschlüssel; alle übermittelten Angaben stehen zusätzlich in den Elementdaten bereit. Hochgeladene Dateien und die erzeugte Kopie der Angaben werden als Anlagen gespeichert.
+                Starten Sie einen neuen Vorgang, indem eine Person Angaben über ein Formular übermittelt, beispielsweise eine Anmeldung oder Anfrage. Das Formular gestalten Sie direkt in diesem Prozesselement. Für zusätzliche Angaben zu einem bestehenden Vorgang verwenden Sie „Angaben anfordern“.
 
-                Wird eine Zahlung angefordert, wartet der Vorgang auf deren erfolgreichen Abschluss. Bei einem Gesamtbetrag von 0,00 Euro wird der Vorgang ohne Zahlung fortgesetzt. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Aufgabe fehl. Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird der Vorgang nach Ablauf der Zahlungsfrist über einen eigenen Ausgangsport fortgesetzt.
+                ### Was richten Sie ein?
+
+                Legen Sie das URL-Segment fest und gestalten Sie unter „Formular“ die benötigten Felder, Hinweise und Eingaberegeln. Das URL-Segment bildet zusammen mit der Adresse der Prosuna-Installation und dem URL-Namespace des Prozesses die öffentliche Formularadresse. Die vollständige Adresse können Sie am Feld kopieren. Mehrere Formulareingänge derselben Prozessversion benötigen unterschiedliche URL-Segmente.
+
+                Über den Datenschlüssel eines Eingabeelements legen Sie fest, wo sein Wert später in den Vorgangsdaten steht. Angaben ohne Datenschlüssel bleiben über die Elementdaten nach Element-ID verfügbar.
+
+                Optional richten Sie Identitäten ein, um Angaben über Beteiligte für die weitere Mitwirkung im Vorgang zu erfassen. Dabei bestimmen Sie, welche Angaben verpflichtend sind und welche Anmeldedienste oder E-Mail-Eingaben zugelassen werden. Bei Bedarf konfigurieren Sie außerdem eine Zahlung und eine Zahlungsfrist.
+
+                ### Was passiert bei der Ausführung?
+
+                Die ausfüllende Person übermittelt das Formular. Prosuna prüft die erforderlichen Identitäten und Eingaben, legt den Vorgang an und verarbeitet die vorgesehenen Angaben und Anlagen. Zusätzlich wird eine „Kopie der Angaben“ als PDF erstellt und beim Vorgang gespeichert.
+
+                Ist eine Zahlung erforderlich, wartet die weitere Bearbeitung auf ihre Bestätigung. Danach wird der Vorgang über „Angaben übermittelt“ fortgesetzt. Ohne Zahlung oder bei einem Gesamtbetrag von 0,00 Euro wird dieser Ausgang direkt verwendet. Schlägt die Zahlung fehl oder wird sie abgebrochen, schlägt die Ausführung des Prozesselements fehl.
+
+                ### Welches Ergebnis steht danach bereit?
+
+                Beim regulären Abschluss stehen die Angaben aus Eingabeelementen mit Datenschlüssel in den Vorgangsdaten bereit. In den Elementdaten finden Sie außerdem die zugeordneten Angaben, die Werte nach Element-ID, die übernommenen Anlagen, den Übermittlungszeitpunkt und die PDF-Kopie. Nach einer bestätigten Zahlung stehen auch deren Zahlungsdetails bereit.
+
+                Im Vorgangsverlauf ist erkennbar, durch welches Formular und wann der Vorgang ausgelöst wurde. Während einer erforderlichen Zahlung wird der Wartezustand angezeigt; nach erfolgreichem Abschluss ist auch die Zahlungsbestätigung erkennbar.
+
+                ### Wie sieht ein Beispiel aus?
+
+                Ein Formular nimmt Anmeldungen zu einer Veranstaltung entgegen. Das Feld „Name“ erhält den Datenschlüssel `anmeldung.name`. Nach der Übermittlung steht der Name beim regulären Abschluss unter diesem Pfad in den Vorgangsdaten. Ist eine Teilnahmegebühr von 20,00 Euro eingerichtet, beginnt der nächste Schritt erst nach bestätigter Zahlung. Die Kopie der Angaben bleibt als Anlage beim Vorgang verfügbar.
+
+                ### Was ist zu beachten?
+
+                Der öffentliche Formularlink verwendet die veröffentlichte Prozessversion. Verwenden Sie zum Erproben eines Entwurfs den Testlink aus dem Testmodus; dessen Übermittlung erzeugt einen Testvorgang.
+
+                Die erfassten Identitäten beschreiben Beteiligte. Diese müssen nicht mit der Person übereinstimmen, die das Formular ausfüllt. Eine direkt angegebene E-Mail-Adresse wird dabei nicht durch eine Bestätigungs-E-Mail überprüft.
+
+                Ist „Aufgabe bei Fristüberschreitung beenden“ aktiviert, wird nach Ablauf der Zahlungsfrist über „Fristüberschreitung: Zahlung“ fortgesetzt. Ohne diese Option bleibt die Aufgabe nach Fristablauf wartend. Die Formularübermittlung liegt zu diesem Zeitpunkt bereits vor.
                 """;
     }
 
@@ -246,7 +284,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 new ProcessNodePort(
                         PORT_NAME,
                         "Angaben übermittelt",
-                        "Ein neuer Vorgang wird mit den übermittelten Formulardaten gestartet."
+                        "Die Formularangaben wurden übernommen. Eine erforderliche Zahlung wurde bestätigt. Der Vorgang wird hier fortgesetzt."
                 )
         );
     }
@@ -257,38 +295,38 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         return List.of(
                 new ProcessNodeOutput(
                         DATA_KEY_PAYLOAD,
-                        "Zugeordnete Formulardaten",
-                        "Enthält alle Formulardaten, die über einen Datenschlüssel zugeordnet wurden.",
+                        "Angaben mit Datenschlüssel",
+                        "Die über Datenschlüssel zugeordneten Formularwerte. Beim regulären Abschluss werden sie in die Vorgangsdaten übernommen.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_UNMAPPED,
-                        "Formular-Rohdaten",
-                        "Enthält sämtliche Formulareingaben unter der jeweiligen Element-ID, unabhängig von der Zuordnung über Datenschlüssel.",
+                        "Werte nach Element-ID",
+                        "Die bei der Übermittlung berücksichtigten Werte unter den Kennungen der Formularelemente, unabhängig von einem Datenschlüssel. Enthält auch berechnete Werte.",
                         "Record<string, unknown>"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_ATTACHMENTS,
                         "Anlagen",
-                        "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden.",
+                        "Die über dieses Formular übernommenen hochgeladenen Dateien. Die PDF-Kopie der Angaben steht gesondert bereit.",
                         OUTPUT_ATTACHMENTS_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_STARTED,
-                        "Eingangszeitstempel",
-                        "Der Zeitstempel der Übermittlung.",
+                        "Übermittelt am",
+                        "Der beim Beginn der Übernahme festgehaltene Übermittlungszeitpunkt im ISO-Format.",
                         "string"
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_CUSTOMER_SUMMARY_FILES,
                         CUSTOMER_SUMMARY_FILE_NAME,
-                        "Die erzeugte Kopie der übermittelten Angaben im Format des Datei-Anlagen-Feldes.",
+                        "Die erzeugte PDF-Kopie der übermittelten Angaben als Dateiverweise.",
                         OUTPUT_FILES_TYPE_DEFINITION
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_PAYMENT_DETAILS,
                         "Zahlungsdetails",
-                        "Enthält die Zahlungsdetails, falls eine Zahlung durchgeführt wurde.",
+                        "Die gespeicherten Informationen zur bestätigten Zahlung. Nur vorhanden, wenn eine Zahlung bestätigt wurde.",
                         OUTPUT_PAYMENT_DETAILS_TYPE_DEFINITION
                 )
         );
@@ -346,7 +384,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             config = ElementPOJOMapper
                     .createFromPOJO(FormTriggerConfigV1.class);
         } catch (ElementDataConversionException e) {
-            throw new RuntimeException(e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Einstellungen für den Formulareingang konnten nicht geladen werden.", null);
         }
 
         config
@@ -358,7 +396,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                                     NoCodeReference.of(FormTriggerConfigV1.FORM_SLUG),
                                     NoCodeStaticValue.of("^[a-z0-9-]+$")
                             ),
-                            "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                            "Das URL-Segment darf nur Kleinbuchstaben von a bis z, Zahlen und Bindestriche enthalten."
                     ));
 
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
@@ -398,7 +436,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var rtx = new RichTextContentElement();
         rtx.setId("rtx");
         rtx.setContent(String.format("""
-                Sie können das Formular abrufen unter [%s](%s).
+                Über diesen Testlink können Sie das Formular ausfüllen und einen Testvorgang starten: [%s](%s).
                 """, link, link));
 
         layout.addChild(rtx);
@@ -434,7 +472,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 addValidationError(
                         errors,
                         FormTriggerConfigV1.FORM_SLUG,
-                        "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
+                        "Das URL-Segment wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet. Wählen Sie ein anderes Segment."
                 );
             }
         }
@@ -478,7 +516,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var configuration = context.getConfigurationOfExecutingNode();
         if (configuration.formLayout == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Konfiguration des Formulareingangs enthält kein Formular."
+                    "Hinterlegen Sie ein Formular für den Formulareingang."
             );
         }
 
@@ -507,7 +545,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             var paymentProvider = paymentProviderRepository
                     .findById(paymentConfig.paymentProviderKey())
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden",
+                            "Der ausgewählte Zahlungsanbieter wurde nicht gefunden. Zahlungsanbieter: %s.",
                             StringUtils.quote(paymentConfig.paymentProviderKey().toString())
                     ));
 
@@ -527,8 +565,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             } catch (PaymentException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,
-                        "Fehler beim Erstellen der Zahlungsanforderung: %s",
-                        e.getMessage()
+                        "Die Zahlungsanforderung für das Formular konnte nicht erstellt werden."
                 );
             }
 
@@ -539,8 +576,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                                 ProcessNodeExecutionLogLevel.Info,
                                 false,
                                 true,
-                                "Keine Zahlungsanforderung erstellt",
-                                "Es wurde keine Zahlungsanforderung erstellt, da keine Zahlungspositionen mit einem Gesamtwert größer als 0 gefunden wurden."
+                                "Keine Zahlung erforderlich",
+                                "Es wurde keine Zahlungsanforderung erstellt, weil der Gesamtbetrag 0,00 Euro beträgt."
                         );
             } else {
                 PaymentTransactionEntity transaction;
@@ -553,8 +590,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 } catch (PaymentException e) {
                     throw new ProcessNodeExecutionExceptionUnknown(
                             e,
-                            "Fehler beim Absenden der Zahlungsanforderung: %s",
-                            e.getMessage()
+                            "Die Zahlungsanforderung konnte beim Zahlungsanbieter nicht angelegt werden."
                     );
                 }
 
@@ -580,7 +616,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var configuration = context.getConfigurationOfExecutingNode();
         if (configuration.formLayout == null) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Konfiguration des Formulareingangs enthält kein Formular."
+                    "Hinterlegen Sie ein Formular für den Formulareingang."
             );
         }
 
@@ -628,7 +664,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             var tx = paymentTransactionService
                     .retrieve(txKey)
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Die Zahlungsanforderung mit dem Schlüssel %s konnte nicht gefunden werden.",
+                            "Die zum Formulareingang gehörende Zahlungsanforderung wurde nicht gefunden. Zahlungsreferenz: %s.",
                             StringUtils.quote(txKey)
                     ));
 
@@ -638,18 +674,19 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             }
 
             if (tx.getStatus() != XBezahldienstStatus.PAYED) {
+                var status = tx.getStatus() == XBezahldienstStatus.FAILED ? "Fehlgeschlagen" : "Abgebrochen";
                 if (StringUtils.isNotNullOrEmpty(tx.getPaymentError())) {
                     throw new ProcessNodeExecutionExceptionIO(
-                            "Die Zahlungsanforderung mit dem Schlüssel %s ist nicht abgeschlossen. Aktueller Status: %s. Der folgende Fehler wurde gemeldet: %s",
-                            StringUtils.quote(txKey),
-                            StringUtils.quote(tx.getStatus().getKey()),
-                            StringUtils.quote(tx.getPaymentError())
+                            new PaymentException("%s", tx.getPaymentError()),
+                            "Die Zahlung wurde nicht erfolgreich abgeschlossen. Status: %s. Zahlungsreferenz: %s.",
+                            status,
+                            StringUtils.quote(txKey)
                     );
                 } else {
                     throw new ProcessNodeExecutionExceptionIO(
-                            "Die Zahlungsanforderung mit dem Schlüssel %s ist nicht abgeschlossen. Aktueller Status: %s.",
-                            StringUtils.quote(txKey),
-                            StringUtils.quote(tx.getStatus().getKey())
+                            "Die Zahlung wurde nicht erfolgreich abgeschlossen. Status: %s. Zahlungsreferenz: %s.",
+                            status,
+                            StringUtils.quote(txKey)
                     );
                 }
             } else {
@@ -659,8 +696,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                                 ProcessNodeExecutionLogLevel.Info,
                                 false,
                                 true,
-                                "Zahlungsanforderung abgeschlossen",
-                                "Die Zahlungsanforderung mit dem Schlüssel %s wurde erfolgreich abgeschlossen.",
+                                "Zahlung bestätigt",
+                                "Die Zahlung wurde bestätigt. Zahlungsreferenz: %s.",
                                 StringUtils.quote(txKey)
                         );
 
@@ -695,13 +732,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             Thread.currentThread().interrupt();
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die PDF-Erstellung der Kopie der Angaben wurde unterbrochen."
+                    "Die Erstellung der Kopie der Angaben als PDF wurde unterbrochen."
             );
         } catch (IOException | URISyntaxException | ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Erzeugen der Kopie der Angaben: %s",
-                    e.getMessage()
+                    "Die Kopie der Angaben konnte nicht als PDF erstellt werden."
             );
         }
 
@@ -729,8 +765,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Speichern der Kopie der Angaben als Vorgangsanlage: %s",
-                    e.getMessage()
+                    "Die Kopie der Angaben konnte nicht als Anlage zum Vorgang gespeichert werden."
             );
         }
     }
@@ -741,7 +776,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var rawSubmission = initialPayload.get(DATA_KEY_UNMAPPED);
         if (rawSubmission == null) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Die Formular-Rohdaten für die Kopie der Angaben fehlen."
+                    "Die übermittelten Formulardaten für die Kopie der Angaben fehlen."
             );
         }
 
@@ -750,7 +785,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         } catch (IllegalArgumentException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     e,
-                    "Die Formular-Rohdaten konnten nicht für die Kopie der Angaben verarbeitet werden."
+                    "Die übermittelten Formulardaten konnten nicht für die Kopie der Angaben verarbeitet werden."
             );
         }
     }
@@ -804,7 +839,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var paymentProvider = paymentProviderRepository
                 .findById(transaction.get().getPaymentProviderKey())
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Der Zahlungsanbieter mit dem Schlüssel %s konnte nicht gefunden werden".formatted(
+                        "Der ausgewählte Zahlungsanbieter wurde nicht gefunden. Zahlungsanbieter: %s.".formatted(
                                 StringUtils.quote(transaction.get().getPaymentProviderKey().toString())
                         )
                 ));
@@ -815,7 +850,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         paymentProvider.getPaymentProviderDefinitionVersion()
                 )
                 .orElseThrow(() -> ResponseException.internalServerError(
-                        "Die Definition des Zahlungsanbieters %s in Version %s konnte nicht gefunden werden.".formatted(
+                        "Die Einrichtung des Zahlungsanbieters wurde nicht gefunden. Kennung: %s, Version: %s.".formatted(
                                 StringUtils.quote(paymentProvider.getPaymentProviderDefinitionKey()),
                                 paymentProvider.getPaymentProviderDefinitionVersion()
                         )
@@ -859,7 +894,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             );
             return ProcessNodeCustomerView.of(context, layout, List.of(), new AuthoredElementValues());
         } catch (IOException | WriterException e) {
-            throw ResponseException.internalServerError(e);
+            throw ResponseException.internalServerErrorWithDetails(e, "Die Zahlungsansicht konnte nicht erstellt werden.", null);
         }
     }
 
@@ -877,10 +912,10 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             // The message is shown as Markdown on the payment status page.
             return templateRenderService.interpolate(processExecutionData, template, TemplateOutputFormat.Markdown);
         } catch (RuntimeException e) {
-            throw ResponseException.internalServerError(
+            throw ResponseException.internalServerErrorWithDetails(
                     e,
-                    "Die Vorlage %s konnte nicht gerendert werden.",
-                    StringUtils.quote(template)
+                    "Die hinterlegte Nachricht zum Zahlungsstatus konnte nicht erstellt werden.",
+                    null
             );
         }
     }

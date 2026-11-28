@@ -78,13 +78,15 @@ export function ElementTab({
                                primaryActionLabel,
                                primaryActionIcon,
                                showElementInfo,
+                               detailsId,
                                highlightedElement,
                                limitElementTypes,
                                recentElementTypes = [],
                                displayContext,
                                searchInputRef,
                            }: BaseTabProps & {
-    showElementInfo: (type: ElementType) => void;
+    showElementInfo: (type: ElementType, trigger: HTMLButtonElement) => void;
+    detailsId: string;
     highlightedElement?: ElementType;
     limitElementTypes?: ElementType[];
     recentElementTypes?: ElementType[];
@@ -196,6 +198,7 @@ export function ElementTab({
                     <ElementRow
                         option={option}
                         isSelected={highlightedElement === option.type}
+                        detailsId={detailsId}
                         primaryActionLabel={primaryActionLabel}
                         primaryActionIcon={primaryActionIcon}
                         titleAdornment={
@@ -208,8 +211,8 @@ export function ElementTab({
                         onAdd={() => {
                             handleAddElement(option.type);
                         }}
-                        onShowDetails={() => {
-                            showElementInfo(option.type);
+                        onShowDetails={(event) => {
+                            showElementInfo(option.type, event.currentTarget);
                         }}
                     />
                     {
@@ -382,16 +385,18 @@ export function ElementTab({
 function ElementRow(props: {
     option: ElementOption;
     isSelected: boolean;
+    detailsId: string;
     primaryActionLabel: string;
     primaryActionIcon: React.ReactNode;
     titleAdornment?: React.ReactNode;
     disabledReason?: string;
     onAdd: () => void;
-    onShowDetails: () => void;
+    onShowDetails: React.MouseEventHandler<HTMLButtonElement>;
 }) {
     const {
         option,
         isSelected,
+        detailsId,
         primaryActionLabel,
         primaryActionIcon,
         titleAdornment,
@@ -409,7 +414,11 @@ function ElementRow(props: {
             titleAdornment={titleAdornment}
             description={option.description}
             selected={isSelected}
+            detailsAriaLabel={`${option.name}: Details anzeigen`}
+            detailsExpanded={isSelected}
+            detailsControls={isSelected ? detailsId : undefined}
             primaryActionLabel={primaryActionLabel}
+            primaryActionAriaLabel={`${option.name}: ${primaryActionLabel}`}
             primaryActionIcon={primaryActionIcon}
             primaryActionDisabled={disabledReason != null}
             primaryActionDisabledTooltip={disabledReason}

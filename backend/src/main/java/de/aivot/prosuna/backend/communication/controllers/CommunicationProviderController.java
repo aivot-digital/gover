@@ -224,8 +224,8 @@ public class CommunicationProviderController {
     }
 
     public record BindingOrderRequest(
-            @Nonnull @NotNull UUID identityProviderKey,
-            @Nonnull @NotNull List<@NotNull Integer> ids
+            @Nonnull @NotNull(message = "Wählen Sie einen Identitätsanbieter aus.") UUID identityProviderKey,
+            @Nonnull @NotNull(message = "Die Reihenfolge der Kommunikationsanbindungen muss angegeben werden.") List<@NotNull(message = "Die Reihenfolge enthält eine ungültige Kommunikationsanbindung.") Integer> ids
     ) {}
 
     @DeleteMapping("bindings/{id}/")
@@ -236,13 +236,13 @@ public class CommunicationProviderController {
     }
 
     public record ProviderRequest(
-            @NotBlank String communicationProviderDefinitionKey,
-            @NotNull Integer communicationProviderDefinitionVersion,
-            @NotBlank @Size(max = 64) String name,
-            @NotNull @Size(max = 255) String description,
-            @NotNull AuthoredElementValues configuration,
-            @NotNull Boolean isEnabled,
-            @NotNull Boolean isTestProvider,
+            @NotBlank(message = "Wählen Sie einen Kommunikationsanbieter aus.") String communicationProviderDefinitionKey,
+            @NotNull(message = "Wählen Sie eine Version des Kommunikationsanbieters aus.") Integer communicationProviderDefinitionVersion,
+            @NotBlank(message = "Geben Sie einen Namen ein.") @Size(max = 64, message = "Der Name darf höchstens 64 Zeichen lang sein.") String name,
+            @NotNull(message = "Geben Sie eine Beschreibung ein.") @Size(max = 255, message = "Die Beschreibung darf höchstens 255 Zeichen lang sein.") String description,
+            @NotNull(message = "Die Konfiguration muss angegeben werden.") AuthoredElementValues configuration,
+            @NotNull(message = "Geben Sie an, ob der Kommunikationsanbieter aktiviert ist.") Boolean isEnabled,
+            @NotNull(message = "Geben Sie an, ob der Kommunikationsanbieter im Testbetrieb verwendet wird.") Boolean isTestProvider,
             @Nullable Long lockVersion
     ) {
         CommunicationProviderEntity toEntity() {
@@ -278,12 +278,12 @@ public class CommunicationProviderController {
     }
 
     public record BindingRequest(
-            @NotNull UUID identityProviderKey,
-            @NotNull Integer communicationProviderId,
-            @NotBlank @Size(max = 64) String name,
-            @NotNull @Size(max = 255) String description,
-            @NotNull Boolean isEnabled,
-            @NotNull AuthoredElementValues configuration,
+            @NotNull(message = "Wählen Sie einen Identitätsanbieter aus.") UUID identityProviderKey,
+            @NotNull(message = "Wählen Sie einen Kommunikationsanbieter aus.") Integer communicationProviderId,
+            @NotBlank(message = "Geben Sie einen Namen ein.") @Size(max = 64, message = "Der Name darf höchstens 64 Zeichen lang sein.") String name,
+            @NotNull(message = "Geben Sie eine Beschreibung ein.") @Size(max = 255, message = "Die Beschreibung darf höchstens 255 Zeichen lang sein.") String description,
+            @NotNull(message = "Geben Sie an, ob die Kommunikationsanbindung aktiviert ist.") Boolean isEnabled,
+            @NotNull(message = "Die Konfiguration muss angegeben werden.") AuthoredElementValues configuration,
             @Nullable Long lockVersion
     ) {
         CommunicationProviderBindingEntity toEntity() {

@@ -30,11 +30,14 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ContentDisposition;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -168,6 +171,30 @@ class FormTriggerUtilsControllerV1Test {
 
         assertEquals("example-form-7.pdf", ContentDisposition.parse(response.getHeaders().getFirst("Content-Disposition")).getFilename());
         assertArrayEquals(new byte[]{7, 8, 9}, ((ByteArrayResource) response.getBody()).getByteArray());
+    }
+
+    @Test
+    void printPdfShouldKeepItsCauseWithoutExposingInternalPdfDetails() throws Exception {
+        var fixture = createFixture(baseFormLayout());
+        var department = new VDepartmentShadowedEntity()
+                .setId(fixture.process().getDepartmentId())
+                .setName("Process Department");
+        when(fixture.departmentService().retrieve(department.getId())).thenReturn(Optional.of(department));
+        var cause = new IOException("Internal PDF service details");
+        when(fixture.pdfService().generatePrintableForm(
+                any(PrintableFormPdfData.class),
+                any(),
+                eq(department),
+                isNull(),
+                isNull()
+        )).thenThrow(cause);
+
+        var error = assertThrows(ResponseException.class, () -> fixture.controller().printPdf(null, fixture.node().getId()));
+
+        assertEquals(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
+        assertEquals("Die Druckansicht des Formulars konnte nicht erstellt werden.", error.getTitle());
+        assertNull(error.getDetails());
+        assertSame(cause, error.getCause());
     }
 
     @Test

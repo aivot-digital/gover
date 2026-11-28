@@ -42,13 +42,13 @@ public class FormNotificationPublishedFormUserConfigDefinition implements UserCo
     @Nonnull
     @Override
     public String getLabel() {
-        return "Formular veröffentlicht";
+        return "Formular veröffentlicht (derzeit ohne Funktion)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Lassen Sie sich benachrichtigen, sobald ein Formular in einer Ihrer betreuenden, verantwortlichen oder verwaltenden Organisationseinheiten veröffentlicht wird.";
+        return "Diese Einstellung wird derzeit nicht verwendet. Beim Veröffentlichen eines Formulars werden darüber keine Benachrichtigungen versendet.";
     }
 
     @Override
@@ -65,7 +65,7 @@ public class FormNotificationPublishedFormUserConfigDefinition implements UserCo
         if (value instanceof List<?> list) {
             return String.join(",", (List<String>) list);
         }
-        throw ResponseException.badRequest("Der Wert ist vom falschen Typ");
+        throw ResponseException.badRequest("Die Auswahl der Benachrichtigungskanäle ist ungültig.");
     }
 
     @Nullable

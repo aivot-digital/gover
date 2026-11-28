@@ -40,6 +40,71 @@ function setup(overrides: Partial<Parameters<typeof SelectOperatorDialog>[0]> = 
 }
 
 describe('operator selection', () => {
+    it('starts another function at the top without changing search, list position or focus', async () => {
+        const user = userEvent.setup();
+        const otherOperator = {...operator, identifier: 'not-equals', label: 'Ist ungleich'};
+        const {props, rerender} = setup({operators: [operator, otherOperator]});
+        const search = screen.getByRole('searchbox', {name: 'Funktion suchen'});
+        await user.type(search, 'Werte');
+        const firstRow = await screen.findByRole('listitem', {name: 'Ist gleich'});
+        const listBody = firstRow.parentElement!.parentElement!;
+        const firstDetails = within(firstRow).getByRole('button', {name: 'Ist gleich: Details anzeigen'});
+        const secondDetails = within(screen.getByRole('listitem', {name: 'Ist ungleich'}))
+            .getByRole('button', {name: 'Ist ungleich: Details anzeigen'});
+        listBody.scrollTop = 160;
+        await user.click(firstDetails);
+        const detailsBody = () => screen.getByRole('button', {name: 'Details schließen'})
+            .parentElement!.previousElementSibling as HTMLElement;
+        await user.click(screen.getByRole('button', {name: 'Technische Informationen'}));
+        detailsBody().scrollTop = 320;
+
+        await user.click(firstDetails);
+
+        expect(detailsBody().scrollTop).toBe(320);
+        expect(screen.getByRole('button', {name: 'Technische Informationen'}))
+            .toHaveAttribute('aria-expanded', 'true');
+
+        rerender(<SelectOperatorDialog {...props} operators={props.operators.map(value => ({...value}))}/>);
+        expect(detailsBody().scrollTop).toBe(320);
+
+        await user.click(secondDetails);
+
+        expect(screen.getByRole('region', {name: 'Details: Ist ungleich'})).toBeVisible();
+        expect(detailsBody().scrollTop).toBe(0);
+        expect(screen.getByRole('button', {name: 'Technische Informationen'}))
+            .toHaveAttribute('aria-expanded', 'false');
+        expect(secondDetails).toHaveFocus();
+        expect(firstDetails).toHaveAttribute('aria-expanded', 'false');
+        expect(search).toHaveValue('Werte');
+        expect(listBody.scrollTop).toBe(160);
+        detailsBody().scrollTop = 180;
+
+        await user.click(firstDetails);
+
+        expect(detailsBody().scrollTop).toBe(0);
+        expect(screen.getByRole('button', {name: 'Technische Informationen'}))
+            .toHaveAttribute('aria-expanded', 'false');
+        await user.click(screen.getByRole('button', {name: 'Details schließen'}));
+        expect(firstDetails).toHaveFocus();
+        await user.click(firstDetails);
+        expect(detailsBody().scrollTop).toBe(0);
+        expect(props.onSelect).not.toHaveBeenCalled();
+    });
+
+    it('returns focus to search if filtering removes the button that opened the details', async () => {
+        const {props} = setup();
+        fireEvent.click(screen.getByRole('button', {name: 'Ist gleich: Details anzeigen'}));
+        const search = screen.getByRole('searchbox', {name: 'Funktion suchen'});
+        fireEvent.change(search, {target: {value: 'does-not-exist'}});
+        await screen.findByText('Keine Funktionen gefunden, die zu Ihrem Suchbegriff passen.');
+
+        fireEvent.click(screen.getByRole('button', {name: 'Details schließen'}));
+
+        expect(search).toHaveFocus();
+        expect(search).toHaveValue('does-not-exist');
+        expect(props.onSelect).not.toHaveBeenCalled();
+    });
+
     it('only adds on explicit action and shows details with subordinate Markdown headings', async () => {
         const user = userEvent.setup();
         const {props} = setup();

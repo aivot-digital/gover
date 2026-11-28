@@ -35,22 +35,29 @@ public class NoCodeRegexExtractOperator extends NoCodeOperator {
     public String getDescription() {
         return """
                 # Wofür verwenden Sie diese Funktion?
+
                 Lesen Sie passende Textstellen aus einem Text aus, beispielsweise alle darin vorkommenden Zahlen.
 
                 # Welche Werte werden benötigt?
-                **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten. **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
+
+                - **Text:** Der Text, den Sie prüfen beziehungsweise durchsuchen möchten.
+                - **Suchmuster:** Ein regulärer Ausdruck, also eine Regel für passende Textstellen. Beispielsweise steht `[0-9]+` für eine oder mehrere aufeinanderfolgende Ziffern.
 
                 Sie können die Texte frei eingeben oder eine andere Wertquelle beziehungsweise Funktion verwenden. Es gibt keine vorgegebenen Auswahlwerte.
 
                 # Welches Ergebnis erhalten Sie?
+
                 Eine Liste mit allen vollständigen Treffern in der Reihenfolge ihres Vorkommens. Ohne Treffer ist die Liste leer.
 
                 # Beispiel im No-Code-Editor
-                Wählen Sie **„Treffer aus Text ermitteln“**. Geben Sie als **Text** `Position 12 und 34` und als **Suchmuster** `[0-9]+` ein.
 
-                Zugeklappt und in der Vorschau lesen Sie: `Treffer für das Muster „[0-9]+“ in „Position 12 und 34“`. Das Ergebnis ist `["12", "34"]`. Verwenden Sie das Ergebnis als **Liste** in **„Anzahl der Listeneinträge“**, um die zwei Treffer zu zählen.
+                1. Wählen Sie **„Treffer aus Text ermitteln“**.
+                2. Geben Sie als **„Text“** `Position 12 und 34` und als **„Suchmuster“** `[0-9]+` ein.
+
+                Zugeklappt und in der Vorschau lesen Sie: `Treffer für das Muster „[0-9]+“ in „Position 12 und 34“`. Das Ergebnis ist `["12", "34"]`. Verwenden Sie das Ergebnis als **„Liste“** in **„Anzahl der Listeneinträge“**, um die zwei Treffer zu zählen.
 
                 # Was ist zu beachten?
+
                 Das Suchmuster ist ein regulärer Ausdruck nach Java-Syntax. Treffer überlappen sich nicht. Es wird jeweils der gesamte Treffer zurückgegeben, nicht nur eine eingeklammerte Gruppe. Ein Muster, das auch ohne Zeichen passt, kann leere Treffer erzeugen.
                 """;
     }
