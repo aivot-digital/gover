@@ -12,6 +12,7 @@ import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
 import de.aivot.prosuna.backend.process.exceptions.ManualAssignmentRecipientUnavailableException;
+import de.aivot.prosuna.backend.process.models.ProcessTaskAssignmentPool;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
@@ -22,6 +23,7 @@ import de.aivot.prosuna.backend.process.utils.ProcessHistoryLabels;
 import de.aivot.prosuna.backend.process.utils.ProcessHistoryInterventions;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.templateresolver.AbstractConfigurableTemplateResolver;
@@ -32,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.aivot.prosuna.backend.process.permissions.ProcessInstancePermissionProvider.*;
@@ -49,10 +52,13 @@ public class ProcessAssignmentService {
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final UserService userService;
     private final AbstractConfigurableTemplateResolver abstractConfigurableTemplateResolver;
+    private final AssignmentContextAssigneeResolverService assignmentPoolResolver;
 
+    // The resolver checks candidates through this service, so it is injected lazily to break the cycle.
     public ProcessAssignmentService(PermissionService permissions, UserRepository users,
                                     ProcessInstanceRepository instances, ProcessInstanceTaskRepository tasks,
-                                    AuditService audit, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory, UserService userService, AbstractConfigurableTemplateResolver abstractConfigurableTemplateResolver) {
+                                    AuditService audit, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory, UserService userService, AbstractConfigurableTemplateResolver abstractConfigurableTemplateResolver,
+                                    @Lazy AssignmentContextAssigneeResolverService assignmentPoolResolver) {
         this.permissions = permissions;
         this.users = users;
         this.instances = instances;
@@ -61,6 +67,7 @@ public class ProcessAssignmentService {
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.userService = userService;
         this.abstractConfigurableTemplateResolver = abstractConfigurableTemplateResolver;
+        this.assignmentPoolResolver = assignmentPoolResolver;
     }
 
     @Nonnull
@@ -117,7 +124,13 @@ public class ProcessAssignmentService {
     @Transactional(readOnly = true)
     public List<ProcessAssignmentOptionDTO> taskOptions(@Nonnull String actorId, @Nonnull Long taskId) throws ResponseException {
         var task = requireAssignableTask(actorId, taskId);
-        return options(task.getProcessInstanceId(), true);
+        var options = options(task.getProcessInstanceId(), true);
+        var pool = restrictingAssignmentPool(actorId, task);
+        if (pool == null) {
+            return options;
+        }
+        var poolMemberIds = filterToAssignmentPool(task, pool, options.stream().map(ProcessAssignmentOptionDTO::id).toList());
+        return options.stream().filter(option -> poolMemberIds.contains(option.id())).toList();
     }
 
     @Nonnull
@@ -228,6 +241,10 @@ public class ProcessAssignmentService {
             throw ResponseException.badRequest("Die Zuweisung einer Aufgabe kann nicht aufgehoben werden. Bitte wählen Sie eine andere Person aus.");
         }
         validateAssignee(assignedUserId, task.getProcessInstanceId(), true);
+        var pool = restrictingAssignmentPool(actor.getId(), task);
+        if (pool != null && filterToAssignmentPool(task, pool, List.of(assignedUserId)).isEmpty()) {
+            throw ResponseException.badRequest("Die ausgewählte Person gehört nicht zum Personenkreis, den das Prozesselement für diese Aufgabe festlegt. Bitte wählen Sie eine Person aus diesem Personenkreis aus.");
+        }
         var previousUserId = task.getAssignedUserId();
         var previousStatus = task.getStatus();
         applyTaskAssignment(task, assignedUserId);
@@ -364,6 +381,33 @@ public class ProcessAssignmentService {
             throw ResponseException.badRequest("Nur aktive Aufgaben können neu zugewiesen werden.");
         }
         return task;
+    }
+
+    /**
+     * The Personenkreis that limits a manual task reassignment by this actor, or null if the selection is open: the
+     * process element stored none, e.g. for tasks created before it was stored, or the actor may reassign the
+     * instance and can therefore escalate the task outside the Personenkreis.
+     */
+    @Nullable
+    private ProcessTaskAssignmentPool restrictingAssignmentPool(@Nonnull String actorId, @Nonnull ProcessInstanceTaskEntity task) {
+        var pool = task.getAssignmentPool();
+        if (pool == null || permissions.hasProcessInstancePermission(actorId, task.getProcessInstanceId(), PROCESS_INSTANCE_REASSIGN)) {
+            return null;
+        }
+        return pool;
+    }
+
+    /** The given users who belong to the pool and have its required permissions, e.g. for an assignment task. */
+    @Nonnull
+    private Set<String> filterToAssignmentPool(@Nonnull ProcessInstanceTaskEntity task, @Nonnull ProcessTaskAssignmentPool pool,
+                                               @Nonnull List<String> userIds) {
+        var eligibleUserIds = userIds.stream()
+                .filter(userId -> canReceiveTaskAssignment(userId, task.getProcessInstanceId(), pool.requiredPermissions()))
+                .collect(Collectors.toSet());
+        if (eligibleUserIds.isEmpty()) {
+            return Set.of();
+        }
+        return assignmentPoolResolver.filterToAssignmentPool(task.getProcessId(), task.getProcessVersion(), pool, eligibleUserIds);
     }
 
     @Nonnull

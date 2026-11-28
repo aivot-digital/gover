@@ -10,7 +10,9 @@ import de.aivot.prosuna.backend.process.dtos.ProcessAssignmentOptionDTO;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.prosuna.backend.process.enums.ProcessTaskStatus;
+import de.aivot.prosuna.backend.process.models.ProcessTaskAssignmentPool;
 import de.aivot.prosuna.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
@@ -45,20 +47,24 @@ class ProcessAssignmentServiceTest {
     private final PermissionService permissions = new PermissionService(null, null, systemPermissions, null, null, null, instances);
     private final AuditService auditService = mock(AuditService.class);
     private final ScopedAuditService audit = mock(ScopedAuditService.class);
+    private final AssignmentContextAssigneeResolverService assignmentPoolResolver = mock(AssignmentContextAssigneeResolverService.class);
+    private final ProcessTaskAssignmentPool pool = new ProcessTaskAssignmentPool(
+            List.of(new DomainAndUserSelectInputElementValue("team", "20")), List.of(PROCESS_INSTANCE_EDIT_TASK));
     private ProcessAssignmentService service;
     private final UserEntity actor = user("actor");
     private final UserEntity recipient = user("recipient");
     private final ProcessInstanceEntity instance = new ProcessInstanceEntity().setId(17L).setProcessId(2)
             .setStatus(ProcessInstanceStatus.Running).setAssignedUserId("previous");
     private final ProcessInstanceTaskEntity task = new ProcessInstanceTaskEntity().setId(5L).setProcessInstanceId(17L)
-            .setStatus(ProcessTaskStatus.Running).setAssignedUserId("previous");
+            .setProcessId(2).setProcessVersion(1).setStatus(ProcessTaskStatus.Running).setAssignedUserId("previous");
 
     @BeforeEach
     void setup() throws ResponseException {
         when(auditService.createScopedAuditService(any(), anyString())).thenReturn(audit);
         when(audit.create()).thenAnswer(invocation -> AuditLogPayload.create(audit));
         service = new ProcessAssignmentService(permissions, users, instances, tasks, auditService,
-                new ProcessNodeExecutionLoggerFactory(events, null), userService, mock(AbstractConfigurableTemplateResolver.class));
+                new ProcessNodeExecutionLoggerFactory(events, null), userService, mock(AbstractConfigurableTemplateResolver.class),
+                assignmentPoolResolver);
         when(userService.retrieve("previous")).thenReturn(Optional.of(user("previous")));
         when(userService.retrieve("recipient")).thenReturn(Optional.of(recipient));
         when(instances.lockAccessById(17L)).thenReturn(Optional.of(17L));
@@ -433,6 +439,64 @@ class ProcessAssignmentServiceTest {
         assertEquals("previous", task.getAssignedUserId());
         verify(tasks, never()).saveAndFlush(any());
         verify(instances).lockAccessById(17L);
+    }
+
+    @Test
+    void limitsTaskOptionsAndReassignmentToTheStoredPersonenkreis() throws Exception {
+        task.setAssignmentPool(pool);
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        var member = user("member");
+        for (var userId : List.of("recipient", "member")) {
+            grant(userId, PROCESS_INSTANCE_READ);
+            grant(userId, PROCESS_INSTANCE_EDIT_TASK);
+        }
+        when(users.findById("member")).thenReturn(Optional.of(member));
+        when(userService.retrieve("member")).thenReturn(Optional.of(member));
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient, member));
+        when(assignmentPoolResolver.filterToAssignmentPool(eq(2), eq(1), eq(pool), anySet()))
+                .thenAnswer(invocation -> invocation.<java.util.Set<String>>getArgument(3).contains("member") ? java.util.Set.of("member") : java.util.Set.of());
+
+        assertEquals(List.of("member"), service.taskOptions("actor", 5L).stream().map(ProcessAssignmentOptionDTO::id).toList());
+
+        var exception = assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("previous", task.getAssignedUserId());
+        verify(tasks, never()).saveAndFlush(any());
+        verifyNoInteractions(audit);
+
+        assertEquals("member", service.reassignTask(actor, 5L, "member").getAssignedUserId());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void allowsEscalationOutsideThePersonenkreisWithScopedOrSystemReassignPermission(boolean systemAccess) throws Exception {
+        task.setAssignmentPool(pool);
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        if (systemAccess) {
+            when(systemPermissions.hasPermission("actor", PROCESS_INSTANCE_REASSIGN)).thenReturn(true);
+        } else {
+            grant("actor", PROCESS_INSTANCE_REASSIGN);
+        }
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        when(users.findAllByEnabledTrueAndDeletedInIdpFalseOrderByFullNameAsc()).thenReturn(List.of(recipient));
+
+        assertEquals(List.of("recipient"), service.taskOptions("actor", 5L).stream().map(ProcessAssignmentOptionDTO::id).toList());
+        assertEquals("recipient", service.reassignTask(actor, 5L, "recipient").getAssignedUserId());
+        verifyNoInteractions(assignmentPoolResolver);
+    }
+
+    @Test
+    void reassignPermissionOnAnotherInstanceDoesNotLiftThePersonenkreis() throws Exception {
+        task.setAssignmentPool(pool);
+        grant("actor", PROCESS_INSTANCE_EDIT_TASK);
+        when(instances.hasPermission("actor", 18L, PROCESS_INSTANCE_REASSIGN)).thenReturn(true);
+        grant("recipient", PROCESS_INSTANCE_READ);
+        grant("recipient", PROCESS_INSTANCE_EDIT_TASK);
+        when(assignmentPoolResolver.filterToAssignmentPool(eq(2), eq(1), eq(pool), anySet())).thenReturn(java.util.Set.of());
+
+        assertThrows(ResponseException.class, () -> service.reassignTask(actor, 5L, "recipient"));
+        assertEquals("previous", task.getAssignedUserId());
     }
 
     private void grant(String userId, String permission) {

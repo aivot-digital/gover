@@ -1,5 +1,7 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.models.ProcessTaskAssignmentPool;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -1015,6 +1017,22 @@ class ProcessNodeExecutionResultHandlerTest {
         verify(mailService).sendMailToUser(any(), eq(deputy), eq("[Prosuna] In Vertretung: Aufgabe zugewiesen"),
                 eq(MailTemplate.ProcessTaskAssigned), any());
         assertEquals(0, logger.exceptionCount);
+    }
+
+    @Test
+    void handleResult_StoresThePersonenkreisOfTheAssigningElementOnTheTask() throws Exception {
+        var assignee = user("user-1", "Philipp Schröder");
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(assignee.getId(), assignee), new RecordingProcessTaskMailService(),
+                null, new ArrayList<>());
+        var pool = new ProcessTaskAssignmentPool(
+                List.of(new DomainAndUserSelectInputElementValue("team", "20")), List.of("process_instance.edit_task"));
+
+        handler.handleResult(new RecordingProcessNodeExecutionLogger(), assignee, new TestProcessNodeDefinition("Prüfung"),
+                new AuthoredElementValues(), processNode("Prüfung"), processInstance(), processInstanceTask(null), null,
+                ProcessNodeExecutionResultTaskAssigned.of(assignee.getId()).setAssignmentPool(pool));
+
+        assertEquals(pool, savedTasks.getFirst().getAssignmentPool());
     }
 
     @Test

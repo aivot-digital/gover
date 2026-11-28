@@ -722,6 +722,7 @@ public class ProcessNodeExecutionResultHandler {
         }
 
         applyDataLayersAndStatusOverride(context, false);
+        context.processInstanceTask.setAssignmentPool(context.result.getAssignmentPool());
         try {
             assignmentService.saveRuntimeAssignment(context.processInstanceTask, context.result.getAssignedUserId());
         } catch (ResponseException exception) {
