@@ -33,6 +33,7 @@ import de.aivot.prosuna.backend.elements.models.elements.ValidationNoCodeWrapper
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.prosuna.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.prosuna.backend.elements.models.elements.form.input.NumberInputElement;
@@ -264,6 +265,29 @@ class ElementDerivationServiceTest {
         assertEquals(Map.of(), errors.properties());
         assertEquals(List.of("text"), List.copyOf(errors.children().keySet()));
         assertFalse(runtime.hasAnyError());
+    }
+
+    @Test
+    void shouldReportUploadsWithoutSubmittedFileNameInUiDefinitionsWhileAuthoring() {
+        // Process elements with their own form share this check; at runtime, uploads to such a field fail (OP#1221).
+        var field = new UiDefinitionInputElement();
+        field.setId("ui");
+        var upload = new FileUploadInputElement().setExtensions(List.of("pdf")).setSubmittedFileName(null);
+        upload.setId("upload");
+        upload.setLabel("Nachweis");
+        var definition = new GroupLayoutElement();
+        definition.setId("definition");
+        definition.setChildren(new LinkedList<>(List.of(upload)));
+        var values = new AuthoredElementValues().putLiteral("ui", definition);
+        var root = createRoot(List.of(field));
+
+        var authoring = derive(root, values, new ElementDerivationOptions(), new ProcessExecutionData(), InputModeEvaluationContext.Authoring);
+
+        assertEquals("Element „Nachweis“: Geben Sie einen Dateinamen bei Übermittlung an.", authoring.getElementStates().get("ui").getError());
+
+        upload.setSubmittedFileName("Nachweis");
+        values.putLiteral("ui", definition);
+        assertFalse(derive(root, values, new ElementDerivationOptions(), new ProcessExecutionData(), InputModeEvaluationContext.Authoring).hasAnyError());
     }
 
     @Test
