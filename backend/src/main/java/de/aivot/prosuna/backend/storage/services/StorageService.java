@@ -752,7 +752,7 @@ public class StorageService {
 
     @Nonnull
     private static ResponseException wrapStorageException(@Nonnull StorageException e) {
-        return ResponseException.internalServerError(e, e.getMessage());
+        return ResponseException.internalServerError(e.getMessage(), e);
     }
 
     private StorageProviderEntity retrieveProvider(@Nonnull Integer providerId) throws ResponseException {

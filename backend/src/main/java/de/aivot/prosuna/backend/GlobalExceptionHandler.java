@@ -63,6 +63,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResponseException.class)
     public ResponseEntity<Object> handleBaseResponseException(ResponseException e) {
+        if (e.getStatus().is5xxServerError() && e.getCause() != null) {
+            logger.error("API request failed with a server error", e);
+        }
         var apiError = new ApiErrorDto(
                 e.getStatus(),
                 e.getTitle(),

@@ -16,21 +16,34 @@ import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.entities.ThemeEntity;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
+import jakarta.mail.Address;
+import jakarta.mail.MessagingException;
+import jakarta.mail.SendFailedException;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.mail.MailSendException;
 
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
@@ -50,6 +63,30 @@ class DefaultMailCommunicationServiceTest {
             vDepartmentShadowedService,
             themeService
     );
+
+    @ParameterizedTest
+    @MethodSource("deliveryFailures")
+    void preservesTransportCausesAndOnlyShowsKnownReasons(Exception cause, String suffix) throws Exception {
+        configureSending();
+        doThrow(cause).when(mailService).sendMail(any(), anyString(), any(), any(), anyString(), any(), any(), any(), any(), any());
+
+        var error = assertThrows(CommunicationException.class, () -> service.sendMessage("person@example.org", message()));
+
+        assertEquals("Die E-Mail an person@example.org konnte nicht versendet werden." + suffix, error.getMessage());
+        assertSame(cause, error.getCause());
+    }
+
+    private static Stream<Arguments> deliveryFailures() throws Exception {
+        var rejection = new SendFailedException("SMTP diagnostic", null, null, null,
+                new Address[] {new InternetAddress("person@example.org")});
+        return Stream.of(
+                Arguments.of(new AddressException("private address diagnostic"), " Eine E-Mail-Adresse ist ungültig."),
+                Arguments.of(new MailSendException(Map.of("message", rejection)), " Der SMTP-Server hat die Empfängeradresse abgelehnt."),
+                Arguments.of(new MailSendException("connect failed", new MessagingException("SMTP", new ConnectException("private host"))),
+                        " Der SMTP-Server konnte nicht erreicht werden."),
+                Arguments.of(new MessagingException("unclassified transport detail"), "")
+        );
+    }
 
     @Test
     void forwardsLocalRecipientsToTheConfiguredMailService() throws Exception {

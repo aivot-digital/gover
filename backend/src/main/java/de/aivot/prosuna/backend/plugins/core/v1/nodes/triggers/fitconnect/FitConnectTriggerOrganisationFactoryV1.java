@@ -14,6 +14,9 @@ import dev.fitko.fitconnect.sdk.clients.Organisation;
 import dev.fitko.fitconnect.sdk.config.credentials.DestinationKeys;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -27,6 +30,7 @@ import java.util.UUID;
 /** Builds FIT-Connect organisation clients from a validated trigger configuration. */
 @Service
 public class FitConnectTriggerOrganisationFactoryV1 {
+    private static final Logger logger = LoggerFactory.getLogger(FitConnectTriggerOrganisationFactoryV1.class);
     private static final Set<String> SUPPORTED_ENVIRONMENTS = Set.of("TEST", "STAGE", "PROD");
 
     private final SecretService secretService;
@@ -195,17 +199,16 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         var secret = secretService
                 .retrieve(secretKey)
                 .orElseThrow(() -> ResponseException.internalServerError("Das ausgewählte " + description + " wurde nicht gefunden."));
+        final String decryptedSecret;
         try {
-            var decryptedSecret = secretService.decrypt(secret);
-            if (decryptedSecret.isBlank()) {
-                throw ResponseException.internalServerError("Das ausgewählte " + description + " darf nicht leer sein.");
-            }
-            return decryptedSecret;
-        } catch (ResponseException e) {
-            throw e;
+            decryptedSecret = secretService.decrypt(secret);
         } catch (Exception e) {
-            throw ResponseException.internalServerErrorWithDetails(e, "Das ausgewählte " + description + " konnte nicht entschlüsselt werden.", null);
+            throw new ReferenceAccessException(HttpStatus.INTERNAL_SERVER_ERROR, "Das ausgewählte " + description + " konnte nicht entschlüsselt werden.", e);
         }
+        if (decryptedSecret.isBlank()) {
+            throw ResponseException.internalServerError("Das ausgewählte " + description + " darf nicht leer sein.");
+        }
+        return decryptedSecret;
     }
 
     @Nonnull
@@ -242,6 +245,9 @@ public class FitConnectTriggerOrganisationFactoryV1 {
             }
             return jwk;
         } catch (ResponseException e) {
+            if (e.getStatus().is5xxServerError() && e.getCause() != null && !(e.getCause() instanceof IllegalArgumentException)) {
+                throw new ReferenceAccessException(e.getStatus(), e.getTitle(), e);
+            }
             throw new ResponseException(e.getStatus(), e.getTitle(), null, e);
         } catch (ParseException e) {
             throw ResponseException.internalServerErrorWithDetails(e, description + " konnte nicht als JWK gelesen werden.", null);
@@ -255,7 +261,7 @@ public class FitConnectTriggerOrganisationFactoryV1 {
         try {
             resolveSecret(rawSecretKey, description);
         } catch (ResponseException e) {
-            issues.add(new ValidationIssue(fieldId, e.getMessage()));
+            addReferenceIssue(issues, fieldId, e);
         }
     }
 
@@ -277,7 +283,20 @@ public class FitConnectTriggerOrganisationFactoryV1 {
                 issues.add(new ValidationIssue(fieldId, description + " benötigt eine Key-ID (kid)."));
             }
         } catch (ResponseException e) {
-            issues.add(new ValidationIssue(fieldId, e.getMessage()));
+            addReferenceIssue(issues, fieldId, e);
+        }
+    }
+
+    private static void addReferenceIssue(@Nonnull List<ValidationIssue> issues, @Nonnull String fieldId, @Nonnull ResponseException error) {
+        if (error instanceof ReferenceAccessException) {
+            logger.error("Failed to access FIT-Connect configuration field {}", fieldId, error);
+        }
+        issues.add(new ValidationIssue(fieldId, error.getTitle()));
+    }
+
+    private static final class ReferenceAccessException extends ResponseException {
+        private ReferenceAccessException(@Nonnull HttpStatus status, @Nonnull String title, @Nonnull Exception cause) {
+            super(status, title, null, cause);
         }
     }
 

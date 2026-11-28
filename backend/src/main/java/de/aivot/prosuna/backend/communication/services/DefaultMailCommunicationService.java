@@ -18,12 +18,19 @@ import de.aivot.prosuna.backend.system.services.SystemService;
 import de.aivot.prosuna.backend.theme.services.ThemeService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
+import jakarta.mail.SendFailedException;
+import jakarta.mail.internet.AddressException;
 import org.springframework.http.MediaType;
+import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.MailException;
+import org.springframework.mail.MailSendException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -147,11 +154,37 @@ public class DefaultMailCommunicationService {
                     mailOptions
             );
         } catch (MessagingException | MailException | IOException | ResponseException | IllegalArgumentException e) {
-            throw new CommunicationException(
-                    "Die E-Mail an %s konnte nicht versendet werden.".formatted(recipient),
-                    e
-            );
+            var messageText = "Die E-Mail an %s konnte nicht versendet werden.".formatted(recipient);
+            var reason = mailFailureReason(e);
+            throw new CommunicationException(reason == null ? messageText : messageText + " " + reason, e);
         }
+    }
+
+    @Nullable
+    private static String mailFailureReason(@Nonnull Exception failure) {
+        if (failure instanceof MailAuthenticationException || failure instanceof AuthenticationFailedException) {
+            return "Die Anmeldung am SMTP-Server ist fehlgeschlagen.";
+        }
+        if (failure instanceof AddressException) {
+            return "Eine E-Mail-Adresse ist ungültig.";
+        }
+        if (failure instanceof MailSendException sendFailure) {
+            if (sendFailure.contains(ConnectException.class) || sendFailure.contains(UnknownHostException.class)) {
+                return "Der SMTP-Server konnte nicht erreicht werden.";
+            }
+            // Spring keeps per-message SMTP rejections separately from the transport exception's cause.
+            for (var messageFailure : sendFailure.getMessageExceptions()) {
+                if (hasRejectedRecipient(messageFailure)) {
+                    return "Der SMTP-Server hat die Empfängeradresse abgelehnt.";
+                }
+            }
+        }
+        return hasRejectedRecipient(failure) ? "Der SMTP-Server hat die Empfängeradresse abgelehnt." : null;
+    }
+
+    private static boolean hasRejectedRecipient(@Nonnull Exception failure) {
+        return failure instanceof SendFailedException rejected && rejected.getInvalidAddresses() != null
+                && rejected.getInvalidAddresses().length > 0;
     }
 
     @Nonnull

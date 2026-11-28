@@ -1,11 +1,14 @@
 package de.aivot.prosuna.backend.secrets.services;
 
+import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.properties.SecretConfigurationProperties;
 import de.aivot.prosuna.backend.secrets.repositories.SecretRepository;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.UUID;
 
@@ -24,6 +27,25 @@ class SecretServiceTest {
         secretConfigurationProperties = mock(SecretConfigurationProperties.class);
         when(secretConfigurationProperties.getKey()).thenReturn("test-secret-key");
         secretService = new SecretService(secretConfigurationProperties, secretRepository);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void encryptionFailureRetainsItsCauseAndOnlyExposesConfigurationHint(boolean create) {
+        when(secretConfigurationProperties.getKey()).thenThrow(new IllegalStateException("key unavailable"));
+        var secret = new SecretEntity();
+        secret.setValue("private value");
+        var error = assertThrows(ResponseException.class, () -> {
+            if (create) {
+                secretService.create(secret);
+            } else {
+                secretService.performUpdate(UUID.randomUUID(), secret, new SecretEntity());
+            }
+        });
+        assertEquals("key unavailable", error.getCause().getMessage());
+        assertEquals("Das Geheimnis konnte nicht verschlüsselt werden.", error.getTitle());
+        assertEquals("Prüfen Sie die Verschlüsselungskonfiguration der Prosuna-Instanz.", error.getDetails());
+        verifyNoInteractions(secretRepository);
     }
 
     @Test

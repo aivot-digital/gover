@@ -616,12 +616,23 @@ public class PaymentRequestActionNodeV1 implements ProcessNodeDefinition<Payment
         }
 
         if (paymentStatus != XBezahldienstStatus.PAYED) {
-            throw new ProcessNodeExecutionExceptionIO(
-                    paymentStatus == XBezahldienstStatus.CANCELED
-                            ? "Die Zahlung wurde abgebrochen. Transaktionsschlüssel: %s."
-                            : "Die Zahlung ist fehlgeschlagen. Transaktionsschlüssel: %s.",
-                    StringUtils.quote(transaction.getKey())
-            );
+            var message = paymentStatus == XBezahldienstStatus.CANCELED
+                    ? "Die Zahlung wurde abgebrochen. Transaktionsschlüssel: %s."
+                    : "Die Zahlung ist fehlgeschlagen. Transaktionsschlüssel: %s.";
+            var key = StringUtils.quote(transaction.getKey());
+            var statusDetail = transaction.getPaymentInformation().getStatusDetail();
+            if (statusDetail != null && !statusDetail.isBlank()) {
+                throw new ProcessNodeExecutionExceptionIO(new ExternalServiceResponseException(statusDetail), message, key);
+            }
+
+            // A processing error can predate the callback that supplied the final payment status.
+            var processingError = transaction.getPaymentError();
+            if (processingError != null && !processingError.isBlank()) {
+                var cause = new PaymentException("Letzter technischer Fehler der Zahlungsabwicklung: %s",
+                        StringUtils.diagnosticExcerpt(processingError));
+                throw new ProcessNodeExecutionExceptionIO(cause, message, key);
+            }
+            throw new ProcessNodeExecutionExceptionIO(message, key);
         }
 
         var nodeData = new LinkedHashMap<>(context.getThisTask().getNodeData());

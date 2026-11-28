@@ -196,10 +196,10 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
-            layout = ElementPOJOMapper.createFromPOJO(ManualActionNodeConfig.class);
+            layout = ElementPOJOMapper.createFromPOJO(getNodeConfigurationClass());
         } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    "Die Einstellungen für die freie Aufgabe konnten nicht geladen werden."
+            throw ResponseException.internalServerErrorWithDetails(
+                    e, "Die Einstellungen für die freie Aufgabe konnten nicht geladen werden.", null
             );
         }
 

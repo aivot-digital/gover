@@ -41,11 +41,16 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 @Service
 public class CodeListService implements EntityService<CodeListEntity, String> {
     private static final int MAX_COLUMN_KEY_LENGTH = 255;
+    // FastCSV 4 exposes the failing record's physical start line only in its exception messages.
+    private static final Pattern CSV_ERROR_LINE = Pattern.compile(
+            "(?:^Record |[Rr]ecord starting at line |^Exception when reading record that started in line )([1-9][0-9]*)\\b"
+    );
 
     private final CodeListRepository codeListRepository;
     private final CodeListItemRepository codeListItemRepository;
@@ -752,15 +757,24 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
             var columns = extractCsvHeader(iterator);
             var rows = new ArrayList<List<String>>();
             while (iterator.hasNext()) {
-                var row = List.copyOf(iterator.next().getFields());
+                var record = iterator.next();
+                var row = List.copyOf(record.getFields());
                 if (row.size() != columns.size()) {
-                    throw ResponseException.badRequest("Die CSV-Datei enthält Zeilen mit unterschiedlicher Spaltenanzahl.");
+                    throw ResponseException.badRequest("Der Datensatz ab Zeile %d hat eine andere Spaltenanzahl als die Kopfzeile.", record.getStartingLineNumber());
                 }
                 rows.add(row);
             }
             return new SourceData(columns, Map.of(), rows, null);
         } catch (CsvParseException | UncheckedIOException e) {
-            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", e);
+            var diagnostic = Objects.toString(e.getMessage(), "");
+            var match = CSV_ERROR_LINE.matcher(diagnostic);
+            String line = match.find() ? match.group(1) : null;
+            if (diagnostic.equals("Exception when reading first record")) {
+                line = "1";
+            }
+            var message = line == null ? "Die CSV-Datei konnte nicht gelesen werden."
+                    : "Der CSV-Datensatz ab Zeile " + line + " konnte nicht gelesen werden.";
+            throw ResponseException.badRequest(message + " Prüfen Sie das Dateiformat.", e);
         } catch (IOException e) {
             throw ResponseException.internalServerError(e, "Die Verarbeitung der CSV-Datei konnte nicht abgeschlossen werden.");
         }

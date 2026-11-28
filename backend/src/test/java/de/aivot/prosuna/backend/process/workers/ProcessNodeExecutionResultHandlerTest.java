@@ -1,5 +1,6 @@
 package de.aivot.prosuna.backend.process.workers;
 
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.user.services.UserDeputyService;
 import de.aivot.prosuna.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.prosuna.backend.process.utils.ExecutionSummaryMarkdown;
@@ -89,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
@@ -841,7 +843,8 @@ class ProcessNodeExecutionResultHandlerTest {
                 .body("Body")
                 .markdownBody("Body")
                 .build();
-        var cause = new CommunicationException("Internal provider details");
+        var cause = new CommunicationException("Die Anmeldung am SMTP-Server ist fehlgeschlagen.",
+                new IllegalStateException("private transport diagnostic"));
         when(communicationService.sendMessage(same(identity), any(CommunicationMessage.class)))
                 .thenThrow(cause);
 
@@ -875,6 +878,10 @@ class ProcessNodeExecutionResultHandlerTest {
         assertEquals("Beim Versand der Nachricht an die Identität „" + expected + "“ ist ein Fehler aufgetreten.",
                 error.getMessage());
         assertSame(cause, error.getCause());
+        var history = mock(ProcessInstanceHistoryEventRepository.class);
+        new ProcessNodeExecutionLogger(42L, 9L, null, null, history).logException(error);
+        verify(history).save(argThat(event -> event.getTechnical() && error.getMessage().equals(event.getMessage())
+                && cause.getMessage().equals(event.getDetails().get("causeMessage"))));
         assertEquals("assigned-user", task.getAssignedUserId());
         assertEquals(Map.of("meta", true), task.getNodeData());
         assertEquals(Map.of("data", true), task.getProcessData());

@@ -67,8 +67,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -90,7 +88,6 @@ import java.util.*;
 public class FormTriggerControllerV1 {
     public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
     public static final String VERSION_QUERY_PARAM = "version";
-    private static final Logger logger = LoggerFactory.getLogger(FormTriggerControllerV1.class);
 
     private final ProsunaConfig prosunaConfig;
     private final ElementDerivationService elementDerivationService;
@@ -532,14 +529,8 @@ public class FormTriggerControllerV1 {
                     execData
             );
         } catch (PaymentException e) {
-            logger.error(
-                    "Failed to calculate costs for form {}/{}",
-                    processSlug,
-                    formSlug,
-                    e
-            );
             throw ResponseException.internalServerErrorWithDetails(
-                    e,
+                    new PaymentException(e, "Failed to calculate costs for form %s/%s", processSlug, formSlug),
                     "Die Kosten für das Formular konnten nicht berechnet werden.",
                     null
             );

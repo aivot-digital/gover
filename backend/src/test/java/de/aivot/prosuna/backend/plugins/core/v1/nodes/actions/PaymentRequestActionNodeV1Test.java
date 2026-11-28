@@ -41,8 +41,10 @@ import de.aivot.prosuna.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.prosuna.backend.payment.services.PaymentPayloadCreationService;
 import de.aivot.prosuna.backend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.prosuna.backend.payment.services.PaymentTransactionService;
+import de.aivot.prosuna.backend.plugins.core.v1.payment.models.GiroPayCallbackResponse;
 import de.aivot.prosuna.backend.process.entities.ProcessEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.prosuna.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessNodeEntity;
 import de.aivot.prosuna.backend.process.entities.ProcessVersionEntity;
@@ -67,14 +69,17 @@ import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecuti
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.prosuna.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.prosuna.backend.process.permissions.ProcessPermissionProvider;
+import de.aivot.prosuna.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.prosuna.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.prosuna.backend.process.services.TemplateRenderService;
 import de.aivot.prosuna.backend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
@@ -902,27 +907,68 @@ class PaymentRequestActionNodeV1Test {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "FAILED, Die Zahlung ist fehlgeschlagen.",
-            "CANCELED, Die Zahlung wurde abgebrochen."
-    })
-    void resume_ReportsPaymentFailureOrCancellationWithoutProviderDetails(XBezahldienstStatus status, String message) throws Exception {
-        var paymentProviderKey = UUID.randomUUID();
-        var transaction = paymentTransaction(paymentProviderKey, status)
-                .setPaymentError("Private provider response with 100% diagnostic content");
-        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
+    @NullSource
+    @ValueSource(strings = "Frühere Statusabfrage fehlgeschlagen")
+    void resumeRecordsTheGiroCheckoutResultEvenAfterAnEarlierLookupError(String previousError) throws Exception {
+        var callback = new GiroPayCallbackResponse();
+        callback.setGcResultPayment("4900");
+        var information = callback.toXBezahldienstePaymentInformation(paymentInformation(XBezahldienstStatus.INITIAL));
+        var transaction = paymentTransaction(UUID.randomUUID(), information).setPaymentError(previousError);
 
-        var exception = assertThrows(
-                ProcessNodeExecutionExceptionIO.class,
-                () -> node.resume(context(
-                        nodeConfiguration(paymentConfig(paymentProviderKey), "automatic"),
-                        new ProcessExecutionData(),
-                        processInstance(recipientIdentity()),
-                        task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"), Map.of(), Map.of())
-                ))
-        );
+        assertPaymentFailureEvent(transaction, "Die Zahlung ist fehlgeschlagen.", "External service response: 4900");
+    }
+
+    @Test
+    void resumeRecordsTheProvidersCancellationDetail() throws Exception {
+        var information = paymentInformation(XBezahldienstStatus.CANCELED);
+        information.setStatusDetail("CUSTOMER-CANCELED");
+
+        assertPaymentFailureEvent(paymentTransaction(UUID.randomUUID(), information), "Die Zahlung wurde abgebrochen.",
+                "External service response: CUSTOMER-CANCELED");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "  ")
+    void resumeLabelsTheLastProcessingErrorWhenTheProviderGivesNoStatusDetail(String statusDetail) throws Exception {
+        var information = paymentInformation(XBezahldienstStatus.FAILED);
+        information.setStatusDetail(statusDetail);
+        var previousError = "Statusabfrage fehlgeschlagen\n100% " + "x".repeat(2_000);
+        var transaction = paymentTransaction(UUID.randomUUID(), information).setPaymentError(previousError);
+
+        var excerpt = previousError.substring(0, 2_000).replace('\n', ' ') + " [truncated]";
+        assertPaymentFailureEvent(transaction, "Die Zahlung ist fehlgeschlagen.",
+                "Letzter technischer Fehler der Zahlungsabwicklung: " + excerpt);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "  ")
+    void resumeOmitsTheTechnicalCauseWhenBothDiagnosticsAreBlank(String blank) throws Exception {
+        var information = paymentInformation(XBezahldienstStatus.CANCELED);
+        information.setStatusDetail(blank);
+        var transaction = paymentTransaction(UUID.randomUUID(), information).setPaymentError(blank);
+
+        assertPaymentFailureEvent(transaction, "Die Zahlung wurde abgebrochen.", null);
+    }
+
+    private void assertPaymentFailureEvent(PaymentTransactionEntity transaction, String message,
+                                           String expectedDiagnostic) throws Exception {
+        when(paymentTransactionService.retrieve("tx-1")).thenReturn(Optional.of(transaction));
+        var exception = assertThrows(ProcessNodeExecutionExceptionIO.class, () -> node.resume(context(
+                nodeConfiguration(paymentConfig(transaction.getPaymentProviderKey()), "automatic"), new ProcessExecutionData(),
+                processInstance(recipientIdentity()),
+                task(Map.of(PaymentTaskRuntimeDataKeys.PAYMENT_TRANSACTION_KEY, "tx-1"), Map.of(), Map.of()))));
         assertEquals(message + " Transaktionsschlüssel: „tx-1“.", exception.getMessage());
-        assertFalse(exception.getMessage().contains(transaction.getPaymentError()));
+
+        var history = mock(ProcessInstanceHistoryEventRepository.class);
+        new ProcessNodeExecutionLogger(42L, 9L, null, null, history).logException(exception);
+        var captor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(history).save(captor.capture());
+        var event = captor.getValue();
+        assertTrue(event.getTechnical());
+        assertEquals(exception.getMessage(), event.getMessage());
+        assertEquals(expectedDiagnostic, event.getDetails().get("causeMessage"));
     }
 
     @Test

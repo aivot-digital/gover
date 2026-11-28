@@ -6,8 +6,12 @@ import de.aivot.prosuna.backend.lib.exceptions.ResponseException;
 import de.aivot.prosuna.backend.secrets.entities.SecretEntity;
 import de.aivot.prosuna.backend.secrets.services.SecretService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.List;
@@ -15,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -31,6 +36,28 @@ class FitConnectTriggerOrganisationFactoryV1Test {
     private final AssetContentResolverService assetContentResolverService = mock(AssetContentResolverService.class);
     private final FitConnectTriggerOrganisationFactoryV1 factory =
             new FitConnectTriggerOrganisationFactoryV1(secretService, assetContentResolverService);
+
+    @Test
+    @ExtendWith(OutputCaptureExtension.class)
+    void validationLogsUnreadableReferencesAndReturnsOnlyFieldMessages(CapturedOutput output) throws Exception {
+        var config = validConfig();
+        config.callbackSecret = "malformed-reference";
+        config.privateSigningKey = UUID.randomUUID().toString();
+        when(secretService.decrypt(secretService.retrieve(UUID.fromString(config.subscriberClientSecret)).orElseThrow()))
+                .thenThrow(new IllegalArgumentException("invalid encrypted bytes"));
+        when(assetContentResolverService.resolveContent(eq(config.privateSigningKey), eq(AssetVisibility.Private), anyString()))
+                .thenThrow(ResponseException.internalServerError("Signaturschlüssel konnte nicht gelesen werden.", new IOException("storage read failed")));
+
+        var issues = factory.validateConfiguration(config);
+
+        assertTrue(issues.contains(new FitConnectTriggerOrganisationFactoryV1.ValidationIssue(
+                FitConnectTriggerConfigV1.SUBSCRIBER_CLIENT_SECRET_CONFIG_KEY, "Das ausgewählte Client-Secret konnte nicht entschlüsselt werden.")));
+        assertTrue(issues.contains(new FitConnectTriggerOrganisationFactoryV1.ValidationIssue(
+                FitConnectTriggerConfigV1.PRIVATE_SIGNING_KEY_CONFIG_KEY, "Signaturschlüssel konnte nicht gelesen werden.")));
+        assertTrue(output.getAll().contains("invalid encrypted bytes"));
+        assertTrue(output.getAll().contains("storage read failed"));
+        assertFalse(output.getAll().contains("malformed-reference"));
+    }
 
     @Test
     void missingPrivateKeysAreRejected() throws Exception {

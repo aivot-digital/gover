@@ -60,6 +60,8 @@ import java.util.*;
 
 import static de.aivot.prosuna.backend.TestData.authored;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 class ManualActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
@@ -80,6 +82,20 @@ class ManualActionNodeV1Test {
                 derivationService(),
                 new AuthoredInputValueService(JsonMapperTestUtils.createMapper())
         );
+    }
+
+    @Test
+    void layoutConversionFailureKeepsTheCauseForServerDiagnostics() {
+        var invalidNode = spy(node);
+        doReturn(Object.class).when(invalidNode).getNodeConfigurationClass();
+        var context = new ProcessNodeDefinitionConfigurationLayoutContext(null, new ProcessEntity(),
+                new ProcessVersionEntity(), new ProcessNodeEntity());
+
+        var error = assertThrows(ResponseException.class, () -> invalidNode.getConfigurationLayout(context));
+
+        assertInstanceOf(ElementDataConversionException.class, error.getCause());
+        assertNull(error.getDetails());
+        assertEquals("Die Einstellungen für die freie Aufgabe konnten nicht geladen werden.", error.getTitle());
     }
 
     @Test

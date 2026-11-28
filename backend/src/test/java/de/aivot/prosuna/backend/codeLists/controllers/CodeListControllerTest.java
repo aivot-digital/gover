@@ -15,13 +15,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -51,6 +54,19 @@ class CodeListControllerTest {
                 permissionService,
                 codeListElementOptionsService
         );
+    }
+
+    @Test
+    void importReportsUnreadableUploadWithoutInventingALineNumber() throws Exception {
+        var file = mock(MultipartFile.class);
+        var failure = new IOException("failed to open upload");
+        when(file.getInputStream()).thenThrow(failure);
+
+        var error = assertThrows(ResponseException.class, () -> controller.importCSV(jwt, "list", file));
+
+        assertSame(failure, error.getCause());
+        assertEquals("Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Dateiformat.", error.getTitle());
+        verifyNoInteractions(service);
     }
 
     @Test

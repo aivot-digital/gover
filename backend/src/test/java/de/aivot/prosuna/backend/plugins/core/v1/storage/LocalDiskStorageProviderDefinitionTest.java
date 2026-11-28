@@ -10,9 +10,13 @@ import de.aivot.prosuna.backend.utils.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -52,6 +56,30 @@ class LocalDiskStorageProviderDefinitionTest {
                         System.err.println("Failed to delete " + file);
                     }
                 });
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "No space left on device, Es steht kein Speicherplatz mehr zur Verfügung.",
+            "Read-only file system, Das Dateisystem ist schreibgeschützt.",
+            "unexpected device diagnostic, ''"
+    })
+    void writeFailureExplainsKnownReasonsWithoutExposingServerPaths(String reason, String expected) {
+        var cause = new FileSystemException("/private/mount/backing-file", null, reason);
+        var content = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw cause;
+            }
+        };
+
+        var error = assertThrows(StorageException.class, () ->
+                provider.storeDocument(config, "/documents/report.pdf", content, StorageItemMetadata.empty()));
+
+        assertSame(cause, error.getCause());
+        assertEquals(("Fehler beim Speichern der Datei „/documents/report.pdf“. " + expected).stripTrailing(), error.getMessage());
+        assertFalse(error.getMessage().contains("/private/"));
+        assertFalse(error.getMessage().contains(reason));
     }
 
     @Test

@@ -331,7 +331,9 @@ class FormTriggerControllerV1Test {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, error.getStatus());
         assertEquals("Die Kosten für das Formular konnten nicht berechnet werden.", error.getTitle());
         assertNull(error.getDetails());
-        assertSame(cause, error.getCause());
+        assertEquals("Failed to calculate costs for form %s/%s".formatted(fixture.processSlug(), fixture.formSlug()),
+                error.getCause().getMessage());
+        assertSame(cause, error.getCause().getCause());
     }
 
     @Test
